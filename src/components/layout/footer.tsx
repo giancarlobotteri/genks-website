@@ -8,7 +8,7 @@ export function Footer() {
     <footer className="site-footer">
       <div className="footer-bottom container">
         <Link className="brand-mark footer-brand" href="/" aria-label="GENKS home">
-          <Image src="/icon.svg" width={54} height={54} alt="" style={{ width: "100%", height: "100%" }} />
+          <Image src="/brand/genks-logo.jpeg" width={54} height={54} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           <span className="sr-only">GENKS</span>
         </Link>
         <p>Independent sound. Made in Italy.</p>

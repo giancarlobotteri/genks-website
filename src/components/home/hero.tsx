@@ -14,7 +14,7 @@ export function Hero({ beats }: { beats: Beat[] }) {
       </div>
       <div className="hero-art" aria-hidden="true">
         <Image
-          src="/icon.svg"
+          src="/artwork/genks-orb.webp"
           alt=""
           fill
           preload

@@ -68,12 +68,12 @@ test("saved-only view intersects with mood and key filters", () => {
   );
 });
 
-test("every demo cover and enabled license resolves", () => {
+test("every initial catalog cover and enabled license resolves", () => {
   const slugs = new Set();
   for (const beat of mockBeats) {
     assert.equal(slugs.has(beat.slug), false, `Duplicate slug ${beat.slug}`);
     slugs.add(beat.slug);
-    assert.equal(beat.isDemo, true);
+    assert.equal(beat.isDemo, false);
     for (const resource of [beat.cover]) {
       assert.ok(
         statSync(

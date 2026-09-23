@@ -1,6 +1,6 @@
 import type { License } from "@/types/domain";
 
-/** UI examples only: these are not binding commercial terms or production prices. */
+/** Initial public prices; Admin remains the source of truth once Supabase is connected. */
 export const mockLicenses: License[] = [
   {
     id: "mp3",
@@ -13,7 +13,7 @@ export const mockLicenses: License[] = [
       "Non-exclusive license",
       "Example terms — to be confirmed",
     ],
-    isDemo: true,
+    isDemo: false,
   },
   {
     id: "wav",
@@ -26,7 +26,7 @@ export const mockLicenses: License[] = [
       "Non-exclusive license",
       "Example terms — to be confirmed",
     ],
-    isDemo: true,
+    isDemo: false,
   },
   {
     id: "stems",
@@ -39,6 +39,6 @@ export const mockLicenses: License[] = [
       "WAV + MP3 included",
       "Example terms — to be confirmed",
     ],
-    isDemo: true,
+    isDemo: false,
   },
 ];

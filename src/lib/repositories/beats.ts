@@ -68,6 +68,14 @@ export async function getLicenses(): Promise<License[]> {
 type DbBeat = Record<string, unknown>;
 function mapBeat(row: DbBeat): Beat {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const localCovers: Record<string, string> = {
+    "blue-hour": "/artwork/blue-hour.webp",
+    "chrome-hearts": "/artwork/genks-orb.webp",
+    afterimage: "/artwork/afterimage.webp",
+    "no-signal": "/artwork/genks-orb.webp",
+    "low-tide": "/artwork/afterimage.webp",
+    "night-drive": "/artwork/blue-hour.webp",
+  };
   const publicUrl = (bucket: string, path: unknown, fallback: string) =>
     path && url
       ? `${url}/storage/v1/object/public/${bucket}/${String(path)}`
@@ -77,7 +85,7 @@ function mapBeat(row: DbBeat): Beat {
     : [];
   return {
     id: String(row.id), slug: String(row.slug), title: String(row.title),
-    cover: publicUrl("covers", row.cover_path, "/icon.svg"),
+    cover: publicUrl("covers", row.cover_path, localCovers[String(row.slug)] ?? "/artwork/genks-orb.webp"),
     previewUrl: publicUrl("previews", row.preview_path, ""),
     bpm: Number(row.bpm), key: String(row.musical_key),
     genre: String(row.genre) as Beat["genre"], mood: String(row.mood) as Beat["mood"],

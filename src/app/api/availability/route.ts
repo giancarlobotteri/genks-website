@@ -1,21 +1,25 @@
 import { z } from "zod";
 import { hasSupabase } from "@/lib/env";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const querySchema = z.object({ date: z.iso.date() });
+const querySchema = z.object({
+  date: z.iso.date(),
+  duration: z.coerce.number().int().min(1).max(8).default(1),
+});
 
 export async function GET(request: Request) {
-  if (!hasSupabase || !process.env.SUPABASE_SECRET_KEY) {
+  if (!hasSupabase) {
     return Response.json({ error: "Booking availability is not configured." }, { status: 503 });
   }
-  const parsed = querySchema.safeParse({ date: new URL(request.url).searchParams.get("date") });
+  const search = new URL(request.url).searchParams;
+  const parsed = querySchema.safeParse({ date: search.get("date"), duration: search.get("duration") ?? 1 });
   if (!parsed.success) return Response.json({ error: "Choose a valid date." }, { status: 400 });
 
   const day = new Date(`${parsed.data.date}T12:00:00+02:00`);
   if (!Number.isFinite(day.getTime()) || day < new Date(new Date().toDateString())) {
     return Response.json({ slots: [] });
   }
-  const db = createSupabaseAdminClient();
+  const db = await createSupabaseServerClient();
   const weekday = day.getDay();
   const dayStart = new Date(`${parsed.data.date}T00:00:00+02:00`);
   const dayEnd = new Date(`${parsed.data.date}T23:59:59+02:00`);
@@ -29,12 +33,18 @@ export async function GET(request: Request) {
   for (const rule of rules ?? []) {
     const [startHour, startMinute] = rule.start_time.split(":").map(Number);
     const [endHour, endMinute] = rule.end_time.split(":").map(Number);
-    for (let minutes = startHour * 60 + startMinute; minutes + rule.slot_minutes <= endHour * 60 + endMinute; minutes += rule.slot_minutes + rule.buffer_minutes) {
+    const durationMinutes = parsed.data.duration * 60;
+    for (let minutes = startHour * 60 + startMinute; minutes + durationMinutes <= endHour * 60 + endMinute; minutes += rule.slot_minutes + rule.buffer_minutes) {
       const hour = String(Math.floor(minutes / 60)).padStart(2, "0");
       const minute = String(minutes % 60).padStart(2, "0");
       const slotStart = new Date(`${parsed.data.date}T${hour}:${minute}:00+02:00`);
-      const slotEnd = new Date(slotStart.getTime() + rule.slot_minutes * 60_000);
-      const blocked = [...(bookings ?? []), ...(blackouts ?? [])].some((item) => new Date(item.starts_at) < slotEnd && new Date(item.ends_at) > slotStart);
+      const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60_000);
+      const protectedEnd = new Date(slotEnd.getTime() + rule.buffer_minutes * 60_000);
+      const blocked = [...(bookings ?? []), ...(blackouts ?? [])].some((item) => {
+        const itemStart = new Date(item.starts_at);
+        const itemEnd = new Date(new Date(item.ends_at).getTime() + rule.buffer_minutes * 60_000);
+        return itemStart < protectedEnd && itemEnd > slotStart;
+      });
       if (!blocked && slotStart > new Date()) slots.push(`${hour}:${minute}`);
     }
   }

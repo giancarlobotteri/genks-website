@@ -22,7 +22,7 @@ export function Navigation() {
           aria-label="GENKS home"
           onClick={() => setOpen(false)}
         >
-          <Image src="/icon.svg" width={50} height={50} alt="" priority style={{ width: "100%", height: "100%" }} />
+          <Image src="/brand/genks-logo.jpeg" width={50} height={50} alt="" priority style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           <span className="sr-only">GENKS</span>
         </Link>
         <nav className="desktop-navigation" aria-label="Main navigation">

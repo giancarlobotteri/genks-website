@@ -9,6 +9,7 @@ const schema = z.object({
   licenseCode: z.string().min(1).max(50),
   email: z.email(),
   name: z.string().trim().min(2).max(120),
+  paymentMethod: z.enum(["card", "bank_transfer"]).default("card"),
 });
 
 export async function POST(request: Request) {
@@ -50,12 +51,29 @@ export async function POST(request: Request) {
   if (itemError || !item) return Response.json({ error: "Could not create the order item." }, { status: 500 });
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
-  const session = await getStripe().checkout.sessions.create({
-    mode: "payment", customer_email: parsed.data.email,
+  const stripe = getStripe();
+  const customer = parsed.data.paymentMethod === "bank_transfer"
+    ? await stripe.customers.create({ name: parsed.data.name, email: parsed.data.email })
+    : null;
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
     line_items: [{ quantity: 1, price_data: { currency: license.currency.toLowerCase(), unit_amount: amount, product_data: { name: `${beat.title} — ${license.name}`, description: "GENKS beat license" } } }],
     success_url: `${origin}/checkout/success?order=${order.id}`,
     cancel_url: `${origin}/checkout/${beat.id}/${license.code}?cancelled=1`,
-    metadata: { order_id: order.id, order_item_id: item.id, customer_id: user?.id ?? "guest" },
+    metadata: { order_id: order.id, order_item_id: item.id, customer_id: user?.id ?? "guest", payment_method: parsed.data.paymentMethod },
+    ...(parsed.data.paymentMethod === "bank_transfer" ? {
+      customer: customer?.id,
+      payment_method_types: ["customer_balance" as const],
+      payment_method_options: {
+        customer_balance: {
+          funding_type: "bank_transfer" as const,
+          bank_transfer: { type: "eu_bank_transfer" as const, eu_bank_transfer: { country: "IT" } },
+        },
+      },
+    } : {
+      customer_email: parsed.data.email,
+      payment_method_types: ["card" as const],
+    }),
   }, { idempotencyKey: `order_${order.id}` });
   await db.from("orders").update({ stripe_checkout_session_id: session.id }).eq("id", order.id);
   return Response.json({ url: session.url });
