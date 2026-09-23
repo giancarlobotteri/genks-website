@@ -252,7 +252,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
             ? " · Saved on this device"
             : " in the collection"}
         </span>
-        <span>Demo previews · Example prices</span>
+        <span>License details and final price are shown before checkout</span>
       </div>
     </div>
   );

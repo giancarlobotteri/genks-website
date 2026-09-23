@@ -67,7 +67,7 @@ export async function getLicenses(): Promise<License[]> {
 
 type DbBeat = Record<string, unknown>;
 function mapBeat(row: DbBeat): Beat {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_GENKS_SUPABASE_URL;
   const localCovers: Record<string, string> = {
     "blue-hour": "/artwork/blue-hour.webp",
     "chrome-hearts": "/artwork/genks-orb.webp",

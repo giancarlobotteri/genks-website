@@ -3,15 +3,15 @@ export const site = {
   description:
     "The sound of GENKS. Explore underground beats, find your next sound, and connect for custom music production.",
   instagram:
-    process.env.NEXT_PUBLIC_GENKS_INSTAGRAM ??
+    process.env.NEXT_PUBLIC_GENKS_INSTAGRAM ||
     "https://www.instagram.com/prodbygenks/",
   tiktok:
-    process.env.NEXT_PUBLIC_GENKS_TIKTOK ??
+    process.env.NEXT_PUBLIC_GENKS_TIKTOK ||
     "https://www.tiktok.com/@prodbygenks",
   youtube:
-    process.env.NEXT_PUBLIC_GENKS_YOUTUBE ??
+    process.env.NEXT_PUBLIC_GENKS_YOUTUBE ||
     "https://www.youtube.com/@prodbygenks",
-  whatsapp: process.env.NEXT_PUBLIC_GENKS_WHATSAPP ?? "",
+  whatsapp: process.env.NEXT_PUBLIC_GENKS_WHATSAPP || "",
   navigation: [
     { label: "Home", href: "/" },
     { label: "Beat store", href: "/beats" },

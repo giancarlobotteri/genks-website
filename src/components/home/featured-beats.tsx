@@ -23,8 +23,8 @@ export function FeaturedBeats({ beats }: { beats: Beat[] }) {
         ))}
       </div>
       <p className="catalog-disclaimer">
-        <span className="demo-badge">DEMO</span>Fictional beats, synthesized
-        previews and example pricing. Original GENKS releases are coming.
+        <span className="demo-badge">GENKS</span>Explore the catalog and choose
+        the license that fits your release.
       </p>
     </section>
   );

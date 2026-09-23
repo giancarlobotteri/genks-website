@@ -21,8 +21,8 @@ export default async function BeatStorePage() {
         </h1>
         <p>A different mood for every story. Start yours here.</p>
         <p className="catalog-disclaimer">
-          <span className="demo-badge">DEMO</span>Fictional catalog ·
-          Synthesized previews · Example prices
+          <span className="demo-badge">GENKS</span>Choose a beat, compare the
+          available licenses and continue to secure checkout.
         </p>
       </div>
       <BeatCatalog beats={beats} />
