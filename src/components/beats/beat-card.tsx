@@ -23,7 +23,7 @@ export function BeatCard({
       <div className="beat-artwork">
         <Image
           src={beat.cover}
-          alt={`${beat.title} demo cover artwork`}
+          alt={`${beat.title} cover artwork`}
           fill
           sizes="(max-width: 600px) 85vw, (max-width: 1000px) 44vw, 30vw"
           style={{ objectPosition: beat.coverPosition }}

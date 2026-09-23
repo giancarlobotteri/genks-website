@@ -173,7 +173,7 @@ export function PersistentPlayer() {
         <span className="eyebrow">KEEP IT PLAYING</span>
         <h2 id={queueTitle}>In the queue.</h2>
         <p className="muted">
-          Your current selection · {queue.length} demo previews
+          Your current selection · {queue.length} beats
         </p>
         <div className="queue-list">
           {queue.map((beat, index) => (
