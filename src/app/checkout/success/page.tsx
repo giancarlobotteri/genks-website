@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function SuccessPage(){return <div className="portal-shell narrow-shell"><span className="eyebrow">PAYMENT RECEIVED</span><h1>Welcome to your next sound.</h1><p className="muted">Stripe is confirming the payment. Your Library updates after the verified webhook arrives.</p><Link className="button button-primary" href="/account/library">OPEN LIBRARY</Link></div>}

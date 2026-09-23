@@ -1,0 +1,6 @@
+import { z } from "zod";
+import { requireAdmin } from "@/lib/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+
+const schema=z.object({beatId:z.uuid(),kind:z.enum(["cover","preview","visual","mp3","wav","stems"]),bucket:z.enum(["covers","previews","beat-assets"]),path:z.string().min(3).max(1000),filename:z.string().min(1).max(255),size:z.number().int().nonnegative()});
+export async function POST(request:Request){const user=await requireAdmin();const parsed=schema.safeParse(await request.json().catch(()=>null));if(!parsed.success)return Response.json({error:"Invalid asset metadata."},{status:400});const db=createSupabaseAdminClient();const {beatId,kind,bucket,path,filename,size}=parsed.data;const {error}=await db.from("beat_assets").upsert({beat_id:beatId,kind,bucket,storage_path:path,filename,size_bytes:size},{onConflict:"bucket,storage_path"});if(error)return Response.json({error:error.message},{status:500});if(kind==="cover"||kind==="preview"||kind==="visual")await db.from("beats").update({[`${kind}_path`]:path}).eq("id",beatId);await db.from("admin_audit_log").insert({admin_id:user.id,action:"upload",entity_type:"beat_asset",entity_id:beatId,payload:{kind,bucket,path}});return Response.json({ok:true})}

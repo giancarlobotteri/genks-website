@@ -1,0 +1,4 @@
+import Link from "next/link";import { requireAdmin } from "@/lib/auth";
+export const dynamic = "force-dynamic";
+const nav=[["Dashboard","/admin"],["Beats","/admin/beats"],["Licenses","/admin/licenses"],["Orders","/admin/orders"],["Customers","/admin/customers"],["Bookings","/admin/bookings"],["Mix & Master","/admin/projects"],["Exclusive","/admin/exclusive"],["Promotions","/admin/promotions"],["Analytics","/admin/analytics"],["Settings","/admin/settings"]];
+export default async function AdminLayout({children}:{children:React.ReactNode}){await requireAdmin();return <div className="admin-shell"><aside className="admin-sidebar"><Link href="/" className="admin-brand">GENKS <span>ADMIN</span></Link><nav>{nav.map(([label,href])=><Link key={href} href={href}>{label}</Link>)}</nav></aside><section className="admin-content">{children}</section></div>}
