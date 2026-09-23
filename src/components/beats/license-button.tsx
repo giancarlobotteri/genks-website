@@ -13,8 +13,9 @@ export function LicenseButton({
   compact?: boolean;
 }) {
   const { licenses, openLicenses } = useLicenses();
-  const available = licenses.filter((license) =>
-    beat.licenseIds.includes(license.id),
+  const available = licenses.filter(
+    (license) =>
+      beat.licenseIds.includes(license.id) && license.id !== "exclusive",
   );
   const price = available.length
     ? Math.min(...available.map((license) => license.priceCents))

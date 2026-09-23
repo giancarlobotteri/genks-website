@@ -5,7 +5,7 @@ import { beatRepository } from "@/lib/repositories/beats";
 export const metadata: Metadata = {
   title: "Beat store",
   description:
-    "Explore the GENKS demo beat collection. Filter by genre, mood, tempo and key, and find your next sound.",
+    "Explore the GENKS beat collection, compare licenses and find the right sound for your next release.",
 };
 
 export default async function BeatStorePage() {

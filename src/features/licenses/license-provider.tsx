@@ -51,7 +51,11 @@ export function LicenseProvider({
                   <h3>{license.name}</h3>
                   <span className="mono muted">{license.format}</span>
                 </div>
-                <strong>{formatPrice(license.priceCents)}</strong>
+                <strong>
+                  {license.id === "exclusive"
+                    ? "On request"
+                    : formatPrice(license.priceCents)}
+                </strong>
                 <ul>
                   {license.features.map((feature) => (
                     <li key={feature}>
