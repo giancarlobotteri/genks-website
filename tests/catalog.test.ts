@@ -6,6 +6,7 @@ import { defaultFilters, filterBeats } from "../src/lib/catalog.ts";
 import { formatTime } from "../src/lib/format.ts";
 import { mockBeats } from "../src/data/mock/beats.ts";
 import { mockLicenses } from "../src/data/mock/licenses.ts";
+import { STRIPE_EU_BANK_TRANSFER_COUNTRY } from "../src/lib/payments.ts";
 
 test("unpublished music never appears in public search, even when saved", () => {
   const unpublished = { ...mockBeats[0], status: "draft" as const };
@@ -96,4 +97,11 @@ test("player time labels handle missing metadata and duration boundaries", () =>
   assert.equal(formatTime(-1), "0:00");
   assert.equal(formatTime(59.9), "0:59");
   assert.equal(formatTime(60), "1:00");
+});
+
+
+test("Stripe bank transfer uses a supported EU funding-instructions country", () => {
+  assert.ok(
+    ["DE", "FR", "IE", "NL"].includes(STRIPE_EU_BANK_TRANSFER_COUNTRY),
+  );
 });
