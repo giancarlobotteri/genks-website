@@ -3,6 +3,7 @@ import { getStripe } from "@/lib/stripe";
 import { hasStripe, hasSupabase } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
+import { STRIPE_EU_BANK_TRANSFER_COUNTRY } from "@/lib/payments";
 
 const schema = z.object({
   beatId: z.uuid(),
@@ -67,7 +68,10 @@ export async function POST(request: Request) {
       payment_method_options: {
         customer_balance: {
           funding_type: "bank_transfer" as const,
-          bank_transfer: { type: "eu_bank_transfer" as const, eu_bank_transfer: { country: "IT" } },
+          bank_transfer: {
+            type: "eu_bank_transfer" as const,
+            eu_bank_transfer: { country: STRIPE_EU_BANK_TRANSFER_COUNTRY },
+          },
         },
       },
     } : {
