@@ -9,6 +9,7 @@ import { useWishlist } from "@/features/wishlist/use-wishlist";
 import {
   defaultFilters,
   filterBeats,
+  recommendBeat,
   type CatalogFilters,
 } from "@/lib/catalog";
 import { PlayButton } from "./play-button";
@@ -25,12 +26,16 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
   const { currentBeat, isPlaying } = usePlayer();
   const filtersId = useId();
   const filtered = filterBeats(beats, filters, favorites);
+  const recommendations = new Map(filtered.map((beat) => [beat.id, recommendBeat(beat, filters.query)]));
+  const smartSearchActive = filters.query.trim().length > 1 && [...recommendations.values()].some((match) => match.meaningful);
   const visible =
     sort === "bpm"
       ? [...filtered].sort((a, b) => a.bpm - b.bpm)
       : sort === "title"
         ? [...filtered].sort((a, b) => a.title.localeCompare(b.title))
-        : filtered;
+        : smartSearchActive
+          ? [...filtered].sort((a, b) => (recommendations.get(b.id)?.score ?? 0) - (recommendations.get(a.id)?.score ?? 0))
+          : filtered;
   const activeCount = [filters.mood, filters.bpm, filters.key].filter(
     (value) => value !== "All",
   ).length;
@@ -48,7 +53,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
           <input
             type="search"
             aria-label="Search beats"
-            placeholder="Find your sound…"
+            placeholder={'Describe your sound… “dark melodic R&B”'}
             value={filters.query}
             onChange={(event) => setFilter("query", event.target.value)}
           />
@@ -63,6 +68,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
             </button>
           )}
         </label>
+        {smartSearchActive ? <span className="smart-search-status" role="status">SMART MATCH</span> : null}
         <button
           type="button"
           className={`filter-toggle ${expanded || activeCount ? "selected" : ""}`}
@@ -159,7 +165,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
             value={sort}
             onChange={(event) => setSort(event.target.value)}
           >
-            <option value="curated">Curated</option>
+            <option value="curated">{smartSearchActive ? "Best match" : "Curated"}</option>
             <option value="bpm">BPM: low to high</option>
             <option value="title">Title: A–Z</option>
           </select>
@@ -207,6 +213,9 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
                     · {beat.bpm} BPM · {beat.key}
                   </span>
                 </span>
+                {smartSearchActive && (recommendations.get(beat.id)?.score ?? 0) > 0 ? <span className="smart-match-badge" title={`Matched by ${recommendations.get(beat.id)?.reasons.join(", ") || "sound profile"}`}>
+                  {recommendations.get(beat.id)?.percent}% MATCH
+                </span> : null}
               </div>
             </div>
             <div className="row-tempo" role="cell">
