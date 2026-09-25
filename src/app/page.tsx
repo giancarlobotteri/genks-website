@@ -4,34 +4,15 @@ import { BeatCatalog } from "@/components/beats/beat-catalog";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Services } from "@/components/home/services";
 import { About } from "@/components/home/about";
+import { AnnouncementTicker } from "@/components/home/announcement-ticker";
 import { beatRepository } from "@/lib/repositories/beats";
-import { site } from "@/config/site";
 
 export default async function Home() {
   const beats = await beatRepository.listPublished();
   return (
     <>
       <Hero />
-      <div className="frequency-strip social-marquee" aria-label="GENKS social profiles">
-        <div className="frequency-track">
-          <div className="social-marquee-group">
-            <a href={site.instagram} target="_blank" rel="noreferrer">
-              INSTAGRAM <strong>@PRODBYGENKS</strong>
-            </a>
-            <i />
-            <a href={site.tiktok} target="_blank" rel="noreferrer">
-              TIKTOK <strong>@PRODBYGENKS</strong>
-            </a>
-            <i />
-          </div>
-          <div className="social-marquee-group" aria-hidden="true">
-            <span>INSTAGRAM <strong>@PRODBYGENKS</strong></span>
-            <i />
-            <span>TIKTOK <strong>@PRODBYGENKS</strong></span>
-            <i />
-          </div>
-        </div>
-      </div>
+      <AnnouncementTicker />
       <FeaturedBeats beats={beats} />
       <section id="catalog" className="catalog-section container section">
         <SectionHeading

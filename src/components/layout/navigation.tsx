@@ -4,10 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { ArrowUpRight, ChevronDown, Menu, ShoppingBag, Trash2, X } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Menu, ShoppingBag, X } from "lucide-react";
 import { site } from "@/config/site";
 import { useCart } from "@/features/cart/cart-provider";
-import { LicenseButton } from "@/components/beats/license-button";
+import { CartCheckout } from "@/components/commerce/cart-checkout";
 
 const menuItems = [
   ...site.navigation,
@@ -24,7 +24,7 @@ export function Navigation() {
   const navId = useId();
   const cartId = useId();
   const toggleRef = useRef<HTMLButtonElement>(null);
-  const { items, count, remove, clear } = useCart();
+  const { items, count } = useCart();
 
   const closeAll = () => { setOpen(false); setCartOpen(false); };
 
@@ -85,13 +85,7 @@ export function Navigation() {
       <aside id={cartId} className={`cart-drawer ${cartOpen ? "open" : ""}`} hidden={!cartOpen} aria-label="Beat cart">
         <div className="cart-drawer-heading"><div><span className="eyebrow">YOUR SELECTION</span><h2>Cart <span>{count}</span></h2></div><button type="button" className="icon-button" aria-label="Close cart" onClick={() => setCartOpen(false)}><X /></button></div>
         {items.length ? <>
-          <div className="cart-items">{items.map(({ beat, quantity }) => <article key={beat.id}>
-            <Image src={beat.cover} width={64} height={64} alt="" />
-            <div><strong>{beat.title}</strong><small>{beat.genre} · {beat.bpm} BPM{quantity > 1 ? ` · ×${quantity}` : ""}</small></div>
-            <button type="button" className="icon-button" aria-label={`Remove ${beat.title} from cart`} onClick={() => remove(beat.id)}><Trash2 size={17} /></button>
-            <LicenseButton beat={beat} compact />
-          </article>)}</div>
-          <button type="button" className="text-link cart-clear" onClick={clear}>Clear cart</button>
+          <CartCheckout />
         </> : <div className="cart-empty"><ShoppingBag size={28} /><strong>Your cart is waiting.</strong><p>Add a beat, then choose its license when you are ready.</p><Link href="/beats" className="button button-primary magnetic-cta" onClick={closeAll}>EXPLORE BEATS</Link></div>}
       </aside>
     </header>

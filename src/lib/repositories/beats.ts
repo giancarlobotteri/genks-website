@@ -16,7 +16,7 @@ export const beatRepository: BeatRepository = {
       const supabase = await createSupabaseServerClient();
       const { data } = await supabase
         .from("beats")
-        .select("id,slug,title,bpm,musical_key,genre,mood,description,featured,status,cover_path,preview_path,beat_license_prices(license_types(code))")
+        .select("id,slug,title,bpm,musical_key,genre,mood,description,featured,status,cover_path,preview_path,beat_license_prices(price_override_cents,license_types(code,price_cents))")
         .eq("status", "published")
         .order("sort_order")
         .order("published_at", { ascending: false });
@@ -29,7 +29,7 @@ export const beatRepository: BeatRepository = {
       const supabase = await createSupabaseServerClient();
       const { data } = await supabase
         .from("beats")
-        .select("id,slug,title,bpm,musical_key,genre,mood,description,featured,status,cover_path,preview_path,beat_license_prices(license_types(code))")
+        .select("id,slug,title,bpm,musical_key,genre,mood,description,featured,status,cover_path,preview_path,beat_license_prices(price_override_cents,license_types(code,price_cents))")
         .eq("slug", slug)
         .eq("status", "published")
         .maybeSingle();
@@ -95,6 +95,11 @@ function mapBeat(row: DbBeat): Beat {
       const licenseTypes = (price as { license_types?: { code?: string } | { code?: string }[] }).license_types;
       return (Array.isArray(licenseTypes) ? licenseTypes[0]?.code : licenseTypes?.code) as Beat["licenseIds"][number];
     }).filter(Boolean),
+    licensePrices: Object.fromEntries(prices.flatMap((price: unknown) => {
+      const entry = price as { price_override_cents?: number | null; license_types?: { code?: string; price_cents?: number } | { code?: string; price_cents?: number }[] };
+      const licenseType = Array.isArray(entry.license_types) ? entry.license_types[0] : entry.license_types;
+      return licenseType?.code ? [[licenseType.code, entry.price_override_cents ?? licenseType.price_cents ?? 0]] : [];
+    })),
     assets: [], isDemo: false,
   };
 }

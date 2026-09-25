@@ -26,6 +26,7 @@ export interface Beat {
   featured: boolean;
   status: PublicationStatus;
   licenseIds: LicenseTier[];
+  licensePrices?: Partial<Record<LicenseTier, number>>;
   assets: DownloadableAsset[];
   isDemo: boolean;
 }

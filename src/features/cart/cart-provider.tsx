@@ -2,15 +2,16 @@
 
 import Image from "next/image";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { Beat } from "@/types/domain";
+import type { Beat, LicenseTier } from "@/types/domain";
 
-interface CartItem { beat: Beat; quantity: number }
+export interface CartItem { beat: Beat; selectedLicenseId: LicenseTier | null }
 interface CartAnimation { id: number; cover: string; x: number; y: number }
 interface CartContextValue {
   items: CartItem[];
   count: number;
   animation: CartAnimation | null;
   add: (beat: Beat, origin?: DOMRect) => void;
+  selectLicense: (beatId: string, licenseId: LicenseTier | null) => void;
   remove: (beatId: string) => void;
   clear: () => void;
 }
@@ -25,10 +26,10 @@ export function CartProvider({ children, catalog }: { children: ReactNode; catal
 
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") as { beatId: string; quantity: number }[];
-      const restored = saved.flatMap(({ beatId, quantity }) => {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") as { beatId: string; selectedLicenseId?: LicenseTier | null }[];
+      const restored = saved.flatMap(({ beatId, selectedLicenseId }) => {
         const beat = catalog.find((entry) => entry.id === beatId);
-        return beat ? [{ beat, quantity: Math.max(1, quantity) }] : [];
+        return beat ? [{ beat, selectedLicenseId: selectedLicenseId && beat.licenseIds.includes(selectedLicenseId) ? selectedLicenseId : null }] : [];
       });
       window.requestAnimationFrame(() => {
         setItems(restored);
@@ -39,15 +40,13 @@ export function CartProvider({ children, catalog }: { children: ReactNode; catal
 
   useEffect(() => {
     if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items.map(({ beat, quantity }) => ({ beatId: beat.id, quantity }))));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items.map(({ beat, selectedLicenseId }) => ({ beatId: beat.id, selectedLicenseId }))));
   }, [items, hydrated]);
 
   const add = useCallback((beat: Beat, origin?: DOMRect) => {
     setItems((current) => {
       const existing = current.find((item) => item.beat.id === beat.id);
-      return existing
-        ? current.map((item) => item.beat.id === beat.id ? { ...item, quantity: item.quantity + 1 } : item)
-        : [...current, { beat, quantity: 1 }];
+      return existing ? current : [...current, { beat, selectedLicenseId: null }];
     });
     if (origin) {
       setAnimation({ id: Date.now(), cover: beat.cover, x: origin.left + origin.width / 2, y: origin.top + origin.height / 2 });
@@ -56,9 +55,10 @@ export function CartProvider({ children, catalog }: { children: ReactNode; catal
   }, []);
 
   const remove = useCallback((beatId: string) => setItems((current) => current.filter((item) => item.beat.id !== beatId)), []);
+  const selectLicense = useCallback((beatId: string, licenseId: LicenseTier | null) => setItems((current) => current.map((item) => item.beat.id === beatId ? { ...item, selectedLicenseId: licenseId } : item)), []);
   const clear = useCallback(() => setItems([]), []);
-  const count = items.reduce((total, item) => total + item.quantity, 0);
-  const value = useMemo(() => ({ items, count, animation, add, remove, clear }), [items, count, animation, add, remove, clear]);
+  const count = items.length;
+  const value = useMemo(() => ({ items, count, animation, add, selectLicense, remove, clear }), [items, count, animation, add, selectLicense, remove, clear]);
 
   return <CartContext value={value}>{children}{animation ? <Image key={animation.id} className="cart-fly" src={animation.cover} alt="" width={56} height={56} style={{ "--cart-x": `${animation.x}px`, "--cart-y": `${animation.y}px` } as React.CSSProperties} /> : null}</CartContext>;
 }
