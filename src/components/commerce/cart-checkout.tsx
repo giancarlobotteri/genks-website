@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { CreditCard, Trash2 } from "lucide-react";
+import { AlertTriangle, CreditCard, Trash2 } from "lucide-react";
 import { useCart } from "@/features/cart/cart-provider";
 import { useLicenses } from "@/features/licenses/license-provider";
 import { formatPrice } from "@/lib/format";
+import { Modal } from "@/components/ui/modal";
 import type { LicenseTier } from "@/types/domain";
 
 export function CartCheckout() {
@@ -13,6 +14,7 @@ export function CartCheckout() {
   const { licenses } = useLicenses();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [confirmClear, setConfirmClear] = useState(false);
   const selectedItems = items.flatMap(({ beat, selectedLicenseId }) => {
     const license = licenses.find((entry) => entry.id === selectedLicenseId);
     return license ? [{ beat, license, price: beat.licensePrices?.[license.id] ?? license.priceCents }] : [];
@@ -34,7 +36,16 @@ export function CartCheckout() {
         </select></label>
       </article>;
     })}</div>
-    <button type="button" className="text-link cart-clear" onClick={clear}>Clear cart</button>
+    <button type="button" className="text-link cart-clear" onClick={() => setConfirmClear(true)}><Trash2 size={15} />Clear cart</button>
+    <Modal open={confirmClear} onClose={() => setConfirmClear(false)} titleId="clear-cart-title">
+      <div className="cart-clear-dialog-icon"><AlertTriangle size={25} /></div>
+      <h2 id="clear-cart-title">Empty your cart?</h2>
+      <p>You are about to remove all {items.length} {items.length === 1 ? "beat" : "beats"} and the selected licenses. This action cannot be undone.</p>
+      <div className="cart-clear-dialog-actions">
+        <button type="button" className="button button-secondary" onClick={() => setConfirmClear(false)}>KEEP EVERYTHING</button>
+        <button type="button" className="button cart-clear-confirm" onClick={() => { setConfirmClear(false); clear(); }}><Trash2 size={17} />EMPTY CART</button>
+      </div>
+    </Modal>
     <div className={`cart-total ${ready ? "ready" : ""}`} aria-live="polite">
       <div><span>2</span><div><strong>Order total</strong><small>{ready ? `${items.length} ${items.length === 1 ? "license" : "licenses"} selected` : `Choose ${items.length - selectedItems.length} remaining ${items.length - selectedItems.length === 1 ? "license" : "licenses"}`}</small></div></div>
       <strong>{formatPrice(total)}</strong>
