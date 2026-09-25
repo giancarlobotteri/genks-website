@@ -12,11 +12,9 @@ export function CheckoutForm({ beatId, licenseCode, disabled }: { beatId: string
   }}>
     <label>Name<input name="name" autoComplete="name" required minLength={2} /></label>
     <label>Email<input name="email" type="email" autoComplete="email" required /></label>
-    <fieldset className="checkout-payment-methods">
-      <legend>Payment method</legend>
-      <label><input type="radio" name="paymentMethod" value="card" defaultChecked /><span><strong>Card or Apple Pay</strong><small>Visa, Mastercard and Apple Pay on compatible devices.</small></span></label>
-      <label><input type="radio" name="paymentMethod" value="bank_transfer" /><span><strong>Bank transfer</strong><small>Stripe provides the bank details and confirms the transfer securely.</small></span></label>
-    </fieldset>
+    <div className="checkout-payment-methods" aria-label="Payment method">
+      <p><strong>Card or Apple Pay</strong><small>Visa, Mastercard and Apple Pay on compatible devices.</small></p>
+    </div>
     {error && <p className="notice error" role="alert">{error}</p>}
     <button className="button button-primary" disabled={disabled || busy}>{busy ? "OPENING STRIPE…" : "CONTINUE TO SECURE PAYMENT"}</button>
   </form>;
