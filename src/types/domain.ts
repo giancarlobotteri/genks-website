@@ -1,4 +1,4 @@
-export type BeatGenre = "Trap" | "R&B" | "Drill" | "Afro";
+export type BeatGenre = "Trap" | "R&B" | "Afro" | "Reggae" | "Pop" | "Rap/HipHop" | "Experimental" | "Drill";
 export type BeatMood = "Dark" | "Floating" | "Melodic" | "Hard";
 export type LicenseTier = "mp3" | "wav" | "stems" | "exclusive";
 export type PublicationStatus = "draft" | "published" | "archived";

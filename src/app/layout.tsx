@@ -5,6 +5,7 @@ import { PersistentPlayer } from "@/components/player/persistent-player";
 import { MotionObserver } from "@/components/ui/motion-observer";
 import { PlayerProvider } from "@/features/player/player-provider";
 import { LicenseProvider } from "@/features/licenses/license-provider";
+import { CartProvider } from "@/features/cart/cart-provider";
 import { beatRepository, getLicenses } from "@/lib/repositories/beats";
 import { getSiteOrigin, site } from "@/config/site";
 import "./globals.css";
@@ -48,13 +49,15 @@ export default async function RootLayout({
         </a>
         <PlayerProvider catalog={beats}>
           <LicenseProvider licenses={licenses}>
-            <Navigation />
-            <main id="main-content" tabIndex={-1}>
-              {children}
-            </main>
-            <Footer />
-            <PersistentPlayer />
-            <MotionObserver />
+            <CartProvider catalog={beats}>
+              <Navigation />
+              <main id="main-content" tabIndex={-1}>
+                {children}
+              </main>
+              <Footer />
+              <PersistentPlayer />
+              <MotionObserver />
+            </CartProvider>
           </LicenseProvider>
         </PlayerProvider>
       </body>

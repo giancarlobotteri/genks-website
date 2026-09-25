@@ -11,7 +11,7 @@ export default async function Home() {
   const beats = await beatRepository.listPublished();
   return (
     <>
-      <Hero beats={beats} />
+      <Hero />
       <div className="frequency-strip social-marquee" aria-label="GENKS social profiles">
         <div className="frequency-track">
           <div className="social-marquee-group">

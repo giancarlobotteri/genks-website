@@ -32,7 +32,10 @@ export function filterBeats(
         .includes(query)
     )
       return false;
-    if (filters.genre !== "All" && filters.genre !== beat.genre) return false;
+    if (
+      filters.genre !== "All" &&
+      filters.genre.toLocaleLowerCase() !== beat.genre.toLocaleLowerCase()
+    ) return false;
     if (filters.mood !== "All" && filters.mood !== beat.mood) return false;
     if (filters.key !== "All" && filters.key !== beat.key) return false;
     if (filters.bpm === "under120" && beat.bpm >= 120) return false;

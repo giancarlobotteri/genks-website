@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import { ShoppingBag } from "lucide-react";
+import { useCart } from "@/features/cart/cart-provider";
 import { usePlayer } from "@/features/player/player-provider";
 import { PlayButton } from "./play-button";
 import { FavoriteButton } from "./favorite-button";
@@ -17,6 +19,7 @@ export function BeatCard({
   index: number;
 }) {
   const { currentBeat, isPlaying } = usePlayer();
+  const { add } = useCart();
   const playing = currentBeat?.id === beat.id && isPlaying;
   return (
     <article className={`beat-card ${playing ? "is-playing" : ""}`} data-reveal>
@@ -54,7 +57,12 @@ export function BeatCard({
             {beat.bpm} BPM <span>·</span> {beat.key}
           </span>
         </div>
-        <LicenseButton beat={beat} compact />
+        <div className="beat-card-actions">
+          <button type="button" className="cart-add-button" aria-label={`Add ${beat.title} to cart`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
+            <ShoppingBag size={17} /><span>Add</span>
+          </button>
+          <LicenseButton beat={beat} compact />
+        </div>
       </div>
     </article>
   );

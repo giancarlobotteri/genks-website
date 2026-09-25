@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { useId, useState } from "react";
-import { ArrowDownUp, Heart, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowDownUp, Heart, Search, ShoppingBag, SlidersHorizontal, X } from "lucide-react";
+import { useCart } from "@/features/cart/cart-provider";
 import { usePlayer } from "@/features/player/player-provider";
 import { useWishlist } from "@/features/wishlist/use-wishlist";
 import {
@@ -20,6 +21,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
   const [expanded, setExpanded] = useState(false);
   const [sort, setSort] = useState("curated");
   const { favorites } = useWishlist();
+  const { add } = useCart();
   const { currentBeat, isPlaying } = usePlayer();
   const filtersId = useId();
   const filtered = filterBeats(beats, filters, favorites);
@@ -136,7 +138,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
           role="group"
           aria-label="Filter by genre"
         >
-          {["All", "Trap", "R&B", "Drill", "Afro"].map((genre) => (
+          {["All", "TRAP", "R&B", "AFRO", "REGGAE", "POP", "RAP/HIPHOP", "EXPERIMENTAL"].map((genre) => (
             <button
               key={genre}
               type="button"
@@ -218,6 +220,9 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
             </div>
             <div className="row-actions" role="cell">
               <FavoriteButton beat={beat} />
+              <button type="button" className="cart-add-button" aria-label={`Add ${beat.title} to cart`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
+                <ShoppingBag size={17} /><span>Add</span>
+              </button>
               <LicenseButton beat={beat} compact />
             </div>
           </div>

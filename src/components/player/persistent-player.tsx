@@ -38,6 +38,8 @@ export function PersistentPlayer() {
     return () => document.documentElement.removeAttribute("data-playing");
   }, [isPlaying]);
 
+  if (!currentBeat || (!isPlaying && !isLoading)) return null;
+
   return (
     <>
       <aside

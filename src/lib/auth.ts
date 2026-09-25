@@ -17,13 +17,16 @@ export async function requireUser(next = "/account/library") {
 }
 
 export async function requireAdmin() {
-  const user = await requireUser("/admin");
+  const user = await getCurrentUser();
+  if (!user) redirect("/admin-access");
+  const adminEmail = (process.env.GENKS_ADMIN_EMAIL || "prod.genks@gmail.com").trim().toLowerCase();
+  if (user.email?.toLowerCase() !== adminEmail) redirect("/admin-access?denied=1");
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
-  if (data?.role !== "admin") redirect("/");
+  if (data?.role !== "admin") redirect("/admin-access?setup=1");
   return user;
 }
