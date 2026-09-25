@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { ArrowUpRight, ChevronDown, House, Menu, ShoppingBag, X } from "lucide-react";
 import { site } from "@/config/site";
@@ -19,6 +19,7 @@ const menuItems = [
 
 export function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const navId = useId();
@@ -54,7 +55,7 @@ export function Navigation() {
         </nav>
 
         <div className="header-actions">
-          {pathname !== "/" ? <Link href="/" className="header-home-button" aria-label="Return to home" onClick={closeAll}><House size={19} /><span>Home</span></Link> : null}
+          {pathname !== "/" ? <Link href="/" prefetch={false} scroll className="header-home-button" aria-label="Return to the main homepage" onClick={(event) => { event.preventDefault(); closeAll(); router.replace("/"); window.setTimeout(() => window.scrollTo({ top: 0, behavior: "instant" }), 0); }}><House size={19} /><span>Home</span></Link> : null}
           <button data-cart-target type="button" className="header-cart-button" aria-expanded={cartOpen} aria-controls={cartId} aria-label={`Open cart, ${count} items`} onClick={() => { setCartOpen((value) => !value); setOpen(false); }}>
             <ShoppingBag size={20} />
             {count > 0 ? <span className="cart-count" key={count}>{count}</span> : null}

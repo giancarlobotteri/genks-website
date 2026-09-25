@@ -19,7 +19,7 @@ type Profile = { id: string; display_name: string | null; artist_name: string | 
 export default async function Customers() {
   const db = createSupabaseAdminClient();
   const [{ data: orderRows }, { data: profileRows }] = await Promise.all([
-    db.from("orders").select("id,order_number,customer_id,customer_email,customer_name,total_cents,paid_at,created_at,order_items(beat_title_snapshot,license_name_snapshot)").eq("status", "paid").order("paid_at", { ascending: false }),
+    db.from("orders").select("id,order_number,customer_id,customer_email,customer_name,total_cents,paid_at,created_at,stripe_payment_intent_id,order_items(beat_title_snapshot,license_name_snapshot),payments!inner(id,status,provider)").eq("status", "paid").eq("payments.status", "succeeded").eq("payments.provider", "stripe").not("paid_at", "is", null).not("stripe_payment_intent_id", "is", null).order("paid_at", { ascending: false }),
     db.from("profiles").select("id,display_name,artist_name,phone,segment,marketing_consent"),
   ]);
   const profiles = new Map(((profileRows as Profile[] | null) ?? []).map((profile) => [profile.id, profile]));
