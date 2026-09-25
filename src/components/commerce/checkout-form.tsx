@@ -6,7 +6,7 @@ export function CheckoutForm({ beatId, licenseCode, disabled }: { beatId: string
   return <form className="premium-form" onSubmit={async (event) => {
     event.preventDefault(); setError(""); setBusy(true);
     const fields = new FormData(event.currentTarget);
-    const response = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ beatId, licenseCode, name: fields.get("name"), email: fields.get("email"), paymentMethod: fields.get("paymentMethod") }) });
+    const response = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ beatId, licenseCode, name: fields.get("name"), email: fields.get("email") }) });
     const result = await response.json().catch(() => ({}));
     if (response.ok && result.url) window.location.assign(result.url); else { setError(result.error ?? "Checkout failed. Try again."); setBusy(false); }
   }}>
