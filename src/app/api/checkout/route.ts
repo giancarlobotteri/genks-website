@@ -3,14 +3,12 @@ import { getStripe } from "@/lib/stripe";
 import { hasStripe, hasSupabase } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
-import { STRIPE_EU_BANK_TRANSFER_COUNTRY } from "@/lib/payments";
 
 const schema = z.object({
   beatId: z.uuid(),
   licenseCode: z.string().min(1).max(50),
   email: z.email(),
   name: z.string().trim().min(2).max(120),
-  paymentMethod: z.enum(["card", "bank_transfer"]).default("card"),
 });
 
 export async function POST(request: Request) {
@@ -53,9 +51,6 @@ export async function POST(request: Request) {
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
   const stripe = getStripe();
-  const customer = parsed.data.paymentMethod === "bank_transfer"
-    ? await stripe.customers.create({ name: parsed.data.name, email: parsed.data.email })
-    : null;
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: [{ quantity: 1, price_data: { currency: license.currency.toLowerCase(), unit_amount: amount, product_data: { name: `${beat.title} — ${license.name}`, description: "GENKS beat license" } } }],
