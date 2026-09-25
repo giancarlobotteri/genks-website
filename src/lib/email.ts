@@ -36,7 +36,11 @@ export async function sendOrderConfirmationEmail(input: {
 }) {
   const resend = getResend();
   if (!resend || !process.env.RESEND_FROM_EMAIL) {
-    throw new Error("Order email is not configured: RESEND_API_KEY or RESEND_FROM_EMAIL is missing.");
+    const missing = [
+      !process.env.RESEND_API_KEY ? "RESEND_API_KEY" : null,
+      !process.env.RESEND_FROM_EMAIL ? "RESEND_FROM_EMAIL" : null,
+    ].filter(Boolean).join(", ");
+    throw new Error(`Order email is not configured: ${missing} missing.`);
   }
   const origin = (process.env.NEXT_PUBLIC_SITE_URL || "https://genks-website.vercel.app").replace(/\/$/, "");
   const money = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: input.currency }).format(cents / 100);
