@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendOrderConfirmationEmail, sendTransactionalEmail } from "@/lib/email";
+import { createBookingCalendarEvent, createProjectDeadlineEvent } from "@/lib/google-calendar";
 
 export const runtime = "nodejs";
 
@@ -44,8 +45,18 @@ export async function POST(request: Request) {
     if(session.payment_status==="paid"&&(bookingId||projectId)){
       const providerPaymentId=String(session.payment_intent??session.id);
       const {error:paymentError}=await db.from("payments").upsert({booking_id:bookingId??null,project_id:projectId??null,provider_payment_id:providerPaymentId,amount_cents:session.amount_total??0,currency:session.currency?.toUpperCase()??"EUR",status:"succeeded",raw_event_id:event.id},{onConflict:"provider_payment_id"});
-      if(!paymentError&&bookingId){const{data}=await db.from("bookings").update({status:"confirmed",updated_at:new Date().toISOString()}).eq("id",bookingId).neq("status","confirmed").select("email,reference").maybeSingle();if(data)await sendTransactionalEmail({to:data.email,subject:`GENKS booking ${data.reference} confirmed`,heading:"Your session is confirmed.",body:"Payment received. Your recording session is now confirmed in the GENKS calendar."});}
-      if(!paymentError&&projectId){const{data}=await db.from("service_projects").update({status:"paid",updated_at:new Date().toISOString()}).eq("id",projectId).neq("status","paid").select("email,reference").maybeSingle();if(data)await sendTransactionalEmail({to:data.email,subject:`GENKS project ${data.reference} paid`,heading:"Your project is moving forward.",body:"Payment received. GENKS can now start working on your project."});}
+      if(!paymentError&&bookingId){
+        const{data}=await db.from("bookings").update({status:"confirmed",updated_at:new Date().toISOString()}).eq("id",bookingId).neq("status","confirmed").select("id,email,reference,starts_at,ends_at,google_calendar_event_id").maybeSingle();
+        const{data:booking}=data?{data}:await db.from("bookings").select("id,email,reference,starts_at,ends_at,google_calendar_event_id").eq("id",bookingId).single();
+        if(booking&&!booking.google_calendar_event_id){const eventId=await createBookingCalendarEvent({id:booking.id,reference:booking.reference,startsAt:booking.starts_at,endsAt:booking.ends_at});if(eventId)await db.from("bookings").update({google_calendar_event_id:eventId}).eq("id",booking.id);}
+        if(data)await sendTransactionalEmail({to:data.email,subject:`GENKS booking ${data.reference} confirmed`,heading:"Your session is confirmed.",body:"Payment received. Your recording session is now confirmed in the GENKS calendar."});
+      }
+      if(!paymentError&&projectId){
+        const{data}=await db.from("service_projects").update({status:"paid",updated_at:new Date().toISOString()}).eq("id",projectId).neq("status","paid").select("id,email,reference,service,desired_deadline,google_calendar_event_id").maybeSingle();
+        const{data:project}=data?{data}:await db.from("service_projects").select("id,email,reference,service,desired_deadline,google_calendar_event_id").eq("id",projectId).single();
+        if(project?.desired_deadline&&!project.google_calendar_event_id){const eventId=await createProjectDeadlineEvent({id:project.id,reference:project.reference,service:project.service,deadline:project.desired_deadline});if(eventId)await db.from("service_projects").update({google_calendar_event_id:eventId}).eq("id",project.id);}
+        if(data)await sendTransactionalEmail({to:data.email,subject:`GENKS project ${data.reference} paid`,heading:"Your project is moving forward.",body:"Payment received. GENKS can now start working on your project."});
+      }
     }
   }
   if (event.type === "checkout.session.async_payment_failed") {

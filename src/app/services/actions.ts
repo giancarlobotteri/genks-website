@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendTransactionalEmail } from "@/lib/email";
+import { getGoogleBusyRanges, hasGoogleCalendar } from "@/lib/google-calendar";
 
 const text = (min = 1, max = 1000) => z.string().trim().min(min).max(max);
 
@@ -15,6 +16,12 @@ export async function createBooking(formData: FormData) {
   if (!parsed.success) redirect("/services/recording?error=invalid");
   const start = new Date(`${parsed.data.date}T${parsed.data.time}:00+02:00`); const end = new Date(start.getTime()+parsed.data.duration*3600000);
   if (!Number.isFinite(start.getTime()) || start < new Date()) redirect("/services/recording?error=date");
+  if (hasGoogleCalendar) {
+    try {
+      const busy = await getGoogleBusyRanges(start, end);
+      if (busy.some((range) => new Date(range.starts_at) < end && new Date(range.ends_at) > start)) redirect("/services/recording?error=conflict");
+    } catch { redirect("/services/recording?error=calendar"); }
+  }
   const db=await createSupabaseServerClient();
   const {data,error}=await db.rpc("submit_booking",{p_name:parsed.data.name,p_artist_name:parsed.data.artistName,p_email:parsed.data.email,p_phone:parsed.data.phone,p_starts_at:start.toISOString(),p_ends_at:end.toISOString(),p_notes:parsed.data.notes||null,p_reference_url:parsed.data.referenceUrl||null});
   if(error||!data) {

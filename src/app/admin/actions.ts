@@ -6,6 +6,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import { hasStripe } from "@/lib/env";
 import { sendTransactionalEmail } from "@/lib/email";
+import { createBookingCalendarEvent, createProjectDeadlineEvent, deleteGoogleCalendarEvent } from "@/lib/google-calendar";
 
 async function audit(action:string,entityType:string,entityId:string,payload?:unknown){const user=await requireAdmin();const db=createSupabaseAdminClient();await db.from("admin_audit_log").insert({admin_id:user.id,action,entity_type:entityType,entity_id:entityId,payload});return db}
 
@@ -17,8 +18,32 @@ export async function createPromotion(formData:FormData){const data=z.object({co
 
 export async function updateSiteSetting(formData:FormData){const key=z.enum(["commerce","booking","customer_segments"]).parse(formData.get("key"));const value=z.string().min(2).max(10000).parse(formData.get("value"));let json:unknown;try{json=JSON.parse(value)}catch{throw new Error("Settings must be valid JSON.")}const db=await audit("update","site_setting",key,json);const{error}=await db.from("site_settings").upsert({key,value:json,updated_at:new Date().toISOString()});if(error)throw new Error(error.message);revalidatePath("/admin/settings")}
 
-export async function updateBookingStatus(formData:FormData){const id=z.uuid().parse(formData.get("id"));const status=z.enum(["approved_awaiting_payment","confirmed","completed","cancelled","rejected","no_show"]).parse(formData.get("status"));const db=await audit("status_change","booking",id,{status});const {data:current}=await db.from("bookings").select("status").eq("id",id).single();await db.from("bookings").update({status,updated_at:new Date().toISOString()}).eq("id",id);await db.from("booking_status_history").insert({booking_id:id,from_status:current?.status,to_status:status});revalidatePath("/admin/bookings")}
-export async function updateProjectStatus(formData:FormData){const id=z.uuid().parse(formData.get("id"));const status=z.enum(["quoted","awaiting_payment","paid","in_progress","review","delivered","cancelled"]).parse(formData.get("status"));const db=await audit("status_change","project",id,{status});const {data:current}=await db.from("service_projects").select("status").eq("id",id).single();await db.from("service_projects").update({status,updated_at:new Date().toISOString()}).eq("id",id);await db.from("project_status_history").insert({project_id:id,from_status:current?.status,to_status:status});revalidatePath("/admin/projects")}
+export async function updateBookingStatus(formData:FormData){
+  const id=z.uuid().parse(formData.get("id"));
+  const status=z.enum(["approved_awaiting_payment","confirmed","completed","cancelled","rejected","no_show"]).parse(formData.get("status"));
+  const db=await audit("status_change","booking",id,{status});
+  const {data:current}=await db.from("bookings").select("status,reference,starts_at,ends_at,google_calendar_event_id").eq("id",id).single();
+  if(!current)throw new Error("Booking not found.");
+  let eventId=current.google_calendar_event_id;
+  if(status==="confirmed"&&!eventId)eventId=await createBookingCalendarEvent({id,reference:current.reference,startsAt:current.starts_at,endsAt:current.ends_at});
+  if(["cancelled","rejected"].includes(status)&&eventId){await deleteGoogleCalendarEvent(eventId);eventId=null;}
+  await db.from("bookings").update({status,google_calendar_event_id:eventId,updated_at:new Date().toISOString()}).eq("id",id);
+  await db.from("booking_status_history").insert({booking_id:id,from_status:current.status,to_status:status});
+  revalidatePath("/admin/bookings");
+}
+export async function updateProjectStatus(formData:FormData){
+  const id=z.uuid().parse(formData.get("id"));
+  const status=z.enum(["quoted","awaiting_payment","paid","in_progress","review","delivered","cancelled"]).parse(formData.get("status"));
+  const db=await audit("status_change","project",id,{status});
+  const {data:current}=await db.from("service_projects").select("status,reference,service,desired_deadline,google_calendar_event_id").eq("id",id).single();
+  if(!current)throw new Error("Project not found.");
+  let eventId=current.google_calendar_event_id;
+  if(["paid","in_progress"].includes(status)&&current.desired_deadline&&!eventId)eventId=await createProjectDeadlineEvent({id,reference:current.reference,service:current.service,deadline:current.desired_deadline});
+  if(status==="cancelled"&&eventId){await deleteGoogleCalendarEvent(eventId);eventId=null;}
+  await db.from("service_projects").update({status,google_calendar_event_id:eventId,updated_at:new Date().toISOString()}).eq("id",id);
+  await db.from("project_status_history").insert({project_id:id,from_status:current.status,to_status:status});
+  revalidatePath("/admin/projects");
+}
 
 async function createServicePayment(formData:FormData,type:"booking"|"project"){
   if(!hasStripe) throw new Error("Stripe is not configured.");
