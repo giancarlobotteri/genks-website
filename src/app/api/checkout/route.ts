@@ -56,7 +56,9 @@ export async function POST(request: Request) {
     line_items: [{ quantity: 1, price_data: { currency: license.currency.toLowerCase(), unit_amount: amount, product_data: { name: `${beat.title} — ${license.name}`, description: "GENKS beat license" } } }],
     success_url: `${origin}/checkout/success?order=${order.id}`,
     cancel_url: `${origin}/checkout/${beat.id}/${license.code}?cancelled=1`,
-    metadata: { order_id: order.id, order_item_id: item.id, customer_id: user?.id ?? "guest", payment_method: "card" },\n    customer_email: parsed.data.email,\n    payment_method_types: ["card"],
+    metadata: { order_id: order.id, order_item_id: item.id, customer_id: user?.id ?? "guest", payment_method: "card" },
+    customer_email: parsed.data.email,
+    payment_method_types: ["card"],
   }, { idempotencyKey: `order_${order.id}` });
   await db.from("orders").update({ stripe_checkout_session_id: session.id }).eq("id", order.id);
   return Response.json({ url: session.url });
