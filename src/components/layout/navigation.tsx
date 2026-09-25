@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { ArrowUpRight, ChevronDown, Menu, ShoppingBag, X } from "lucide-react";
+import { ArrowUpRight, ChevronDown, House, Menu, ShoppingBag, X } from "lucide-react";
 import { site } from "@/config/site";
 import { useCart } from "@/features/cart/cart-provider";
 import { CartCheckout } from "@/components/commerce/cart-checkout";
@@ -54,6 +54,7 @@ export function Navigation() {
         </nav>
 
         <div className="header-actions">
+          {pathname !== "/" ? <Link href="/" className="header-home-button" aria-label="Return to home" onClick={closeAll}><House size={19} /><span>Home</span></Link> : null}
           <button data-cart-target type="button" className="header-cart-button" aria-expanded={cartOpen} aria-controls={cartId} aria-label={`Open cart, ${count} items`} onClick={() => { setCartOpen((value) => !value); setOpen(false); }}>
             <ShoppingBag size={20} />
             {count > 0 ? <span className="cart-count" key={count}>{count}</span> : null}
