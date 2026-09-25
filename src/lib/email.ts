@@ -69,6 +69,7 @@ export async function sendOrderConfirmationEmail(input: {
           <img src="${escapeHtml(`${origin}/brand/genks-logo.jpeg`)}" width="48" height="48" alt="" style="display:block;width:48px;height:48px;margin:0 auto 10px;border-radius:50%;object-fit:cover" />
           <strong style="display:block;color:#fff;font-size:18px;letter-spacing:2px">GENKS</strong>
           <span style="display:block;margin-top:5px;color:#66708a;font-size:11px;letter-spacing:1px">BEATS &amp; PRODUCTION</span>
+          <span style="display:block;margin-top:12px;color:#66708a;font-size:11px;line-height:1.5">Email automatica: le risposte a questo indirizzo non vengono monitorate.</span>
         </div>
       </div>
     </div>
@@ -76,7 +77,6 @@ export async function sendOrderConfirmationEmail(input: {
   const { error } = await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL,
     to: input.to,
-    replyTo: process.env.GENKS_CONTACT_EMAIL || "prod.genks@gmail.com",
     subject: `Pagamento confermato — ordine ${input.orderNumber} | GENKS`,
     html,
   }, { idempotencyKey: `order-confirmation-${input.orderId}` });
