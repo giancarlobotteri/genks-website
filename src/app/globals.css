@@ -3442,7 +3442,14 @@ textarea { font: inherit; }
   cursor: pointer;
 }
 
-.checkout-payment-methods > p {\n  margin: 0;\n  padding: 1rem;\n  border: 1px solid var(--line);\n  border-radius: 0.9rem;\n}\n\n.checkout-payment-methods input {
+.checkout-payment-methods > p {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+}
+
+.checkout-payment-methods input {
   width: auto;
   margin-top: 0.2rem;
 }
