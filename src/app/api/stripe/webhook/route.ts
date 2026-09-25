@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { sendTransactionalEmail } from "@/lib/email";
+import { sendOrderConfirmationEmail, sendTransactionalEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -22,13 +22,22 @@ export async function POST(request: Request) {
     const session = event.data.object;
     const orderId = session.metadata?.order_id;
     if (orderId && session.payment_status === "paid") {
-      const { data: order } = await db.from("orders").select("id,customer_id,customer_email,order_number,order_items(id,beat_id,license_type_id)").eq("id", orderId).single();
+      const { data: order } = await db.from("orders").select("id,customer_id,customer_email,customer_name,order_number,created_at,currency,order_items(id,beat_id,license_type_id,beat_title_snapshot,license_name_snapshot,unit_price_cents)").eq("id", orderId).single();
       if (order) {
         const { data: transitioned } = await db.from("orders").update({ status: "paid", paid_at: new Date().toISOString(), stripe_payment_intent_id: String(session.payment_intent ?? "") }).eq("id", order.id).neq("status", "paid").select("id").maybeSingle();
         await db.from("payments").upsert({ order_id: order.id, provider_payment_id: String(session.payment_intent ?? session.id), amount_cents: session.amount_total ?? 0, currency: session.currency?.toUpperCase() ?? "EUR", status: "succeeded", raw_event_id: event.id }, { onConflict: "provider_payment_id" });
         const items = Array.isArray(order.order_items) ? order.order_items : [];
         if (items.length) await db.from("entitlements").upsert(items.map((item) => ({ customer_id: order.customer_id, customer_email: order.customer_email, order_item_id: item.id, beat_id: item.beat_id, license_type_id: item.license_type_id })), { onConflict: "order_item_id" });
-        if (transitioned) await sendTransactionalEmail({ to: order.customer_email, subject: `GENKS order ${order.order_number} confirmed`, heading: "Your sound is ready.", body: "Payment confirmed. Sign in with the same email to access your licensed files in the GENKS Library.", actionUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/account/library`, actionLabel: "Open Library" });
+        if (transitioned) await sendOrderConfirmationEmail({
+          to: order.customer_email,
+          customerName: order.customer_name,
+          orderId: order.id,
+          orderNumber: order.order_number,
+          paidAt: new Date(),
+          totalCents: session.amount_total ?? 0,
+          currency: session.currency?.toUpperCase() ?? order.currency ?? "EUR",
+          items: items.map((item) => ({ beatTitle: item.beat_title_snapshot, licenseName: item.license_name_snapshot, unitPriceCents: item.unit_price_cents })),
+        });
       }
     }
     const bookingId=session.metadata?.booking_id;const projectId=session.metadata?.project_id;
