@@ -1,8 +1,9 @@
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { sendOrderConfirmationEmail, sendTransactionalEmail } from "@/lib/email";
+import { sendTransactionalEmail } from "@/lib/email";
 import { createBookingCalendarEvent, createProjectDeadlineEvent } from "@/lib/google-calendar";
+import { ensureOrderConfirmationEmail } from "@/lib/order-confirmation";
 
 export const runtime = "nodejs";
 
@@ -25,20 +26,11 @@ export async function POST(request: Request) {
     if (orderId && session.payment_status === "paid") {
       const { data: order } = await db.from("orders").select("id,customer_id,customer_email,customer_name,order_number,created_at,currency,order_items(id,beat_id,license_type_id,beat_title_snapshot,license_name_snapshot,unit_price_cents)").eq("id", orderId).single();
       if (order) {
-        const { data: transitioned } = await db.from("orders").update({ status: "paid", paid_at: new Date().toISOString(), stripe_payment_intent_id: String(session.payment_intent ?? "") }).eq("id", order.id).neq("status", "paid").select("id").maybeSingle();
+        await db.from("orders").update({ status: "paid", paid_at: new Date().toISOString(), stripe_payment_intent_id: String(session.payment_intent ?? "") }).eq("id", order.id).neq("status", "paid");
         await db.from("payments").upsert({ order_id: order.id, provider_payment_id: String(session.payment_intent ?? session.id), amount_cents: session.amount_total ?? 0, currency: session.currency?.toUpperCase() ?? "EUR", status: "succeeded", raw_event_id: event.id }, { onConflict: "provider_payment_id" });
         const items = Array.isArray(order.order_items) ? order.order_items : [];
         if (items.length) await db.from("entitlements").upsert(items.map((item) => ({ customer_id: order.customer_id, customer_email: order.customer_email, order_item_id: item.id, beat_id: item.beat_id, license_type_id: item.license_type_id })), { onConflict: "order_item_id" });
-        if (transitioned) await sendOrderConfirmationEmail({
-          to: order.customer_email,
-          customerName: order.customer_name,
-          orderId: order.id,
-          orderNumber: order.order_number,
-          paidAt: new Date(),
-          totalCents: session.amount_total ?? 0,
-          currency: session.currency?.toUpperCase() ?? order.currency ?? "EUR",
-          items: items.map((item) => ({ beatTitle: item.beat_title_snapshot, licenseName: item.license_name_snapshot, unitPriceCents: item.unit_price_cents })),
-        });
+        await ensureOrderConfirmationEmail(order.id);
       }
     }
     const bookingId=session.metadata?.booking_id;const projectId=session.metadata?.project_id;

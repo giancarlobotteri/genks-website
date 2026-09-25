@@ -32,9 +32,12 @@ export async function sendOrderConfirmationEmail(input: {
   totalCents: number;
   currency: string;
   items: Array<{ beatTitle: string; licenseName: string; unitPriceCents: number }>;
+  idempotencyKey?: string;
 }) {
   const resend = getResend();
-  if (!resend || !process.env.RESEND_FROM_EMAIL) return { skipped: true as const };
+  if (!resend || !process.env.RESEND_FROM_EMAIL) {
+    throw new Error("Order email is not configured: RESEND_API_KEY or RESEND_FROM_EMAIL is missing.");
+  }
   const origin = (process.env.NEXT_PUBLIC_SITE_URL || "https://genks-website.vercel.app").replace(/\/$/, "");
   const money = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: input.currency }).format(cents / 100);
   const itemRows = input.items.map((item) => `<tr>
@@ -74,14 +77,14 @@ export async function sendOrderConfirmationEmail(input: {
       </div>
     </div>
   </body></html>`;
-  const { error } = await resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL,
     to: input.to,
     subject: `Pagamento confermato — ordine ${input.orderNumber} | GENKS`,
     html,
-  }, { idempotencyKey: `order-confirmation-${input.orderId}` });
+  }, { idempotencyKey: input.idempotencyKey ?? `order-confirmation-${input.orderId}` });
   if (error) throw new Error(`Order email failed: ${error.message}`);
-  return { skipped: false as const };
+  return { skipped: false as const, emailId: data?.id ?? null };
 }
 
 function escapeHtml(value: string) {
