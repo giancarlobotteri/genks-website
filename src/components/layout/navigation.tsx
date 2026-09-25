@@ -54,7 +54,7 @@ export function Navigation() {
         </nav>
 
         <div className="header-actions">
-          <button type="button" className="header-cart-button" aria-expanded={cartOpen} aria-controls={cartId} aria-label={`Open cart, ${count} items`} onClick={() => { setCartOpen((value) => !value); setOpen(false); }}>
+          <button data-cart-target type="button" className="header-cart-button" aria-expanded={cartOpen} aria-controls={cartId} aria-label={`Open cart, ${count} items`} onClick={() => { setCartOpen((value) => !value); setOpen(false); }}>
             <ShoppingBag size={20} />
             {count > 0 ? <span className="cart-count" key={count}>{count}</span> : null}
           </button>

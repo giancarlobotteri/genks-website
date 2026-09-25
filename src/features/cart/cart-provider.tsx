@@ -1,11 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import type { Beat, LicenseTier } from "@/types/domain";
 
 export interface CartItem { beat: Beat; selectedLicenseId: LicenseTier | null }
-interface CartAnimation { id: number; cover: string; x: number; y: number }
+interface CartAnimation {
+  id: number;
+  cover: string;
+  startX: number;
+  startY: number;
+  midX: number;
+  midY: number;
+  endX: number;
+  endY: number;
+}
 interface CartContextValue {
   items: CartItem[];
   count: number;
@@ -49,8 +58,25 @@ export function CartProvider({ children, catalog }: { children: ReactNode; catal
       return existing ? current : [...current, { beat, selectedLicenseId: null }];
     });
     if (origin) {
-      setAnimation({ id: Date.now(), cover: beat.cover, x: origin.left + origin.width / 2, y: origin.top + origin.height / 2 });
-      window.setTimeout(() => setAnimation(null), 850);
+      const cartTarget = document.querySelector<HTMLElement>("[data-cart-target]")?.getBoundingClientRect();
+      const startX = origin.left + origin.width / 2;
+      const startY = origin.top + origin.height / 2;
+      const endX = cartTarget ? cartTarget.left + cartTarget.width / 2 : window.innerWidth - 40;
+      const endY = cartTarget ? cartTarget.top + cartTarget.height / 2 : 40;
+      const distance = Math.hypot(endX - startX, endY - startY);
+      const arcHeight = Math.min(190, Math.max(72, distance * 0.2));
+
+      setAnimation({
+        id: Date.now(),
+        cover: beat.cover,
+        startX,
+        startY,
+        midX: startX + (endX - startX) * 0.56,
+        midY: Math.min(startY, endY) - arcHeight,
+        endX,
+        endY,
+      });
+      window.setTimeout(() => setAnimation(null), 1450);
     }
   }, []);
 
@@ -60,7 +86,16 @@ export function CartProvider({ children, catalog }: { children: ReactNode; catal
   const count = items.length;
   const value = useMemo(() => ({ items, count, animation, add, selectLicense, remove, clear }), [items, count, animation, add, selectLicense, remove, clear]);
 
-  return <CartContext value={value}>{children}{animation ? <Image key={animation.id} className="cart-fly" src={animation.cover} alt="" width={56} height={56} style={{ "--cart-x": `${animation.x}px`, "--cart-y": `${animation.y}px` } as React.CSSProperties} /> : null}</CartContext>;
+  const animationStyle = animation ? {
+    "--cart-start-x": `${animation.startX}px`,
+    "--cart-start-y": `${animation.startY}px`,
+    "--cart-mid-x": `${animation.midX}px`,
+    "--cart-mid-y": `${animation.midY}px`,
+    "--cart-end-x": `${animation.endX}px`,
+    "--cart-end-y": `${animation.endY}px`,
+  } as CSSProperties : undefined;
+
+  return <CartContext value={value}>{children}{animation ? <span key={animation.id} className="cart-fly" style={animationStyle} aria-hidden="true"><Image src={animation.cover} alt="" width={60} height={60} /></span> : null}</CartContext>;
 }
 
 export function useCart() {
