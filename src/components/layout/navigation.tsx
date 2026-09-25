@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ArrowUpRight, ChevronDown, Menu, ShoppingBag, Trash2, X } from "lucide-react";
 import { site } from "@/config/site";
 import { useCart } from "@/features/cart/cart-provider";
@@ -27,6 +27,15 @@ export function Navigation() {
   const { items, count, remove, clear } = useCart();
 
   const closeAll = () => { setOpen(false); setCartOpen(false); };
+
+  useEffect(() => {
+    if (!open && !cartOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeAll();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [open, cartOpen]);
 
   return (
     <header className="site-header">
@@ -72,6 +81,7 @@ export function Navigation() {
         </div>
       </nav>
 
+      {cartOpen ? <button type="button" className="cart-backdrop" aria-label="Close cart" onClick={() => setCartOpen(false)} /> : null}
       <aside id={cartId} className={`cart-drawer ${cartOpen ? "open" : ""}`} hidden={!cartOpen} aria-label="Beat cart">
         <div className="cart-drawer-heading"><div><span className="eyebrow">YOUR SELECTION</span><h2>Cart <span>{count}</span></h2></div><button type="button" className="icon-button" aria-label="Close cart" onClick={() => setCartOpen(false)}><X /></button></div>
         {items.length ? <>
