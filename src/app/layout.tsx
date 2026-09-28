@@ -8,6 +8,7 @@ import { LicenseProvider } from "@/features/licenses/license-provider";
 import { CartProvider } from "@/features/cart/cart-provider";
 import { beatRepository, getLicenses } from "@/lib/repositories/beats";
 import { getSiteOrigin, site } from "@/config/site";
+import { privatePreview } from "@/lib/preview-mode";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -28,6 +29,7 @@ export const metadata: Metadata = {
     description: site.description,
   },
   icons: { icon: "/icon.svg" },
+  robots: privatePreview ? { index: false, follow: false, noarchive: true } : undefined,
 };
 export const viewport: Viewport = {
   themeColor: "#050506",

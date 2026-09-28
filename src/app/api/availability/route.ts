@@ -2,6 +2,7 @@ import { z } from "zod";
 import { hasSupabase } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getGoogleBusyRanges, hasGoogleCalendar } from "@/lib/google-calendar";
+import { fromRomeWallTime, todayInRome } from "@/lib/rome-time";
 
 const querySchema = z.object({
   date: z.iso.date(),
@@ -16,14 +17,14 @@ export async function GET(request: Request) {
   const parsed = querySchema.safeParse({ date: search.get("date"), duration: search.get("duration") ?? 1 });
   if (!parsed.success) return Response.json({ error: "Choose a valid date." }, { status: 400 });
 
-  const day = new Date(`${parsed.data.date}T12:00:00+02:00`);
-  if (!Number.isFinite(day.getTime()) || day < new Date(new Date().toDateString())) {
+  const day = new Date(`${parsed.data.date}T12:00:00Z`);
+  if (!Number.isFinite(day.getTime()) || parsed.data.date < todayInRome()) {
     return Response.json({ slots: [] });
   }
   const db = await createSupabaseServerClient();
-  const weekday = day.getDay();
-  const dayStart = new Date(`${parsed.data.date}T00:00:00+02:00`);
-  const dayEnd = new Date(`${parsed.data.date}T23:59:59+02:00`);
+  const weekday = day.getUTCDay();
+  const dayStart = fromRomeWallTime(parsed.data.date, "00:00");
+  const dayEnd = fromRomeWallTime(parsed.data.date, "23:59");
   let googleBusy: Array<{ starts_at: string; ends_at: string }> = [];
   try { if (hasGoogleCalendar) googleBusy = await getGoogleBusyRanges(dayStart, dayEnd); }
   catch { return Response.json({ error: "The shared studio calendar is temporarily unavailable." }, { status: 503 }); }
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
     for (let minutes = startHour * 60 + startMinute; minutes + durationMinutes <= endHour * 60 + endMinute; minutes += rule.slot_minutes + rule.buffer_minutes) {
       const hour = String(Math.floor(minutes / 60)).padStart(2, "0");
       const minute = String(minutes % 60).padStart(2, "0");
-      const slotStart = new Date(`${parsed.data.date}T${hour}:${minute}:00+02:00`);
+      const slotStart = fromRomeWallTime(parsed.data.date, `${hour}:${minute}`);
       const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60_000);
       const protectedEnd = new Date(slotEnd.getTime() + rule.buffer_minutes * 60_000);
       const blocked = [...(bookings ?? []), ...(blackouts ?? []), ...googleBusy].some((item) => {

@@ -55,12 +55,13 @@ export function CartCheckout() {
       if (!ready) return;
       setBusy(true); setError("");
       const fields = new FormData(event.currentTarget);
-      const response = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: fields.get("name"), email: fields.get("email"), items: items.map((item) => ({ beatId: item.beat.id, licenseCode: item.selectedLicenseId })) }) });
+      const response = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: fields.get("name"), email: fields.get("email"), promoCode: fields.get("promoCode") || undefined, items: items.map((item) => ({ beatId: item.beat.id, licenseCode: item.selectedLicenseId })) }) });
       const result = await response.json().catch(() => ({}));
       if (response.ok && result.url) window.location.assign(result.url);
       else { setError(result.error ?? "Checkout failed. Try again."); setBusy(false); }
     }}>
       <div className="cart-customer-fields"><label>Name<input name="name" autoComplete="name" required minLength={2} /></label><label>Email<input name="email" type="email" autoComplete="email" required /></label></div>
+      <label>Promo code (optional)<input name="promoCode" autoComplete="off" maxLength={40} /></label>
       {error ? <p className="notice error" role="alert">{error}</p> : null}
       <button className="button button-primary magnetic-cta cart-pay-button" disabled={!ready || busy}><CreditCard size={18} />{busy ? "OPENING STRIPE…" : `PAY ${formatPrice(total)} SECURELY`}</button>
       <small className="cart-payment-note">Cards and Apple Pay via Stripe. Files unlock only after confirmed payment.</small>

@@ -5,6 +5,9 @@ import { requireAdmin } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import { hasStripe } from "@/lib/env";
+import { privatePreview, previewRecipientAllowed, stripeTestMode } from "@/lib/preview-mode";
+import { ensureOrderConfirmationEmail } from "@/lib/order-confirmation";
+import { redirect } from "next/navigation";
 import { sendTransactionalEmail } from "@/lib/email";
 import { createBookingCalendarEvent, createProjectDeadlineEvent, deleteGoogleCalendarEvent } from "@/lib/google-calendar";
 
@@ -17,7 +20,16 @@ function licensePayload(data:z.infer<typeof licenseSchema>){return{code:data.cod
 export async function createLicense(formData:FormData){const data=licenseSchema.parse(Object.fromEntries(formData));const db=await audit("create","license",data.code,{name:data.name});const{data:license,error}=await db.from("license_types").insert(licensePayload(data)).select("id").single();if(error||!license)throw new Error(error?.message??"License creation failed");const{data:beats}=await db.from("beats").select("id");if(beats?.length)await db.from("beat_license_prices").insert(beats.map(beat=>({beat_id:beat.id,license_type_id:license.id,active:true})));revalidatePath("/admin/licenses");revalidatePath("/","layout")}
 export async function updateLicense(formData:FormData){const id=z.uuid().parse(formData.get("id"));const data=licenseSchema.parse(Object.fromEntries(formData));const db=await audit("update","license",id,{code:data.code,name:data.name});const{error}=await db.from("license_types").update({...licensePayload(data),updated_at:new Date().toISOString()}).eq("id",id);if(error)throw new Error(error.message);revalidatePath("/admin/licenses");revalidatePath("/","layout")}
 
-export async function createPromotion(formData:FormData){const data=z.object({code:z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]+$/),discountType:z.enum(["percent","fixed"]),amount:z.coerce.number().positive(),expiresAt:z.string().trim(),usageLimit:z.string().trim(),minimumOrder:z.string().trim()}).parse(Object.fromEntries(formData));const db=await audit("create","promotion",data.code);const {error}=await db.from("promo_codes").insert({code:data.code,discount_type:data.discountType,amount:data.discountType==="fixed"?Math.round(data.amount*100):Math.round(data.amount),expires_at:data.expiresAt?new Date(data.expiresAt).toISOString():null,usage_limit:data.usageLimit?Number(data.usageLimit):null,minimum_order_cents:data.minimumOrder?Math.round(Number(data.minimumOrder)*100):null});if(error)throw new Error(error.message);revalidatePath("/admin/promotions")}
+export async function createPromotion(formData:FormData){const data=z.object({code:z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]+$/),discountType:z.enum(["percent","fixed"]),amount:z.coerce.number().positive(),expiresAt:z.string().trim(),usageLimit:z.string().trim(),minimumOrder:z.string().trim()}).parse(Object.fromEntries(formData));if(data.discountType==="percent"&&data.amount>100)throw new Error("Percentage must be at most 100.");const db=await audit("create","promotion",data.code);const {error}=await db.from("promo_codes").insert({code:data.code,discount_type:data.discountType,amount:data.discountType==="fixed"?Math.round(data.amount*100):Math.round(data.amount),expires_at:data.expiresAt?new Date(data.expiresAt).toISOString():null,usage_limit:data.usageLimit?Number(data.usageLimit):null,minimum_order_cents:data.minimumOrder?Math.round(Number(data.minimumOrder)*100):null});if(error)throw new Error(error.message);revalidatePath("/admin/promotions")}
+
+export async function setPromotionActive(formData: FormData) {
+  const id = z.uuid().parse(formData.get("id"));
+  const active = z.enum(["true", "false"]).parse(formData.get("active")) === "true";
+  const db = await audit(active ? "activate" : "deactivate", "promotion", id);
+  const { error } = await db.from("promo_codes").update({ active }).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/promotions");
+}
 
 export async function updateSiteSetting(formData:FormData){const key=z.enum(["commerce","booking","customer_segments"]).parse(formData.get("key"));const value=z.string().min(2).max(10000).parse(formData.get("value"));let json:unknown;try{json=JSON.parse(value)}catch{throw new Error("Settings must be valid JSON.")}const db=await audit("update","site_setting",key,json);const{error}=await db.from("site_settings").upsert({key,value:json,updated_at:new Date().toISOString()});if(error)throw new Error(error.message);revalidatePath("/admin/settings")}
 
@@ -50,11 +62,13 @@ export async function updateProjectStatus(formData:FormData){
 
 async function createServicePayment(formData:FormData,type:"booking"|"project"){
   if(!hasStripe) throw new Error("Stripe is not configured.");
+  if(privatePreview&&!stripeTestMode()) throw new Error("Only Stripe test payments are allowed in the private preview.");
   const input=z.object({id:z.uuid(),price:z.coerce.number().positive().max(100000)}).parse(Object.fromEntries(formData));
   const priceCents=Math.round(input.price*100);const db=await audit("payment_request",type,input.id,{priceCents});
   const table=type==="booking"?"bookings":"service_projects";
   const {data}=await db.from(table).select("id,reference,email,name").eq("id",input.id).single();
   if(!data)throw new Error("Request not found.");
+  if(!previewRecipientAllowed(data.email))throw new Error("Private test emails may only go to the owner.");
   const origin=process.env.NEXT_PUBLIC_SITE_URL;if(!origin)throw new Error("NEXT_PUBLIC_SITE_URL is required for payment links.");
   const session=await getStripe().checkout.sessions.create({mode:"payment",customer_email:data.email,line_items:[{quantity:1,price_data:{currency:"eur",unit_amount:priceCents,product_data:{name:type==="booking"?`GENKS Recording · ${data.reference}`:`GENKS Mix/Master · ${data.reference}`}}}],success_url:`${origin}/checkout/success?${type}=${data.id}`,cancel_url:`${origin}/services`,metadata:{[`${type}_id`]:data.id,payment_type:type}},{idempotencyKey:`${type}_${data.id}_${priceCents}`});
   await db.from(table).update({price_cents:priceCents,status:type==="booking"?"approved_awaiting_payment":"awaiting_payment",updated_at:new Date().toISOString()}).eq("id",data.id);
@@ -64,3 +78,20 @@ async function createServicePayment(formData:FormData,type:"booking"|"project"){
 export async function requestBookingPayment(formData:FormData){await createServicePayment(formData,"booking")}
 export async function requestProjectPayment(formData:FormData){await createServicePayment(formData,"project")}
 export async function markExclusiveSold(formData:FormData){const id=z.uuid().parse(formData.get("id"));const db=await audit("sold","exclusive_request",id);const {data:req}=await db.from("exclusive_requests").update({status:"sold",updated_at:new Date().toISOString()}).eq("id",id).select("beat_id").single();if(req)await db.from("beats").update({status:"exclusive_sold"}).eq("id",req.beat_id);revalidatePath("/admin/exclusive");revalidatePath("/")}
+
+export async function retryOrderConfirmation(formData: FormData) {
+  await requireAdmin();
+  const id = z.uuid().parse(formData.get("id"));
+  const db = createSupabaseAdminClient();
+  const { data: order } = await db.from("orders").select("customer_email,status").eq("id", id).single();
+  if (!order || order.status !== "paid" || !previewRecipientAllowed(order.customer_email))
+    redirect("/admin/orders?email=not_allowed");
+  try {
+    await ensureOrderConfirmationEmail(id);
+  } catch {
+    revalidatePath("/admin/orders");
+    redirect("/admin/orders?email=failed");
+  }
+  revalidatePath("/admin/orders");
+  redirect("/admin/orders?email=sent");
+}

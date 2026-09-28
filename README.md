@@ -2,6 +2,14 @@
 
 Production-oriented Next.js 16 application for the GENKS storefront, beat licensing, customer Library, recording requests, Mix/Master projects and protected administration.
 
+## Private test launch
+
+The deployment defaults to a private preview. Only the verified Supabase account whose email matches `GENKS_ADMIN_EMAIL` can open the storefront or admin. `/admin-access` remains available for login and the signed Stripe webhook remains reachable. Set `GENKS_PRIVATE_PREVIEW=false` only after the owner approves a public launch. Private preview checkout accepts only a Stripe `sk_test_` key and the owner email as its recipient. Test mode never charges a real card.
+
+The Admin Settings page shows private/test/email readiness without exposing credentials. The Orders page lists payment and email status and offers a retry for a verified paid order whose confirmation has not been sent. The Resend sender must be verified and both `RESEND_API_KEY` and `RESEND_FROM_EMAIL` must have nonempty values in the deployed environment. Redeploy after changing environment variables.
+
+Checkout enables Stripe's account-configured eligible payment methods. Cards and compatible wallets, including Apple Pay, depend on customer device and Stripe configuration. Bank transfer appears only if Stripe supports and enables it for the merchant, currency and customer. No Italian `eu_bank_transfer` country is forced.
+
 ## Local start
 
 Requires Node.js 22 or newer.

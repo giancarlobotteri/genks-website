@@ -1,5 +1,6 @@
 import "server-only";
 import { Resend } from "resend";
+import { previewRecipientAllowed } from "@/lib/preview-mode";
 
 const getResend = () => process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -11,6 +12,7 @@ export async function sendTransactionalEmail(input: {
   actionUrl?: string;
   actionLabel?: string;
 }) {
+  if (!previewRecipientAllowed(input.to)) throw new Error("Private preview email destination is not allowed.");
   const resend = getResend();
   if (!resend || !process.env.RESEND_FROM_EMAIL)
     return { skipped: true as const };
@@ -34,6 +36,7 @@ export async function sendOrderConfirmationEmail(input: {
   items: Array<{ beatTitle: string; licenseName: string; unitPriceCents: number }>;
   idempotencyKey?: string;
 }) {
+  if (!previewRecipientAllowed(input.to)) throw new Error("Private preview email destination is not allowed.");
   const resend = getResend();
   if (!resend || !process.env.RESEND_FROM_EMAIL) {
     const missing = [
