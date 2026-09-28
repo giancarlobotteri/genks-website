@@ -4,7 +4,7 @@ import { ArrowDown, ArrowUpRight } from "lucide-react";
 
 export function Hero() {
   return (
-    <section className="hero" aria-labelledby="hero-title">
+    <section id="home" className="hero" aria-labelledby="hero-title">
       <div className="hero-ambient" aria-hidden="true">
         <span className="hero-light hero-light-one" />
         <span className="hero-light hero-light-two" />

@@ -13,7 +13,7 @@ export const site = {
     "https://www.youtube.com/@prodbygenks",
   whatsapp: process.env.NEXT_PUBLIC_GENKS_WHATSAPP || "",
   navigation: [
-    { label: "Home", href: "/" },
+    { label: "Home", href: "/#home" },
     { label: "Beat store", href: "/beats" },
     { label: "Book / services", href: "/services" },
     { label: "Library", href: "/account/library" },
