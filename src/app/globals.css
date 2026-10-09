@@ -3883,12 +3883,18 @@ body {
 .sales-hero .hero-content { text-align: left; align-items: flex-start; }
 .sales-hero .hero-title-wrap { height: auto; margin: 55px 0 0; justify-content: flex-start; }
 .sales-hero h1 { max-width: 12ch; margin: 0; font-size: clamp(2.8rem, 6.2vw, 6rem); line-height: 1.02; letter-spacing: -.045em; }
-.sales-hero h1 span { color: #a9c4ff; }
+.sales-hero h1 span { color: #a9c4ff; animation: sales-title-glow 4s ease-in-out infinite; }
 .sales-hero .hero-copy { margin: 24px 0 0; }
 .sales-hero-description { max-width: 43ch; font-size: 1.125rem !important; line-height: 1.65; color: #d4ddf3; letter-spacing: normal !important; }
 .sales-hero .hero-actions { justify-content: flex-start; margin-top: 28px; }
-.sales-hero .hero-art { left: 77%; top: 50%; width: min(560px, 48vw); height: 480px; opacity: .7; }
-.sales-hero .hero-energy,.sales-hero .hero-bottom { display: none; }
+.sales-hero .hero-art { left: 77%; top: 50%; width: min(560px, 48vw); height: 480px; opacity: .85; animation: sales-orb-float 6s ease-in-out infinite; }
+.sales-hero .hero-energy { display: flex; position: relative; left: auto; bottom: auto; translate: none; margin-top: 30px; height: 36px; gap: 7px; opacity: .9; }
+.sales-hero .hero-energy i { width: 3px; height: 22px; transform-origin: center; animation: sales-frequency 1.2s ease-in-out infinite alternate; animation-delay: calc(var(--bar-index) * -.11s); box-shadow: 0 0 12px #2860ff99; }
+.sales-hero .hero-bottom { display: none; }
+@keyframes sales-orb-float { 0%,100% { transform: translateY(0) rotate(-2deg) scale(.97); filter: drop-shadow(0 0 16px #2860ff44); } 50% { transform: translateY(-18px) rotate(2deg) scale(1.03); filter: drop-shadow(0 0 42px #2860ff88); } }
+@keyframes sales-title-glow { 0%,100% { text-shadow: 0 0 12px #2860ff22; } 50% { text-shadow: 0 0 30px #2860ff99; color: #d6e5ff; } }
+@keyframes sales-frequency { from { transform: scaleY(.25); opacity: .55; } to { transform: scaleY(1.5); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sales-hero .hero-art,.sales-hero h1 span,.sales-hero .hero-energy i { animation: none !important; } }
 #catalog,#featured { scroll-margin-top: 115px; }
 .purchase-guide-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 28px; }
 .purchase-guide-grid article { padding: 26px; border: 1px solid #28344e; border-radius: 28px; background: #0b101d; }
