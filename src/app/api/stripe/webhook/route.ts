@@ -24,7 +24,10 @@ export async function POST(request: Request) {
     const session = event.data.object;
     const orderId = session.metadata?.order_id;
     if (orderId && session.payment_status === "paid") {
-      const { data: order } = await db.from("orders").select("id,customer_id,customer_email,customer_name,order_number,created_at,currency,order_items(id,beat_id,license_type_id,beat_title_snapshot,license_name_snapshot,unit_price_cents)").eq("id", orderId).single();
+      const { data: order } = await db.from("orders").select("id,total_cents,stripe_checkout_session_id,customer_id,customer_email,customer_name,order_number,created_at,currency,order_items(id,beat_id,license_type_id,beat_title_snapshot,license_name_snapshot,unit_price_cents)").eq("id", orderId).single();
+      if (order && (order.stripe_checkout_session_id !== session.id || order.total_cents !== session.amount_total || order.currency.toLowerCase() !== session.currency?.toLowerCase())) {
+        return Response.json({ error: "Payment does not match the order." }, { status: 409 });
+      }
       if (order) {
         await db.from("orders").update({ status: "paid", paid_at: new Date().toISOString(), stripe_payment_intent_id: String(session.payment_intent ?? "") }).eq("id", order.id).neq("status", "paid");
         await db.from("payments").upsert({ order_id: order.id, provider_payment_id: String(session.payment_intent ?? session.id), amount_cents: session.amount_total ?? 0, currency: session.currency?.toUpperCase() ?? "EUR", status: "succeeded", raw_event_id: event.id }, { onConflict: "provider_payment_id" });
@@ -57,7 +60,13 @@ export async function POST(request: Request) {
   }
   if (event.type === "charge.refunded") {
     const paymentIntent = String(event.data.object.payment_intent ?? "");
-    await db.from("orders").update({ status: "refunded", refunded_at: new Date().toISOString() }).eq("stripe_payment_intent_id", paymentIntent);
+    if (event.data.object.refunded && paymentIntent) {
+      const { data: orders } = await db.from("orders").update({ status: "refunded", refunded_at: new Date().toISOString() }).eq("stripe_payment_intent_id", paymentIntent).select("id");
+      for (const order of orders ?? []) {
+        const { data: items } = await db.from("order_items").select("id").eq("order_id", order.id);
+        if (items?.length) await db.from("entitlements").update({ revoked_at: new Date().toISOString() }).in("order_item_id", items.map(item => item.id));
+      }
+    }
   }
   return Response.json({ received: true });
 }

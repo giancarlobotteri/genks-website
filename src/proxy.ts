@@ -3,6 +3,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { privatePreview } from "@/lib/preview-mode";
 
 export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  if (path.startsWith("/api/") && path !== "/api/stripe/webhook" && !["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+    const origin = request.headers.get("origin");
+    if (request.headers.get("sec-fetch-site") === "cross-site" || !origin || origin !== request.nextUrl.origin) {
+      return NextResponse.json({ error: "Request origin denied." }, { status: 403 });
+    }
+  }
   if (
     !(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_GENKS_SUPABASE_URL) ||
     !(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_GENKS_SUPABASE_PUBLISHABLE_KEY)
