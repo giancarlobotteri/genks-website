@@ -38,7 +38,7 @@ export function PersistentPlayer() {
     return () => document.documentElement.removeAttribute("data-playing");
   }, [isPlaying]);
 
-  if (!currentBeat || (!isPlaying && !isLoading)) return null;
+  if (!currentBeat) return null;
 
   return (
     <>
@@ -65,7 +65,7 @@ export function PersistentPlayer() {
               <strong>{currentBeat?.title ?? "Your next sound."}</strong>
               <span>
                 {currentBeat
-                  ? `${currentBeat.bpm} BPM · ${currentBeat.key} · Demo`
+                  ? `${currentBeat.bpm} BPM · ${currentBeat.key} · Preview`
                   : "Choose a beat. Press play."}
               </span>
             </div>

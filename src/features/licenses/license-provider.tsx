@@ -41,7 +41,7 @@ export function LicenseProvider({
       <Modal open={!!beat} onClose={() => setBeat(null)} titleId={headingId}>
         <span className="eyebrow">CHOOSE YOUR LICENSE</span>
         <h2 id={headingId}>{beat?.title ?? "Licenses"}</h2>
-        <p className="muted">Find the format for your next track.</p>
+        <p className="muted">Compare the files and terms before you buy. Each license applies to this beat.</p>
         <div className="license-options">
           {licenses
             .filter((license) => beat?.licenseIds.includes(license.id))
@@ -54,7 +54,7 @@ export function LicenseProvider({
                 <strong>
                   {license.id === "exclusive"
                     ? "On request"
-                    : formatPrice(license.priceCents)}
+                    : formatPrice(beat?.licensePrices?.[license.id] ?? license.priceCents)}
                 </strong>
                 <ul>
                   {license.features.map((feature) => (
@@ -75,12 +75,12 @@ export function LicenseProvider({
         </div>
         {beat?.isDemo && <p className="demo-note">Demo catalog and example prices. Add real beats in Admin after connecting Supabase.</p>}
         <a
-          className="button button-primary"
+          className="text-link"
           href={site.instagram}
           target="_blank"
           rel="noreferrer"
         >
-          Talk to GENKS <ArrowUpRight size={18} aria-hidden="true" />
+          Questions about a license? <ArrowUpRight size={18} aria-hidden="true" />
         </a>
       </Modal>
     </LicenseContext>

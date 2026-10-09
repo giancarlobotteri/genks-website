@@ -61,10 +61,10 @@ export function CartCheckout() {
       else { setError(result.error ?? "Checkout failed. Try again."); setBusy(false); }
     }}>
       <div className="cart-customer-fields"><label>Name<input name="name" autoComplete="name" required minLength={2} /></label><label>Email<input name="email" type="email" autoComplete="email" required /></label></div>
-      <label>Promo code (optional)<input name="promoCode" autoComplete="off" maxLength={40} /></label>
+      <details><summary>Have a promo code?</summary><label>Promo code<input name="promoCode" autoComplete="off" maxLength={40} /></label></details>
       {error ? <p className="notice error" role="alert">{error}</p> : null}
       <button className="button button-primary magnetic-cta cart-pay-button" disabled={!ready || busy}><CreditCard size={18} />{busy ? "OPENING STRIPE…" : `PAY ${formatPrice(total)} SECURELY`}</button>
-      <small className="cart-payment-note">Cards and Apple Pay via Stripe. Files unlock only after confirmed payment.</small>
+      <small className="cart-payment-note">No account required to pay. Stripe shows the payment methods available for your device. Files unlock after confirmed payment; use this email to access your Library.</small>
     </form>
   </>;
 }

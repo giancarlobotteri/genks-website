@@ -4,7 +4,7 @@ import { ArrowDown, ArrowUpRight } from "lucide-react";
 
 export function Hero() {
   return (
-    <section id="home" className="hero" aria-labelledby="hero-title">
+    <section id="home" className="hero sales-hero" aria-labelledby="hero-title">
       <div className="hero-ambient" aria-hidden="true">
         <span className="hero-light hero-light-one" />
         <span className="hero-light hero-light-two" />
@@ -31,16 +31,16 @@ export function Hero() {
           </span>
         </div>
         <div className="hero-title-wrap" data-reveal>
-          <h1 id="hero-title" className="sr-only">GENKS</h1>
+          <h1 id="hero-title">Your next track<br /><span>starts here.</span></h1>
         </div>
         <div className="hero-copy" data-reveal>
-          <p className="hero-focus-copy">BEATS &amp; PRODUCTION</p>
+          <p className="sales-hero-description">Find your sound. Listen to the beats, compare licenses and make it yours.</p>
         </div>
         <div className="hero-actions" data-reveal>
-          <Link className="button button-primary magnetic-cta" href="/beats">
-            EXPLORE BEATS <ArrowUpRight size={20} aria-hidden="true" />
+          <Link className="button button-primary magnetic-cta" href="#catalog">
+            LISTEN TO BEATS <ArrowUpRight size={20} aria-hidden="true" />
           </Link>
-          <Link className="button button-secondary magnetic-cta" href="/services">BOOK / SERVICES <ArrowUpRight size={18} /></Link>
+          <Link className="text-link" href="/services">Studio services <ArrowUpRight size={18} /></Link>
         </div>
         <div className="hero-energy" aria-hidden="true">
           {Array.from({ length: 22 }, (_, index) => (
