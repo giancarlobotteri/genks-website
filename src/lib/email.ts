@@ -60,8 +60,7 @@ export async function sendOrderConfirmationEmail(input: {
         <div style="padding:30px 32px 22px;text-align:center;border-bottom:1px solid #202b49;background:linear-gradient(135deg,#0d1834,#090c15)">
           <img src="${escapeHtml(`${origin}/brand/genks-logo.jpeg`)}" width="92" height="92" alt="GENKS" style="display:block;width:92px;height:92px;margin:0 auto 16px;border:1px solid #315ebe;border-radius:50%;object-fit:cover;box-shadow:0 0 34px #2860ff66" />
           <div style="color:#87a7ff;font-size:14px;font-weight:700;letter-spacing:3px">PAYMENT CONFIRMED</div>
-          <h1 style="margin:12px 0 8px;color:#fff;font-size:30px;line-height:1.15">Acquisto completato.</h1>
-          <p style="margin:0;color:#e3eaff;line-height:1.6">Ciao ${escapeHtml(input.customerName)}, il pagamento è andato a buon fine.</p>
+          <h1 style="margin:12px 0 8px;color:#80bfff;-webkit-text-fill-color:#80bfff;font-size:30px;font-weight:800;line-height:1.15">Acquisto completato.</h1>
         </div>
         <div style="padding:28px 32px">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:22px;border-collapse:collapse">
