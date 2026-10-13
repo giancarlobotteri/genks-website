@@ -70,7 +70,7 @@ export function CinematicHero() {
       current += (target - current) * (1 - Math.exp(-delta * 10));
       if (Math.abs(current - target) < .0001) current = target;
       progressRef.current = current;
-      const fade = smoothstep(.86, 1, current);
+      const fade = smoothstep(.86, .98, current);
       const ui = 1 - smoothstep(.035, .25, current);
       const zoom = smoothstep(.56, .92, current);
       section.style.setProperty("--hero-opacity", String(1 - fade));
@@ -87,7 +87,10 @@ export function CinematicHero() {
     };
     const measure = () => {
       sectionTop = section.getBoundingClientRect().top + window.scrollY;
-      travel = Math.max(1, section.offsetHeight - stage.offsetHeight);
+      const catalog = document.getElementById("catalog");
+      const catalogStart = catalog ? catalog.getBoundingClientRect().top + window.scrollY - sectionTop : Infinity;
+      // Finish the fade before the catalog, including short viewports where the stage has a minimum height.
+      travel = Math.max(1, Math.min(section.offsetHeight - stage.offsetHeight, catalogStart));
       scroll();
     };
     const observer = new ResizeObserver(measure);
@@ -139,4 +142,3 @@ export function CinematicHero() {
     </section>
   );
 }
-
