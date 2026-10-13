@@ -54,7 +54,7 @@ export function Navigation() {
         </nav>
 
         <div className="header-actions">
-          <Link href="/#home" scroll className="header-home-button" aria-label="Torna alla pagina iniziale" onClick={closeAll}><House size={19} /><span>Inizio</span></Link>
+          <Link href="/#home" scroll className="header-home-button" aria-label="Torna alla pagina iniziale" onClick={closeAll}><House size={19} /><span>Pagina iniziale</span></Link>
           <button data-cart-target type="button" className="header-cart-button" aria-expanded={cartOpen} aria-controls={cartId} aria-label={`Apri il carrello, ${count} articoli`} onClick={() => { setCartOpen((value) => !value); setOpen(false); }}>
             <ShoppingBag size={20} />
             {count > 0 ? <span className="cart-count" key={count}>{count}</span> : null}
