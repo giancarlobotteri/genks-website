@@ -3910,7 +3910,9 @@ body {
   .purchase-guide-grid { grid-template-columns: 1fr; }
 }
 
-.logo-first-hero { margin-top: 0; padding: 0; min-height: calc(100svh - 92px); display: grid; align-items: center; }
+.logo-first-hero { margin-top: 0; padding: 0; min-height: calc(100svh - 92px); display: grid; align-items: center; background: var(--background); border-radius: 0; }
+.logo-first-hero::before,.logo-first-hero::after,.logo-first-hero .hero-art::after { display: none; }
+.logo-first-hero.sales-hero .hero-art { animation: none !important; transform: none !important; filter: none !important; transition: none; mix-blend-mode: screen; }
 .logo-first-hero .hero-content { min-height: calc(100svh - 92px); padding: 60px 0 44px; align-items: center; justify-content: center; text-align: center; }
 .logo-first-hero .hero-art { position: relative; z-index: 0; left: auto; right: auto; top: auto; translate: none; width: min(520px, 80vw, 58svh); height: min(520px, 80vw, 58svh); flex-shrink: 0; opacity: 1; }
 .logo-first-hero .hero-grain { pointer-events: none; z-index: -1; }
