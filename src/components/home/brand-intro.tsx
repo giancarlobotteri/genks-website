@@ -1,16 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { genksLetters } from "@/data/genks-lettering";
 import styles from "./brand-intro.module.css";
-
-// Reveal the original chrome wordmark, preserving the lettering and blue reflections.
-const letters = [
-  { label: "G", start: 135, end: 420 },
-  { label: "E", start: 420, end: 605 },
-  { label: "N", start: 605, end: 768 },
-  { label: "K", start: 768, end: 930 },
-  { label: "S", start: 930, end: 1185 },
-];
 
 type Props = { onComplete: () => void };
 
@@ -38,7 +30,8 @@ export function BrandIntro({ onComplete }: Props) {
     const skipButton = skipRef.current;
     const timers = new Set<ReturnType<typeof setTimeout>>();
     let opening = false;
-    let started = false;
+    let minimumComplete = false;
+    let sceneReady = false;
     let disposed = false;
     document.body.style.overflow = "hidden";
     skipButton?.focus({ preventScroll: true });
@@ -56,30 +49,28 @@ export function BrandIntro({ onComplete }: Props) {
       if (opening || disposed) return;
       opening = true;
       setPhase("opening");
-      later(finish, reducedMotion.matches ? 180 : 850);
+      later(finish, reducedMotion.matches ? 180 : 1050);
     };
     openRef.current = open;
-    const start = () => {
-      if (started || disposed || opening) return;
-      started = true;
-      setPhase("letters");
-      // 5 letter reveals, a brief hold, then the two panels open onto the page.
-      later(open, reducedMotion.matches ? 180 : 2250);
+    const onSceneReady = () => {
+      sceneReady = true;
+      if (minimumComplete) open();
     };
-    const image = new window.Image();
-    image.onload = start;
-    image.onerror = open;
-    image.src = "/brand/genks-logo.jpeg";
-    if (image.complete && image.naturalWidth) start();
-    later(open, 5000);
+    window.addEventListener("genks:hero-settled", onSceneReady);
+    // Native SVG glyphs draw immediately; their motion continues while the scene loads.
+    later(() => setPhase("letters"), 0);
+    later(() => {
+      minimumComplete = true;
+      if (sceneReady || reducedMotion.matches) open();
+    }, reducedMotion.matches ? 450 : 2700);
+    later(open, 6500);
     const onMotionChange = () => { if (reducedMotion.matches) open(); };
     reducedMotion.addEventListener("change", onMotionChange);
 
     return () => {
       disposed = true;
       timers.forEach(clearTimeout);
-      image.onload = null;
-      image.onerror = null;
+      window.removeEventListener("genks:hero-settled", onSceneReady);
       reducedMotion.removeEventListener("change", onMotionChange);
       document.body.style.overflow = previousOverflow;
       if (document.activeElement === skipButton) {
@@ -104,25 +95,23 @@ export function BrandIntro({ onComplete }: Props) {
         <div className={styles.leftPanel} aria-hidden="true" />
         <div className={styles.rightPanel} aria-hidden="true" />
         <div className={styles.identity} data-started={phase !== "loading"}>
-          <svg className={styles.wordmark} viewBox="135 375 1050 490" role="img" aria-label="GENKS" data-protected-visual>
+          <svg className={styles.wordmark} viewBox="0 0 1050 490" role="img" aria-label="GENKS" data-protected-visual>
             <defs>
-              <clipPath id={`${id}-wordmark`}>
-                <path d="M650 390 C480 385 270 420 185 500 L140 575 L135 690 L205 870 L320 770 C500 795 650 800 770 820 L805 770 C965 795 1075 780 1130 760 L1120 870 L1190 680 L1185 570 L1120 470 C950 390 800 385 650 390Z" />
-              </clipPath>
-              {letters.map(letter => <clipPath key={letter.label} id={`${id}-${letter.label}`}><rect x={letter.start} y="375" width={letter.end - letter.start} height="490" /></clipPath>)}
+              <linearGradient id={`${id}-chrome`} gradientUnits="userSpaceOnUse" x1="110" y1="20" x2="150" y2="455">
+                <stop offset="0" stopColor="#80b8ff" />
+                <stop offset=".18" stopColor="#f9fcff" />
+                <stop offset=".32" stopColor="#8294b0" />
+                <stop offset=".47" stopColor="#f0f5ff" />
+                <stop offset=".62" stopColor="#416ba5" />
+                <stop offset=".76" stopColor="#b9d3ff" />
+                <stop offset="1" stopColor="#6a9cec" />
+              </linearGradient>
             </defs>
-            <g clipPath={`url(#${id}-wordmark)`}>
-              {letters.map((letter, index) => (
-                <g key={letter.label} clipPath={`url(#${id}-${letter.label})`}>
-                  <image
-                    className={styles.letter}
-                    href="/brand/genks-logo.jpeg"
-                    x="0" y="0" width="1320" height="1243"
-                    style={{ animationDelay: `${index * 340}ms` }}
-                  />
+              {genksLetters.map((letter, index) => (
+                <g className={styles.glyph} key={letter.label} style={{ "--letter-index": index } as CSSProperties}>
+                  <path className={styles.glyphPath} d={letter.path} pathLength="1" fill={`url(#${id}-chrome)`} fillRule="evenodd" stroke="#619dff" strokeWidth="1.1" strokeLinejoin="round" />
                 </g>
               ))}
-            </g>
           </svg>
         </div>
         <button ref={skipRef} type="button" className={styles.skip} onClick={() => openRef.current()}>Salta introduzione</button>

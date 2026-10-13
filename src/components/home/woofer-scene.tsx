@@ -10,9 +10,10 @@ type Props = {
   onReady: () => void;
   onUnavailable: () => void;
   mode?: "hero" | "exploded";
+  heroProgressRef?: RefObject<number>;
 };
 
-export default function WooferScene({ sectionRef, paused, onReady, onUnavailable, mode = "hero" }: Props) {
+export default function WooferScene({ sectionRef, paused, onReady, onUnavailable, mode = "hero", heroProgressRef }: Props) {
   const mountRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(paused);
   const callbacks = useRef({ onReady, onUnavailable });
@@ -26,7 +27,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     if (!mount || !section) return;
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
     } catch {
       callbacks.current.onUnavailable();
       return;
@@ -51,7 +52,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     const geometries = new Set<THREE.BufferGeometry>();
     const materials = new Set<THREE.Material>();
     const textures = new Set<THREE.Texture>();
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.35 : 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.75 : 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
@@ -82,8 +83,9 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
 
     const chrome = new THREE.MeshStandardMaterial({ color: 0xb4c3d9, metalness: 1, roughness: .22, envMapIntensity: 1.35 });
     const darkMetal = new THREE.MeshStandardMaterial({ color: 0x101727, metalness: .9, roughness: .29 });
-    const rubber = new THREE.MeshStandardMaterial({ color: 0x0c0f18, metalness: .18, roughness: .48 });
-    const coneMaterial = new THREE.MeshStandardMaterial({ color: 0x252b38, metalness: .65, roughness: .35, side: THREE.DoubleSide });
+    const rubber = new THREE.MeshStandardMaterial({ color: 0x11151d, metalness: .08, roughness: .62 });
+    const coneMaterial = new THREE.MeshStandardMaterial({ color: 0x283243, metalness: .35, roughness: .5, side: THREE.DoubleSide });
+    const ridges = new THREE.MeshStandardMaterial({ color: 0x1a2332, metalness: .25, roughness: .55 });
     const blue = new THREE.MeshStandardMaterial({ color: 0x1458ff, metalness: .5, roughness: .24, emissive: 0x1555ff, emissiveIntensity: 1.6 });
 
     const addMesh = (geometry: THREE.BufferGeometry, material: THREE.Material, parent: THREE.Group = assembly) => {
@@ -100,23 +102,49 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     };
 
     // The lathed profile builds a concave speaker membrane along the Z axis.
-    const profile = [new THREE.Vector2(.53, .04), new THREE.Vector2(.7, .015), new THREE.Vector2(.92, -.09), new THREE.Vector2(1.16, -.23), new THREE.Vector2(1.29, -.29), new THREE.Vector2(1.33, -.23)];
-    const cone = addMesh(new THREE.LatheGeometry(profile, 144), coneMaterial, diaphragm);
+    const profile = [new THREE.Vector2(.56, -.23), new THREE.Vector2(.69, -.19), new THREE.Vector2(.87, -.105), new THREE.Vector2(1.06, -.015), new THREE.Vector2(1.22, .065), new THREE.Vector2(1.3, .12)];
+    const cone = addMesh(new THREE.LatheGeometry(profile, 192), coneMaterial, diaphragm);
     cone.rotation.x = Math.PI / 2;
-    ring(1.37, .095, .23, rubber, diaphragm);
+    // Fine paper grain and concentric moulded ribs make the diaphragm read as a speaker.
+    const grainData = new Uint8Array(128 * 128);
+    for (let i = 0; i < grainData.length; i++) grainData[i] = 100 + Math.round((Math.sin(i * 12.9898) * 43758.5453 % 1 + 1) * 30);
+    const grain = new THREE.DataTexture(grainData, 128, 128, THREE.RedFormat);
+    grain.wrapS = grain.wrapT = THREE.RepeatWrapping;
+    grain.repeat.set(12, 2);
+    grain.magFilter = THREE.LinearFilter;
+    grain.minFilter = THREE.LinearMipmapLinearFilter;
+    grain.generateMipmaps = true;
+    grain.needsUpdate = true;
+    textures.add(grain);
+    coneMaterial.bumpMap = grain;
+    coneMaterial.bumpScale = .012;
+    for (let i = 0; i < 6; i++) {
+      const radius = .78 + i * .082;
+      const profileIndex = profile.findIndex(point => point.x >= radius);
+      const inner = profile[profileIndex - 1];
+      const outer = profile[profileIndex];
+      const z = THREE.MathUtils.lerp(inner.y, outer.y, (radius - inner.x) / (outer.x - inner.x)) + .004;
+      const rib = addMesh(new THREE.TorusGeometry(radius, .007, 8, 160), ridges, diaphragm);
+      rib.position.z = z;
+    }
+    ring(1.345, .115, .145, rubber);
+    ring(1.435, .012, .19, rubber);
     ring(1.46, .027, .225, chrome);
     ring(1.56, .065, .15, darkMetal);
     ring(1.57, .014, .218, blue, front);
     ring(1.64, .023, .12, chrome, front);
     ring(1.5, .018, -.02, chrome);
     ring(1.52, .035, -.32, darkMetal);
-    ring(1.37, .012, .31, blue, diaphragm);
+    const flange = addMesh(new THREE.RingGeometry(1.46, 1.63, 192), darkMetal, front);
+    flange.position.z = .19;
 
     const body = addMesh(new THREE.CylinderGeometry(1.55, 1.42, .4, 96, 1, true), darkMetal);
     body.rotation.x = Math.PI / 2;
     body.position.z = -.1;
     for (let i = 0; i < 8; i++) {
       const angle = i * Math.PI / 4 + Math.PI / 8;
+      const recess = addMesh(new THREE.CircleGeometry(.055, 24), rubber, front);
+      recess.position.set(Math.cos(angle) * 1.56, Math.sin(angle) * 1.56, .22);
       const bolt = addMesh(new THREE.CylinderGeometry(.036, .036, .025, 12), chrome, front);
       bolt.rotation.x = Math.PI / 2;
       bolt.position.set(Math.cos(angle) * 1.56, Math.sin(angle) * 1.56, .225);
@@ -131,27 +159,31 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
 
     const cap = addMesh(new THREE.SphereGeometry(.68, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2), darkMetal, diaphragm);
     cap.rotation.x = Math.PI / 2;
-    cap.scale.y = .25;
-    cap.position.z = .08;
-    ring(.7, .014, .11, chrome, diaphragm);
+    cap.scale.y = .28;
+    cap.position.z = -.18;
+    ring(.7, .012, -.105, chrome, diaphragm);
     const logoMaterial = new THREE.MeshBasicMaterial({ transparent: true, toneMapped: false });
     materials.add(logoMaterial);
     const logo = addMesh(new THREE.CircleGeometry(.69, 96), logoMaterial, diaphragm);
-    logo.position.z = .27;
+    logo.position.z = .025;
     const logoImage = new window.Image();
     logoImage.onload = () => {
       if (!alive) return;
       const canvas = document.createElement("canvas");
-      canvas.width = canvas.height = 768;
+      const size = Math.min(renderer.capabilities.maxTextureSize, 1536);
+      canvas.width = canvas.height = size;
       const context = canvas.getContext("2d");
       if (!context) return;
       context.beginPath();
-      context.arc(384, 384, 384, 0, Math.PI * 2);
+      context.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
       context.clip();
-      context.drawImage(logoImage, 0, 0, 768, 768);
+      const ratio = size / Math.max(logoImage.naturalWidth, logoImage.naturalHeight);
+      const width = logoImage.naturalWidth * ratio;
+      const height = logoImage.naturalHeight * ratio;
+      context.drawImage(logoImage, (size - width) / 2, (size - height) / 2, width, height);
       const texture = new THREE.CanvasTexture(canvas);
       texture.colorSpace = THREE.SRGBColorSpace;
-      texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+      texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
       textures.add(texture);
       logoMaterial.map = texture;
       logoMaterial.needsUpdate = true;
@@ -160,7 +192,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     };
     logoImage.src = "/brand/genks-logo.jpeg";
 
-    scene.add(new THREE.HemisphereLight(0x9cbcff, 0x030409, 1));
+    scene.add(new THREE.HemisphereLight(0x9cbcff, 0x030409, 1.25));
     const key = new THREE.DirectionalLight(0xc8dcff, 4);
     key.position.set(2, 3, 4);
     scene.add(key);
@@ -178,6 +210,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       renderer.setSize(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.75 : 2));
       needsRender = true;
     };
     const resizeObserver = new ResizeObserver(resize);
@@ -217,7 +250,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     const onMotionChange = () => { needsRender = true; };
     reducedMotion.addEventListener("change", onMotionChange);
     renderer.setAnimationLoop((time: number) => {
-      if (time - lastRenderedTime < 1000 / 60) return;
+      if (time - lastRenderedTime < 1000 / (window.innerWidth < 700 ? 60 : 120)) return;
       const delta = previous ? Math.min((time - previous) / 1000, .05) : 0;
       previous = time;
       if (!visible || document.hidden) return;
@@ -226,20 +259,30 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       if (!moving && !needsRender && frameCount > 2) return;
       if (moving) elapsed += delta;
       const expansion = reducedMotion.matches ? 0 : (1 - Math.cos(elapsed * Math.PI / 3.8)) * .5;
-      if (!pausedRef.current) displayedProgress = reducedMotion.matches ? 0 : progress;
+      displayedProgress = reducedMotion.matches || pausedRef.current ? 0 : (heroProgressRef?.current ?? progress);
       const travel = displayedProgress;
       const easing = 1 - Math.exp(-delta * 5);
-      const targetX = mode === "exploded" ? .12 + travel * .12 : -.07 + (reducedMotion.matches ? 0 : pointerY * .12) + travel * .09;
-      const targetY = mode === "exploded" ? -.5 - travel * .6 : -.12 + (reducedMotion.matches ? 0 : pointerX * .18) + travel * .5;
+      const smoothstep = (from: number, to: number, value: number) => THREE.MathUtils.smoothstep(value, from, to);
+      const zoom = mode === "hero" ? smoothstep(0, .78, travel) : 0;
+      const perspective = 1 - smoothstep(0, .4, travel);
+      const targetX = mode === "exploded" ? .12 + travel * .12 : (-.065 + (reducedMotion.matches ? 0 : pointerY * .1)) * perspective;
+      const targetY = mode === "exploded" ? -.5 - travel * .6 : (-.16 + (reducedMotion.matches ? 0 : pointerX * .16)) * perspective;
       assembly.rotation.x = THREE.MathUtils.lerp(assembly.rotation.x, targetX, easing || 1);
       assembly.rotation.y = THREE.MathUtils.lerp(assembly.rotation.y, targetY, easing || 1);
-      const scale = 1 + expansion * .008;
+      const scale = 1 + expansion * .005;
       diaphragm.scale.set(scale, scale, 1);
-      diaphragm.position.z = expansion * .028 + (mode === "exploded" ? travel * .6 : 0);
-      front.position.z = travel * (mode === "exploded" ? 1.2 : .24);
+      diaphragm.position.z = expansion * .045 + (mode === "exploded" ? travel * .6 : 0);
+      front.position.z = mode === "exploded" ? travel * 1.2 : 0;
       blue.emissiveIntensity = 1.3 + expansion * .25;
-      const distance = Math.max(5.95, 5.95 / camera.aspect);
-      camera.position.set(travel * .25, travel * .12, distance + (mode === "exploded" ? .5 : 0) - travel * .35);
+      const height = mount.clientHeight;
+      const reserve = window.innerWidth < 700 ? 350 : 300;
+      const distance = mode === "hero" ? Math.max(6.3 * height / Math.max(300, height - reserve), 6.3 / camera.aspect) : Math.max(5.95, 5.95 / camera.aspect) + .5;
+      const frustumHeight = 2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      const fillScale = Math.hypot(frustumHeight * camera.aspect, frustumHeight) / 1.38 * 1.12;
+      const magnification = mode === "hero" ? Math.exp(Math.log(fillScale) * zoom) : 1;
+      assembly.scale.setScalar(magnification);
+      assembly.position.y = mode === "hero" ? .2 * perspective : 0;
+      camera.position.set(mode === "exploded" ? travel * .25 : 0, mode === "exploded" ? travel * .12 : 0, distance - (mode === "exploded" ? travel * .35 : 0));
       camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
       lastRenderedTime = time;
@@ -269,7 +312,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [sectionRef, mode]);
+  }, [sectionRef, mode, heroProgressRef]);
 
   return <div ref={mountRef} style={{ position: "absolute", inset: 0 }} aria-hidden="true" />;
 }
