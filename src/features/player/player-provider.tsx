@@ -157,6 +157,7 @@ export function PlayerProvider({
         <ProgressContext value={progress}>
           {children}
           <audio
+            controlsList="nodownload"
             ref={audioRef}
             preload="none"
             onPlay={() => {

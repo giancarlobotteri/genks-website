@@ -3,6 +3,7 @@ import { Navigation } from "@/components/layout/navigation";
 import { Footer } from "@/components/layout/footer";
 import { PersistentPlayer } from "@/components/player/persistent-player";
 import { MotionObserver } from "@/components/ui/motion-observer";
+import { AssetGuard } from "@/components/ui/asset-guard";
 import { PlayerProvider } from "@/features/player/player-provider";
 import { LicenseProvider } from "@/features/licenses/license-provider";
 import { CartProvider } from "@/features/cart/cart-provider";
@@ -64,6 +65,7 @@ export default async function RootLayout({
               <Footer />
               <PersistentPlayer />
               <MotionObserver />
+              <AssetGuard />
             </CartProvider>
           </LicenseProvider>
         </PlayerProvider>

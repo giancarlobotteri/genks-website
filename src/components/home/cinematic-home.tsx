@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { BrandIntro } from "./brand-intro";
 import styles from "./cinematic-home.module.css";
 
 export function CinematicHome({ children }: { children: ReactNode }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const [introComplete, setIntroComplete] = useState(false);
+  const finishIntro = useCallback(() => setIntroComplete(true), []);
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -40,5 +43,10 @@ export function CinematicHome({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  return <div className={styles.experience} ref={rootRef}>{children}</div>;
+  return (
+    <div className={styles.experience} ref={rootRef}>
+      {!introComplete ? <BrandIntro onComplete={finishIntro} /> : null}
+      {children}
+    </div>
+  );
 }
