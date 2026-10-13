@@ -250,7 +250,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     const onMotionChange = () => { needsRender = true; };
     reducedMotion.addEventListener("change", onMotionChange);
     renderer.setAnimationLoop((time: number) => {
-      if (time - lastRenderedTime < 1000 / (window.innerWidth < 700 ? 60 : 120)) return;
+      if (time - lastRenderedTime + .5 < 1000 / (window.innerWidth < 700 ? 60 : 120)) return;
       const delta = previous ? Math.min((time - previous) / 1000, .05) : 0;
       previous = time;
       if (!visible || document.hidden) return;
