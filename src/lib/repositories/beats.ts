@@ -58,8 +58,8 @@ export async function getLicenses(): Promise<License[]> {
         name: italianLabel(item.name),
         priceCents: item.price_cents,
         currency: "EUR",
-        format: (item.included_assets ?? []).join(" + ").toUpperCase(),
-        features: [italianLabel(item.short_description), ...(item.included_assets ?? []).map((asset: string) => `${italianLabel(asset).toUpperCase()} incluso`)].filter(Boolean),
+        format: (item.included_assets ?? []).map((asset: string) => italianLabel(asset).toUpperCase()).join(" + "),
+        features: [italianLabel(item.short_description), ...(item.included_assets ?? []).map((asset: string) => asset === "stems" ? "Tracce separate incluse" : `${italianLabel(asset).toUpperCase()} incluso`)].filter(Boolean),
         isDemo: false,
       }));
   }
