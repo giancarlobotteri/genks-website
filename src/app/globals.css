@@ -3910,6 +3910,15 @@ body {
   .purchase-guide-grid { grid-template-columns: 1fr; }
 }
 
+.logo-first-hero { padding: 24px 0 38px; min-height: 620px; }
+.logo-first-hero .hero-content { min-height: 0; padding: 35px 0 0; align-items: center; text-align: center; }
+.logo-first-hero .hero-art { position: relative; z-index: 0; left: auto; right: auto; top: auto; translate: none; width: min(560px, 90vw); height: min(480px, 77vw); opacity: 1; }
+.logo-first-hero .hero-grain { pointer-events: none; z-index: -1; }
+.logo-first-hero .hero-topline { top: 20px; }
+.logo-first-hero .hero-actions { justify-content: center; margin-top: 10px; flex-wrap: wrap; gap: 18px; }
+.logo-first-hero .hero-energy { margin-top: 25px; }
+@media (max-width: 700px) { .logo-first-hero { min-height: 0; padding: 18px 0 32px; } .logo-first-hero .hero-content { padding-top: 42px; } .logo-first-hero .hero-art { left: auto; width: min(480px,90vw); height: min(410px,77vw); opacity: 1; } .logo-first-hero .hero-actions { gap: 14px; } }
+
 /* Unified beat creation, verified orders and live license editing */
 .beat-create-panel > summary,.license-admin-list summary,.admin-form-card > summary { display: flex; align-items: center; gap: 9px; }
 .beat-create-form { display: grid; gap: 22px; padding: clamp(17px,3vw,28px); border-top: 1px solid rgba(255,255,255,.08); }

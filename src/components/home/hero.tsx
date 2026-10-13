@@ -4,23 +4,24 @@ import { ArrowDown, ArrowUpRight } from "lucide-react";
 
 export function Hero() {
   return (
-    <section id="home" className="hero sales-hero" aria-labelledby="hero-title">
+    <section id="home" className="hero sales-hero logo-first-hero" aria-labelledby="hero-title">
       <div className="hero-ambient" aria-hidden="true">
         <span className="hero-light hero-light-one" />
         <span className="hero-light hero-light-two" />
       </div>
-      <div className="hero-art" aria-hidden="true">
+      <div className="container hero-content">
+      <h1 id="hero-title" className="sr-only">GENKS — The sound starts here</h1>
+      <div className="hero-art">
         <Image
           src="/brand/genks-logo.jpeg"
-          alt=""
+          alt="GENKS"
           fill
           preload
-          sizes="(max-width: 700px) 140vw, 100vw"
+          sizes="(max-width: 700px) 90vw, 560px"
           quality={85}
         />
       </div>
       <div className="hero-grain" aria-hidden="true" />
-      <div className="container hero-content">
         <div className="hero-topline">
           <span className="eyebrow">
             <span className="blue-line" />
@@ -30,17 +31,11 @@ export function Hero() {
             SOUND / VISION / INSTINCT
           </span>
         </div>
-        <div className="hero-title-wrap" data-reveal>
-          <h1 id="hero-title">Your next track<br /><span>starts here.</span></h1>
-        </div>
-        <div className="hero-copy" data-reveal>
-          <p className="sales-hero-description">Find your sound. Listen to the beats, compare licenses and make it yours.</p>
-        </div>
         <div className="hero-actions" data-reveal>
           <Link className="button button-primary magnetic-cta" href="#catalog">
-            LISTEN TO BEATS <ArrowUpRight size={20} aria-hidden="true" />
+            EXPLORE BEATS <ArrowUpRight size={20} aria-hidden="true" />
           </Link>
-          <Link className="text-link" href="/services">Studio services <ArrowUpRight size={18} /></Link>
+          <Link className="button button-secondary" href="/services">BOOK A SESSION <ArrowUpRight size={18} aria-hidden="true" /></Link>
         </div>
         <div className="hero-energy" aria-hidden="true">
           {Array.from({ length: 22 }, (_, index) => (
