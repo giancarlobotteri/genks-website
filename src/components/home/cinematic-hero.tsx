@@ -20,7 +20,7 @@ export function CinematicHero() {
         <div className={styles.halo} aria-hidden="true" />
         <div className={styles.topline}>
           <span className={styles.signature}><i aria-hidden="true" /> GENKS / SUONO INDIPENDENTE</span>
-          <span className={styles.preview}>ANTEPRIMA 3D</span>
+          <span className={styles.preview}>PRODUZIONE MUSICALE</span>
         </div>
 
         <h1 id="cinematic-title" className="sr-only">GENKS — Il suono prende forma.</h1>
