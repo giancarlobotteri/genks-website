@@ -4050,7 +4050,7 @@ h1,h2,h3 { font-family:"Manrope",sans-serif; }
   .cart-rail-backdrop { display:none; }
 }
 @media(max-width:1279px) {
-  .cart-rail { display:none; top:94px; width:min(340px,calc(100vw - 32px)); right:16px; max-height:calc(100svh - 220px); }
+  .cart-rail { display:none; top:50%; transform:translateY(-50%); width:min(340px,calc(100vw - 32px)); right:16px; max-height:calc(100svh - 170px); }
   .cart-rail.is-open { display:grid; animation:corner-arrive .3s ease-out; }
   .cart-rail-close { display:inline-flex; }
 }
@@ -4093,4 +4093,3 @@ h1,h2,h3 { font-family:"Manrope",sans-serif; }
   .cart-orbit::before,.genks-corner-menu,.cart-rail.is-open { animation:none; }
   .genks-menu-toggle,.cart-clear-prominent,.section-heading h2,.service-row h3 { transition:none; }
 }
-
