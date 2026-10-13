@@ -1,7 +1,7 @@
-.sequence { position:relative; height:240svh; isolation:isolate; z-index:2; }
+.sequence { position:relative; height:280svh; isolation:isolate; z-index:2; }
 .stage { position:sticky; top:0; height:100svh; min-height:710px; overflow:hidden; opacity:var(--hero-opacity,1); background:radial-gradient(ellipse at 50% 50%,#081329 0%,#03060c 65%); will-change:opacity; }
 .sequence + :global(.catalog-section) { margin-top:-100svh; scroll-margin-top:0!important; position:relative; z-index:1; }
-.halo { position:absolute; inset:0; background:radial-gradient(ellipse 42% 39% at 50% 49%,rgba(16,73,226,.18),transparent 85%); pointer-events:none; }
+.halo { position:absolute; inset:0; background:radial-gradient(ellipse 35% 42% at 50% 44%,#194acf30,transparent 75%),radial-gradient(ellipse 25% 35% at 36% 43%,#12c5df12,transparent 80%),radial-gradient(ellipse 25% 35% at 64% 43%,#ad34fa16,transparent 80%); pointer-events:none; }
 .topline,.bottomline { position:absolute; z-index:2; left:clamp(24px,5vw,84px); right:clamp(24px,5vw,84px); display:flex; align-items:center; justify-content:space-between; gap:20px; }
 .topline { top:116px; }
 .signature,.preview { font-size:10px; font-weight:500; letter-spacing:.16em; color:#a2b3d1; }
@@ -33,6 +33,11 @@
 .motionPaused { height:auto; }
 .motionPaused .stage { position:relative; opacity:1; }
 .motionPaused + :global(.catalog-section) { margin-top:0; }
+@media(min-width:1280px) {
+  /* The shopping rail reserves catalog space, while the opening scene stays on the viewport axis. */
+  .sequence { width:100vw; }
+  .bottomline { left:calc(50% - 260px); right:calc(50% - 260px); }
+}
 @media(max-width:700px) {
   .sequence { height:220svh; }
   .stage { min-height:650px; }
@@ -55,3 +60,4 @@
   .sequence + :global(.catalog-section) { margin-top:0; }
   .primary,.secondary,.poster { transition:none; }
 }
+

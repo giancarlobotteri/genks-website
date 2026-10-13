@@ -35,12 +35,12 @@ export function CinematicHero() {
     const paint = (time: number) => {
       const delta = lastTime ? Math.min((time - lastTime) / 1000, .05) : 1 / 60;
       lastTime = time;
-      current += (target - current) * (1 - Math.exp(-delta * 14));
+      current += (target - current) * (1 - Math.exp(-delta * 10));
       if (Math.abs(current - target) < .0001) current = target;
       progressRef.current = current;
-      const fade = smoothstep(.78, .96, current);
+      const fade = smoothstep(.86, 1, current);
       const ui = 1 - smoothstep(.035, .25, current);
-      const zoom = smoothstep(0, .78, current);
+      const zoom = smoothstep(.56, .92, current);
       section.style.setProperty("--hero-opacity", String(1 - fade));
       section.style.setProperty("--hero-ui-opacity", String(ui));
       section.style.setProperty("--hero-ui-visibility", current > .28 ? "hidden" : "visible");
@@ -107,3 +107,4 @@ export function CinematicHero() {
     </section>
   );
 }
+

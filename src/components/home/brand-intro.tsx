@@ -52,7 +52,7 @@ export function BrandIntro({ onComplete }: Props) {
       if (opening || disposed) return;
       opening = true;
       setPhase("opening");
-      later(finish, reducedMotion.matches ? 180 : 1050);
+      later(finish, reducedMotion.matches ? 180 : 800);
     };
     openRef.current = open;
     const onSceneReady = () => {
@@ -60,7 +60,7 @@ export function BrandIntro({ onComplete }: Props) {
       started = true;
       if (!timelineRef.current) timelineRef.current = performance.now();
       setPhase("letters");
-      later(open, reducedMotion.matches ? 450 : 2700);
+      later(open, reducedMotion.matches ? 350 : 2150);
     };
     window.addEventListener("genks:intro-ready", onSceneReady);
     later(open, 6500);
@@ -103,11 +103,11 @@ export function BrandIntro({ onComplete }: Props) {
               <linearGradient id={`${id}-chrome`} gradientUnits="userSpaceOnUse" x1="110" y1="20" x2="150" y2="455">
                 <stop offset="0" stopColor="#80b8ff" />
                 <stop offset=".18" stopColor="#f9fcff" />
-                <stop offset=".32" stopColor="#8294b0" />
+                <stop offset=".32" stopColor="#57dbe5" />
                 <stop offset=".47" stopColor="#f0f5ff" />
-                <stop offset=".62" stopColor="#416ba5" />
+                <stop offset=".62" stopColor="#a97cea" />
                 <stop offset=".76" stopColor="#b9d3ff" />
-                <stop offset="1" stopColor="#6a9cec" />
+                <stop offset="1" stopColor="#e780c8" />
               </linearGradient>
             </defs>
               {genksLetters.map((letter, index) => (
@@ -122,3 +122,4 @@ export function BrandIntro({ onComplete }: Props) {
     </>
   );
 }
+

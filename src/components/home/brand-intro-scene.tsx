@@ -33,7 +33,7 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
     let renderer: THREE.WebGLRenderer;
     try { renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" }); }
     catch { callbacks.current.onUnavailable(); return; }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.5 : 1.75));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
@@ -52,9 +52,9 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
     scene.add(wordmark);
     const letters = models.map((model, index) => {
       const material = new THREE.MeshStandardMaterial({
-        color: [0x287dff, 0x49c6ff, 0x9bc9ff, 0x278eff, 0x3965ff][index], metalness: .8, roughness: .23,
+        color: [0x458aff, 0x48dfe7, 0xdaecff, 0xa382ff, 0xec70be][index], metalness: .75, roughness: .2,
         envMapIntensity: 1.4, transparent: true, opacity: 0,
-        emissive: [0x164fd8, 0x168cca, 0x285aac, 0x185fdb, 0x2545d8][index], emissiveIntensity: .28,
+        emissive: [0x163bb4, 0x087487, 0x354a93, 0x6729a7, 0x8a245c][index], emissiveIntensity: .24,
       });
       const mesh = new THREE.Mesh(model.geometry, material);
       mesh.position.copy(model.position);
@@ -68,9 +68,18 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
     const blue = new THREE.PointLight(0x1e68ff, 28, 15, 2);
     blue.position.set(-3, 1.2, 2.5);
     scene.add(blue);
-    const edge = new THREE.PointLight(0x80baff, 20, 15, 2);
+    const edge = new THREE.PointLight(0xde79ff, 20, 15, 2);
     edge.position.set(3, -1, 2);
     scene.add(edge);
+    const haloGeometry = new THREE.TorusGeometry(2.7, .008, 6, 128);
+    const haloMaterials = [0x40c9ff, 0xad66ff].map(color => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .3, depthWrite: false }));
+    const halos = haloMaterials.map((material, index) => {
+      const mesh = new THREE.Mesh(haloGeometry, material);
+      mesh.position.z = -.8 - index * .15;
+      mesh.rotation.x = .72 + index * .5;
+      scene.add(mesh);
+      return mesh;
+    });
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     let distance = 9;
     let warmed = false;
@@ -98,19 +107,20 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
     renderer.domElement.addEventListener("webglcontextlost", contextLost);
     renderer.setAnimationLoop(() => {
       const now = performance.now();
-      if (!warmed || document.hidden || now - previous + .5 < 1000 / 60) return;
+      if (!warmed || document.hidden) { previous = now; return; }
+      const delta = previous ? Math.min((now - previous) / 1000, .05) : 1 / 60;
       previous = now;
       const elapsed = timelineRef.current ? Math.max(0, (now - timelineRef.current) / 1000) : 0;
       const exiting = phaseRef.current === "opening";
       const exit = exiting ? Math.max(0, (now - exitTime.current) / 1000) : 0;
       letters.forEach((letter, index) => {
-        const t = reduced.matches ? 1 : THREE.MathUtils.clamp((elapsed - index * .2) / 1.15, 0, 1);
+        const t = reduced.matches ? 1 : THREE.MathUtils.clamp((elapsed - index * .12) / 1.05, 0, 1);
         const arrive = 1 - Math.pow(1 - t, 4);
         const leave = exiting ? THREE.MathUtils.smoothstep(exit - index * .045, 0, .75) : 0;
         letter.mesh.position.set(
-          letter.home.x + (index - 2) * .2 * (1 - arrive),
-          letter.home.y - .55 * (1 - arrive) + (reduced.matches ? 0 : Math.sin(elapsed * 1.1 + index * .5) * .025) + leave * .45,
-          -1.8 * (1 - arrive) + leave * 1.6,
+          letter.home.x + (index - 2) * .55 * (1 - arrive),
+          letter.home.y + (index % 2 ? -.38 : .38) * (1 - arrive) + leave * .25,
+          -2.4 * (1 - arrive) + leave * 1.3,
         );
         letter.mesh.rotation.set(
           reduced.matches ? 0 : .25 * (1 - arrive) + Math.sin(elapsed * .65 + index) * .035,
@@ -123,8 +133,13 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
       });
       blue.position.x = -3 + Math.sin(elapsed * .7) * 1.8;
       edge.position.y = -1 + Math.sin(elapsed * .6) * .7;
-      wordmark.rotation.set(reduced.matches ? 0 : -.08 + Math.sin(elapsed * .4) * .07, reduced.matches ? 0 : -.3 + Math.sin(elapsed * .65) * .22 + exit * .25, 0);
-      camera.position.set(reduced.matches ? 0 : Math.sin(elapsed * .4) * .25, .1, distance - (exiting ? Math.min(exit, 1) * .6 : 0));
+      wordmark.rotation.set(reduced.matches ? 0 : Math.sin(elapsed * .65) * .045, reduced.matches ? 0 : -.18 * (1 - THREE.MathUtils.smoothstep(elapsed, .5, 1.8)) + Math.sin(elapsed * .7) * .05, 0);
+      halos.forEach((halo, index) => {
+        if (!reduced.matches) halo.rotation.y += delta * (index ? -.3 : .3);
+        halo.scale.setScalar(1 + Math.min(elapsed, 2.5) * .08 + exit * .4);
+        haloMaterials[index].opacity = .3 * (1 - THREE.MathUtils.smoothstep(exit, 0, .7));
+      });
+      camera.position.set(0, .1, distance - (exiting ? Math.min(exit, 1) * .6 : 0));
       camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
     });
@@ -133,6 +148,8 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
       observer.disconnect();
       renderer.domElement.removeEventListener("webglcontextlost", contextLost);
       letters.forEach(letter => { letter.mesh.geometry.dispose(); letter.material.dispose(); });
+      haloGeometry.dispose();
+      haloMaterials.forEach(material => material.dispose());
       env.dispose();
       renderer.dispose();
       renderer.domElement.remove();
@@ -143,3 +160,4 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
 
   return <div ref={mountRef} style={{ position: "absolute", inset: 0 }} aria-hidden="true" />;
 }
+

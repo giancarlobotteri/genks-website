@@ -47,9 +47,9 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     let frameCount = 0;
     let displayedProgress = 0;
     let needsRender = true;
-    let lastRenderedTime = 0;
     let previousPaused = pausedRef.current;
     let announcedReady = false;
+    let warmed = false;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const finePointer = window.matchMedia("(pointer: fine)");
     const geometries = new Set<THREE.BufferGeometry>();
@@ -184,7 +184,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     cap.scale.y = .28;
     cap.position.z = -.18;
     ring(.7, .012, -.105, chrome, diaphragm);
-    const logoMaterial = new THREE.MeshPhysicalMaterial({ color: 0x8ed8ff, metalness: .85, roughness: .17, clearcoat: .45, envMapIntensity: 1.65, emissive: 0x1666db, emissiveIntensity: .27 });
+    const logoMaterial = new THREE.MeshPhysicalMaterial({ color: 0xccedff, metalness: .9, roughness: .16, clearcoat: .55, envMapIntensity: 1.65, emissive: 0x1757bf, emissiveIntensity: .22 });
     const logo = new THREE.Group();
     logo.position.z = .045;
     diaphragm.add(logo);
@@ -200,9 +200,12 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     const blueLight = new THREE.PointLight(0x155cff, 24, 12, 2);
     blueLight.position.set(-2.5, 1, 2);
     scene.add(blueLight);
-    const rim = new THREE.PointLight(0x5395ff, 16, 12, 2);
+    const rim = new THREE.PointLight(0xa454ff, 19, 12, 2);
     rim.position.set(2, -1, 1);
     scene.add(rim);
+    const cyanLight = new THREE.PointLight(0x35e5e1, 12, 12, 2);
+    cyanLight.position.set(-2, -1.5, 2);
+    scene.add(cyanLight);
 
     const resize = () => {
       const width = mount.clientWidth;
@@ -217,6 +220,9 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(mount);
     resize();
+    // Warm the complete model before revealing it, avoiding first-frame shader compilation stutter.
+    void renderer.compileAsync(scene, camera).then(() => { if (!disposed) warmed = true; })
+      .catch(() => { if (!disposed) callbacks.current.onUnavailable(); });
     const onScroll = () => {
       const rect = section.getBoundingClientRect();
       const travel = Math.max(1, section.offsetHeight - window.innerHeight);
@@ -251,7 +257,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     const onMotionChange = () => { needsRender = true; };
     reducedMotion.addEventListener("change", onMotionChange);
     renderer.setAnimationLoop((time: number) => {
-      if (time - lastRenderedTime + .5 < 1000 / 60) return;
+      if (!warmed) return;
       const delta = previous ? Math.min((time - previous) / 1000, .05) : 0;
       previous = time;
       if (!visible || document.hidden) return;
@@ -264,20 +270,22 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       const travel = displayedProgress;
       const easing = 1 - Math.exp(-delta * 5);
       const smoothstep = (from: number, to: number, value: number) => THREE.MathUtils.smoothstep(value, from, to);
-      const zoom = mode === "hero" ? smoothstep(0, .78, travel) : 0;
+      const zoom = mode === "hero" ? smoothstep(.56, .94, travel) : 0;
+      const turn = smoothstep(.06, .6, travel);
+      const reveal = Math.sin(Math.PI * smoothstep(.1, .62, travel));
       const perspective = 1 - smoothstep(0, .7, travel) * .55;
       const orbit = moving ? Math.sin(elapsed * .45) : 0;
-      const targetX = mode === "exploded" ? .15 + travel * .22 : .13 + Math.sin(travel * Math.PI) * .13 + orbit * .055 + (reducedMotion.matches ? 0 : pointerY * .12);
-      const targetY = mode === "exploded" ? -.6 - travel * .6 : -.38 + Math.sin(travel * Math.PI * 1.15) * .55 + orbit * .16 + (reducedMotion.matches ? 0 : pointerX * .24);
+      const targetX = mode === "exploded" ? .15 + travel * .22 : reveal * .22 + orbit * .025 + (reducedMotion.matches ? 0 : pointerY * .08);
+      const targetY = mode === "exploded" ? -.6 - travel * .6 : turn * Math.PI * 2 + orbit * .045 + (reducedMotion.matches ? 0 : pointerX * .12);
       assembly.rotation.x = THREE.MathUtils.lerp(assembly.rotation.x, targetX, easing || 1);
       assembly.rotation.y = THREE.MathUtils.lerp(assembly.rotation.y, targetY, easing || 1);
       assembly.rotation.z = moving ? Math.sin(elapsed * .3) * .035 + travel * .035 : 0;
       const scale = 1 + expansion * .005;
       diaphragm.scale.set(scale, scale, 1);
-      diaphragm.position.z = expansion * .045 + (mode === "exploded" ? travel * .6 : 0);
-      front.position.z = mode === "exploded" ? travel * 1.2 : 0;
+      diaphragm.position.z = expansion * .028 + (mode === "exploded" ? travel * .6 : reveal * .24);
+      front.position.z = mode === "exploded" ? travel * 1.2 : reveal * .55;
       blue.emissiveIntensity = 1.45 + expansion * .3;
-      satellite.rotation.z = moving ? elapsed * .09 : 0;
+      satellite.rotation.z = moving ? elapsed * .12 + travel * Math.PI : 0;
       satellite.rotation.y = moving ? Math.sin(elapsed * .35) * .15 : 0;
       const height = mount.clientHeight;
       const reserve = window.innerWidth < 700 ? 350 : 300;
@@ -292,14 +300,13 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
         camera.updateProjectionMatrix();
       }
       assembly.position.y = mode === "hero" ? .2 * perspective : 0;
-      camera.position.set(mode === "exploded" ? travel * .25 : Math.sin(travel * Math.PI) * .16, mode === "exploded" ? travel * .12 : .08 * perspective, distance - (mode === "exploded" ? travel * .35 : 0));
+      camera.position.set(mode === "exploded" ? travel * .25 : 0, mode === "exploded" ? travel * .12 : .08 * perspective, distance - (mode === "exploded" ? travel * .35 : 0));
       if (mode === "hero") {
         logo.getWorldPosition(focus);
-        focus.multiplyScalar(smoothstep(0, .4, travel));
+        focus.multiplyScalar(smoothstep(.5, .7, travel));
         camera.lookAt(focus);
       } else camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
-      lastRenderedTime = time;
       needsRender = false;
       if (!announcedReady && frameCount >= 2) {
         announcedReady = true;
@@ -330,3 +337,4 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
 
   return <div ref={mountRef} style={{ position: "absolute", inset: 0 }} aria-hidden="true" />;
 }
+
