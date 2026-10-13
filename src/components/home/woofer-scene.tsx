@@ -287,9 +287,8 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       blue.emissiveIntensity = 1.45 + expansion * .3;
       satellite.rotation.z = moving ? elapsed * .12 + travel * Math.PI : 0;
       satellite.rotation.y = moving ? Math.sin(elapsed * .35) * .15 : 0;
-      const height = mount.clientHeight;
-      const reserve = window.innerWidth < 700 ? 350 : 300;
-      const distance = mode === "hero" ? Math.max(6.3 * height / Math.max(300, height - reserve), 6.3 / camera.aspect) : Math.max(5.95, 5.95 / camera.aspect) + .5;
+      // The hero canvas reserves its own space above the buttons, then expands during scrolling.
+      const distance = mode === "hero" ? Math.max(6.3, 6.3 / camera.aspect) : Math.max(5.95, 5.95 / camera.aspect) + .5;
       const frustumHeight = 2 * distance * Math.tan(THREE.MathUtils.degToRad(34 / 2));
       const fillScale = Math.hypot(frustumHeight * camera.aspect, frustumHeight) / 1.38 * 1.3;
       const magnification = mode === "hero" ? Math.exp(Math.log(fillScale) * zoom) : 1;
@@ -337,4 +336,3 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
 
   return <div ref={mountRef} style={{ position: "absolute", inset: 0 }} aria-hidden="true" />;
 }
-
