@@ -12,6 +12,7 @@ export function BrandIntro({ onComplete }: Props) {
   const completeRef = useRef(onComplete);
   const [phase, setPhase] = useState<"letters" | "opening">("letters");
   const openRef = useRef<() => void>(() => {});
+  const finishRef = useRef<() => void>(() => {});
 
   useEffect(() => { completeRef.current = onComplete; }, [onComplete]);
 
@@ -32,6 +33,7 @@ export function BrandIntro({ onComplete }: Props) {
     let opening = false;
     let started = false;
     let disposed = false;
+    let finished = false;
     document.body.style.overflow = "hidden";
     skipButton?.focus({ preventScroll: true });
 
@@ -40,15 +42,18 @@ export function BrandIntro({ onComplete }: Props) {
       timers.add(timer);
     };
     const finish = () => {
-      if (disposed) return;
+      if (disposed || finished || !opening) return;
+      finished = true;
       try { sessionStorage.setItem("genks:intro-document", documentKey); } catch { /* Optional storage. */ }
       completeRef.current();
     };
+    finishRef.current = finish;
     const open = () => {
       if (opening || disposed) return;
       opening = true;
       setPhase("opening");
-      later(finish, reducedMotion.matches ? 180 : 800);
+      // The transition event completes the handoff; this timeout covers interrupted or missing events.
+      later(finish, reducedMotion.matches ? 500 : 1800);
     };
     openRef.current = open;
     const onSceneReady = () => {
@@ -82,6 +87,9 @@ export function BrandIntro({ onComplete }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label="Introduzione GENKS"
+        onTransitionEnd={event => {
+          if (event.target === event.currentTarget && event.propertyName === "opacity") finishRef.current();
+        }}
         onKeyDown={event => {
           if (event.key === "Escape") openRef.current();
           if (event.key === "Tab") { event.preventDefault(); skipRef.current?.focus(); }
