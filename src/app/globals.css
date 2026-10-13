@@ -43,6 +43,11 @@
 * {
   box-sizing: border-box;
 }
+img, canvas, video, [data-protected-visual] {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 104px;
