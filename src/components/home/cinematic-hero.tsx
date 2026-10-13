@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ArrowDown, ArrowUpRight, Pause, Play } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useHomeSceneActive } from "./cinematic-home";
 import styles from "./cinematic-hero.module.css";
 
@@ -16,6 +16,38 @@ export function CinematicHero() {
   const progressRef = useRef(0);
   const [paused, setPaused] = useState(false);
   const [ready, setReady] = useState(false);
+  const catalogScroll = useRef<{ frame: number; cancel: () => void } | null>(null);
+  useEffect(() => () => catalogScroll.current?.cancel(), []);
+  const goToCatalog = (event: MouseEvent<HTMLAnchorElement>) => {
+    const catalog = document.getElementById("catalog");
+    if (!catalog || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    event.preventDefault();
+    catalogScroll.current?.cancel();
+    const from = window.scrollY;
+    const to = Math.max(0, catalog.getBoundingClientRect().top + from - 90);
+    const started = performance.now();
+    const controller = { frame: 0, cancel: () => {} };
+    const cancel = () => {
+      cancelAnimationFrame(controller.frame);
+      window.removeEventListener("wheel", cancel);
+      window.removeEventListener("touchstart", cancel);
+      window.removeEventListener("keydown", cancel);
+      if (catalogScroll.current === controller) catalogScroll.current = null;
+    };
+    controller.cancel = cancel;
+    catalogScroll.current = controller;
+    window.addEventListener("wheel", cancel, { passive: true });
+    window.addEventListener("touchstart", cancel, { passive: true });
+    window.addEventListener("keydown", cancel);
+    const step = (now: number) => {
+      const t = Math.min(1, (now - started) / 3800);
+      const eased = t * t * t * (t * (t * 6 - 15) + 10);
+      window.scrollTo({ top: from + (to - from) * eased, behavior: "instant" });
+      if (t < 1) controller.frame = requestAnimationFrame(step);
+      else { cancel(); history.replaceState(history.state, "", "#catalog"); }
+    };
+    controller.frame = requestAnimationFrame(step);
+  };
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -91,13 +123,13 @@ export function CinematicHero() {
 
         <div className={styles.content}>
           <div className={styles.actions}>
-            <Link className={styles.primary} href="#catalog">Vai al catalogo <ArrowUpRight size={19} aria-hidden="true" /></Link>
+            <a className={styles.primary} href="#catalog" onClick={goToCatalog}>Vai al catalogo <ArrowUpRight size={19} aria-hidden="true" /></a>
             <Link className={styles.secondary} href="/services">Prenota un servizio <ArrowUpRight size={17} aria-hidden="true" /></Link>
           </div>
         </div>
 
         <div className={styles.bottomline}>
-          <a className={styles.scroll} href="#catalog"><ArrowDown size={14} aria-hidden="true" /> Scopri il tuo prossimo suono</a>
+          <a className={styles.scroll} href="#catalog" onClick={goToCatalog}><ArrowDown size={14} aria-hidden="true" /> Scopri il tuo prossimo suono</a>
           <button type="button" className={styles.motion} disabled={!ready} aria-pressed={paused} onClick={() => setPaused(value => !value)}>
             {paused ? <Play size={12} aria-hidden="true" /> : <Pause size={12} aria-hidden="true" />}
             {paused ? "Riprendi animazione" : "Pausa animazione"}
@@ -107,4 +139,3 @@ export function CinematicHero() {
     </section>
   );
 }
-

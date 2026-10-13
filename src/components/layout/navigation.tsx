@@ -28,9 +28,10 @@ export function Navigation() {
       {open ? <X size={21} /> : <Menu size={21} />}<span>Menu</span>
     </button>
     <Link className="genks-header-logo" href="/#home" aria-label="Pagina iniziale GENKS" onClick={() => setOpen(false)}>
-      <Image src="/brand/genks-logo.jpeg" width={64} height={64} alt="GENKS" priority />
+      <Image src="/brand/genks-header.svg" width={104} height={64} alt="GENKS" priority />
     </Link>
     <nav ref={menuRef} id={navId} hidden={!open} className="genks-corner-menu" aria-label="Collegamenti GENKS">
+      <Link href="/#home" onClick={() => setOpen(false)}>Home <ArrowUpRight size={17} /></Link>
       <a href={site.instagram} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>Instagram <ArrowUpRight size={17} /></a>
       <a href={site.tiktok} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>TikTok <ArrowUpRight size={17} /></a>
       <Link href="/admin-access" onClick={() => setOpen(false)}>Accesso amministratore <ArrowUpRight size={17} /></Link>

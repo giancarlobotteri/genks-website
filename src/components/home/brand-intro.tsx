@@ -2,20 +2,16 @@
 
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { genksLetters } from "@/data/genks-lettering";
-import dynamic from "next/dynamic";
 import styles from "./brand-intro.module.css";
 
 type Props = { onComplete: () => void };
-const BrandIntroScene = dynamic(() => import("./brand-intro-scene"), { ssr: false });
 
 export function BrandIntro({ onComplete }: Props) {
   const id = useId().replace(/:/g, "");
   const skipRef = useRef<HTMLButtonElement>(null);
   const completeRef = useRef(onComplete);
-  const [phase, setPhase] = useState<"loading" | "letters" | "opening">("loading");
+  const [phase, setPhase] = useState<"letters" | "opening">("letters");
   const openRef = useRef<() => void>(() => {});
-  const timelineRef = useRef(0);
-  const [modelReady, setModelReady] = useState(false);
 
   useEffect(() => { completeRef.current = onComplete; }, [onComplete]);
 
@@ -58,11 +54,10 @@ export function BrandIntro({ onComplete }: Props) {
     const onSceneReady = () => {
       if (started || disposed) return;
       started = true;
-      if (!timelineRef.current) timelineRef.current = performance.now();
-      setPhase("letters");
-      later(open, reducedMotion.matches ? 350 : 2150);
+      later(open, reducedMotion.matches ? 180 : Math.max(0, 2100 - (performance.now() - introStarted)));
     };
-    window.addEventListener("genks:intro-ready", onSceneReady);
+    const introStarted = performance.now();
+    window.addEventListener("genks:hero-settled", onSceneReady);
     later(open, 6500);
     const onMotionChange = () => { if (reducedMotion.matches) open(); };
     reducedMotion.addEventListener("change", onMotionChange);
@@ -70,7 +65,7 @@ export function BrandIntro({ onComplete }: Props) {
     return () => {
       disposed = true;
       timers.forEach(clearTimeout);
-      window.removeEventListener("genks:intro-ready", onSceneReady);
+      window.removeEventListener("genks:hero-settled", onSceneReady);
       reducedMotion.removeEventListener("change", onMotionChange);
       document.body.style.overflow = previousOverflow;
       if (document.activeElement === skipButton) {
@@ -94,20 +89,17 @@ export function BrandIntro({ onComplete }: Props) {
       >
         <div className={styles.leftPanel} aria-hidden="true" />
         <div className={styles.rightPanel} aria-hidden="true" />
-        <div className={styles.model} data-genks-3d-intro="true" data-protected-visual>
-          <BrandIntroScene phase={phase} timelineRef={timelineRef} onReady={() => setModelReady(true)} onUnavailable={() => { setModelReady(false); window.dispatchEvent(new Event("genks:intro-ready")); }} />
-        </div>
-        <div className={`${styles.identity} ${modelReady ? styles.fallbackHidden : ""}`} data-started={phase !== "loading"}>
+        <div className={styles.identity}>
           <svg className={styles.wordmark} viewBox="0 0 1050 490" role="img" aria-label="GENKS" data-protected-visual>
             <defs>
               <linearGradient id={`${id}-chrome`} gradientUnits="userSpaceOnUse" x1="110" y1="20" x2="150" y2="455">
                 <stop offset="0" stopColor="#80b8ff" />
                 <stop offset=".18" stopColor="#f9fcff" />
-                <stop offset=".32" stopColor="#57dbe5" />
+                <stop offset=".32" stopColor="#6584ad" />
                 <stop offset=".47" stopColor="#f0f5ff" />
-                <stop offset=".62" stopColor="#a97cea" />
+                <stop offset=".62" stopColor="#185ece" />
                 <stop offset=".76" stopColor="#b9d3ff" />
-                <stop offset="1" stopColor="#e780c8" />
+                <stop offset="1" stopColor="#90baff" />
               </linearGradient>
             </defs>
               {genksLetters.map((letter, index) => (
@@ -122,4 +114,3 @@ export function BrandIntro({ onComplete }: Props) {
     </>
   );
 }
-

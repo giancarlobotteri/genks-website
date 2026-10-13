@@ -49,7 +49,7 @@ export function CinematicHome({ children }: { children: ReactNode }) {
   return (
     <div className={styles.experience} ref={rootRef}>
       {!introComplete ? <BrandIntro onComplete={finishIntro} /> : null}
-      <SceneActivation value={introComplete}>{children}</SceneActivation>
+      <SceneActivation value={true}>{children}</SceneActivation>
     </div>
   );
 }

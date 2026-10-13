@@ -3986,8 +3986,8 @@ body {
 /* GENKS: open composition, curved typography and an independent shopping rail. */
 [hidden] { display:none!important; }
 .genks-header { position:fixed; inset:20px 24px auto; height:64px; z-index:50; pointer-events:none; }
-.genks-header-logo { position:absolute; top:0; left:50%; transform:translateX(-50%); width:64px; height:64px; border-radius:50%; pointer-events:auto; }
-.genks-header-logo img { width:100%; height:100%; object-fit:contain; border-radius:50%; mix-blend-mode:screen; }
+.genks-header-logo { position:absolute; top:0; left:50%; transform:translateX(-50%); width:104px; height:64px; pointer-events:auto; }
+.genks-header-logo img { width:100%; height:100%; object-fit:contain; padding:4px; }
 .genks-menu-toggle { position:absolute; left:0; top:8px; display:flex; gap:10px; align-items:center; min-height:46px; padding:0 18px; color:#c7ddff; border:1px solid #5088e647; border-radius:18px; background:#081326e6; pointer-events:auto; transition:border-color .25s,background .25s,transform .25s; }
 .genks-menu-toggle:hover { background:#142e54; border-color:#74b8ff; transform:translateY(-2px); }
 .genks-corner-menu { position:absolute; left:0; top:70px; display:grid; width:min(285px,calc(100vw - 48px)); padding:10px; border:1px solid #4b8aff55; border-radius:22px; background:#071123fa; box-shadow:0 20px 60px #0008; pointer-events:auto; animation:corner-arrive .28s ease-out; }
@@ -4044,7 +4044,8 @@ h1,h2,h3 { font-family:"Manrope",sans-serif; }
 .service-row:hover h3 { color:#8ed8ff; text-shadow:0 0 25px #339cff35; }
 .beat-row:hover .row-track h3 { color:#9bd6ff; }
 @media(min-width:1280px) {
-  body:has(.cart-rail) #main-content { padding-right:336px; }
+  body:has(.cart-rail) #main-content { padding-inline:336px; }
+  .cart-rail { top:50%; transform:translateY(-50%); max-height:calc(100svh - 170px); }
   .cart-rail-toggle { display:none; }
   .cart-rail-backdrop { display:none; }
 }
@@ -4053,13 +4054,20 @@ h1,h2,h3 { font-family:"Manrope",sans-serif; }
   .cart-rail.is-open { display:grid; animation:corner-arrive .3s ease-out; }
   .cart-rail-close { display:inline-flex; }
 }
+@media(min-width:1280px) and (max-width:1599px) {
+  body:has(.cart-rail) .section-heading { flex-direction:column; align-items:flex-start; gap:20px; }
+  body:has(.cart-rail) .beat-row, body:has(.cart-rail) .beat-table-header { grid-template-columns:24px minmax(0,1fr) 68px 220px; }
+  body:has(.cart-rail) .row-vibe, body:has(.cart-rail) .beat-table-header > span:nth-child(4) { display:none; }
+  body:has(.cart-rail) .cart-add-button > span { display:none; }
+  body:has(.cart-rail) .purchase-guide-grid { grid-template-columns:1fr; }
+}
 @media(max-width:1100px) {
   .beat-row,.beat-table-header { grid-template-columns:24px minmax(130px,1fr) 78px 270px; }
   .row-vibe,.beat-table-header > span:nth-child(4) { display:none; }
 }
 @media(max-width:720px) {
   .genks-header { inset:16px 16px auto; }
-  .genks-header-logo { width:56px; height:56px; }
+  .genks-header-logo { width:90px; height:56px; }
   .genks-menu-toggle { top:0; padding-inline:12px; min-height:44px; }
   .genks-menu-toggle span { display:none; }
   .cart-rail-toggle { top:16px; right:16px; min-height:44px; padding-inline:12px; gap:7px; }
