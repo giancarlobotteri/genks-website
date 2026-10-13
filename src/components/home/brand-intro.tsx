@@ -2,9 +2,11 @@
 
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { genksLetters } from "@/data/genks-lettering";
+import dynamic from "next/dynamic";
 import styles from "./brand-intro.module.css";
 
 type Props = { onComplete: () => void };
+const BrandIntroScene = dynamic(() => import("./brand-intro-scene"), { ssr: false });
 
 export function BrandIntro({ onComplete }: Props) {
   const id = useId().replace(/:/g, "");
@@ -12,6 +14,8 @@ export function BrandIntro({ onComplete }: Props) {
   const completeRef = useRef(onComplete);
   const [phase, setPhase] = useState<"loading" | "letters" | "opening">("loading");
   const openRef = useRef<() => void>(() => {});
+  const timelineRef = useRef(0);
+  const [modelReady, setModelReady] = useState(false);
 
   useEffect(() => { completeRef.current = onComplete; }, [onComplete]);
 
@@ -57,8 +61,7 @@ export function BrandIntro({ onComplete }: Props) {
       if (minimumComplete) open();
     };
     window.addEventListener("genks:hero-settled", onSceneReady);
-    // Native SVG glyphs draw immediately; their motion continues while the scene loads.
-    later(() => setPhase("letters"), 0);
+    later(() => { timelineRef.current = performance.now(); setPhase("letters"); }, 0);
     later(() => {
       minimumComplete = true;
       if (sceneReady || reducedMotion.matches) open();
@@ -94,7 +97,10 @@ export function BrandIntro({ onComplete }: Props) {
       >
         <div className={styles.leftPanel} aria-hidden="true" />
         <div className={styles.rightPanel} aria-hidden="true" />
-        <div className={styles.identity} data-started={phase !== "loading"}>
+        <div className={styles.model} data-genks-3d-intro="true" data-protected-visual>
+          <BrandIntroScene phase={phase} timelineRef={timelineRef} onReady={() => setModelReady(true)} onUnavailable={() => setModelReady(false)} />
+        </div>
+        <div className={`${styles.identity} ${modelReady ? styles.fallbackHidden : ""}`} data-started={phase !== "loading"}>
           <svg className={styles.wordmark} viewBox="0 0 1050 490" role="img" aria-label="GENKS" data-protected-visual>
             <defs>
               <linearGradient id={`${id}-chrome`} gradientUnits="userSpaceOnUse" x1="110" y1="20" x2="150" y2="455">
