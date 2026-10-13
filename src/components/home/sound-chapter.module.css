@@ -1,0 +1,28 @@
+.chapter { position:relative; height:165svh; background:#03060c; }
+.frame { position:sticky; top:0; height:100svh; min-height:650px; overflow:hidden; background:radial-gradient(ellipse at 76% 50%,#0a1831 0%,#03060c 60%); }
+.copy { position:absolute; z-index:2; left:clamp(24px,7vw,110px); top:50%; transform:translateY(-50%); width:42%; max-width:590px; }
+.eyebrow { font-size:9px; letter-spacing:.18em; color:#81a9f4; }
+.copy h2 { font-family:var(--font-futuristic),sans-serif; font-size:clamp(28px,4.5vw,65px); letter-spacing:-.05em; font-weight:500; line-height:1.25; margin:25px 0; }
+.copy h2 span { color:#588eff; }
+.copy p { color:#9eacc5; font-size:15px; max-width:290px; margin-bottom:30px; }
+.copy a { display:inline-flex; gap:24px; align-items:center; font-size:13px; padding-bottom:9px; border-bottom:1px solid #3f75d6; transition:color .3s; }
+.copy a:hover { color:#81aaff; }
+.object { position:absolute; left:40%; right:-8%; top:15%; bottom:12%; }
+.poster { position:absolute; inset:15%; opacity:1; transition:opacity .5s; }
+.poster img { object-fit:contain; mask-image:radial-gradient(ellipse closest-side,#000 87%,transparent); }
+.hidden { opacity:0; }
+.footer { position:absolute; left:clamp(24px,7vw,110px); right:clamp(24px,7vw,110px); bottom:40px; display:flex; justify-content:space-between; gap:20px; color:#6882af; font-size:9px; letter-spacing:.13em; }
+.footer button { display:inline-flex; align-items:center; gap:8px; min-height:36px; border:0; background:transparent; color:#9aaccc; font-size:10px; letter-spacing:0; cursor:pointer; }
+.footer button:disabled { opacity:.4; cursor:default; }
+.footer button:focus-visible,.copy a:focus-visible { outline:2px solid #8db7ff; outline-offset:5px; }
+@media(max-width:700px) {
+  .chapter { height:145svh; }
+  .frame { min-height:690px; }
+  .copy { top:105px; transform:none; width:calc(100% - 48px); }
+  .copy h2 { font-size:32px; margin:14px 0; }
+  .copy p { font-size:13px; margin-bottom:17px; max-width:290px; }
+  .object { left:0; right:0; top:330px; bottom:80px; }
+  .footer { bottom:25px; gap:6px; align-items:center; }
+  .footer > span { font-size:7px; letter-spacing:.04em; max-width:170px; }
+}
+@media(prefers-reduced-motion:reduce) { .chapter { height:auto; } .frame { position:relative; } }

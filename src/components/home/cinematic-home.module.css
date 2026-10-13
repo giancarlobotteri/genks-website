@@ -1,0 +1,31 @@
+.experience { background:#03060c; --surface:#0a101c; --border:#1d2b43; --muted:#9caac2; }
+.experience :global(.section) { position:relative; }
+.experience :global(.section-heading h2),.experience :global(.about-content h2),.experience :global(.purchase-guide h2) {
+  font-family:var(--font-futuristic),sans-serif;
+  font-weight:600;
+  font-size:clamp(27px,3.1vw,47px);
+  line-height:1.3;
+  letter-spacing:-.055em;
+}
+.experience :global(.eyebrow) { color:#8eaae0; font-size:10px; letter-spacing:.15em; }
+.experience :global(.eyebrow > span:first-child) { color:#4c83ff; }
+.experience :global(.section-heading) { padding-top:28px; border-top:1px solid #1a2e50; }
+.experience :global(.section-heading)::before { content:""; position:absolute; top:0; left:0; width:45px; height:2px; background:#337aff; box-shadow:0 0 12px #337aff60; }
+.experience :global(.beat-card) { border-color:#1d2b43; background:linear-gradient(150deg,#0e1726,#070b13); transition:transform .5s cubic-bezier(.16,1,.3,1),border-color .3s,box-shadow .3s; }
+.experience :global(.beat-card):hover { transform:perspective(1000px) translateY(-7px) rotateX(2deg); border-color:#456ba4; box-shadow:0 20px 60px #0008,0 0 25px #2463ee0c; }
+.experience :global(.beat-artwork) img { transition:transform 1s cubic-bezier(.16,1,.3,1),filter .4s; }
+.experience :global(.beat-card):hover :global(.beat-artwork) img { transform:scale(1.06); }
+.experience :global(.service-row) { border-color:#1c2a42; transition:background .4s,padding .5s; }
+.experience :global(.service-row):hover { background:linear-gradient(90deg,#0b1c39,transparent); padding-left:24px; }
+.experience :global(.service-row h3) { font-family:var(--font-futuristic),sans-serif; font-size:clamp(18px,2.2vw,31px); font-weight:500; letter-spacing:-.04em; }
+.experience :global(.service-arrow) { color:#6e9dff; transition:transform .4s; }
+.experience :global(.service-row):hover :global(.service-arrow) { transform:rotate(45deg); }
+.experience :global(.purchase-guide) { border:0; border-top:1px solid #1a2e50; background:transparent; }
+.experience :global(.purchase-guide-grid) article { padding:30px 25px; border:1px solid #19273e; border-radius:24px; background:linear-gradient(145deg,#0c1628,#050a13); }
+.experience :global(.purchase-guide-grid) article > span { font-family:var(--font-futuristic),sans-serif; color:#578bff; }
+.experience :global(.catalog-section) { scroll-margin-top:110px; }
+.experience :global(.about-section) { overflow:hidden; padding-top:100px; padding-bottom:120px; }
+.experience :global(.about-section)::before { content:""; position:absolute; width:50%; height:1px; top:20px; background:linear-gradient(90deg,#377aff,transparent); }
+@media(prefers-reduced-motion:reduce) {
+  .experience :global(.beat-card),.experience :global(.beat-artwork) img,.experience :global(.service-row),.experience :global(.service-arrow) { transition:none; transform:none!important; }
+}

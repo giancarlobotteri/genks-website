@@ -10,6 +10,11 @@ import { beatRepository, getLicenses } from "@/lib/repositories/beats";
 import { getSiteOrigin, site } from "@/config/site";
 import { privatePreview } from "@/lib/preview-mode";
 import "./globals.css";
+import "@fontsource/orbitron/latin-500.css";
+import "@fontsource/orbitron/latin-600.css";
+import "@fontsource/space-grotesk/latin-400.css";
+import "@fontsource/space-grotesk/latin-500.css";
+import "@fontsource/space-grotesk/latin-600.css";
 
 export const metadata: Metadata = {
   metadataBase: getSiteOrigin(),

@@ -1,4 +1,6 @@
-import { Hero } from "@/components/home/hero";
+import { CinematicHero } from "@/components/home/cinematic-hero";
+import { CinematicHome } from "@/components/home/cinematic-home";
+import { SoundChapter } from "@/components/home/sound-chapter";
 import { FeaturedBeats } from "@/components/home/featured-beats";
 import { BeatCatalog } from "@/components/beats/beat-catalog";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -10,8 +12,8 @@ import { beatRepository } from "@/lib/repositories/beats";
 export default async function Home() {
   const beats = await beatRepository.listPublished();
   return (
-    <>
-      <Hero />
+    <CinematicHome>
+      <CinematicHero />
       <section id="catalog" className="catalog-section container section">
         <SectionHeading
           index="02"
@@ -36,8 +38,9 @@ export default async function Home() {
           <article><span>03</span><h3>Acquista e scarica</h3><p>Paga in sicurezza con Stripe. Dopo la conferma, accedi ai file disponibili nella tua raccolta con l’email usata per l’acquisto.</p></article>
         </div>
       </section>
+      <SoundChapter />
       <Services />
       <About />
-    </>
+    </CinematicHome>
   );
 }

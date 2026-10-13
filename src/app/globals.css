@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --font-futuristic: "Orbitron";
   --background: #050506;
   --surface: #0d0e11;
   --surface-raised: #15161b;
@@ -51,7 +52,7 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: "Trebuchet MS", ui-rounded, "Avenir Next Rounded", system-ui, sans-serif;
+  font-family: "Space Grotesk", system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   padding-bottom: 99px;
