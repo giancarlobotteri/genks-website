@@ -3910,14 +3910,14 @@ body {
   .purchase-guide-grid { grid-template-columns: 1fr; }
 }
 
-.logo-first-hero { padding: 24px 0 38px; min-height: 620px; }
-.logo-first-hero .hero-content { min-height: 0; padding: 35px 0 0; align-items: center; text-align: center; }
-.logo-first-hero .hero-art { position: relative; z-index: 0; left: auto; right: auto; top: auto; translate: none; width: min(560px, 90vw); height: min(480px, 77vw); opacity: 1; }
+.logo-first-hero { margin-top: 0; padding: 0; min-height: calc(100svh - 92px); display: grid; align-items: center; }
+.logo-first-hero .hero-content { min-height: calc(100svh - 92px); padding: 60px 0 44px; align-items: center; justify-content: center; text-align: center; }
+.logo-first-hero .hero-art { position: relative; z-index: 0; left: auto; right: auto; top: auto; translate: none; width: min(520px, 80vw, 58svh); height: min(520px, 80vw, 58svh); flex-shrink: 0; opacity: 1; }
 .logo-first-hero .hero-grain { pointer-events: none; z-index: -1; }
-.logo-first-hero .hero-topline { top: 20px; }
+.logo-first-hero .hero-topline { top: 24px; padding-inline: 0; }
 .logo-first-hero .hero-actions { justify-content: center; margin-top: 10px; flex-wrap: wrap; gap: 18px; }
 .logo-first-hero .hero-energy { margin-top: 25px; }
-@media (max-width: 700px) { .logo-first-hero { min-height: 0; padding: 18px 0 32px; } .logo-first-hero .hero-content { padding-top: 42px; } .logo-first-hero .hero-art { left: auto; width: min(480px,90vw); height: min(410px,77vw); opacity: 1; } .logo-first-hero .hero-actions { gap: 14px; } }
+@media (max-width: 700px) { .logo-first-hero { margin-top: 0; padding: 0; min-height: calc(100svh - 82px); } .logo-first-hero .hero-content { min-height: calc(100svh - 82px); padding: 55px 0 36px; } .logo-first-hero .hero-art { left: auto; width: min(420px,82vw,48svh); height: min(420px,82vw,48svh); opacity: 1; } .logo-first-hero .hero-actions { gap: 14px; width: 100%; } .logo-first-hero .hero-actions .button { min-width: 0; } }
 
 /* Unified beat creation, verified orders and live license editing */
 .beat-create-panel > summary,.license-admin-list summary,.admin-form-card > summary { display: flex; align-items: center; gap: 9px; }
