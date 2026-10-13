@@ -1,5 +1,6 @@
 "use client";
 
+import { italianLabel } from "@/lib/italian";
 import Image from "next/image";
 import { useState } from "react";
 import { AlertTriangle, CreditCard, Trash2 } from "lucide-react";
@@ -28,15 +29,15 @@ export function CartCheckout() {
       const available = licenses.filter((license) => beat.licenseIds.includes(license.id) && license.id !== "exclusive");
       return <article key={beat.id}>
         <Image src={beat.cover} width={64} height={64} alt="" />
-        <div><strong>{beat.title}</strong><small>{beat.genre} · {beat.bpm} BPM</small></div>
+        <div><strong>{beat.title}</strong><small>{italianLabel(beat.genre)} · {beat.bpm} BPM</small></div>
         <button type="button" className="icon-button" aria-label={`Rimuovi ${beat.title} dal carrello`} onClick={() => remove(beat.id)}><Trash2 size={17} /></button>
         <label className="cart-license-select"><span>Licenza</span><select aria-label={`Licenza per ${beat.title}`} value={selectedLicenseId ?? ""} onChange={(event) => selectLicense(beat.id, (event.target.value || null) as LicenseTier | null)}>
           <option value="">Scegli la licenza…</option>
-          {available.map((license) => <option value={license.id} key={license.id}>{license.name} — {formatPrice(beat.licensePrices?.[license.id] ?? license.priceCents)}</option>)}
+          {available.map((license) => <option value={license.id} key={license.id}>{italianLabel(license.name)} — {formatPrice(beat.licensePrices?.[license.id] ?? license.priceCents)}</option>)}
         </select></label>
       </article>;
     })}</div>
-    <button type="button" className="text-link cart-clear" onClick={() => setConfirmClear(true)}><Trash2 size={15} />Svuota il carrello</button>
+    <button type="button" className="button cart-clear cart-clear-prominent" onClick={() => setConfirmClear(true)}><Trash2 size={15} />Svuota il carrello</button>
     <Modal open={confirmClear} onClose={() => setConfirmClear(false)} titleId="clear-cart-title">
       <div className="cart-clear-dialog-icon"><AlertTriangle size={25} /></div>
       <h2 id="clear-cart-title">Vuoi svuotare il carrello?</h2>

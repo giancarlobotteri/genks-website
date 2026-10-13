@@ -5,7 +5,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return <div className="portal-shell narrow-shell">
     <span className="eyebrow">AREA CLIENTE GENKS</span>
     <h1>Accedi alla tua raccolta.</h1>
-    <p className="muted">Accedi con la password oppure usa un collegamento sicuro monouso per entrare nella tua raccolta.</p>
+    <p className="muted">Usa la stessa email inserita al pagamento: i tuoi acquisti vengono collegati alla raccolta dopo l’accesso. Puoi entrare con un collegamento sicuro monouso, senza aver creato prima una password.</p>
     {query.sent && <p className="notice success" role="status">Controlla la posta. Il collegamento ha una validità limitata.</p>}
     {query.error && <p className="notice error" role="alert">Non è stato possibile completare l’accesso o inviare il collegamento. Riprova.</p>}
     <form action={signInWithPassword} className="premium-form">

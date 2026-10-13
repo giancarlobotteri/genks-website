@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Navigation } from "@/components/layout/navigation";
+import { CartRail } from "@/components/commerce/cart-rail";
 import { Footer } from "@/components/layout/footer";
 import { PersistentPlayer } from "@/components/player/persistent-player";
 import { MotionObserver } from "@/components/ui/motion-observer";
@@ -11,19 +12,17 @@ import { beatRepository, getLicenses } from "@/lib/repositories/beats";
 import { getSiteOrigin, site } from "@/config/site";
 import { privatePreview } from "@/lib/preview-mode";
 import "./globals.css";
-import "@fontsource/orbitron/latin-500.css";
-import "@fontsource/orbitron/latin-600.css";
-import "@fontsource/space-grotesk/latin-400.css";
-import "@fontsource/space-grotesk/latin-500.css";
-import "@fontsource/space-grotesk/latin-600.css";
+import "@fontsource/manrope/latin-400.css";
+import "@fontsource/manrope/latin-600.css";
+import "@fontsource/manrope/latin-700.css";
 
 export const metadata: Metadata = {
   metadataBase: getSiteOrigin(),
-  title: { default: "GENKS — Il suono nasce qui", template: "%s | GENKS" },
+  title: { default: "GENKS", template: "%s | GENKS" },
   description: site.description,
   applicationName: site.name,
   openGraph: {
-    title: "GENKS — Il suono nasce qui",
+    title: "GENKS",
     description: site.description,
     type: "website",
     locale: "it_IT",
@@ -59,6 +58,7 @@ export default async function RootLayout({
           <LicenseProvider licenses={licenses}>
             <CartProvider catalog={beats}>
               <Navigation />
+              <CartRail />
               <main id="main-content" tabIndex={-1}>
                 {children}
               </main>

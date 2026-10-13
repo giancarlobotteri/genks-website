@@ -34,8 +34,7 @@ export function BrandIntro({ onComplete }: Props) {
     const skipButton = skipRef.current;
     const timers = new Set<ReturnType<typeof setTimeout>>();
     let opening = false;
-    let minimumComplete = false;
-    let sceneReady = false;
+    let started = false;
     let disposed = false;
     document.body.style.overflow = "hidden";
     skipButton?.focus({ preventScroll: true });
@@ -57,15 +56,13 @@ export function BrandIntro({ onComplete }: Props) {
     };
     openRef.current = open;
     const onSceneReady = () => {
-      sceneReady = true;
-      if (minimumComplete) open();
+      if (started || disposed) return;
+      started = true;
+      if (!timelineRef.current) timelineRef.current = performance.now();
+      setPhase("letters");
+      later(open, reducedMotion.matches ? 450 : 2700);
     };
-    window.addEventListener("genks:hero-settled", onSceneReady);
-    later(() => { timelineRef.current = performance.now(); setPhase("letters"); }, 0);
-    later(() => {
-      minimumComplete = true;
-      if (sceneReady || reducedMotion.matches) open();
-    }, reducedMotion.matches ? 450 : 2700);
+    window.addEventListener("genks:intro-ready", onSceneReady);
     later(open, 6500);
     const onMotionChange = () => { if (reducedMotion.matches) open(); };
     reducedMotion.addEventListener("change", onMotionChange);
@@ -73,7 +70,7 @@ export function BrandIntro({ onComplete }: Props) {
     return () => {
       disposed = true;
       timers.forEach(clearTimeout);
-      window.removeEventListener("genks:hero-settled", onSceneReady);
+      window.removeEventListener("genks:intro-ready", onSceneReady);
       reducedMotion.removeEventListener("change", onMotionChange);
       document.body.style.overflow = previousOverflow;
       if (document.activeElement === skipButton) {
@@ -98,7 +95,7 @@ export function BrandIntro({ onComplete }: Props) {
         <div className={styles.leftPanel} aria-hidden="true" />
         <div className={styles.rightPanel} aria-hidden="true" />
         <div className={styles.model} data-genks-3d-intro="true" data-protected-visual>
-          <BrandIntroScene phase={phase} timelineRef={timelineRef} onReady={() => setModelReady(true)} onUnavailable={() => setModelReady(false)} />
+          <BrandIntroScene phase={phase} timelineRef={timelineRef} onReady={() => setModelReady(true)} onUnavailable={() => { setModelReady(false); window.dispatchEvent(new Event("genks:intro-ready")); }} />
         </div>
         <div className={`${styles.identity} ${modelReady ? styles.fallbackHidden : ""}`} data-started={phase !== "loading"}>
           <svg className={styles.wordmark} viewBox="0 0 1050 490" role="img" aria-label="GENKS" data-protected-visual>

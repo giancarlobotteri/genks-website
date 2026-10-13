@@ -26,6 +26,10 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     const mount = mountRef.current;
     const section = sectionRef.current;
     if (!mount || !section) return;
+    let disposed = false;
+    let teardown = () => {};
+    void createGenksGlyphs(1.14).then(models => {
+      if (disposed) { models.forEach(model => model.geometry.dispose()); return; }
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
@@ -51,7 +55,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     const geometries = new Set<THREE.BufferGeometry>();
     const materials = new Set<THREE.Material>();
     const textures = new Set<THREE.Texture>();
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.75 : 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.5 : 1.75));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
@@ -81,10 +85,10 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     const front = new THREE.Group();
     assembly.add(front);
 
-    const chrome = new THREE.MeshStandardMaterial({ color: 0xb4c3d9, metalness: 1, roughness: .22, envMapIntensity: 1.35 });
-    const darkMetal = new THREE.MeshStandardMaterial({ color: 0x101727, metalness: .9, roughness: .29 });
+    const chrome = new THREE.MeshStandardMaterial({ color: 0x99c8ff, metalness: 1, roughness: .22, envMapIntensity: 1.35 });
+    const darkMetal = new THREE.MeshStandardMaterial({ color: 0x102b56, metalness: .85, roughness: .25 });
     const rubber = new THREE.MeshStandardMaterial({ color: 0x11151d, metalness: .08, roughness: .62 });
-    const coneMaterial = new THREE.MeshStandardMaterial({ color: 0x283243, metalness: .35, roughness: .5, side: THREE.DoubleSide });
+    const coneMaterial = new THREE.MeshStandardMaterial({ color: 0x244e89, metalness: .5, roughness: .38, side: THREE.DoubleSide });
     const ridges = new THREE.MeshStandardMaterial({ color: 0x1a2332, metalness: .25, roughness: .55 });
     const blue = new THREE.MeshStandardMaterial({ color: 0x1458ff, metalness: .5, roughness: .24, emissive: 0x1555ff, emissiveIntensity: 1.6 });
 
@@ -132,6 +136,12 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     ring(1.46, .027, .225, chrome);
     ring(1.56, .065, .15, darkMetal);
     ring(1.57, .014, .218, blue, front);
+    ring(1.405, .007, .245, blue, front);
+    const satellite = new THREE.Group();
+    assembly.add(satellite);
+    const orbitRing = ring(1.73, .005, 0, blue, satellite);
+    orbitRing.rotation.x = .19;
+    orbitRing.rotation.y = -.12;
     ring(1.64, .023, .12, chrome, front);
     ring(1.5, .018, -.02, chrome);
     ring(1.52, .035, -.32, darkMetal);
@@ -174,11 +184,11 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     cap.scale.y = .28;
     cap.position.z = -.18;
     ring(.7, .012, -.105, chrome, diaphragm);
-    const logoMaterial = new THREE.MeshPhysicalMaterial({ color: 0xe0ebff, metalness: 1, roughness: .19, clearcoat: .5, envMapIntensity: 1.65, emissive: 0x102b60, emissiveIntensity: .12 });
+    const logoMaterial = new THREE.MeshPhysicalMaterial({ color: 0x8ed8ff, metalness: .85, roughness: .17, clearcoat: .45, envMapIntensity: 1.65, emissive: 0x1666db, emissiveIntensity: .27 });
     const logo = new THREE.Group();
     logo.position.z = .045;
     diaphragm.add(logo);
-    createGenksGlyphs(1.14).forEach(glyph => {
+    models.forEach(glyph => {
       const mesh = addMesh(glyph.geometry, logoMaterial, logo);
       mesh.position.copy(glyph.position);
     });
@@ -201,7 +211,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       renderer.setSize(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.75 : 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.5 : 1.75));
       needsRender = true;
     };
     const resizeObserver = new ResizeObserver(resize);
@@ -241,7 +251,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     const onMotionChange = () => { needsRender = true; };
     reducedMotion.addEventListener("change", onMotionChange);
     renderer.setAnimationLoop((time: number) => {
-      if (window.innerWidth < 700 && time - lastRenderedTime + .5 < 1000 / 60) return;
+      if (time - lastRenderedTime + .5 < 1000 / 60) return;
       const delta = previous ? Math.min((time - previous) / 1000, .05) : 0;
       previous = time;
       if (!visible || document.hidden) return;
@@ -266,7 +276,9 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       diaphragm.scale.set(scale, scale, 1);
       diaphragm.position.z = expansion * .045 + (mode === "exploded" ? travel * .6 : 0);
       front.position.z = mode === "exploded" ? travel * 1.2 : 0;
-      blue.emissiveIntensity = 1.3 + expansion * .25;
+      blue.emissiveIntensity = 1.45 + expansion * .3;
+      satellite.rotation.z = moving ? elapsed * .09 : 0;
+      satellite.rotation.y = moving ? Math.sin(elapsed * .35) * .15 : 0;
       const height = mount.clientHeight;
       const reserve = window.innerWidth < 700 ? 350 : 300;
       const distance = mode === "hero" ? Math.max(6.3 * height / Math.max(300, height - reserve), 6.3 / camera.aspect) : Math.max(5.95, 5.95 / camera.aspect) + .5;
@@ -296,7 +308,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       frameCount++;
     });
 
-    return () => {
+    teardown = () => {
       renderer.setAnimationLoop(null);
       intersection.disconnect();
       resizeObserver.disconnect();
@@ -312,6 +324,8 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       renderer.dispose();
       renderer.domElement.remove();
     };
+    }).catch(() => { if (!disposed) callbacks.current.onUnavailable(); });
+    return () => { disposed = true; teardown(); };
   }, [sectionRef, mode, heroProgressRef]);
 
   return <div ref={mountRef} style={{ position: "absolute", inset: 0 }} aria-hidden="true" />;

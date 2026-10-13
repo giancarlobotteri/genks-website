@@ -1,11 +1,8 @@
 import { CinematicHero } from "@/components/home/cinematic-hero";
 import { CinematicHome } from "@/components/home/cinematic-home";
-import { SoundChapter } from "@/components/home/sound-chapter";
-import { FeaturedBeats } from "@/components/home/featured-beats";
 import { BeatCatalog } from "@/components/beats/beat-catalog";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Services } from "@/components/home/services";
-import { About } from "@/components/home/about";
 import { AnnouncementTicker } from "@/components/home/announcement-ticker";
 import { beatRepository } from "@/lib/repositories/beats";
 
@@ -23,12 +20,11 @@ export default async function Home() {
           <p>
             Ascolta prima. Scegli la licenza quando trovi il suono che cerchi.
             <br />
-            <span className="muted">Non serve un account per esplorare o acquistare.</span>
+            <span className="muted">Esplora e acquista liberamente. Per ritrovare i file, accedi alla raccolta con l’email usata per pagare.</span>
           </p>
         </SectionHeading>
         <BeatCatalog beats={beats} />
       </section>
-      <FeaturedBeats beats={beats} />
       <AnnouncementTicker />
       <section className="container section purchase-guide" aria-labelledby="purchase-guide-title">
         <h2 id="purchase-guide-title">Dal primo ascolto alla tua prossima uscita.</h2>
@@ -38,9 +34,7 @@ export default async function Home() {
           <article><span>03</span><h3>Acquista e scarica</h3><p>Paga in sicurezza con Stripe. Dopo la conferma, accedi ai file disponibili nella tua raccolta con l’email usata per l’acquisto.</p></article>
         </div>
       </section>
-      <SoundChapter />
       <Services />
-      <About />
     </CinematicHome>
   );
 }

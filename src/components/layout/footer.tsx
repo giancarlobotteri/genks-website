@@ -21,7 +21,7 @@ export function Footer() {
           </a>
           <a href={site.youtube} target="_blank" rel="noreferrer">YouTube <ArrowUpRight size={14} /></a>
         </div>
-        <div className="footer-socials"><Link href="/legal/privacy">Riservatezza</Link><Link href="/legal/cookies">Cookie</Link><Link href="/legal/terms">Condizioni</Link><Link href="/legal/licensing">Licenze</Link></div>
+        <div className="footer-socials"><Link href="/account/library">I miei acquisti</Link><Link href="/carrello">Carrello</Link><Link href="/legal/privacy">Riservatezza</Link><Link href="/legal/cookies">Cookie</Link><Link href="/legal/terms">Condizioni</Link><Link href="/legal/licensing">Licenze</Link></div>
         <span className="copyright">© {new Date().getFullYear()} GENKS</span>
       </div>
     </footer>

@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { BrandIntro } from "./brand-intro";
 import styles from "./cinematic-home.module.css";
+
+const SceneActivation = createContext(true);
+export function useHomeSceneActive() { return useContext(SceneActivation); }
 
 export function CinematicHome({ children }: { children: ReactNode }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -27,7 +30,7 @@ export function CinematicHome({ children }: { children: ReactNode }) {
         animation.onfinish = () => animations.delete(animation);
       });
     }, { threshold: .08 });
-    const observe = () => root.querySelectorAll(".section-heading, .beat-card, .service-row, .purchase-guide article, .about-content").forEach(element => observer.observe(element));
+    const observe = () => root.querySelectorAll(".section-heading, .beat-card, .beat-row, .service-row, .purchase-guide article, .about-content").forEach(element => observer.observe(element));
     observe();
     const mutations = new MutationObserver(observe);
     mutations.observe(root, { childList: true, subtree: true });
@@ -46,7 +49,7 @@ export function CinematicHome({ children }: { children: ReactNode }) {
   return (
     <div className={styles.experience} ref={rootRef}>
       {!introComplete ? <BrandIntro onComplete={finishIntro} /> : null}
-      {children}
+      <SceneActivation value={introComplete}>{children}</SceneActivation>
     </div>
   );
 }

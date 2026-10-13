@@ -26,10 +26,14 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
+    let disposed = false;
+    let teardown = () => {};
+    void createGenksGlyphs(4.8).then(models => {
+      if (disposed) { models.forEach(model => model.geometry.dispose()); return; }
     let renderer: THREE.WebGLRenderer;
     try { renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" }); }
     catch { callbacks.current.onUnavailable(); return; }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
@@ -46,12 +50,11 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
     pmrem.dispose();
     const wordmark = new THREE.Group();
     scene.add(wordmark);
-    const models = createGenksGlyphs(4.8);
-    const letters = models.map(model => {
-      const material = new THREE.MeshPhysicalMaterial({
-        color: 0xc9dbf7, metalness: 1, roughness: .2, clearcoat: .5,
-        clearcoatRoughness: .18, envMapIntensity: 1.55, transparent: true, opacity: 0,
-        emissive: 0x102b60, emissiveIntensity: .14,
+    const letters = models.map((model, index) => {
+      const material = new THREE.MeshStandardMaterial({
+        color: [0x287dff, 0x49c6ff, 0x9bc9ff, 0x278eff, 0x3965ff][index], metalness: .8, roughness: .23,
+        envMapIntensity: 1.4, transparent: true, opacity: 0,
+        emissive: [0x164fd8, 0x168cca, 0x285aac, 0x185fdb, 0x2545d8][index], emissiveIntensity: .28,
       });
       const mesh = new THREE.Mesh(model.geometry, material);
       mesh.position.copy(model.position);
@@ -70,7 +73,7 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
     scene.add(edge);
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     let distance = 9;
-    let announced = false;
+    let warmed = false;
     let previous = 0;
     const resize = () => {
       const width = mount.clientWidth;
@@ -79,16 +82,23 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
       renderer.setSize(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      distance = Math.max(8.7, 4.8 * 1.22 / (2 * Math.tan(Math.PI / 10) * camera.aspect));
+      distance = Math.max(5.2, 4.8 * 1.22 / (2 * Math.tan(Math.PI / 10) * camera.aspect));
     };
     const observer = new ResizeObserver(resize);
     observer.observe(mount);
     resize();
+    void renderer.compileAsync(scene, camera).then(() => {
+      if (disposed) return;
+      timelineRef.current = performance.now();
+      warmed = true;
+      callbacks.current.onReady();
+      window.dispatchEvent(new Event("genks:intro-ready"));
+    }).catch(() => { if (!disposed) callbacks.current.onUnavailable(); });
     const contextLost = (event: Event) => { event.preventDefault(); renderer.setAnimationLoop(null); callbacks.current.onUnavailable(); };
     renderer.domElement.addEventListener("webglcontextlost", contextLost);
     renderer.setAnimationLoop(() => {
       const now = performance.now();
-      if (document.hidden || (window.innerWidth < 700 && now - previous + .5 < 1000 / 60)) return;
+      if (!warmed || document.hidden || now - previous + .5 < 1000 / 60) return;
       previous = now;
       const elapsed = timelineRef.current ? Math.max(0, (now - timelineRef.current) / 1000) : 0;
       const exiting = phaseRef.current === "opening";
@@ -111,13 +121,14 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
         letter.material.opacity = THREE.MathUtils.smoothstep(t, 0, .2) * (1 - leave);
         letter.material.depthWrite = letter.material.opacity > .98;
       });
+      blue.position.x = -3 + Math.sin(elapsed * .7) * 1.8;
+      edge.position.y = -1 + Math.sin(elapsed * .6) * .7;
       wordmark.rotation.set(reduced.matches ? 0 : -.08 + Math.sin(elapsed * .4) * .07, reduced.matches ? 0 : -.3 + Math.sin(elapsed * .65) * .22 + exit * .25, 0);
       camera.position.set(reduced.matches ? 0 : Math.sin(elapsed * .4) * .25, .1, distance - (exiting ? Math.min(exit, 1) * .6 : 0));
       camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
-      if (!announced && elapsed > .1) { announced = true; callbacks.current.onReady(); }
     });
-    return () => {
+    teardown = () => {
       renderer.setAnimationLoop(null);
       observer.disconnect();
       renderer.domElement.removeEventListener("webglcontextlost", contextLost);
@@ -126,6 +137,8 @@ export default function BrandIntroScene({ phase, timelineRef, onReady, onUnavail
       renderer.dispose();
       renderer.domElement.remove();
     };
+    }).catch(() => { if (!disposed) callbacks.current.onUnavailable(); });
+    return () => { disposed = true; teardown(); };
   }, [timelineRef]);
 
   return <div ref={mountRef} style={{ position: "absolute", inset: 0 }} aria-hidden="true" />;

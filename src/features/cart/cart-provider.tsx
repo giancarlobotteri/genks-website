@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { cartStorageKey, restoreCart } from "@/lib/cart-storage";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Beat, LicenseTier } from "@/types/domain";
 
 export interface CartItem { beat: Beat; selectedLicenseId: LicenseTier | null }
@@ -26,31 +28,51 @@ interface CartContextValue {
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
-const STORAGE_KEY = "genks-cart-v1";
+const DEVICE_KEY = "genks:cart:device:v2";
 
 export function CartProvider({ children, catalog }: { children: ReactNode; catalog: Beat[] }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const pathname = usePathname();
+  const [selection, setSelection] = useState<{ key: string | null; items: CartItem[] }>({ key: null, items: [] });
   const [animation, setAnimation] = useState<CartAnimation | null>(null);
-  const [hydrated, setHydrated] = useState(false);
+  const deviceRef = useRef<string | null>(null);
+  const items = selection.items;
+  const setItems = useCallback((update: (current: CartItem[]) => CartItem[]) => setSelection(current => ({ ...current, items: update(current.items) })), []);
 
   useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const hydrate = async () => {
+      // Identity comes from the verified server session. No cross-device cart database exists.
+      const response = await fetch("/api/cart/identity", { cache: "no-store", signal: controller.signal });
+      if (!response.ok) throw new Error("Identità non disponibile");
+      const { owner } = await response.json() as { owner: string };
+      if (cancelled) return;
+      let key: string | null = null;
+      let restored: CartItem[] = [];
+      try {
+        localStorage.removeItem("genks-cart-v1");
+        deviceRef.current ??= localStorage.getItem(DEVICE_KEY) || crypto.randomUUID();
+        localStorage.setItem(DEVICE_KEY, deviceRef.current);
+        key = cartStorageKey(deviceRef.current, owner);
+        restored = restoreCart(localStorage.getItem(key), catalog);
+      } catch { /* Disabled storage: keep this tab's cart in memory. */ }
+      setSelection(current => {
+        if (current.key === key) return current;
+        const pending = current.key === null ? current.items : [];
+        const combined = [...restored, ...pending.filter(item => !restored.some(saved => saved.beat.id === item.beat.id))];
+        return { key, items: combined };
+      });
+    };
+    void hydrate().catch(() => { /* A temporary network error must not overwrite a saved cart. */ });
+    return () => { cancelled = true; controller.abort(); };
+  }, [catalog, pathname]);
+
+  useEffect(() => {
+    if (!selection.key) return;
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") as { beatId: string; selectedLicenseId?: LicenseTier | null }[];
-      const restored = saved.flatMap(({ beatId, selectedLicenseId }) => {
-        const beat = catalog.find((entry) => entry.id === beatId);
-        return beat ? [{ beat, selectedLicenseId: selectedLicenseId && beat.licenseIds.includes(selectedLicenseId) ? selectedLicenseId : null }] : [];
-      });
-      window.requestAnimationFrame(() => {
-        setItems(restored);
-        setHydrated(true);
-      });
-    } catch { localStorage.removeItem(STORAGE_KEY); }
-  }, [catalog]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items.map(({ beat, selectedLicenseId }) => ({ beatId: beat.id, selectedLicenseId }))));
-  }, [items, hydrated]);
+      localStorage.setItem(selection.key, JSON.stringify(items.map(({ beat, selectedLicenseId }) => ({ beatId: beat.id, selectedLicenseId }))));
+    } catch { /* Shopping still works when browser storage is disabled. */ }
+  }, [items, selection.key]);
 
   const add = useCallback((beat: Beat, origin?: DOMRect) => {
     setItems((current) => {
@@ -58,7 +80,7 @@ export function CartProvider({ children, catalog }: { children: ReactNode; catal
       return existing ? current : [...current, { beat, selectedLicenseId: null }];
     });
     if (origin) {
-      const cartTarget = document.querySelector<HTMLElement>("[data-cart-target]")?.getBoundingClientRect();
+      const cartTarget = Array.from(document.querySelectorAll<HTMLElement>("[data-cart-target]")).map(element => element.getBoundingClientRect()).find(rect => rect.width > 0 && rect.height > 0);
       const startX = origin.left + origin.width / 2;
       const startY = origin.top + origin.height / 2;
       const endX = cartTarget ? cartTarget.left + cartTarget.width / 2 : window.innerWidth - 40;
@@ -78,11 +100,11 @@ export function CartProvider({ children, catalog }: { children: ReactNode; catal
       });
       window.setTimeout(() => setAnimation(null), 1450);
     }
-  }, []);
+  }, [setItems]);
 
-  const remove = useCallback((beatId: string) => setItems((current) => current.filter((item) => item.beat.id !== beatId)), []);
-  const selectLicense = useCallback((beatId: string, licenseId: LicenseTier | null) => setItems((current) => current.map((item) => item.beat.id === beatId ? { ...item, selectedLicenseId: licenseId } : item)), []);
-  const clear = useCallback(() => setItems([]), []);
+  const remove = useCallback((beatId: string) => setItems((current) => current.filter((item) => item.beat.id !== beatId)), [setItems]);
+  const selectLicense = useCallback((beatId: string, licenseId: LicenseTier | null) => setItems((current) => current.map((item) => item.beat.id === beatId ? { ...item, selectedLicenseId: licenseId } : item)), [setItems]);
+  const clear = useCallback(() => setItems(() => []), [setItems]);
   const count = items.length;
   const value = useMemo(() => ({ items, count, animation, add, selectLicense, remove, clear }), [items, count, animation, add, selectLicense, remove, clear]);
 

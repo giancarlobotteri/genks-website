@@ -37,7 +37,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
         : smartSearchActive
           ? [...filtered].sort((a, b) => (recommendations.get(b.id)?.score ?? 0) - (recommendations.get(a.id)?.score ?? 0))
           : filtered;
-  const activeCount = [filters.mood, filters.bpm, filters.key].filter(
+  const activeCount = [filters.genre, filters.mood, filters.bpm, filters.key].filter(
     (value) => value !== "All",
   ).length;
   const setFilter = <K extends keyof CatalogFilters>(
@@ -96,6 +96,13 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
       </div>
       <div id={filtersId} className="advanced-filters" hidden={!expanded}>
         <label>
+          Genere
+          <select value={filters.genre} onChange={event => setFilter("genre", event.target.value)}>
+            <option value="All">Tutti i generi</option>
+            {[...new Set(beats.map(beat => beat.genre))].sort().map(genre => <option key={genre} value={genre}>{italianLabel(genre)}</option>)}
+          </select>
+        </label>
+        <label>
           Atmosfera
           <select
             value={filters.mood}
@@ -140,25 +147,6 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
         </button>
       </div>
       <div className="catalog-subtoolbar">
-        <div
-          className="genre-filters"
-          role="group"
-          aria-label="Filtra per genere"
-        >
-          {["All", "TRAP", "R&B", "AFRO", "REGGAE", "POP", "RAP/HIPHOP", "EXPERIMENTAL"].map((genre) => (
-            <button
-              key={genre}
-              type="button"
-              className={
-                filters.genre === genre ? "genre-pill active" : "genre-pill"
-              }
-              aria-pressed={filters.genre === genre}
-              onClick={() => setFilter("genre", genre)}
-            >
-              {genre === "All" ? "Tutti i generi" : italianLabel(genre)}
-            </button>
-          ))}
-        </div>
         <label className="sort-select">
           <ArrowDownUp size={14} />
           <span className="sr-only">Ordina i beat</span>
