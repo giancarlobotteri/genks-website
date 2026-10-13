@@ -24,7 +24,7 @@ export function CinematicHero() {
     event.preventDefault();
     catalogScroll.current?.cancel();
     const from = window.scrollY;
-    const to = Math.max(0, catalog.getBoundingClientRect().top + from - 90);
+    const to = Math.max(0, catalog.getBoundingClientRect().top + from);
     const started = performance.now();
     const controller = { frame: 0, cancel: () => {} };
     const cancel = () => {
@@ -139,3 +139,4 @@ export function CinematicHero() {
     </section>
   );
 }
+
