@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-html-link-for-pages -- Native Home fragments must replace the existing catalog hash. */
 
 import Link from "next/link";
 import Image from "next/image";
