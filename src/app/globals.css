@@ -3911,6 +3911,7 @@ body {
 }
 
 .logo-first-hero { margin-top: 0; padding: 0; min-height: calc(100svh - 92px); display: grid; align-items: center; background: var(--background); border-radius: 0; }
+.logo-first-hero { background-image: radial-gradient(ellipse at 13% 38%, rgba(26,70,180,.15) 0%, rgba(15,35,95,.065) 30%, transparent 57%), radial-gradient(ellipse at 87% 62%, rgba(36,85,185,.11) 0%, rgba(17,37,83,.04) 32%, transparent 60%), radial-gradient(ellipse at 50% 43%, rgba(25,51,100,.055), transparent 48%); background-size: 100% 100%; }
 .logo-first-hero::before,.logo-first-hero::after,.logo-first-hero .hero-art::after { display: none; }
 .logo-first-hero.sales-hero .hero-art { animation: none !important; transform: none !important; filter: none !important; transition: none; mix-blend-mode: screen; }
 .logo-first-hero .hero-content { min-height: calc(100svh - 92px); padding: 60px 0 44px; align-items: center; justify-content: center; text-align: center; }
