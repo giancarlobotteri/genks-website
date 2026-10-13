@@ -25,7 +25,7 @@ export function FavoriteButton({ beat }: { beat: Beat }) {
     <button
       type="button"
       className={`icon-button favorite-button ${saved ? "is-favorite" : ""} ${celebrating ? "is-celebrating" : ""}`}
-      aria-label={`${saved ? "Unsave" : "Save"} ${beat.title}`}
+      aria-label={`${saved ? "Rimuovi dai preferiti" : "Salva"} ${beat.title}`}
       aria-pressed={saved}
       onClick={handleFavorite}
     >

@@ -1,7 +1,7 @@
 export const site = {
   name: "GENKS",
   description:
-    "The sound of GENKS. Explore underground beats, find your next sound, and connect for custom music production.",
+    "Il suono di GENKS. Esplora i beat, trova il suono per il tuo prossimo brano e richiedi una produzione musicale su misura.",
   instagram:
     process.env.NEXT_PUBLIC_GENKS_INSTAGRAM ||
     "https://www.instagram.com/prodbygenks/",
@@ -13,11 +13,11 @@ export const site = {
     "https://www.youtube.com/@prodbygenks",
   whatsapp: process.env.NEXT_PUBLIC_GENKS_WHATSAPP || "",
   navigation: [
-    { label: "Home", href: "/#home" },
-    { label: "Beat store", href: "/beats" },
-    { label: "Book / services", href: "/services" },
-    { label: "Library", href: "/account/library" },
-    { label: "About", href: "/#about" },
+    { label: "Inizio", href: "/#home" },
+    { label: "Negozio di beat", href: "/beats" },
+    { label: "Prenotazioni e servizi", href: "/services" },
+    { label: "Raccolta", href: "/account/library" },
+    { label: "Chi sono", href: "/#about" },
   ],
 } as const;
 

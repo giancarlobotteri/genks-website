@@ -10,14 +10,14 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
   if (!signature || !process.env.STRIPE_WEBHOOK_SECRET)
-    return new Response("Webhook not configured", { status: 503 });
+    return new Response("Webhook non configurato", { status: 503 });
   let event: Stripe.Event;
   try {
     event = getStripe().webhooks.constructEvent(
       await request.text(), signature, process.env.STRIPE_WEBHOOK_SECRET,
     );
   } catch {
-    return new Response("Invalid signature", { status: 400 });
+    return new Response("Firma non valida", { status: 400 });
   }
   const db = createSupabaseAdminClient();
   if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     if (orderId && session.payment_status === "paid") {
       const { data: order } = await db.from("orders").select("id,total_cents,stripe_checkout_session_id,customer_id,customer_email,customer_name,order_number,created_at,currency,order_items(id,beat_id,license_type_id,beat_title_snapshot,license_name_snapshot,unit_price_cents)").eq("id", orderId).single();
       if (order && (order.stripe_checkout_session_id !== session.id || order.total_cents !== session.amount_total || order.currency.toLowerCase() !== session.currency?.toLowerCase())) {
-        return Response.json({ error: "Payment does not match the order." }, { status: 409 });
+        return Response.json({ error: "Il pagamento non corrisponde all’ordine." }, { status: 409 });
       }
       if (order) {
         await db.from("orders").update({ status: "paid", paid_at: new Date().toISOString(), stripe_payment_intent_id: String(session.payment_intent ?? "") }).eq("id", order.id).neq("status", "paid");
@@ -44,13 +44,13 @@ export async function POST(request: Request) {
         const{data}=await db.from("bookings").update({status:"confirmed",updated_at:new Date().toISOString()}).eq("id",bookingId).neq("status","confirmed").select("id,email,reference,starts_at,ends_at,google_calendar_event_id").maybeSingle();
         const{data:booking}=data?{data}:await db.from("bookings").select("id,email,reference,starts_at,ends_at,google_calendar_event_id").eq("id",bookingId).single();
         if(booking&&!booking.google_calendar_event_id){const eventId=await createBookingCalendarEvent({id:booking.id,reference:booking.reference,startsAt:booking.starts_at,endsAt:booking.ends_at});if(eventId)await db.from("bookings").update({google_calendar_event_id:eventId}).eq("id",booking.id);}
-        if(data)await sendTransactionalEmail({to:data.email,subject:`GENKS booking ${data.reference} confirmed`,heading:"Your session is confirmed.",body:"Payment received. Your recording session is now confirmed in the GENKS calendar."});
+        if(data)await sendTransactionalEmail({to:data.email,subject:`Prenotazione GENKS ${data.reference} confermata`,heading:"La tua sessione è confermata.",body:"Pagamento ricevuto. La tua sessione di registrazione è confermata nel calendario GENKS."});
       }
       if(!paymentError&&projectId){
         const{data}=await db.from("service_projects").update({status:"paid",updated_at:new Date().toISOString()}).eq("id",projectId).neq("status","paid").select("id,email,reference,service,desired_deadline,google_calendar_event_id").maybeSingle();
         const{data:project}=data?{data}:await db.from("service_projects").select("id,email,reference,service,desired_deadline,google_calendar_event_id").eq("id",projectId).single();
         if(project?.desired_deadline&&!project.google_calendar_event_id){const eventId=await createProjectDeadlineEvent({id:project.id,reference:project.reference,service:project.service,deadline:project.desired_deadline});if(eventId)await db.from("service_projects").update({google_calendar_event_id:eventId}).eq("id",project.id);}
-        if(data)await sendTransactionalEmail({to:data.email,subject:`GENKS project ${data.reference} paid`,heading:"Your project is moving forward.",body:"Payment received. GENKS can now start working on your project."});
+        if(data)await sendTransactionalEmail({to:data.email,subject:`Progetto GENKS ${data.reference} pagato`,heading:"Il tuo progetto procede.",body:"Pagamento ricevuto. GENKS può iniziare a lavorare sul tuo progetto."});
       }
     }
   }

@@ -6,7 +6,7 @@ export function formatTime(seconds: number): string {
 }
 
 export function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("en-IE", {
+  return new Intl.NumberFormat("it-IT", {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: cents % 100 ? 2 : 0,

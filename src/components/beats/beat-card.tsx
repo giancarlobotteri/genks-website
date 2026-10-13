@@ -1,4 +1,5 @@
 "use client";
+import { italianLabel } from "@/lib/italian";
 
 import Image from "next/image";
 import { ShoppingBag } from "lucide-react";
@@ -26,7 +27,7 @@ export function BeatCard({
       <div className="beat-artwork">
         <Image
           src={beat.cover}
-          alt={`${beat.title} cover artwork`}
+          alt={`Copertina di ${beat.title}`}
           fill
           sizes="(max-width: 600px) 85vw, (max-width: 1000px) 44vw, 30vw"
           style={{ objectPosition: beat.coverPosition }}
@@ -35,7 +36,7 @@ export function BeatCard({
         <span className="artwork-index mono">G / 00{index + 1}</span>
         <FavoriteButton beat={beat} />
         <span className="artwork-genre">
-          {beat.genre} <span>/</span> {beat.mood}
+          {italianLabel(beat.genre)} <span>/</span> {italianLabel(beat.mood)}
         </span>
         <PlayButton beat={beat} queue={queue} className="artwork-play" />
         {playing && (
@@ -46,7 +47,7 @@ export function BeatCard({
               <i />
               <i />
             </span>
-            NOW PLAYING
+            IN RIPRODUZIONE
           </span>
         )}
       </div>
@@ -58,8 +59,8 @@ export function BeatCard({
           </span>
         </div>
         <div className="beat-card-actions">
-          <button type="button" className="cart-add-button" aria-label={`Add ${beat.title} to cart`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
-            <ShoppingBag size={17} /><span>Add</span>
+          <button type="button" className="cart-add-button" aria-label={`Aggiungi ${beat.title} al carrello`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
+            <ShoppingBag size={17} /><span>Aggiungi</span>
           </button>
           <LicenseButton beat={beat} compact />
         </div>

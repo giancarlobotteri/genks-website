@@ -4,11 +4,11 @@ import { ArrowUpRight } from "lucide-react";
 export default function NotFound() {
   return (
     <div className="not-found container">
-      <span className="eyebrow">404 / OFF FREQUENCY</span>
-      <h1>Signal lost.</h1>
-      <p>This page isn’t here. Your next sound is.</p>
+      <span className="eyebrow">404 / FUORI FREQUENZA</span>
+      <h1>Segnale perso.</h1>
+      <p>Questa pagina non esiste. Il tuo prossimo suono ti aspetta.</p>
       <Link className="button button-primary" href="/beats">
-        Explore beats <ArrowUpRight size={18} />
+        Esplora i beat <ArrowUpRight size={18} />
       </Link>
     </div>
   );

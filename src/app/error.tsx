@@ -8,11 +8,11 @@ export default function ErrorPage({
 }) {
   return (
     <div className="not-found container">
-      <span className="eyebrow">SIGNAL INTERRUPTED</span>
-      <h1>Let’s try that again.</h1>
-      <p>Something couldn’t load. Your player and navigation are still here.</p>
+      <span className="eyebrow">SEGNALE INTERROTTO</span>
+      <h1>Riproviamo.</h1>
+      <p>Non è stato possibile caricare un contenuto. Il lettore e la navigazione restano disponibili.</p>
       <button className="button button-primary" type="button" onClick={reset}>
-        Try again
+        Riprova
       </button>
     </div>
   );

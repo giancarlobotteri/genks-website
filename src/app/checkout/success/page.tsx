@@ -4,5 +4,5 @@ export default async function SuccessPage({ searchParams }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await searchParams;
-  return <div className="portal-shell narrow-shell"><span className="eyebrow">PAYMENT RECEIVED</span><h1>Welcome to your next sound.</h1><p className="muted">Stripe is confirming the payment. Your Library updates after the verified webhook arrives.</p><Link className="button button-primary" href="/account/library">OPEN LIBRARY</Link></div>;
+  return <div className="portal-shell narrow-shell"><span className="eyebrow">PAGAMENTO RICEVUTO</span><h1>Il tuo prossimo suono ti aspetta.</h1><p className="muted">Stripe sta verificando il pagamento. La tua raccolta si aggiorna dopo la conferma.</p><Link className="button button-primary" href="/account/library">APRI LA RACCOLTA</Link></div>;
 }

@@ -7,13 +7,13 @@ export async function proxy(request: NextRequest) {
   if (path.startsWith("/api/") && path !== "/api/stripe/webhook" && !["GET", "HEAD", "OPTIONS"].includes(request.method)) {
     const origin = request.headers.get("origin");
     if (request.headers.get("sec-fetch-site") === "cross-site" || !origin || origin !== request.nextUrl.origin) {
-      return NextResponse.json({ error: "Request origin denied." }, { status: 403 });
+      return NextResponse.json({ error: "Origine della richiesta non autorizzata." }, { status: 403 });
     }
   }
   if (
     !(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_GENKS_SUPABASE_URL) ||
     !(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_GENKS_SUPABASE_PUBLISHABLE_KEY)
-  ) return privatePreview ? new NextResponse("Private preview is not configured.", { status: 503 }) : NextResponse.next({ request });
+  ) return privatePreview ? new NextResponse("L’anteprima privata non è configurata.", { status: 503 }) : NextResponse.next({ request });
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(
@@ -39,7 +39,7 @@ export async function proxy(request: NextRequest) {
     if (!publicEndpoints) {
       const ownerEmail = (process.env.GENKS_ADMIN_EMAIL || "prod.genks@gmail.com").trim().toLowerCase();
       if (user?.email?.toLowerCase() !== ownerEmail) {
-        if (path.startsWith("/api/")) return new NextResponse("Private preview", { status: 403 });
+        if (path.startsWith("/api/")) return new NextResponse("Anteprima privata", { status: 403 });
         const login = new URL("/admin-access", request.url);
         if (user) login.searchParams.set("denied", "1");
         const redirect = NextResponse.redirect(login);

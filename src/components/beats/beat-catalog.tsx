@@ -1,4 +1,5 @@
 "use client";
+import { italianLabel } from "@/lib/italian";
 
 import Image from "next/image";
 import { useId, useState } from "react";
@@ -49,11 +50,11 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
       <div className="catalog-toolbar">
         <label className="search-box">
           <Search size={20} aria-hidden="true" />
-          <span className="sr-only">Search beats</span>
+          <span className="sr-only">Cerca beat</span>
           <input
             type="search"
-            aria-label="Search beats"
-            placeholder={'Describe your sound… “dark melodic R&B”'}
+            aria-label="Cerca beat"
+            placeholder={'Descrivi il tuo suono… “R&B scuro e melodico”'}
             value={filters.query}
             onChange={(event) => setFilter("query", event.target.value)}
           />
@@ -61,14 +62,14 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
             <button
               type="button"
               className="icon-button"
-              aria-label="Clear search"
+              aria-label="Cancella la ricerca"
               onClick={() => setFilter("query", "")}
             >
               <X size={16} />
             </button>
           )}
         </label>
-        {smartSearchActive ? <span className="smart-search-status" role="status">SMART MATCH</span> : null}
+        {smartSearchActive ? <span className="smart-search-status" role="status">RICERCA INTELLIGENTE</span> : null}
         <button
           type="button"
           className={`filter-toggle ${expanded || activeCount ? "selected" : ""}`}
@@ -77,7 +78,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
           onClick={() => setExpanded(!expanded)}
         >
           <SlidersHorizontal size={17} />
-          Filters{activeCount > 0 && <span>{activeCount}</span>}
+          Filtri{activeCount > 0 && <span>{activeCount}</span>}
         </button>
         <button
           type="button"
@@ -89,20 +90,20 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
             size={17}
             fill={filters.favoritesOnly ? "currentColor" : "none"}
           />
-          <span>Saved</span>
+          <span>Preferiti</span>
           <span className="mono">{favorites.length}</span>
         </button>
       </div>
       <div id={filtersId} className="advanced-filters" hidden={!expanded}>
         <label>
-          Mood
+          Atmosfera
           <select
             value={filters.mood}
             onChange={(event) => setFilter("mood", event.target.value)}
           >
-            <option value="All">All moods</option>
+            <option value="All">Tutte le atmosfere</option>
             {[...new Set(beats.map((beat) => beat.mood))].map((mood) => (
-              <option key={mood}>{mood}</option>
+              <option key={mood} value={mood}>{italianLabel(mood)}</option>
             ))}
           </select>
         </label>
@@ -112,19 +113,19 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
             value={filters.bpm}
             onChange={(event) => setFilter("bpm", event.target.value)}
           >
-            <option value="All">Any tempo</option>
-            <option value="under120">Below 120 BPM</option>
+            <option value="All">Qualsiasi velocità</option>
+            <option value="under120">Meno di 120 BPM</option>
             <option value="120to139">120–139 BPM</option>
             <option value="140plus">140+ BPM</option>
           </select>
         </label>
         <label>
-          Key
+          Tonalità
           <select
             value={filters.key}
             onChange={(event) => setFilter("key", event.target.value)}
           >
-            <option value="All">Any key</option>
+            <option value="All">Qualsiasi tonalità</option>
             {[...new Set(beats.map((beat) => beat.key))].map((key) => (
               <option key={key}>{key}</option>
             ))}
@@ -135,14 +136,14 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
           className="text-link"
           onClick={() => setFilters(defaultFilters)}
         >
-          Reset filters <X size={15} />
+          Azzera i filtri <X size={15} />
         </button>
       </div>
       <div className="catalog-subtoolbar">
         <div
           className="genre-filters"
           role="group"
-          aria-label="Filter by genre"
+          aria-label="Filtra per genere"
         >
           {["All", "TRAP", "R&B", "AFRO", "REGGAE", "POP", "RAP/HIPHOP", "EXPERIMENTAL"].map((genre) => (
             <button
@@ -154,30 +155,30 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
               aria-pressed={filters.genre === genre}
               onClick={() => setFilter("genre", genre)}
             >
-              {genre === "All" ? "All sounds" : genre}
+              {genre === "All" ? "Tutti i generi" : italianLabel(genre)}
             </button>
           ))}
         </div>
         <label className="sort-select">
           <ArrowDownUp size={14} />
-          <span className="sr-only">Sort beats</span>
+          <span className="sr-only">Ordina i beat</span>
           <select
             value={sort}
             onChange={(event) => setSort(event.target.value)}
           >
-            <option value="curated">{smartSearchActive ? "Best match" : "Curated"}</option>
-            <option value="bpm">BPM: low to high</option>
-            <option value="title">Title: A–Z</option>
+            <option value="curated">{smartSearchActive ? "Più pertinenti" : "Selezione GENKS"}</option>
+            <option value="bpm">BPM: dal più lento</option>
+            <option value="title">Titolo: A–Z</option>
           </select>
         </label>
       </div>
-      <div className="catalog-table" role="table" aria-label="Beat catalog">
+      <div className="catalog-table" role="table" aria-label="Catalogo dei beat">
         <div className="beat-table-header" role="row">
           <span role="columnheader">#</span>
-          <span role="columnheader">TRACK</span>
-          <span role="columnheader">BPM / KEY</span>
-          <span role="columnheader">VIBE</span>
-          <span role="columnheader">LICENSE FROM</span>
+          <span role="columnheader">BRANO</span>
+          <span role="columnheader">BPM / TONALITÀ</span>
+          <span role="columnheader">ATMOSFERA</span>
+          <span role="columnheader">LICENZA DA</span>
         </div>
         {visible.map((beat, index) => (
           <div
@@ -187,7 +188,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
           >
             <div className="row-number" role="cell">
               {currentBeat?.id === beat.id && isPlaying ? (
-                <span className="equalizer" aria-label="Now playing">
+                <span className="equalizer" aria-label="In riproduzione">
                   <i />
                   <i />
                   <i />
@@ -207,14 +208,14 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
               <div>
                 <h3>{beat.title}</h3>
                 <span className="row-subtitle">
-                  GENKS <span>·</span> {beat.genre}
+                  GENKS <span>·</span> {italianLabel(beat.genre)}
                   <span className="mobile-metadata">
                     {" "}
                     · {beat.bpm} BPM · {beat.key}
                   </span>
                 </span>
-                {smartSearchActive && (recommendations.get(beat.id)?.score ?? 0) > 0 ? <span className="smart-match-badge" title={`Matched by ${recommendations.get(beat.id)?.reasons.join(", ") || "sound profile"}`}>
-                  {recommendations.get(beat.id)?.percent}% MATCH
+                {smartSearchActive && (recommendations.get(beat.id)?.score ?? 0) > 0 ? <span className="smart-match-badge" title={`Affinità per ${recommendations.get(beat.id)?.reasons.join(", ") || "profilo sonoro"}`}>
+                  {recommendations.get(beat.id)?.percent}% AFFINITÀ
                 </span> : null}
               </div>
             </div>
@@ -225,12 +226,12 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
               <span>{beat.key}</span>
             </div>
             <div className="row-vibe" role="cell">
-              <span className="mood-tag">{beat.mood}</span>
+              <span className="mood-tag">{italianLabel(beat.mood)}</span>
             </div>
             <div className="row-actions" role="cell">
               <FavoriteButton beat={beat} />
-              <button type="button" className="cart-add-button" aria-label={`Add ${beat.title} to cart`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
-                <ShoppingBag size={17} /><span>Add</span>
+              <button type="button" className="cart-add-button" aria-label={`Aggiungi ${beat.title} al carrello`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
+                <ShoppingBag size={17} /><span>Aggiungi</span>
               </button>
               <LicenseButton beat={beat} compact />
             </div>
@@ -242,31 +243,31 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
           <Search size={28} />
           <h3>
             {filters.favoritesOnly
-              ? "No saved beats match."
-              : "A different frequency."}
+              ? "Nessun preferito corrisponde alla ricerca."
+              : "Cerchiamo un’altra frequenza."}
           </h3>
           <p>
             {filters.favoritesOnly
-              ? "Save a beat with the heart button, or adjust your filters."
-              : "Try a different search or open up your filters."}
+              ? "Salva un beat con il cuore oppure modifica i filtri."
+              : "Prova un’altra ricerca oppure modifica i filtri."}
           </p>
           <button
             type="button"
             className="button button-secondary"
             onClick={() => setFilters(defaultFilters)}
           >
-            Show all beats
+            Mostra tutti i beat
           </button>
         </div>
       )}
       <div className="catalog-footnote">
         <span role="status" aria-live="polite">
-          {visible.length} {visible.length === 1 ? "beat" : "beats"}
+          {visible.length} {visible.length === 1 ? "beat" : "beat"}
           {filters.favoritesOnly
-            ? " · Saved on this device"
-            : " in the collection"}
+            ? " · Salvati su questo dispositivo"
+            : " nel catalogo"}
         </span>
-        <span>License details and final price are shown before checkout</span>
+        <span>Dettagli della licenza e prezzo finale sono mostrati prima del pagamento</span>
       </div>
     </div>
   );

@@ -44,7 +44,7 @@ export function PersistentPlayer() {
     <>
       <aside
         className={`persistent-player ${isPlaying ? "is-playing" : ""}`}
-        aria-label="Music player"
+        aria-label="Lettore musicale"
       >
         {error && (
           <p className="player-error" role="alert">
@@ -62,11 +62,11 @@ export function PersistentPlayer() {
               />
             </div>
             <div className="player-track-copy">
-              <strong>{currentBeat?.title ?? "Your next sound."}</strong>
+              <strong>{currentBeat?.title ?? "Il tuo prossimo suono."}</strong>
               <span>
                 {currentBeat
-                  ? `${currentBeat.bpm} BPM · ${currentBeat.key} · Preview`
-                  : "Choose a beat. Press play."}
+                  ? `${currentBeat.bpm} BPM · ${currentBeat.key} · Anteprima`
+                  : "Scegli un beat. Premi riproduci."}
               </span>
             </div>
           </div>
@@ -74,7 +74,7 @@ export function PersistentPlayer() {
             <button
               type="button"
               className="icon-button player-previous"
-              aria-label="Previous beat"
+              aria-label="Beat precedente"
               onClick={previous}
               disabled={!queue.length}
             >
@@ -83,7 +83,7 @@ export function PersistentPlayer() {
             <button
               type="button"
               className="player-main-play"
-              aria-label={isPlaying ? "Pause playback" : "Start playback"}
+              aria-label={isPlaying ? "Metti in pausa" : "Avvia la riproduzione"}
               onClick={toggle}
               disabled={!queue.length}
             >
@@ -98,7 +98,7 @@ export function PersistentPlayer() {
             <button
               type="button"
               className="icon-button"
-              aria-label="Next beat"
+              aria-label="Beat successivo"
               onClick={next}
               disabled={!queue.length}
             >
@@ -111,7 +111,7 @@ export function PersistentPlayer() {
               <div className="progress-fill" style={{ width: `${percent}%` }} />
               <input
                 type="range"
-                aria-label="Preview progress"
+                aria-label="Avanzamento dell’anteprima"
                 aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
                 min={0}
                 max={duration || 1}
@@ -128,7 +128,7 @@ export function PersistentPlayer() {
               <button
                 type="button"
                 className="icon-button"
-                aria-label={volume ? "Mute" : "Unmute"}
+                aria-label={volume ? "Disattiva l’audio" : "Attiva l’audio"}
                 onClick={() => {
                   if (volume > 0) {
                     lastVolume.current = volume;
@@ -151,7 +151,7 @@ export function PersistentPlayer() {
             <button
               type="button"
               className="icon-button queue-button"
-              aria-label="Open play queue"
+              aria-label="Apri la coda di riproduzione"
               onClick={() => setQueueOpen(true)}
             >
               <ListMusic size={20} />
@@ -162,7 +162,7 @@ export function PersistentPlayer() {
               onClick={() => currentBeat && openLicenses(currentBeat)}
               disabled={!currentBeat}
             >
-              LICENSE <span aria-hidden="true">↗</span>
+              LICENZA <span aria-hidden="true">↗</span>
             </button>
           </div>
         </div>
@@ -172,10 +172,10 @@ export function PersistentPlayer() {
         onClose={() => setQueueOpen(false)}
         titleId={queueTitle}
       >
-        <span className="eyebrow">KEEP IT PLAYING</span>
-        <h2 id={queueTitle}>In the queue.</h2>
+        <span className="eyebrow">CONTINUA L’ASCOLTO</span>
+        <h2 id={queueTitle}>In coda.</h2>
         <p className="muted">
-          Your current selection · {queue.length} beats
+          La tua selezione attuale · {queue.length} beat
         </p>
         <div className="queue-list">
           {queue.map((beat, index) => (
@@ -183,7 +183,7 @@ export function PersistentPlayer() {
               key={beat.id}
               type="button"
               className={`queue-track ${beat.id === currentBeat?.id ? "active" : ""}`}
-              aria-label={`${beat.id === currentBeat?.id && isPlaying ? "Pause" : "Play"} ${beat.title} from queue`}
+              aria-label={`${beat.id === currentBeat?.id && isPlaying ? "Pausa" : "Riproduci"} ${beat.title} dalla coda`}
               onClick={() => playBeat(beat)}
             >
               <span className="mono">{String(index + 1).padStart(2, "0")}</span>

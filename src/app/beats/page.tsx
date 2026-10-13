@@ -4,9 +4,9 @@ import { BeatCatalog } from "@/components/beats/beat-catalog";
 import { beatRepository } from "@/lib/repositories/beats";
 
 export const metadata: Metadata = {
-  title: "Beat store",
+  title: "Negozio di beat",
   description:
-    "Explore the GENKS beat collection, compare licenses and find the right sound for your next release.",
+    "Esplora i beat GENKS, confronta le licenze e trova il suono giusto per la tua prossima uscita.",
 };
 
 export default async function BeatStorePage() {
@@ -17,18 +17,17 @@ export default async function BeatStorePage() {
         <div className="store-heading-stage">
           <Image className="store-heading-logo" src="/brand/genks-logo.jpeg" width={620} height={620} alt="" aria-hidden="true" priority />
           <div className="store-heading-copy">
-            <span className="eyebrow">GENKS / BEAT STORE</span>
+            <span className="eyebrow">GENKS / NEGOZIO DI BEAT</span>
             <h1 className="store-frequency-title">
-              Find your
+              Trova la tua
               <br />
-              <span className="chrome-text">frequency.</span>
+              <span className="chrome-text">frequenza.</span>
             </h1>
           </div>
         </div>
-        <p>A different mood for every story. Start yours here.</p>
+        <p>Un’atmosfera per ogni storia. Inizia la tua qui.</p>
         <p className="catalog-disclaimer">
-          <span className="demo-badge">GENKS</span>Choose a beat, compare the
-          available licenses and continue to secure checkout.
+          <span className="demo-badge">GENKS</span>Scegli un beat, confronta le licenze disponibili e prosegui al pagamento sicuro.
         </p>
       </div>
       <BeatCatalog beats={beats} />

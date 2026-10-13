@@ -1,3 +1,4 @@
+import { italianLabel } from "@/lib/italian";
 import { BadgeCheck, ReceiptText } from "lucide-react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatPrice } from "@/lib/format";
@@ -11,20 +12,20 @@ export default async function Orders({ searchParams }: { searchParams: Promise<{
     .order("created_at", { ascending: false }).limit(100);
   const orders = data ?? [];
   const emailReady = Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL);
-  return <><header className="admin-heading"><span className="eyebrow">ORDERS & DELIVERY</span><h1>Orders</h1><p>Payment and delivery states come from verified Stripe events. An email can be retried after fixing its configuration.</p></header>
-    {!emailReady && <p className="notice error" role="alert">Email sending is unavailable: configure RESEND_API_KEY and RESEND_FROM_EMAIL on the deployed project, then redeploy.</p>}
-    {query.email === "failed" && <p className="notice error" role="alert">The email could not be delivered. See the error on the order below.</p>}
-    {query.email === "sent" && <p className="notice success" role="status">Order email sent or already delivered.</p>}
-    {query.email === "not_allowed" && <p className="notice error" role="alert">This order is not eligible for a private test email.</p>}
+  return <><header className="admin-heading"><span className="eyebrow">ORDINI E CONSEGNE</span><h1>Ordini</h1><p>Gli stati di pagamento e consegna derivano dalle conferme verificate di Stripe. Puoi ritentare l’invio di un’email dopo aver corretto la configurazione.</p></header>
+    {!emailReady && <p className="notice error" role="alert">L’invio delle email non è disponibile: configura RESEND_API_KEY e RESEND_FROM_EMAIL sul progetto e ripubblicalo.</p>}
+    {query.email === "failed" && <p className="notice error" role="alert">L’invio dell’email non è riuscito. Controlla l’errore riportato sull’ordine.</p>}
+    {query.email === "sent" && <p className="notice success" role="status">Email dell’ordine inviata o già registrata come inviata.</p>}
+    {query.email === "not_allowed" && <p className="notice error" role="alert">Questo ordine non può ricevere un’email di prova privata.</p>}
     {orders.length ? <div className="verified-order-list">{orders.map((order) => <article key={order.id}>
       <div className="verified-order-icon">{order.status === "paid" ? <BadgeCheck /> : <ReceiptText />}</div>
-      <div><strong>{order.order_number}</strong><small>{order.customer_name || "Customer"} · {order.customer_email}</small><small>{order.status.toUpperCase()} · {order.currency}</small></div>
-      <div className="verified-order-items">{order.order_items?.map((item) => <span key={`${order.id}-${item.beat_title_snapshot}-${item.license_name_snapshot}`}>{item.beat_title_snapshot}<small>{item.license_name_snapshot}</small></span>)}</div>
+      <div><strong>{order.order_number}</strong><small>{order.customer_name || "Cliente"} · {order.customer_email}</small><small>{italianLabel(order.status).toUpperCase()} · {order.currency}</small></div>
+      <div className="verified-order-items">{order.order_items?.map((item) => <span key={`${order.id}-${item.beat_title_snapshot}-${italianLabel(item.license_name_snapshot)}`}>{item.beat_title_snapshot}<small>{italianLabel(item.license_name_snapshot)}</small></span>)}</div>
       <div><strong>{formatPrice(order.total_cents)}</strong><small>{new Intl.DateTimeFormat("it-IT", { dateStyle: "medium", timeStyle: "short" }).format(new Date(order.paid_at ?? order.created_at))}</small>
-        {order.status === "paid" && <><small>Email: {order.confirmation_email_sent_at ? "sent" : "pending / failed"}</small>
+        {order.status === "paid" && <><small>Email: {order.confirmation_email_sent_at ? "inviata" : "in attesa / errore"}</small>
           {order.confirmation_email_last_error && <small role="alert">{order.confirmation_email_last_error}</small>}
-          {!order.confirmation_email_sent_at && <form action={retryOrderConfirmation}><input type="hidden" name="id" value={order.id}/><button className="button button-secondary" type="submit">RETRY EMAIL</button></form>}</>}
+          {!order.confirmation_email_sent_at && <form action={retryOrderConfirmation}><input type="hidden" name="id" value={order.id}/><button className="button button-secondary" type="submit">RIPROVA INVIO EMAIL</button></form>}</>}
       </div>
-    </article>)}</div> : <div className="empty-state"><ReceiptText size={30}/><h3>No orders yet.</h3></div>}
+    </article>)}</div> : <div className="empty-state"><ReceiptText size={30}/><h3>Non hai ancora ordini.</h3></div>}
   </>;
 }

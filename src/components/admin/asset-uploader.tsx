@@ -1,4 +1,5 @@
 "use client";
+import { italianLabel } from "@/lib/italian";
 
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -12,14 +13,14 @@ type AssetDefinition = { kind: AssetKind; label: string; detail: string; accept:
 export type ExistingAsset = { kind: string; filename: string };
 
 const publicAssets: AssetDefinition[] = [
-  { kind: "cover", label: "Cover", detail: "Public artwork", accept: "image/*", icon: ImageIcon },
-  { kind: "preview", label: "Preview", detail: "Optional public tagged MP3", accept: ".mp3,audio/mpeg", icon: FileAudio },
-  { kind: "visual", label: "Visual", detail: "Optional image or video", accept: "image/*,video/*", icon: Video },
+  { kind: "cover", label: "Copertina", detail: "Copertina pubblica", accept: "image/*", icon: ImageIcon },
+  { kind: "preview", label: "Anteprima", detail: "MP3 pubblico facoltativo con firma sonora", accept: ".mp3,audio/mpeg", icon: FileAudio },
+  { kind: "visual", label: "Contenuto visivo", detail: "Immagine o video facoltativi", accept: "image/*,video/*", icon: Video },
 ];
 const premiumAssets: AssetDefinition[] = [
-  { kind: "mp3", label: "MP3 MASTER", detail: "Private high-quality MP3", accept: ".mp3,audio/mpeg", icon: FileAudio },
-  { kind: "wav", label: "WAV MASTER", detail: "Private lossless master", accept: ".wav,audio/wav,audio/x-wav", icon: FileAudio },
-  { kind: "stems", label: "STEMS / TRACKOUT", detail: "Private ZIP with separated tracks", accept: ".zip,application/zip,application/x-zip-compressed", icon: FileArchive },
+  { kind: "mp3", label: "FILE MP3", detail: "MP3 privato di alta qualità", accept: ".mp3,audio/mpeg", icon: FileAudio },
+  { kind: "wav", label: "FILE WAV", detail: "File privato senza perdita di qualità", accept: ".wav,audio/wav,audio/x-wav", icon: FileAudio },
+  { kind: "stems", label: "TRACCE SEPARATE", detail: "ZIP privato con tracce separate", accept: ".zip,application/zip,application/x-zip-compressed", icon: FileArchive },
 ];
 
 async function uploadAsset(beatId: string, kind: AssetKind, file: File, onProgress: (value: number) => void) {
@@ -29,10 +30,10 @@ async function uploadAsset(beatId: string, kind: AssetKind, file: File, onProgre
   onProgress(0);
   if (file.size > 6 * 1024 * 1024) {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("Admin session expired.");
+    if (!session) throw new Error("La sessione amministratore è scaduta.");
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_GENKS_SUPABASE_URL;
     const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_GENKS_SUPABASE_PUBLISHABLE_KEY;
-    if (!supabaseUrl || !publishableKey) throw new Error("Supabase is not configured.");
+    if (!supabaseUrl || !publishableKey) throw new Error("Supabase non è configurato.");
     await new Promise<void>((resolve, reject) => new tus.Upload(file, {
       endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
       headers: { authorization: `Bearer ${session.access_token}`, apikey: publishableKey },
@@ -49,7 +50,7 @@ async function uploadAsset(beatId: string, kind: AssetKind, file: File, onProgre
     onProgress(100);
   }
   const response = await fetch("/api/admin/assets", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ beatId, kind, bucket, path, filename: file.name, size: file.size }) });
-  if (!response.ok) throw new Error((await response.json()).error || "Unable to link the uploaded file.");
+  if (!response.ok) throw new Error((await response.json()).error || "Non è stato possibile collegare il file caricato.");
 }
 
 export function BeatCreateForm() {
@@ -71,7 +72,7 @@ export function BeatCreateForm() {
       };
       const response = await fetch("/api/admin/beats", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Beat creation failed.");
+      if (!response.ok) throw new Error(result.error || "Creazione del beat non riuscita.");
       setCreatedBeatId(result.id);
       const selected = Object.entries(files) as [AssetKind, File][];
       const outcomes = await Promise.allSettled(
@@ -83,9 +84,9 @@ export function BeatCreateForm() {
         )),
       );
       const failed = outcomes.filter((item) => item.status === "rejected").length;
-      setMessage(failed ? `Beat created, but ${failed} file${failed === 1 ? "" : "s"} failed. Select it again and use Replace now.` : `Beat created successfully${selected.length ? " with all selected files" : ""}.`);
+      setMessage(failed ? `Beat creato, ma ${failed} file non sono stati caricati. Selezionali nuovamente e usa Sostituisci ora.` : `Beat creato correttamente${selected.length ? " con tutti i file selezionati" : ""}.`);
       router.refresh();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to create the beat."); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Non è stato possibile creare il beat."); }
     finally { setBusy(false); }
   }
 
@@ -96,35 +97,35 @@ export function BeatCreateForm() {
     try {
       await uploadAsset(createdBeatId, kind, file, (value) => setProgress((current) => ({ ...current, [kind]: value })))
       setMessage(`${file.name} is now the active ${kind.toUpperCase()} file.`); router.refresh();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Replacement failed."); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Sostituzione non riuscita."); }
     finally { setBusy(false); }
   }
 
   const choose = (kind: AssetKind, file: File) => setFiles((current) => ({ ...current, [kind]: file }));
   return <form className="beat-create-form" onSubmit={submit}>
-    <section className="beat-create-section"><header><div><span className="eyebrow">01 · DETAILS & PUBLISHING</span><h2>New beat</h2></div><small>Details, publishing and files in one place.</small></header>
+    <section className="beat-create-section"><header><div><span className="eyebrow">01 · DETTAGLI E PUBBLICAZIONE</span><h2>Nuovo beat</h2></div><small>Dettagli, pubblicazione e file in un unico posto.</small></header>
       <div className="premium-form form-grid beat-details-grid">
-        <label>Title<input name="title" required /></label><label>Slug<input name="slug" pattern="[a-z0-9-]+" required /></label><label>BPM<input name="bpm" type="number" min="30" max="300" required /></label><label>Key<input name="musicalKey" required /></label>
-        <label>Genre<select name="genre" required>{["TRAP","R&B","AFRO","REGGAE","POP","RAP/HIPHOP","EXPERIMENTAL"].map((genre) => <option key={genre}>{genre}</option>)}</select></label><label>Mood<input name="mood" required /></label>
-        <label className="full">Tags<input name="tags" placeholder="dark, melodic, late night" /></label><label>Status<select name="status"><option value="draft">Draft</option><option value="published">Published</option></select></label>
-        <label>Display order<input name="sortOrder" type="number" min="0" defaultValue="0" required /></label><label>Publication date<input name="publicationDate" type="date" /></label><label className="checkbox"><input name="featured" type="checkbox" /> Featured</label>
-        <label className="full">Description<textarea name="description" rows={4} /></label>
+        <label>Titolo<input name="title" required /></label><label>Indirizzo del beat<input name="slug" pattern="[a-z0-9-]+" required /></label><label>BPM<input name="bpm" type="number" min="30" max="300" required /></label><label>Tonalità<input name="musicalKey" required /></label>
+        <label>Genere<select name="genre" required>{["TRAP","R&B","AFRO","REGGAE","POP","RAP/HIPHOP","EXPERIMENTAL"].map((genre) => <option key={genre} value={genre}>{italianLabel(genre)}</option>)}</select></label><label>Atmosfera<input name="mood" required /></label>
+        <label className="full">Etichette<input name="tags" placeholder="dark, melodic, late night" /></label><label>Stato<select name="status"><option value="draft">Bozza</option><option value="published">Pubblicato</option></select></label>
+        <label>Ordine di visualizzazione<input name="sortOrder" type="number" min="0" defaultValue="0" required /></label><label>Data di pubblicazione<input name="publicationDate" type="date" /></label><label className="checkbox"><input name="featured" type="checkbox" /> In evidenza</label>
+        <label className="full">Descrizione<textarea name="description" rows={4} /></label>
       </div>
     </section>
-    <AssetSelectionGroup index="02" title="Public media" subtitle="Visible in the store" assets={publicAssets} files={files} progress={progress} onSelect={choose} createdBeatId={createdBeatId} busy={busy} onReplace={replaceAfterCreation} />
-    <AssetSelectionGroup index="03" title="Premium delivery files" subtitle="Private · unlocked only by license entitlement" assets={premiumAssets} files={files} progress={progress} onSelect={choose} createdBeatId={createdBeatId} busy={busy} onReplace={replaceAfterCreation} premium />
+    <AssetSelectionGroup index="02" title="Contenuti pubblici" subtitle="Visibile nel negozio" assets={publicAssets} files={files} progress={progress} onSelect={choose} createdBeatId={createdBeatId} busy={busy} onReplace={replaceAfterCreation} />
+    <AssetSelectionGroup index="03" title="File acquistati" subtitle="Privato · accessibile solo con una licenza acquistata" assets={premiumAssets} files={files} progress={progress} onSelect={choose} createdBeatId={createdBeatId} busy={busy} onReplace={replaceAfterCreation} premium />
     {message ? <p className={`asset-upload-message beat-create-message ${message.includes("successfully") || message.includes("active") ? "success" : ""}`} role="status">{message}</p> : null}
-    {!createdBeatId ? <button className="button button-primary beat-create-submit" disabled={busy}><Upload size={18} />{busy ? "CREATING & UPLOADING…" : "CREATE BEAT & UPLOAD FILES"}</button> : <div className="beat-created-state"><Check size={19} /><span>Beat created. You can replace any selected file now or edit it later below.</span></div>}
+    {!createdBeatId ? <button className="button button-primary beat-create-submit" disabled={busy}><Upload size={18} />{busy ? "CREAZIONE E CARICAMENTO…" : "CREA BEAT E CARICA FILE"}</button> : <div className="beat-created-state"><Check size={19} /><span>Beat creato. Puoi sostituire un file selezionato ora oppure modificarlo qui sotto in seguito.</span></div>}
   </form>;
 }
 
 function AssetSelectionGroup({ index, title, subtitle, assets, files, progress, onSelect, createdBeatId, busy, onReplace, premium = false }: { index: string; title: string; subtitle: string; assets: AssetDefinition[]; files: Partial<Record<AssetKind, File>>; progress: Partial<Record<AssetKind, number>>; onSelect: (kind: AssetKind, file: File) => void; createdBeatId: string; busy: boolean; onReplace: (kind: AssetKind) => Promise<void>; premium?: boolean }) {
-  return <section className={`asset-group ${premium ? "premium" : ""}`}><header><div><span className="eyebrow">{index} · {premium ? "PROTECTED STORAGE" : "STORE ASSETS"}</span><h3>{title}</h3></div><small>{subtitle}</small></header><div className="asset-upload-grid">{assets.map((asset) => <AssetSelectionCard key={asset.kind} asset={asset} file={files[asset.kind]} progress={progress[asset.kind]} onSelect={onSelect} createdBeatId={createdBeatId} busy={busy} onReplace={onReplace} />)}</div></section>;
+  return <section className={`asset-group ${premium ? "premium" : ""}`}><header><div><span className="eyebrow">{index} · {premium ? "ARCHIVIO PROTETTO" : "FILE DEL NEGOZIO"}</span><h3>{title}</h3></div><small>{subtitle}</small></header><div className="asset-upload-grid">{assets.map((asset) => <AssetSelectionCard key={asset.kind} asset={asset} file={files[asset.kind]} progress={progress[asset.kind]} onSelect={onSelect} createdBeatId={createdBeatId} busy={busy} onReplace={onReplace} />)}</div></section>;
 }
 
 function AssetSelectionCard({ asset, file, progress, onSelect, createdBeatId, busy, onReplace }: { asset: AssetDefinition; file?: File; progress?: number; onSelect: (kind: AssetKind, file: File) => void; createdBeatId: string; busy: boolean; onReplace: (kind: AssetKind) => Promise<void> }) {
   const Icon = asset.icon;
-  return <div className="asset-upload-card"><div className="asset-upload-icon"><Icon size={23} /></div><div><strong>{asset.label}</strong><small>{asset.detail}</small></div><label className="asset-file-control"><input type="file" accept={asset.accept} onChange={(event) => { const selected = event.target.files?.[0]; if (selected) onSelect(asset.kind, selected); }} /><span>{file?.name || "Choose file"}</span></label>{createdBeatId && file ? <button type="button" className="button button-secondary" disabled={busy} onClick={() => onReplace(asset.kind)}><RefreshCw size={15} />REPLACE NOW</button> : null}{progress !== undefined ? <progress max="100" value={progress}>{progress}%</progress> : null}</div>;
+  return <div className="asset-upload-card"><div className="asset-upload-icon"><Icon size={23} /></div><div><strong>{asset.label}</strong><small>{asset.detail}</small></div><label className="asset-file-control"><input type="file" accept={asset.accept} onChange={(event) => { const selected = event.target.files?.[0]; if (selected) onSelect(asset.kind, selected); }} /><span>{file?.name || "Scegli file"}</span></label>{createdBeatId && file ? <button type="button" className="button button-secondary" disabled={busy} onClick={() => onReplace(asset.kind)}><RefreshCw size={15} />SOSTITUISCI ORA</button> : null}{progress !== undefined ? <progress max="100" value={progress}>{progress}%</progress> : null}</div>;
 }
 
 export function AssetUploader({ beatId, existingAssets }: { beatId: string; existingAssets: ExistingAsset[] }) {
@@ -139,17 +140,17 @@ export function AssetUploader({ beatId, existingAssets }: { beatId: string; exis
       setMessages((current) => ({ ...current, [kind]: `${file.name} is now active.` }));
       router.refresh();
     }
-    catch (error) { setMessages((current) => ({ ...current, [kind]: error instanceof Error ? error.message : "Upload failed." })); }
+    catch (error) { setMessages((current) => ({ ...current, [kind]: error instanceof Error ? error.message : "Caricamento non riuscito." })); }
   }
-  return <div className="asset-manager asset-editor"><AssetEditGroup title="Public media" assets={publicAssets} currentFiles={currentFiles} progress={progress} messages={messages} onUpload={upload} /><AssetEditGroup title="Premium delivery files" assets={premiumAssets} currentFiles={currentFiles} progress={progress} messages={messages} onUpload={upload} premium /></div>;
+  return <div className="asset-manager asset-editor"><AssetEditGroup title="Contenuti pubblici" assets={publicAssets} currentFiles={currentFiles} progress={progress} messages={messages} onUpload={upload} /><AssetEditGroup title="File acquistati" assets={premiumAssets} currentFiles={currentFiles} progress={progress} messages={messages} onUpload={upload} premium /></div>;
 }
 
 function AssetEditGroup({ title, assets, currentFiles, progress, messages, onUpload, premium = false }: { title: string; assets: AssetDefinition[]; currentFiles: Map<string, string>; progress: Partial<Record<AssetKind, number>>; messages: Partial<Record<AssetKind, string>>; onUpload: (kind: AssetKind, file: File) => Promise<void>; premium?: boolean }) {
-  return <section className={`asset-group ${premium ? "premium" : ""}`}><header><div><span className="eyebrow">{premium ? "PROTECTED STORAGE" : "STORE ASSETS"}</span><h3>{title}</h3></div><small>Choose a new file only for the item you need to replace.</small></header><div className="asset-upload-grid">{assets.map((asset) => <AssetEditCard key={asset.kind} asset={asset} currentFilename={currentFiles.get(asset.kind)} progress={progress[asset.kind]} message={messages[asset.kind]} onUpload={onUpload} />)}</div></section>;
+  return <section className={`asset-group ${premium ? "premium" : ""}`}><header><div><span className="eyebrow">{premium ? "ARCHIVIO PROTETTO" : "FILE DEL NEGOZIO"}</span><h3>{title}</h3></div><small>Scegli un nuovo file solo per l’elemento da sostituire.</small></header><div className="asset-upload-grid">{assets.map((asset) => <AssetEditCard key={asset.kind} asset={asset} currentFilename={currentFiles.get(asset.kind)} progress={progress[asset.kind]} message={messages[asset.kind]} onUpload={onUpload} />)}</div></section>;
 }
 
 function AssetEditCard({ asset, currentFilename, progress, message, onUpload }: { asset: AssetDefinition; currentFilename?: string; progress?: number; message?: string; onUpload: (kind: AssetKind, file: File) => Promise<void> }) {
   const Icon = asset.icon; const [file, setFile] = useState<File>(); const [busy, setBusy] = useState(false);
   async function replace() { if (!file) return; setBusy(true); await onUpload(asset.kind, file); setBusy(false); }
-  return <div className="asset-upload-card"><div className="asset-upload-icon"><Icon size={23} /></div><div><strong>{asset.label}</strong><small className="asset-current-file">{currentFilename ? `Current: ${currentFilename}` : "No file uploaded"}</small></div><label className="asset-file-control"><input type="file" accept={asset.accept} onChange={(event) => setFile(event.target.files?.[0])} /><span>{file?.name || (currentFilename ? "Choose replacement" : "Choose file")}</span></label><button type="button" className="button button-secondary" disabled={!file || busy} onClick={replace}>{currentFilename ? <RefreshCw size={15} /> : <Upload size={15} />}{busy ? "UPLOADING…" : currentFilename ? "REPLACE FILE" : "UPLOAD FILE"}</button>{progress !== undefined ? <progress max="100" value={progress}>{progress}%</progress> : null}{message ? <p className="asset-upload-message" role="status">{message}</p> : null}</div>;
+  return <div className="asset-upload-card"><div className="asset-upload-icon"><Icon size={23} /></div><div><strong>{asset.label}</strong><small className="asset-current-file">{currentFilename ? `Attuale: ${currentFilename}` : "Nessun file caricato"}</small></div><label className="asset-file-control"><input type="file" accept={asset.accept} onChange={(event) => setFile(event.target.files?.[0])} /><span>{file?.name || (currentFilename ? "Scegli sostituto" : "Scegli file")}</span></label><button type="button" className="button button-secondary" disabled={!file || busy} onClick={replace}>{currentFilename ? <RefreshCw size={15} /> : <Upload size={15} />}{busy ? "CARICAMENTO…" : currentFilename ? "SOSTITUISCI FILE" : "CARICA FILE"}</button>{progress !== undefined ? <progress max="100" value={progress}>{progress}%</progress> : null}{message ? <p className="asset-upload-message" role="status">{message}</p> : null}</div>;
 }

@@ -7,11 +7,11 @@ export function Footer() {
   return (
     <footer className="site-footer">
       <div className="footer-bottom container">
-        <Link className="brand-mark footer-brand" href="/#home" aria-label="GENKS home">
+        <Link className="brand-mark footer-brand" href="/#home" aria-label="Pagina iniziale GENKS">
           <Image src="/brand/genks-logo.jpeg" width={54} height={54} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           <span className="sr-only">GENKS</span>
         </Link>
-        <p>Independent sound. Made in Italy.</p>
+        <p>Suono indipendente. Nato in Italia.</p>
         <div className="footer-socials">
           <a href={site.instagram} target="_blank" rel="noreferrer">
             Instagram <ArrowUpRight size={14} />
@@ -21,7 +21,7 @@ export function Footer() {
           </a>
           <a href={site.youtube} target="_blank" rel="noreferrer">YouTube <ArrowUpRight size={14} /></a>
         </div>
-        <div className="footer-socials"><Link href="/legal/privacy">Privacy</Link><Link href="/legal/cookies">Cookies</Link><Link href="/legal/terms">Terms</Link><Link href="/legal/licensing">Licensing</Link></div>
+        <div className="footer-socials"><Link href="/legal/privacy">Riservatezza</Link><Link href="/legal/cookies">Cookie</Link><Link href="/legal/terms">Condizioni</Link><Link href="/legal/licensing">Licenze</Link></div>
         <span className="copyright">© {new Date().getFullYear()} GENKS</span>
       </div>
     </footer>

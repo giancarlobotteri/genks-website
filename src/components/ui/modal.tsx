@@ -50,7 +50,7 @@ export function Modal({
       <button
         type="button"
         className="icon-button modal-close"
-        aria-label="Close dialog"
+        aria-label="Chiudi la finestra"
         onClick={onClose}
       >
         <X size={22} />

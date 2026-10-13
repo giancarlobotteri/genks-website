@@ -32,8 +32,8 @@ export async function createBooking(formData: FormData) {
     redirect(`/services/recording?error=${reason}`);
   }
   const reference=String(data);
-  await sendTransactionalEmail({to:parsed.data.email,subject:`GENKS booking request ${reference}`,heading:"Request received.",body:`Your recording request for ${start.toLocaleString("it-IT")} is pending approval. We’ll contact you before it becomes confirmed.`});
-  if(process.env.GENKS_ADMIN_EMAIL) await sendTransactionalEmail({to:process.env.GENKS_ADMIN_EMAIL,subject:`New booking ${reference}`,heading:"New recording request.",body:`${parsed.data.name} requested ${start.toLocaleString("it-IT")}. Open Admin to approve or reschedule.`});
+  await sendTransactionalEmail({to:parsed.data.email,subject:`Richiesta di prenotazione GENKS ${reference}`,heading:"Richiesta ricevuta.",body:`La tua richiesta di registrazione per ${start.toLocaleString("it-IT")} è in attesa di approvazione. Ti contatteremo prima di confermarla.`});
+  if(process.env.GENKS_ADMIN_EMAIL) await sendTransactionalEmail({to:process.env.GENKS_ADMIN_EMAIL,subject:`Nuova prenotazione ${reference}`,heading:"Nuova richiesta di registrazione.",body:`${parsed.data.name} ha richiesto ${start.toLocaleString("it-IT")}. Apri il pannello amministratore per approvare o cambiare la data.`});
   redirect(`/services/recording?success=${reference}`);
 }
 
@@ -44,7 +44,7 @@ export async function createProject(formData: FormData) {
   const links=parsed.data.referenceLinks.split(/\s+/).filter(Boolean).filter(link=>URL.canParse(link)).slice(0,20);
   const {data,error}=await db.from("service_projects").insert({customer_id:user?.id??null,name:parsed.data.name,artist_name:parsed.data.artistName||null,email:parsed.data.email.toLowerCase(),phone:parsed.data.phone||null,track_title:parsed.data.trackTitle,service:parsed.data.service,description:parsed.data.description,track_count:parsed.data.trackCount,reference_links:links,desired_deadline:parsed.data.desiredDeadline||null,notes:parsed.data.notes||null}).select("reference").single();
   if(error||!data) redirect("/services/project?error=save");
-  await sendTransactionalEmail({to:parsed.data.email,subject:`GENKS project request ${data.reference}`,heading:"Project received.",body:"Your request is in review. You’ll receive a quote before any payment or work begins."});
+  await sendTransactionalEmail({to:parsed.data.email,subject:`Richiesta di progetto GENKS ${data.reference}`,heading:"Progetto ricevuto.",body:"La richiesta è in valutazione. Riceverai un preventivo prima di qualsiasi pagamento o inizio del lavoro."});
   redirect(`/services/project?success=${data.reference}`);
 }
 
@@ -54,6 +54,6 @@ export async function createExclusive(formData: FormData) {
   if(!parsed.success) redirect("/services/exclusive?error=invalid"); if(!previewRecipientAllowed(parsed.data.email)) redirect("/services/exclusive?error=private"); const user=await getCurrentUser();const db=createSupabaseAdminClient();
   const {data,error}=await db.from("exclusive_requests").insert({beat_id:parsed.data.beatId,customer_id:user?.id??null,name:parsed.data.name,email:parsed.data.email.toLowerCase(),phone:parsed.data.phone||null,message:parsed.data.message||null}).select("reference,beats(title)").single();
   if(error||!data) redirect("/services/exclusive?error=save"); const beat=Array.isArray(data.beats)?data.beats[0]:data.beats;
-  const phone=(process.env.NEXT_PUBLIC_GENKS_WHATSAPP??"").replace(/\D/g,""); const copy=`Ciao Genks, sono interessato all'Exclusive License di ${beat?.title??"un beat"}. Riferimento ${data.reference}.`;
+  const phone=(process.env.NEXT_PUBLIC_GENKS_WHATSAPP??"").replace(/\D/g,""); const copy=`Ciao Genks, sono interessato alla licenza esclusiva di ${beat?.title??"un beat"}. Riferimento ${data.reference}.`;
   redirect(phone?`https://wa.me/${phone}?text=${encodeURIComponent(copy)}`:`/services/exclusive?success=${data.reference}`);
 }

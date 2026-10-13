@@ -8,15 +8,15 @@ export function CheckoutForm({ beatId, licenseCode, disabled }: { beatId: string
     const fields = new FormData(event.currentTarget);
     const response = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ beatId, licenseCode, name: fields.get("name"), email: fields.get("email"), promoCode: fields.get("promoCode") || undefined }) });
     const result = await response.json().catch(() => ({}));
-    if (response.ok && result.url) window.location.assign(result.url); else { setError(result.error ?? "Checkout failed. Try again."); setBusy(false); }
+    if (response.ok && result.url) window.location.assign(result.url); else { setError(result.error ?? "Il pagamento non è stato avviato. Riprova."); setBusy(false); }
   }}>
-    <label>Name<input name="name" autoComplete="name" required minLength={2} /></label>
+    <label>Nome<input name="name" autoComplete="name" required minLength={2} /></label>
     <label>Email<input name="email" type="email" autoComplete="email" required /></label>
-    <label>Promo code (optional)<input name="promoCode" autoComplete="off" maxLength={40} /></label>
-    <div className="checkout-payment-methods" aria-label="Payment method">
-      <p><strong>Card or Apple Pay</strong><small>Visa, Mastercard and Apple Pay on compatible devices.</small></p>
+    <label>Codice sconto (facoltativo)<input name="promoCode" autoComplete="off" maxLength={40} /></label>
+    <div className="checkout-payment-methods" aria-label="Metodo di pagamento">
+      <p><strong>Carta o Apple Pay</strong><small>Visa, Mastercard e Apple Pay sui dispositivi compatibili.</small></p>
     </div>
     {error && <p className="notice error" role="alert">{error}</p>}
-    <button className="button button-primary" disabled={disabled || busy}>{busy ? "OPENING STRIPE…" : "CONTINUE TO SECURE PAYMENT"}</button>
+    <button className="button button-primary" disabled={disabled || busy}>{busy ? "APERTURA DI STRIPE…" : "PROSEGUI AL PAGAMENTO SICURO"}</button>
   </form>;
 }

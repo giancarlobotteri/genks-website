@@ -2,24 +2,22 @@ export function About() {
   return (
     <section className="about-section container section" id="about" data-reveal>
       <span className="eyebrow">
-        <span>04 /</span> BEHIND THE SOUND
+        <span>04 /</span> DIETRO IL SUONO
       </span>
       <div className="about-content">
         <h2>
-          Instinct first.
+          Prima l’istinto.
           <br />
-          <span>Everything else follows.</span>
+          <span>Il resto viene dopo.</span>
         </h2>
         <div>
           <p>
-            GENKS is the producer project of Gian Carlo Botteri. Rooted in the
-            underground, open to wherever the music goes.
+            GENKS è il progetto musicale di Gian Carlo Botteri. Radici nella scena indipendente, libertà di seguire la musica ovunque porti.
           </p>
           <p className="muted">
-            Heavy drums, considered textures and space for your voice. A sound
-            built one track at a time.
+            Batterie potenti, suoni ricercati e spazio per la tua voce. Un’identità costruita un brano alla volta.
           </p>
-          <span className="mono about-signature">GENKS / ITALY</span>
+          <span className="mono about-signature">GENKS / ITALIA</span>
         </div>
       </div>
     </section>

@@ -1,3 +1,4 @@
+import { italianLabel } from "@/lib/italian";
 import "server-only";
 import { mockBeats } from "@/data/mock/beats";
 import { mockLicenses } from "@/data/mock/licenses";
@@ -54,15 +55,15 @@ export async function getLicenses(): Promise<License[]> {
     if (data?.length)
       return data.map((item) => ({
         id: item.code as License["id"],
-        name: item.name,
+        name: italianLabel(item.name),
         priceCents: item.price_cents,
         currency: "EUR",
         format: (item.included_assets ?? []).join(" + ").toUpperCase(),
-        features: [item.short_description, ...(item.included_assets ?? []).map((asset: string) => `${asset.toUpperCase()} included`)].filter(Boolean),
+        features: [italianLabel(item.short_description), ...(item.included_assets ?? []).map((asset: string) => `${italianLabel(asset).toUpperCase()} incluso`)].filter(Boolean),
         isDemo: false,
       }));
   }
-  return mockLicenses;
+  return mockLicenses.map(license => ({ ...license, name: italianLabel(license.name), features: license.features.map(italianLabel), format: license.format.replace("STEMS", "TRACCE SEPARATE") }));
 }
 
 type DbBeat = Record<string, unknown>;
@@ -89,7 +90,7 @@ function mapBeat(row: DbBeat): Beat {
     previewUrl: publicUrl("previews", row.preview_path, ""),
     bpm: Number(row.bpm), key: String(row.musical_key),
     genre: String(row.genre) as Beat["genre"], mood: String(row.mood) as Beat["mood"],
-    description: String(row.description ?? ""), featured: Boolean(row.featured),
+    description: italianLabel(String(row.description ?? "")), featured: Boolean(row.featured),
     status: "published",
     licenseIds: prices.map((price: unknown) => {
       const licenseTypes = (price as { license_types?: { code?: string } | { code?: string }[] }).license_types;

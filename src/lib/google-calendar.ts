@@ -44,7 +44,7 @@ export async function getGoogleBusyRanges(timeMin: Date, timeMax: Date) {
   const response = await googleRequest("/freeBusy", { method: "POST", body: JSON.stringify({ timeMin: timeMin.toISOString(), timeMax: timeMax.toISOString(), timeZone: "Europe/Rome", items: [{ id: calendarId }] }) });
   const result = await response.json() as { calendars?: Record<string, { busy?: Array<{ start: string; end: string }>; errors?: unknown[] }> };
   const calendar = result.calendars?.[calendarId];
-  if (!response.ok || calendar?.errors?.length) throw new Error("Shared studio calendar is temporarily unavailable.");
+  if (!response.ok || calendar?.errors?.length) throw new Error("Il calendario condiviso dello studio è temporaneamente non disponibile.");
   return (calendar?.busy ?? []).map((range) => ({ starts_at: range.start, ends_at: range.end }));
 }
 
@@ -91,6 +91,6 @@ export async function createProjectDeadlineEvent(input: { id: string; reference:
 
 export async function deleteGoogleCalendarEvent(eventId: string | null | undefined) {
   if (!hasGoogleCalendar || !eventId) return;
-  const response = await googleRequest(`/calendars/${encodeURIComponent(process.env.GOOGLE_CALENDAR_ID!)}/events/${encodeURIComponent(eventId)}`, { method: "DELETE" });
+  const response = await googleRequest(`/calendars/${encodeURIComponent(process.env.GOOGLE_CALENDAR_ID!)}/events/${encodeURIComponent(eventId)}`, { method: "ELIMINA" });
   if (!response.ok && response.status !== 404 && response.status !== 410) throw new Error("Could not remove the shared calendar event.");
 }

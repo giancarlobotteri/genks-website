@@ -1,7 +1,7 @@
 export const legalDocuments = {
-  privacy: { title: "Privacy Policy", body: "PLACEHOLDER — Have this policy reviewed and approved before launch. Describe the actual data controller, purposes, legal bases, retention periods, recipients, international transfers and data-subject rights." },
-  cookies: { title: "Cookie Policy", body: "PLACEHOLDER — The current build uses only operational authentication and payment flows. Update this document before adding analytics or marketing cookies." },
-  terms: { title: "Terms of Service", body: "PLACEHOLDER — Add approved commercial terms, consumer information, payment, refund and dispute rules before launch." },
-  licensing: { title: "Licensing Terms", body: "PLACEHOLDER — Replace with the final reviewed license grants, limits, Content ID, distribution, performances and termination rules." },
-  booking: { title: "Booking & Cancellation Policy", body: "PLACEHOLDER — Define deposits, approval, rescheduling, cancellation windows, late arrival and no-show rules." },
+  privacy: { title: "Informativa sulla privacy", body: "BOZZA DA COMPLETARE — Prima del lancio, fai verificare e approvare l’informativa. Indica titolare del trattamento, finalità, basi giuridiche, tempi di conservazione, destinatari, trasferimenti internazionali e diritti degli interessati." },
+  cookies: { title: "Informativa sui cookie", body: "BOZZA DA COMPLETARE — La versione attuale utilizza solo le funzioni operative di accesso e pagamento. Aggiorna il documento prima di aggiungere cookie statistici o pubblicitari." },
+  terms: { title: "Condizioni del servizio", body: "BOZZA DA COMPLETARE — Prima del lancio, inserisci condizioni commerciali approvate, informazioni ai consumatori e regole su pagamenti, rimborsi e controversie." },
+  licensing: { title: "Condizioni delle licenze", body: "BOZZA DA COMPLETARE — Inserisci le condizioni definitive verificate: diritti concessi, limiti, Content ID, distribuzione, esibizioni e risoluzione della licenza." },
+  booking: { title: "Regole di prenotazione e cancellazione", body: "BOZZA DA COMPLETARE — Definisci acconti, approvazione, cambio data, termini di cancellazione, ritardi e mancata presentazione." },
 } as const;

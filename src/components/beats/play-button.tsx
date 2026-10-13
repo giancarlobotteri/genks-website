@@ -21,7 +21,7 @@ export function PlayButton({
     <button
       type="button"
       className={`play-button ${className} ${active && isPlaying ? "is-playing" : ""}`}
-      aria-label={unavailable ? `${beat.title} preview coming soon` : `${active && isPlaying ? "Pause" : "Play"} ${beat.title}`}
+      aria-label={unavailable ? `Anteprima di ${beat.title} in arrivo` : `${active && isPlaying ? "Pausa" : "Riproduci"} ${beat.title}`}
       aria-pressed={active && isPlaying}
       disabled={unavailable}
       onClick={() => !unavailable && playBeat(beat, queue)}

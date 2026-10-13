@@ -13,19 +13,19 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: getSiteOrigin(),
-  title: { default: "GENKS — The sound starts here", template: "%s | GENKS" },
+  title: { default: "GENKS — Il suono nasce qui", template: "%s | GENKS" },
   description: site.description,
   applicationName: site.name,
   openGraph: {
-    title: "GENKS — The sound starts here",
+    title: "GENKS — Il suono nasce qui",
     description: site.description,
     type: "website",
-    locale: "en_US",
+    locale: "it_IT",
     siteName: site.name,
   },
   twitter: {
     card: "summary",
-    title: "GENKS — Music producer",
+    title: "GENKS — Produttore musicale",
     description: site.description,
   },
   icons: { icon: "/icon.svg" },
@@ -44,10 +44,10 @@ export default async function RootLayout({
     getLicenses(),
   ]);
   return (
-    <html lang="en">
+    <html lang="it">
       <body>
         <a className="skip-link" href="#main-content">
-          Skip to content
+          Vai al contenuto
         </a>
         <PlayerProvider catalog={beats}>
           <LicenseProvider licenses={licenses}>

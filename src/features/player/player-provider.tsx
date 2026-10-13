@@ -66,7 +66,7 @@ export function PlayerProvider({
       setIsLoading(false);
       setIsPlaying(false);
       if (cause instanceof DOMException && cause.name === "AbortError") return;
-      setError("This preview couldn't play. Press play to try again.");
+      setError("Non è stato possibile riprodurre l’anteprima. Premi riproduci per riprovare.");
     });
   }, []);
 
@@ -192,7 +192,7 @@ export function PlayerProvider({
               setIsLoading(false);
               setIsPlaying(false);
               setError(
-                "The preview is unavailable. Try another beat or press play to retry.",
+                "L’anteprima non è disponibile. Prova un altro beat oppure premi riproduci per riprovare.",
               );
             }}
           />

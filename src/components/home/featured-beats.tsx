@@ -10,11 +10,11 @@ export function FeaturedBeats({ beats }: { beats: Beat[] }) {
     <section className="featured-section container section" id="featured">
       <SectionHeading
         index="01"
-        eyebrow="SELECTED SOUNDS"
-        title="In the rotation."
+        eyebrow="SUONI SELEZIONATI"
+        title="In primo piano."
       >
         <Link className="text-link" href="/beats">
-          All beats <ArrowUpRight size={18} />
+          Tutti i beat <ArrowUpRight size={18} />
         </Link>
       </SectionHeading>
       <div className="featured-grid">
@@ -23,8 +23,7 @@ export function FeaturedBeats({ beats }: { beats: Beat[] }) {
         ))}
       </div>
       <p className="catalog-disclaimer">
-        <span className="demo-badge">GENKS</span>Explore the catalog and choose
-        the license that fits your release.
+        <span className="demo-badge">GENKS</span>Esplora il catalogo e scegli la licenza adatta alla tua uscita.
       </p>
     </section>
   );

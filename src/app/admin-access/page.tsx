@@ -6,8 +6,8 @@ export default async function AdminAccessPage({ searchParams }: { searchParams: 
   const query = await searchParams;
   return <main className="portal-shell narrow-shell admin-login-shell">
     <div className="admin-login-icon"><ShieldCheck aria-hidden="true" /></div>
-    <span className="eyebrow">PRIVATE CONTROL ROOM</span>
-    <h1>GENKS Admin.</h1>
+    <span className="eyebrow">PANNELLO RISERVATO</span>
+    <h1>Amministrazione GENKS.</h1>
     <p className="muted">Area riservata al proprietario per pubblicare beat e gestire catalogo, licenze, ordini e prenotazioni.</p>
     {query.error && <p className="notice error" role="alert">Email o password non corretti.</p>}
     {query.denied && <p className="notice error" role="alert">Questo account non è autorizzato ad accedere all’Admin.</p>}

@@ -11,11 +11,11 @@ const querySchema = z.object({
 
 export async function GET(request: Request) {
   if (!hasSupabase) {
-    return Response.json({ error: "Booking availability is not configured." }, { status: 503 });
+    return Response.json({ error: "Gli orari delle prenotazioni non sono configurati." }, { status: 503 });
   }
   const search = new URL(request.url).searchParams;
   const parsed = querySchema.safeParse({ date: search.get("date"), duration: search.get("duration") ?? 1 });
-  if (!parsed.success) return Response.json({ error: "Choose a valid date." }, { status: 400 });
+  if (!parsed.success) return Response.json({ error: "Scegli una data valida." }, { status: 400 });
 
   const day = new Date(`${parsed.data.date}T12:00:00Z`);
   if (!Number.isFinite(day.getTime()) || parsed.data.date < todayInRome()) {
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   const dayEnd = fromRomeWallTime(parsed.data.date, "23:59");
   let googleBusy: Array<{ starts_at: string; ends_at: string }> = [];
   try { if (hasGoogleCalendar) googleBusy = await getGoogleBusyRanges(dayStart, dayEnd); }
-  catch { return Response.json({ error: "The shared studio calendar is temporarily unavailable." }, { status: 503 }); }
+  catch { return Response.json({ error: "Il calendario condiviso dello studio è temporaneamente non disponibile." }, { status: 503 }); }
   const [{ data: rules }, { data: bookings }, { data: blackouts }] = await Promise.all([
     db.from("availability_rules").select("start_time,end_time,slot_minutes,buffer_minutes").eq("weekday", weekday).eq("active", true),
     db.from("bookings").select("starts_at,ends_at").in("status", ["pending", "approved_awaiting_payment", "confirmed"]).lt("starts_at", dayEnd.toISOString()).gt("ends_at", dayStart.toISOString()),

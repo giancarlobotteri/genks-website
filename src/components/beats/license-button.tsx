@@ -24,7 +24,7 @@ export function LicenseButton({
     <button
       type="button"
       className={compact ? "license-button" : "button button-secondary"}
-      aria-label={`Preview licenses for ${beat.title}`}
+      aria-label={`Visualizza le licenze di ${beat.title}`}
       onClick={() => openLicenses(beat)}
     >
       {compact && price !== null ? (
@@ -33,7 +33,7 @@ export function LicenseButton({
         </>
       ) : (
         <>
-          License options <ArrowUpRight size={17} />
+          Opzioni di licenza <ArrowUpRight size={17} />
         </>
       )}
     </button>

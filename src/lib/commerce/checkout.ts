@@ -17,7 +17,7 @@ export const checkoutGateway: CheckoutGateway = {
   async createSession() {
     return {
       status: "unavailable",
-      reason: "This demo does not accept payments.",
+      reason: "Questa versione dimostrativa non accetta pagamenti.",
     };
   },
 };

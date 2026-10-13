@@ -39,9 +39,9 @@ export function LicenseProvider({
     <LicenseContext value={context}>
       {children}
       <Modal open={!!beat} onClose={() => setBeat(null)} titleId={headingId}>
-        <span className="eyebrow">CHOOSE YOUR LICENSE</span>
-        <h2 id={headingId}>{beat?.title ?? "Licenses"}</h2>
-        <p className="muted">Compare the files and terms before you buy. Each license applies to this beat.</p>
+        <span className="eyebrow">SCEGLI LA TUA LICENZA</span>
+        <h2 id={headingId}>{beat?.title ?? "Licenze"}</h2>
+        <p className="muted">Confronta file e condizioni prima di acquistare. Ogni licenza si applica a questo beat.</p>
         <div className="license-options">
           {licenses
             .filter((license) => beat?.licenseIds.includes(license.id))
@@ -53,7 +53,7 @@ export function LicenseProvider({
                 </div>
                 <strong>
                   {license.id === "exclusive"
-                    ? "On request"
+                    ? "Su richiesta"
                     : formatPrice(beat?.licensePrices?.[license.id] ?? license.priceCents)}
                 </strong>
                 <ul>
@@ -65,22 +65,22 @@ export function LicenseProvider({
                   ))}
                 </ul>
                 {beat && !license.isDemo && license.id !== "exclusive" && (
-                  <a className="button button-primary" href={`/checkout/${beat.id}/${license.id}`}>BUY {license.name.toUpperCase()} <ArrowUpRight size={16} /></a>
+                  <a className="button button-primary" href={`/checkout/${beat.id}/${license.id}`}>ACQUISTA {license.name.toUpperCase()} <ArrowUpRight size={16} /></a>
                 )}
                 {beat && license.id === "exclusive" && (
-                  <a className="button button-secondary" href={`/services/exclusive?beat=${encodeURIComponent(beat.id)}`}>REQUEST EXCLUSIVE <ArrowUpRight size={16} /></a>
+                  <a className="button button-secondary" href={`/services/exclusive?beat=${encodeURIComponent(beat.id)}`}>RICHIEDI L’ESCLUSIVA <ArrowUpRight size={16} /></a>
                 )}
               </section>
             ))}
         </div>
-        {beat?.isDemo && <p className="demo-note">Demo catalog and example prices. Add real beats in Admin after connecting Supabase.</p>}
+        {beat?.isDemo && <p className="demo-note">Catalogo dimostrativo e prezzi di esempio. Aggiungi i beat reali dal pannello amministratore dopo aver collegato Supabase.</p>}
         <a
           className="text-link"
           href={site.instagram}
           target="_blank"
           rel="noreferrer"
         >
-          Questions about a license? <ArrowUpRight size={18} aria-hidden="true" />
+          Hai domande su una licenza? <ArrowUpRight size={18} aria-hidden="true" />
         </a>
       </Modal>
     </LicenseContext>

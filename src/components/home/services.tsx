@@ -17,8 +17,8 @@ export function Services() {
     <section id="services" className="services-section container section">
       <SectionHeading
         index="03"
-        eyebrow="BEYOND THE BEAT"
-        title="Your vision. Our frequency."
+        eyebrow="OLTRE IL BEAT"
+        title="La tua visione. La nostra frequenza."
       />
       <div className="service-list">
         {services.map((service) => (

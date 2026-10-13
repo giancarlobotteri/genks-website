@@ -18,7 +18,7 @@ export async function ensureOrderConfirmationEmail(
     .eq("id", orderId)
     .single();
 
-  if (error || !order) throw new Error(error?.message ?? "Order not found.");
+  if (error || !order) throw new Error(error?.message ?? "Ordine non trovato.");
   if (order.status !== "paid" || !order.paid_at) return { status: "not_ready", emailId: null };
   if (order.confirmation_email_sent_at && !options.force) {
     return { status: "already_sent", emailId: order.confirmation_email_id };
@@ -57,7 +57,7 @@ export async function ensureOrderConfirmationEmail(
     }).eq("id", order.id);
     return { status: "sent", emailId: result.emailId };
   } catch (deliveryError) {
-    const message = deliveryError instanceof Error ? deliveryError.message : "Unknown email delivery error";
+    const message = deliveryError instanceof Error ? deliveryError.message : "Errore sconosciuto nell’invio dell’email";
     await db.from("orders").update({ confirmation_email_last_error: message.slice(0, 1000) }).eq("id", order.id);
     throw deliveryError;
   }

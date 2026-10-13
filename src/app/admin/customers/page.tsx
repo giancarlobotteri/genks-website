@@ -1,3 +1,4 @@
+import { italianLabel } from "@/lib/italian";
 import { Mail, ReceiptText, ShoppingBag, Users } from "lucide-react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatPrice } from "@/lib/format";
@@ -30,7 +31,7 @@ export default async function Customers() {
     const profile = order.customer_id ? profiles.get(order.customer_id) : undefined;
     const current = purchasers.get(key) ?? {
       email: order.customer_email,
-      name: profile?.artist_name || profile?.display_name || order.customer_name || "Customer",
+      name: profile?.artist_name || profile?.display_name || order.customer_name || "Cliente",
       phone: profile?.phone ?? null,
       segment: profile?.segment ?? "GUEST_CUSTOMER",
       marketing: profile?.marketing_consent ?? false,
@@ -47,11 +48,11 @@ export default async function Customers() {
   const orderCount = customers.reduce((sum, customer) => sum + customer.orders.length, 0);
 
   return <>
-    <header className="admin-heading"><span className="eyebrow">PAID CUSTOMERS</span><h1>Customers</h1><p>People who completed at least one purchase, including guest checkout customers.</p></header>
+    <header className="admin-heading"><span className="eyebrow">CLIENTI CON ACQUISTI</span><h1>Clienti</h1><p>Persone che hanno completato almeno un acquisto, inclusi i clienti senza account.</p></header>
     <div className="customer-metrics">
-      <article><Users /><span>Purchasers</span><strong>{customers.length}</strong></article>
-      <article><ReceiptText /><span>Paid orders</span><strong>{orderCount}</strong></article>
-      <article><ShoppingBag /><span>Customer revenue</span><strong>{formatPrice(revenue)}</strong></article>
+      <article><Users /><span>Acquirenti</span><strong>{customers.length}</strong></article>
+      <article><ReceiptText /><span>Ordini pagati</span><strong>{orderCount}</strong></article>
+      <article><ShoppingBag /><span>Incassi per cliente</span><strong>{formatPrice(revenue)}</strong></article>
     </div>
     {customers.length ? <div className="purchaser-list">{customers.map((customer) => {
       const latest = customer.orders[0];
@@ -59,19 +60,19 @@ export default async function Customers() {
         <summary>
           <span className="purchaser-avatar">{customer.name.slice(0, 1).toUpperCase()}</span>
           <span><strong>{customer.name}</strong><small><Mail size={13} />{customer.email}</small></span>
-          <span><small>ORDERS</small><strong>{customer.orders.length}</strong></span>
-          <span><small>TOTAL SPENT</small><strong>{formatPrice(customer.total)}</strong></span>
-          <span><small>LAST PURCHASE</small><strong>{new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(latest.paid_at ?? latest.created_at))}</strong></span>
+          <span><small>ORDINI</small><strong>{customer.orders.length}</strong></span>
+          <span><small>TOTALE SPESO</small><strong>{formatPrice(customer.total)}</strong></span>
+          <span><small>ULTIMO ACQUISTO</small><strong>{new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(latest.paid_at ?? latest.created_at))}</strong></span>
         </summary>
         <div className="purchaser-details">
-          <div className="purchaser-profile"><span>{customer.segment.replaceAll("_", " ")}</span><span>{customer.marketing ? "Marketing opt-in" : "Transactional only"}</span>{customer.phone ? <span>{customer.phone}</span> : null}</div>
+          <div className="purchaser-profile"><span>{customer.segment.replaceAll("_", " ")}</span><span>{customer.marketing ? "Consenso alle comunicazioni promozionali" : "Solo email operative"}</span>{customer.phone ? <span>{customer.phone}</span> : null}</div>
           <div className="purchaser-orders">{customer.orders.map((order) => <article key={order.id}>
             <div><strong>{order.order_number}</strong><small>{new Intl.DateTimeFormat("it-IT", { dateStyle: "medium", timeStyle: "short" }).format(new Date(order.paid_at ?? order.created_at))}</small></div>
-            <div>{order.order_items.map((item) => <span key={`${order.id}-${item.beat_title_snapshot}-${item.license_name_snapshot}`}><strong>{item.beat_title_snapshot}</strong><small>{item.license_name_snapshot}</small></span>)}</div>
+            <div>{order.order_items.map((item) => <span key={`${order.id}-${item.beat_title_snapshot}-${italianLabel(item.license_name_snapshot)}`}><strong>{item.beat_title_snapshot}</strong><small>{italianLabel(item.license_name_snapshot)}</small></span>)}</div>
             <strong>{formatPrice(order.total_cents)}</strong>
           </article>)}</div>
         </div>
       </details>;
-    })}</div> : <div className="empty-state"><Users size={30} /><h3>No paid customers yet.</h3><p>Completed Stripe purchases will appear here automatically.</p></div>}
+    })}</div> : <div className="empty-state"><Users size={30} /><h3>Nessun cliente ha ancora completato un acquisto.</h3><p>Gli acquisti completati su Stripe compariranno qui automaticamente.</p></div>}
   </>;
 }
