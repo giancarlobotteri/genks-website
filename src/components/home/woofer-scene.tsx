@@ -51,7 +51,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     let previousPaused = pausedRef.current;
     let announcedReady = false;
     let warmed = false;
-    let qualityRatio = Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.25 : 1.5);
+    let qualityRatio = Math.min(window.devicePixelRatio, 1.25);
     let qualitySamples = 0;
     let qualityFrameTime = 0;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -188,7 +188,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     cap.scale.y = .28;
     cap.position.z = -.18;
     ring(.7, .012, -.105, chrome, diaphragm);
-    const logoMaterial = new THREE.MeshPhysicalMaterial({ color: 0xccedff, metalness: .9, roughness: .16, clearcoat: .55, envMapIntensity: 1.65, emissive: 0x1757bf, emissiveIntensity: .22 });
+    const logoMaterial = new THREE.MeshStandardMaterial({ color: 0xccedff, metalness: .9, roughness: .16, envMapIntensity: 1.65, emissive: 0x1757bf, emissiveIntensity: .22 });
     const logo = new THREE.Group();
     logo.position.z = .045;
     diaphragm.add(logo);
@@ -222,15 +222,12 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     const key = new THREE.DirectionalLight(0xc8dcff, 4);
     key.position.set(2, 3, 4);
     scene.add(key);
-    const blueLight = new THREE.PointLight(0x155cff, 24, 12, 2);
+    const blueLight = new THREE.DirectionalLight(0x3475ff, 2.4);
     blueLight.position.set(-2.5, 1, 2);
     scene.add(blueLight);
-    const rim = new THREE.PointLight(0xa454ff, 19, 12, 2);
+    const rim = new THREE.DirectionalLight(0x76a9ff, 2);
     rim.position.set(2, -1, 1);
     scene.add(rim);
-    const cyanLight = new THREE.PointLight(0x35e5e1, 12, 12, 2);
-    cyanLight.position.set(-2, -1.5, 2);
-    scene.add(cyanLight);
 
     const resize = () => {
       const width = mount.clientWidth;
@@ -284,16 +281,18 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     reducedMotion.addEventListener("change", onMotionChange);
     renderer.setAnimationLoop((time: number) => {
       if (!warmed) return;
-      const delta = previous ? Math.min((time - previous) / 1000, .05) : 0;
+      const frameInterval = previous ? (time - previous) / 1000 : 0;
+      const delta = Math.min(frameInterval, .05);
       previous = time;
       if (!visible || document.hidden) return;
       const moving = !pausedRef.current && !reducedMotion.matches;
-      if (moving && delta > 0 && frameCount > 10) {
-        qualityFrameTime += delta;
+      if (moving && frameInterval > 0 && frameInterval < 1 && frameCount > 10) {
+        qualityFrameTime += frameInterval;
         qualitySamples++;
-        if (qualitySamples >= 45) {
-          if (qualityFrameTime / qualitySamples > .024 && qualityRatio > .9) {
-            qualityRatio = Math.max(.9, qualityRatio - .2);
+        if (qualitySamples >= 20) {
+          renderer.domElement.dataset.renderFps = String(Math.round(qualitySamples / qualityFrameTime));
+          if (qualityFrameTime / qualitySamples > .0185 && qualityRatio > .75) {
+            qualityRatio = Math.max(.75, qualityRatio - .25);
             renderer.setPixelRatio(qualityRatio);
             needsRender = true;
           }
@@ -307,6 +306,8 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       const expansion = reducedMotion.matches ? 0 : (1 - Math.cos(elapsed * Math.PI / 3.8)) * .5;
       displayedProgress = reducedMotion.matches || pausedRef.current ? 0 : (heroProgressRef?.current ?? progress);
       const travel = displayedProgress;
+      // Once the hero is transparent, leave the GPU free for the interface's return.
+      if (mode === "hero" && travel >= .98 && announcedReady) return;
       const easing = 1 - Math.exp(-delta * 5);
       const smoothstep = (from: number, to: number, value: number) => THREE.MathUtils.smoothstep(value, from, to);
       const zoom = mode === "hero" ? smoothstep(.56, .94, travel) : 0;
@@ -354,6 +355,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       needsRender = false;
       if (!announcedReady && frameCount >= 2) {
         announcedReady = true;
+        renderer.domElement.dataset.drawCalls = String(renderer.info.render.calls);
         callbacks.current.onReady();
       }
       frameCount++;

@@ -63,11 +63,6 @@ export function CinematicHero() {
       const element = document.querySelector<HTMLElement>(String(selector));
       return element ? [{ element, x: Number(x), y: Number(y), fade: Boolean(fade) }] : [];
     });
-    for (const element of section.parentElement?.children ?? []) {
-      if (element instanceof HTMLElement && element !== section && !element.classList.contains("genks-brand-intro") && element.tagName !== "NOSCRIPT") {
-        uiTargets.push({ element, x: 0, y: 70, fade: true });
-      }
-    }
     const originalStyles = uiTargets.map(({ element }) => ({ opacity: element.style.opacity, translate: element.style.translate }));
     let lastInterface = -1;
     let interfaceHidden = false;

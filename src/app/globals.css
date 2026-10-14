@@ -4129,7 +4129,8 @@ body[data-cinematic-ui-hidden] #main-content > div:has(> #home) > :not(#home):no
 .cart-rail-toggle { translate:calc(110px * var(--cinematic-ui-offset,0)) 0; }
 .genks-menu-toggle,.genks-header-logo,.cart-rail,.cart-rail-toggle,.persistent-player { will-change:opacity,translate; }
 .persistent-player,.site-footer { translate:0 calc(140px * var(--cinematic-ui-offset,0)); }
-#main-content > div:has(> #home) > :not(#home):not(.genks-brand-intro) { translate:0 calc(70px * var(--cinematic-ui-offset,0)); }
+#main-content > div:has(> #home) > :not(#home):not(.genks-brand-intro) { translate:none; transition:opacity .5s ease; }
+body[data-cinematic-ui-hidden] #main-content > div:has(> #home) > :not(#home):not(.genks-brand-intro) { opacity:0; }
 @media(prefers-reduced-motion:reduce) {
   .genks-menu-toggle,.genks-header-logo,.cart-rail,.cart-rail-toggle,.persistent-player,.site-footer,
   #main-content > div:has(> #home) > :not(#home):not(.genks-brand-intro) { translate:none; }
