@@ -54,6 +54,23 @@ export function CinematicHero() {
     const stage = section?.firstElementChild as HTMLElement | null;
     if (!section || !stage) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const uiTargets = [
+      [".genks-header", 0, 0, true], [".genks-menu-toggle", -180, 0, false],
+      [".genks-header-logo", 0, -110, false], [".cart-rail", 380, 0, true],
+      [".cart-rail-toggle", 110, 0, true], [".cart-rail-backdrop", 0, 0, true],
+      [".persistent-player", 0, 140, true], [".site-footer", 0, 140, true],
+    ].flatMap(([selector, x, y, fade]) => {
+      const element = document.querySelector<HTMLElement>(String(selector));
+      return element ? [{ element, x: Number(x), y: Number(y), fade: Boolean(fade) }] : [];
+    });
+    for (const element of section.parentElement?.children ?? []) {
+      if (element instanceof HTMLElement && element !== section && !element.classList.contains("genks-brand-intro") && element.tagName !== "NOSCRIPT") {
+        uiTargets.push({ element, x: 0, y: 70, fade: true });
+      }
+    }
+    const originalStyles = uiTargets.map(({ element }) => ({ opacity: element.style.opacity, translate: element.style.translate }));
+    let lastInterface = -1;
+    let interfaceHidden = false;
     let target = 0;
     let current = progressRef.current;
     let interfaceProgress = 1;
@@ -77,9 +94,20 @@ export function CinematicHero() {
       interfaceProgress += (desiredInterface - interfaceProgress) * (1 - Math.exp(-delta * 5));
       if (Math.abs(interfaceProgress - desiredInterface) < .001) interfaceProgress = desiredInterface;
       const sceneUi = interfaceProgress;
-      document.body.style.setProperty("--cinematic-ui-opacity", String(sceneUi));
-      document.body.style.setProperty("--cinematic-ui-offset", String(1 - sceneUi));
-      document.body.toggleAttribute("data-cinematic-ui-hidden", sceneUi < .001);
+      // Update only the animated elements, avoiding inherited CSS changes across the whole page each frame.
+      const roundedInterface = Number(sceneUi.toFixed(4));
+      if (roundedInterface !== lastInterface) {
+        lastInterface = roundedInterface;
+        for (const { element, x, y, fade: fadeElement } of uiTargets) {
+          if (fadeElement) element.style.opacity = String(roundedInterface);
+          if (x || y) element.style.translate = reduced.matches ? "none" : `${x * (1 - roundedInterface)}px ${y * (1 - roundedInterface)}px`;
+        }
+      }
+      const hidden = sceneUi < .001;
+      if (hidden !== interfaceHidden) {
+        interfaceHidden = hidden;
+        document.body.toggleAttribute("data-cinematic-ui-hidden", hidden);
+      }
       const zoom = smoothstep(.56, .92, current);
       section.style.setProperty("--hero-opacity", String(1 - fade));
       section.style.setProperty("--hero-ui-opacity", String(ui));
@@ -110,8 +138,10 @@ export function CinematicHero() {
     measure();
     return () => {
       cancelAnimationFrame(frame);
-      document.body.style.removeProperty("--cinematic-ui-opacity");
-      document.body.style.removeProperty("--cinematic-ui-offset");
+      uiTargets.forEach(({ element }, index) => {
+        element.style.opacity = originalStyles[index].opacity;
+        element.style.translate = originalStyles[index].translate;
+      });
       document.body.removeAttribute("data-cinematic-ui-hidden");
       observer.disconnect();
       window.removeEventListener("scroll", scroll);

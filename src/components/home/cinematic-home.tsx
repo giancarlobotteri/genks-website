@@ -23,8 +23,8 @@ export function CinematicHome({ children }: { children: ReactNode }) {
         seen.add(entry.target);
         if (reduced.matches) return;
         const animation = entry.target.animate([
-          { opacity: .2, transform: "translate3d(0,45px,0)", filter: "blur(4px)" },
-          { opacity: 1, transform: "translate3d(0,0,0)", filter: "blur(0)" },
+          { opacity: .2, transform: "translate3d(0,30px,0)" },
+          { opacity: 1, transform: "translate3d(0,0,0)" },
         ], { duration: 1000, easing: "cubic-bezier(.16,1,.3,1)" });
         animations.add(animation);
         animation.onfinish = () => animations.delete(animation);

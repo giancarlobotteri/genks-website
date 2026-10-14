@@ -214,7 +214,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       renderer.setSize(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.5 : 1.75));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.25 : 1.5));
       needsRender = true;
     };
     const resizeObserver = new ResizeObserver(resize);
@@ -224,6 +224,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     void renderer.compileAsync(scene, camera).then(() => { if (!disposed) warmed = true; })
       .catch(() => { if (!disposed) callbacks.current.onUnavailable(); });
     const onScroll = () => {
+      if (heroProgressRef) { needsRender = true; return; }
       const rect = section.getBoundingClientRect();
       const travel = Math.max(1, section.offsetHeight - window.innerHeight);
       progress = THREE.MathUtils.clamp(-rect.top / travel, 0, 1);
