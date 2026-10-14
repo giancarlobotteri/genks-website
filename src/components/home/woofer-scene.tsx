@@ -286,6 +286,10 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       previous = time;
       if (!visible || document.hidden) return;
       const moving = !pausedRef.current && !reducedMotion.matches;
+      displayedProgress = reducedMotion.matches || pausedRef.current ? 0 : (heroProgressRef?.current ?? progress);
+      const travel = displayedProgress;
+      // Stop rendering and sampling frames once the scene is no longer visible.
+      if (mode === "hero" && travel >= .98 && announcedReady) return;
       if (moving && frameInterval > 0 && frameInterval < 1 && frameCount > 10) {
         qualityFrameTime += frameInterval;
         qualitySamples++;
@@ -304,10 +308,6 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       if (!moving && !needsRender && frameCount > 2) return;
       if (moving) elapsed += delta;
       const expansion = reducedMotion.matches ? 0 : (1 - Math.cos(elapsed * Math.PI / 3.8)) * .5;
-      displayedProgress = reducedMotion.matches || pausedRef.current ? 0 : (heroProgressRef?.current ?? progress);
-      const travel = displayedProgress;
-      // Once the hero is transparent, leave the GPU free for the interface's return.
-      if (mode === "hero" && travel >= .98 && announcedReady) return;
       const easing = 1 - Math.exp(-delta * 5);
       const smoothstep = (from: number, to: number, value: number) => THREE.MathUtils.smoothstep(value, from, to);
       const zoom = mode === "hero" ? smoothstep(.56, .94, travel) : 0;
