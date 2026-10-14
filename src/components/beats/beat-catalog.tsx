@@ -175,7 +175,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
         {visible.map((beat, index) => (
           <div
             className={`beat-row ${currentBeat?.id === beat.id ? "active" : ""}`}
-            style={{ "--beat-accent": ["#70a9ff", "#be91ff", "#58d4c3", "#ffb781"][index % 4] } as CSSProperties}
+            style={{ "--beat-accent": ["#70a9ff", "#5591ec", "#92c6ff", "#497ad1"][index % 4] } as CSSProperties}
             key={beat.id}
             role="row"
           >
