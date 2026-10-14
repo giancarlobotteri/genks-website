@@ -17,11 +17,14 @@ import { PlayButton } from "./play-button";
 import { FavoriteButton } from "./favorite-button";
 import { LicenseButton } from "./license-button";
 import type { Beat } from "@/types/domain";
+import { paginate } from "@/lib/pagination";
+import { GenksEmblem } from "@/components/brand/genks-emblem";
 
 export function BeatCatalog({ beats }: { beats: Beat[] }) {
   const [filters, setFilters] = useState<CatalogFilters>(defaultFilters);
   const [expanded, setExpanded] = useState(false);
   const [sort, setSort] = useState("curated");
+  const [page, setPage] = useState(1);
   const { favorites } = useWishlist();
   const { add } = useCart();
   const { currentBeat, isPlaying } = usePlayer();
@@ -37,19 +40,20 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
         : smartSearchActive
           ? [...filtered].sort((a, b) => (recommendations.get(b.id)?.score ?? 0) - (recommendations.get(a.id)?.score ?? 0))
           : filtered;
+  const pagination = paginate(visible, page);
   const activeCount = [filters.genre, filters.mood, filters.bpm, filters.key].filter(
     (value) => value !== "All",
   ).length;
   const setFilter = <K extends keyof CatalogFilters>(
     key: K,
     value: CatalogFilters[K],
-  ) => setFilters((current) => ({ ...current, [key]: value }));
+  ) => { setPage(1); setFilters((current) => ({ ...current, [key]: value })); };
 
   return (
     <div className="beat-catalog">
       <div className="catalog-discovery">
         <div><span className="catalog-kicker">SCEGLI LA TUA FREQUENZA</span><p>Un beat. Infinite direzioni.</p><span>Acquista un singolo beat oppure crea la tua selezione nel carrello.</span></div>
-        <div className="catalog-spectrum" aria-hidden="true">{[22,40,30,66,48,84,58,100,74,46,68,34,52,26].map((height,index)=><i key={index} style={{height:`${height}%`}} />)}</div>
+        <GenksEmblem />
       </div>
       <div className="catalog-toolbar">
         <label className="search-box">
@@ -145,7 +149,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
         <button
           type="button"
           className="text-link"
-          onClick={() => setFilters(defaultFilters)}
+          onClick={() => { setPage(1); setFilters(defaultFilters); }}
         >
           Azzera i filtri <X size={15} />
         </button>
@@ -156,7 +160,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
           <span className="sr-only">Ordina i beat</span>
           <select
             value={sort}
-            onChange={(event) => setSort(event.target.value)}
+            onChange={(event) => { setPage(1); setSort(event.target.value); }}
           >
             <option value="curated">{smartSearchActive ? "Più pertinenti" : "Selezione GENKS"}</option>
             <option value="bpm">BPM: dal più lento</option>
@@ -172,7 +176,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
           <span role="columnheader">ATMOSFERA</span>
           <span role="columnheader">LICENZA DA</span>
         </div>
-        {visible.map((beat, index) => (
+        {pagination.items.map((beat, index) => (
           <div
             className={`beat-row ${currentBeat?.id === beat.id ? "active" : ""}`}
             style={{ "--beat-accent": ["#70a9ff", "#5591ec", "#92c6ff", "#497ad1"][index % 4] } as CSSProperties}
@@ -189,7 +193,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
                 </span>
               ) : (
                 <span className="mono">
-                  {String(index + 1).padStart(2, "0")}
+                  {String(pagination.start + index + 1).padStart(2, "0")}
                 </span>
               )}
             </div>
@@ -231,6 +235,11 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
           </div>
         ))}
       </div>
+      {pagination.totalPages > 1 && <nav className="catalog-pagination" aria-label="Pagine del catalogo">
+        <button type="button" disabled={pagination.page === 1} onClick={() => setPage(pagination.page - 1)}>Precedente</button>
+        <span aria-live="polite">Pagina {pagination.page} di {pagination.totalPages}</span>
+        <button type="button" disabled={pagination.page === pagination.totalPages} onClick={() => setPage(pagination.page + 1)}>Successiva</button>
+      </nav>}
       {!visible.length && (
         <div className="empty-state">
           <Search size={28} />
@@ -247,7 +256,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
           <button
             type="button"
             className="button button-secondary"
-            onClick={() => setFilters(defaultFilters)}
+            onClick={() => { setPage(1); setFilters(defaultFilters); }}
           >
             Mostra tutti i beat
           </button>

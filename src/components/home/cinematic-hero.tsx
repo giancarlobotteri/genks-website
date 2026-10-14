@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ArrowDown, ArrowUpRight, Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
@@ -11,6 +12,7 @@ import styles from "./cinematic-hero.module.css";
 const WooferScene = dynamic(() => import("./woofer-scene"), { ssr: false });
 
 export function CinematicHero() {
+  const router = useRouter();
   const active = useHomeSceneActive();
   const sectionRef = useRef<HTMLElement>(null);
   const progressRef = useRef(0);
@@ -18,9 +20,9 @@ export function CinematicHero() {
   const [ready, setReady] = useState(false);
   const catalogScroll = useRef<{ frame: number; cancel: () => void } | null>(null);
   useEffect(() => () => catalogScroll.current?.cancel(), []);
-  const goToCatalog = (event: MouseEvent<HTMLAnchorElement>) => {
-    const catalog = document.getElementById("catalog");
-    if (!catalog || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const goToCatalog = (event: MouseEvent<HTMLAnchorElement>, destination = "#collection") => {
+    const catalog = document.getElementById("collection");
+    if (!catalog || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     event.preventDefault();
     catalogScroll.current?.cancel();
     const from = window.scrollY;
@@ -44,7 +46,11 @@ export function CinematicHero() {
       const eased = t * t * t * (t * (t * 6 - 15) + 10);
       window.scrollTo({ top: from + (to - from) * eased, behavior: "instant" });
       if (t < 1) controller.frame = requestAnimationFrame(step);
-      else { cancel(); history.replaceState(history.state, "", "#catalog"); }
+      else {
+        cancel();
+        if (destination === "/services") router.push(destination);
+        else history.replaceState(history.state, "", destination);
+      }
     };
     controller.frame = requestAnimationFrame(step);
   };
@@ -118,7 +124,7 @@ export function CinematicHero() {
     };
     const measure = () => {
       sectionTop = section.getBoundingClientRect().top + window.scrollY;
-      const catalog = document.getElementById("catalog");
+      const catalog = document.getElementById("collection");
       const catalogStart = catalog ? catalog.getBoundingClientRect().top + window.scrollY - sectionTop : Infinity;
       // Finish the fade before the catalog, including short viewports where the stage has a minimum height.
       travel = Math.max(1, Math.min(section.offsetHeight - stage.offsetHeight, catalogStart));
@@ -162,13 +168,13 @@ export function CinematicHero() {
 
         <div className={styles.content}>
           <div className={styles.actions}>
-            <a className={styles.primary} href="#catalog" onClick={goToCatalog}>Vai al catalogo <ArrowUpRight size={19} aria-hidden="true" /></a>
-            <Link className={styles.secondary} href="/services">Prenota un servizio <ArrowUpRight size={17} aria-hidden="true" /></Link>
+            <a className={styles.primary} href="#collection" onClick={event => goToCatalog(event)}>Vai al catalogo <ArrowUpRight size={19} aria-hidden="true" /></a>
+            <Link className={styles.secondary} href="/services" onClick={event => goToCatalog(event, "/services")}>Prenota un servizio <ArrowUpRight size={17} aria-hidden="true" /></Link>
           </div>
         </div>
 
         <div className={styles.bottomline}>
-          <a className={styles.scroll} href="#catalog" onClick={goToCatalog}><ArrowDown size={14} aria-hidden="true" /> Scopri il tuo prossimo suono</a>
+          <a className={styles.scroll} href="#collection" onClick={event => goToCatalog(event)}><ArrowDown size={14} aria-hidden="true" /> Scopri il tuo prossimo suono</a>
           <button type="button" className={styles.motion} disabled={!ready} aria-pressed={paused} onClick={() => setPaused(value => !value)}>
             {paused ? <Play size={12} aria-hidden="true" /> : <Pause size={12} aria-hidden="true" />}
             {paused ? "Riprendi animazione" : "Pausa animazione"}

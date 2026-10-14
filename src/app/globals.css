@@ -4131,6 +4131,74 @@ body[data-cinematic-ui-hidden] #main-content > div:has(> #home) > :not(#home):no
 .persistent-player,.site-footer { translate:0 calc(140px * var(--cinematic-ui-offset,0)); }
 #main-content > div:has(> #home) > :not(#home):not(.genks-brand-intro) { translate:none; transition:opacity .5s ease; }
 body[data-cinematic-ui-hidden] #main-content > div:has(> #home) > :not(#home):not(.genks-brand-intro) { opacity:0; }
+.genks-emblem { width:145px; height:145px; flex:0 0 145px; perspective:650px; display:grid; place-items:center; }
+.genks-emblem-model { width:110px; height:110px; position:relative; transform-style:preserve-3d; transform:rotateY(-12deg) rotateX(8deg); transition:transform .8s cubic-bezier(.2,.7,.2,1); }
+.genks-emblem:hover .genks-emblem-model { transform:rotateY(22deg) rotateX(-10deg); }
+.genks-emblem-core { position:absolute; inset:12px; display:grid; place-items:center; border:1px solid #96caff85; border-radius:50%; background:radial-gradient(circle at 30% 20%,#94c8ff,#2355b4 30%,#081c47 64%,#020714); box-shadow:inset -8px -8px 18px #0008,inset 2px 2px 12px #afd4ff70,0 8px 24px #0004; transform:translateZ(12px); }
+.genks-emblem-core img { width:90%; height:auto; }
+.genks-emblem-orbit { position:absolute; inset:-8px; border:2px solid #75aaff; border-radius:50%; box-shadow:0 0 8px #689eff25; }
+.orbit-one { transform:rotateX(65deg) rotateY(15deg); }
+.orbit-two { border-color:#b7d9ff; transform:rotateY(68deg) rotateX(-20deg); }
+.orbit-three { inset:-16px; border-width:1px; border-color:#3d72cb; transform:rotateX(25deg) rotateY(-38deg); }
+.catalog-pagination { display:flex; justify-content:center; align-items:center; gap:20px; padding:26px 0 10px; color:#afcfff; font-size:12px; }
+.catalog-pagination button { border:1px solid #518bdf65; border-radius:14px; padding:12px 16px; background:#112747; color:#ddebff; cursor:pointer; }
+.catalog-pagination button:disabled { opacity:.35; cursor:default; }
+#collection .purchase-guide { padding-top:38px; padding-bottom:38px; }
+#collection .purchase-guide h2 { font-size:clamp(23px,2.4vw,34px); margin-bottom:22px; }
+#collection .purchase-guide-grid { gap:12px; }
+#collection .purchase-guide-grid article { padding:20px; }
+#collection .purchase-guide-grid article p { font-size:12px; line-height:1.65; }
+#collection #catalog { padding-top:32px; }
+.service-portal { animation:service-arrive .65s cubic-bezier(.2,.7,.2,1) both; }
+.service-page-heading { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:32px; }
+.service-page-heading > div:first-child { max-width:650px; }
+.service-page-heading h1 { color:#d5e9ff; font-weight:700; letter-spacing:-.05em; line-height:1.12; }
+.service-page-heading p { line-height:1.8; max-width:580px; }
+.service-page-heading .genks-emblem { width:185px; height:185px; flex-basis:185px; }
+.service-choice-grid { perspective:1200px; gap:20px; }
+.service-choice-grid .service-choice-card { position:relative; border:1px solid #426ca64d; border-radius:28px; padding:28px; background:radial-gradient(ellipse at 100% 0,#234d8b40,transparent 65%),linear-gradient(145deg,#111e36,#080f1f); transition:transform .4s,border-color .4s,box-shadow .4s; }
+.service-choice-grid .service-choice-card:hover { transform:translateY(-5px) rotateX(2deg); border-color:#75adff; box-shadow:0 16px 40px #0004; }
+.service-choice-top { display:flex; align-items:center; justify-content:space-between; color:#91c0ff; margin-bottom:25px; }
+.service-choice-link { display:flex; align-items:center; gap:12px; color:#a7cfff; font-size:12px; margin-top:25px; }
+.service-choice-card .service-choice-top svg,.service-choice-card .service-choice-link svg { position:static; }
+.service-choice-grid .service-choice-card h2 { margin:0 0 12px; }
+.service-choice-grid .service-choice-card > svg { display:none; }
+.service-return { margin-top:28px; }
+.service-portal .premium-form { border:1px solid #4276b750; border-radius:28px; padding:28px; background:linear-gradient(145deg,#101e35,#090f1e); }
+.service-portal .premium-form input,.service-portal .premium-form textarea,.service-portal .premium-form select { background:#091426; border:1px solid #3c63964a; border-radius:13px; transition:border-color .2s,box-shadow .2s; }
+.service-portal .premium-form input:focus,.service-portal .premium-form textarea:focus,.service-portal .premium-form select:focus { border-color:#83baff; box-shadow:0 0 0 3px #4589ff15; outline:none; }
+.service-portal label small { color:#7796bf; font-size:11px; font-weight:400; }
+.project-service-options { border:0; padding:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.project-service-options label { position:relative; padding:18px 14px; border:1px solid #39547c; border-radius:18px; cursor:pointer; background:#0c182b; transition:background .3s,border-color .3s,transform .3s; }
+.project-service-options input { position:absolute; opacity:0; width:1px; height:1px; }
+.project-service-options label:has(input:focus-visible) { outline:2px solid #8ec5ff; outline-offset:3px; }
+.project-service-options label.selected { border-color:#75afff; background:linear-gradient(135deg,#1f4c91,#112a50); transform:translateY(-2px); }
+.project-service-options small { display:block; margin-top:8px; line-height:1.5; }
+.service-optional { border:1px solid #39578265; padding:18px; border-radius:18px; }
+.service-optional summary { cursor:pointer; color:#b4d6ff; font-size:13px; }
+.service-optional summary span { font-size:11px; color:#7796bf; margin-left:8px; }
+.service-optional > div { display:grid; gap:18px; padding-top:20px; }
+.service-submit { min-height:54px; gap:12px; border-radius:16px; background:linear-gradient(120deg,#2966e3,#174894); }
+.service-form-note { margin:0; color:#8ea8cb; font-size:12px; text-align:center; line-height:1.7; }
+.service-spinner { animation:service-spin 1s linear infinite; }
+@keyframes service-spin { to { transform:rotate(360deg); } }
+@keyframes service-arrive { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+@media(max-width:720px) {
+  .genks-emblem { width:100px; height:110px; flex-basis:100px; }
+  .genks-emblem-model { width:80px; height:80px; }
+  .service-page-heading { gap:12px; align-items:flex-start; }
+  .service-page-heading .genks-emblem { width:100px; height:110px; flex-basis:100px; }
+  .service-page-heading h1 { font-size:30px; }
+  .service-portal .premium-form { padding:20px 16px; }
+  .project-service-options { grid-template-columns:1fr; }
+  .project-service-options label { padding:14px; }
+  .catalog-pagination { gap:10px; }
+  .catalog-pagination button { padding:10px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .service-portal { animation:none; }
+  .genks-emblem-model,.service-choice-grid .service-choice-card,.project-service-options label { transition:none; transform:none; }
+}
 @media(prefers-reduced-motion:reduce) {
   .genks-menu-toggle,.genks-header-logo,.cart-rail,.cart-rail-toggle,.persistent-player,.site-footer,
   #main-content > div:has(> #home) > :not(#home):not(.genks-brand-intro) { translate:none; }

@@ -99,7 +99,7 @@ export const mockBeats: Beat[] = [
     mood: "Melodic",
     description: "Una melodia che cresce lentamente su batterie incalzanti.",
     featured: false,
-    status: "published",
+    status: "draft",
     licenseIds: ["mp3", "wav", "stems"],
     assets: [],
     isDemo: false,

@@ -11,7 +11,17 @@ export default async function Home() {
   return (
     <CinematicHome>
       <CinematicHero />
-      <section id="catalog" className="catalog-section container section">
+      <section id="collection" className="catalog-section">
+      <AnnouncementTicker />
+      <section className="container section purchase-guide" aria-labelledby="purchase-guide-title">
+        <h2 id="purchase-guide-title">Dal primo ascolto alla tua prossima uscita.</h2>
+        <div className="purchase-guide-grid">
+          <article><span>01</span><h3>Trova il tuo suono</h3><p>Esplora il catalogo per genere, atmosfera e BPM. Ascolta prima di scegliere.</p></article>
+          <article><span>02</span><h3>Scegli la tua licenza</h3><p>Confronta file inclusi e condizioni. La licenza scelta definisce come puoi utilizzare il beat.</p></article>
+          <article><span>03</span><h3>Acquista e scarica</h3><p>Paga in sicurezza con Stripe. Dopo la conferma, accedi ai file disponibili nella tua raccolta con l’email usata per l’acquisto.</p></article>
+        </div>
+      </section>
+      <section id="catalog" className="container section">
         <SectionHeading
           index="02"
           eyebrow="IL CATALOGO"
@@ -25,14 +35,8 @@ export default async function Home() {
         </SectionHeading>
         <BeatCatalog beats={beats} />
       </section>
-      <AnnouncementTicker />
-      <section className="container section purchase-guide" aria-labelledby="purchase-guide-title">
-        <h2 id="purchase-guide-title">Dal primo ascolto alla tua prossima uscita.</h2>
-        <div className="purchase-guide-grid">
-          <article><span>01</span><h3>Trova il tuo suono</h3><p>Esplora il catalogo per genere, atmosfera e BPM. Ascolta prima di scegliere.</p></article>
-          <article><span>02</span><h3>Scegli la tua licenza</h3><p>Confronta file inclusi e condizioni. La licenza scelta definisce come puoi utilizzare il beat.</p></article>
-          <article><span>03</span><h3>Acquista e scarica</h3><p>Paga in sicurezza con Stripe. Dopo la conferma, accedi ai file disponibili nella tua raccolta con l’email usata per l’acquisto.</p></article>
-        </div>
+
+
       </section>
       <Services />
     </CinematicHome>

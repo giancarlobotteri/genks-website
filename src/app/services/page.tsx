@@ -1,3 +1,16 @@
-import Link from "next/link"; import { ArrowUpRight } from "lucide-react"; import { site } from "@/config/site";
-const items=[{href:"/services/recording",n:"01",title:"Sessione di registrazione",copy:"Scegli una data e richiedi un orario in studio."},{href:"/services/project?service=mix",n:"02",title:"Mix",copy:"Invia i dettagli del brano e ricevi un preventivo."},{href:"/services/project?service=master",n:"03",title:"Master",copy:"Definizione, potenza e resa su ogni impianto."},{href:"/services/project?service=mix_master",n:"04",title:"Mix & Master",copy:"Un percorso completo per finalizzare il tuo brano."}];
-export default function ServicesPage(){return <div className="portal-shell"><span className="eyebrow">PRENOTAZIONI E SERVIZI</span><h1>Di cosa hai bisogno?</h1><div className="service-choice-grid">{items.map(x=><Link href={x.href} key={x.href+x.title}><span>{x.n}</span><h2>{x.title}</h2><p>{x.copy}</p><ArrowUpRight /></Link>)}<a href={site.instagram} target="_blank" rel="noreferrer"><span>05</span><h2>Beat su misura</h2><p>Racconta a GENKS i tuoi riferimenti e la tua idea su Instagram.</p><ArrowUpRight /></a></div></div>}
+import Link from "next/link";
+import { ArrowUpRight, AudioLines, Disc3, Mic2, SlidersHorizontal } from "lucide-react";
+import { GenksEmblem } from "@/components/brand/genks-emblem";
+const items = [
+  { href: "/services/recording", n: "01", title: "Sessione in studio", copy: "La tua voce, il tuo spazio. Scegli durata, giorno e orario.", icon: Mic2 },
+  { href: "/services/project?service=mix", n: "02", title: "Mix", copy: "Equilibrio e carattere. Racconta il risultato che cerchi.", icon: SlidersHorizontal },
+  { href: "/services/project?service=master", n: "03", title: "Master", copy: "Il tocco finale. Porta il tuo mix alla sua forma definitiva.", icon: Disc3 },
+  { href: "/services/project?service=mix_master", n: "04", title: "Mix & Master", copy: "Un unico percorso per finalizzare il tuo prossimo brano.", icon: AudioLines },
+];
+export default function ServicesPage() {
+  return <div className="portal-shell service-portal">
+    <div className="service-page-heading"><div><span className="eyebrow">LAVORA CON GENKS</span><h1>Il prossimo passo del tuo suono.</h1><p className="muted">Scegli il servizio, invia la tua richiesta e definiamo insieme i dettagli. Il pagamento arriva dopo la conferma o il preventivo.</p></div><GenksEmblem /></div>
+    <div className="service-choice-grid">{items.map(item => <Link href={item.href} key={item.href} className="service-choice-card"><span className="service-choice-top"><span>{item.n}</span><item.icon size={30} strokeWidth={1.4} aria-hidden="true" /></span><h2>{item.title}</h2><p>{item.copy}</p><span className="service-choice-link">Inizia la richiesta <ArrowUpRight size={18} aria-hidden="true" /></span></Link>)}</div>
+    <Link className="text-link service-return" href="/beats">Cerchi un beat pronto? Vai al catalogo <ArrowUpRight size={17} /></Link>
+  </div>;
+}

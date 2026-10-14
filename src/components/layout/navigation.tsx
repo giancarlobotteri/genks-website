@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { ArrowUpRight, Menu, X } from "lucide-react";
-import { site } from "@/config/site";
 
 export function Navigation() {
   const [open, setOpen] = useState(false);
@@ -33,10 +32,10 @@ export function Navigation() {
     </a>
     <nav ref={menuRef} id={navId} hidden={!open} className="genks-corner-menu" aria-label="Collegamenti GENKS">
       <a href="/#home" onClick={() => setOpen(false)}>Home <ArrowUpRight size={17} /></a>
-      <a href={site.instagram} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>Instagram <ArrowUpRight size={17} /></a>
-      <a href={site.tiktok} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>TikTok <ArrowUpRight size={17} /></a>
+      <a href="/#collection" onClick={() => setOpen(false)}>Catalogo dei beat <ArrowUpRight size={17} /></a>
+      <Link href="/services" onClick={() => setOpen(false)}>Prenota un servizio <ArrowUpRight size={17} /></Link>
+      <Link href="/account/library" onClick={() => setOpen(false)}>La tua raccolta <ArrowUpRight size={17} /></Link>
       <Link href="/admin-access" onClick={() => setOpen(false)}>Accesso amministratore <ArrowUpRight size={17} /></Link>
     </nav>
   </header>;
 }
-

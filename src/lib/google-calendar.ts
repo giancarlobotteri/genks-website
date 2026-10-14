@@ -91,6 +91,6 @@ export async function createProjectDeadlineEvent(input: { id: string; reference:
 
 export async function deleteGoogleCalendarEvent(eventId: string | null | undefined) {
   if (!hasGoogleCalendar || !eventId) return;
-  const response = await googleRequest(`/calendars/${encodeURIComponent(process.env.GOOGLE_CALENDAR_ID!)}/events/${encodeURIComponent(eventId)}`, { method: "ELIMINA" });
+  const response = await googleRequest(`/calendars/${encodeURIComponent(process.env.GOOGLE_CALENDAR_ID!)}/events/${encodeURIComponent(eventId)}`, { method: "DELETE" });
   if (!response.ok && response.status !== 404 && response.status !== 410) throw new Error("Could not remove the shared calendar event.");
 }
