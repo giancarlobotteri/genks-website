@@ -2,7 +2,7 @@
 import { italianLabel } from "@/lib/italian";
 
 import Image from "next/image";
-import { useId, useState } from "react";
+import { useId, useState, type CSSProperties } from "react";
 import { ArrowDownUp, Heart, Search, ShoppingBag, SlidersHorizontal, X } from "lucide-react";
 import { useCart } from "@/features/cart/cart-provider";
 import { usePlayer } from "@/features/player/player-provider";
@@ -47,6 +47,10 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
 
   return (
     <div className="beat-catalog">
+      <div className="catalog-discovery">
+        <div><span className="catalog-kicker">SCEGLI LA TUA FREQUENZA</span><p>Un beat. Infinite direzioni.</p><span>Acquista un singolo beat oppure crea la tua selezione nel carrello.</span></div>
+        <div className="catalog-spectrum" aria-hidden="true">{[22,40,30,66,48,84,58,100,74,46,68,34,52,26].map((height,index)=><i key={index} style={{height:`${height}%`}} />)}</div>
+      </div>
       <div className="catalog-toolbar">
         <label className="search-box">
           <Search size={20} aria-hidden="true" />
@@ -171,6 +175,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
         {visible.map((beat, index) => (
           <div
             className={`beat-row ${currentBeat?.id === beat.id ? "active" : ""}`}
+            style={{ "--beat-accent": ["#70a9ff", "#be91ff", "#58d4c3", "#ffb781"][index % 4] } as CSSProperties}
             key={beat.id}
             role="row"
           >
