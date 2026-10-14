@@ -4152,7 +4152,7 @@ body[data-cinematic-ui-hidden] #main-content > div:has(> #home) > :not(#home):no
 .service-portal { animation:service-arrive .65s cubic-bezier(.2,.7,.2,1) both; }
 .service-page-heading { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:32px; }
 .service-page-heading > div:first-child { max-width:650px; }
-.service-page-heading h1 { color:#d5e9ff; font-weight:700; letter-spacing:-.05em; line-height:1.12; }
+.service-page-heading h1 { color:#d5e9ff; font-size:clamp(36px,4.5vw,64px); margin:12px 0 20px; font-weight:700; letter-spacing:-.05em; line-height:1.12; }
 .service-page-heading p { line-height:1.8; max-width:580px; }
 .service-page-heading .genks-emblem { width:185px; height:185px; flex-basis:185px; }
 .service-choice-grid { perspective:1200px; gap:20px; }

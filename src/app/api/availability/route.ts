@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { hasSupabase } from "@/lib/env";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getGoogleBusyRanges, hasGoogleCalendar } from "@/lib/google-calendar";
 import { fromRomeWallTime, todayInRome } from "@/lib/rome-time";
 
@@ -21,18 +21,25 @@ export async function GET(request: Request) {
   if (!Number.isFinite(day.getTime()) || parsed.data.date < todayInRome()) {
     return Response.json({ slots: [] });
   }
-  const db = await createSupabaseServerClient();
+  // Read busy ranges on the server; visitors receive only available times, never booking records.
+  const db = createSupabaseAdminClient();
   const weekday = day.getUTCDay();
   const dayStart = fromRomeWallTime(parsed.data.date, "00:00");
   const dayEnd = fromRomeWallTime(parsed.data.date, "23:59");
   let googleBusy: Array<{ starts_at: string; ends_at: string }> = [];
   try { if (hasGoogleCalendar) googleBusy = await getGoogleBusyRanges(dayStart, dayEnd); }
   catch { return Response.json({ error: "Il calendario condiviso dello studio è temporaneamente non disponibile." }, { status: 503 }); }
-  const [{ data: rules }, { data: bookings }, { data: blackouts }] = await Promise.all([
+  const [ruleResult, bookingResult, blackoutResult] = await Promise.all([
     db.from("availability_rules").select("start_time,end_time,slot_minutes,buffer_minutes").eq("weekday", weekday).eq("active", true),
     db.from("bookings").select("starts_at,ends_at").in("status", ["pending", "approved_awaiting_payment", "confirmed"]).lt("starts_at", dayEnd.toISOString()).gt("ends_at", dayStart.toISOString()),
     db.from("blackout_dates").select("starts_at,ends_at").lt("starts_at", dayEnd.toISOString()).gt("ends_at", dayStart.toISOString()),
   ]);
+  if (ruleResult.error || bookingResult.error || blackoutResult.error) {
+    return Response.json({ error: "Non è stato possibile verificare gli orari. Riprova tra poco." }, { status: 503 });
+  }
+  const { data: rules } = ruleResult;
+  const { data: bookings } = bookingResult;
+  const { data: blackouts } = blackoutResult;
 
   const slots: string[] = [];
   for (const rule of rules ?? []) {
