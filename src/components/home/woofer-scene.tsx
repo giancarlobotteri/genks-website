@@ -51,7 +51,8 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     let previousPaused = pausedRef.current;
     let announcedReady = false;
     let warmed = false;
-    let qualityRatio = Math.min(window.devicePixelRatio, 1.25);
+    // Preserve native display sharpness throughout the animation; never downscale on slow frames.
+    let qualityRatio = window.devicePixelRatio;
     let qualitySamples = 0;
     let qualityFrameTime = 0;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -104,7 +105,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       return mesh;
     };
     const ring = (radius: number, thickness: number, z: number, material: THREE.Material, parent: THREE.Group = assembly) => {
-      const mesh = addMesh(new THREE.TorusGeometry(radius, thickness, 12, 96), material, parent);
+      const mesh = addMesh(new THREE.TorusGeometry(radius, thickness, 20, 144), material, parent);
       mesh.position.z = z;
       return mesh;
     };
@@ -233,6 +234,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       const width = mount.clientWidth;
       const height = mount.clientHeight;
       if (!width || !height) return;
+      qualityRatio = window.devicePixelRatio;
       renderer.setSize(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
@@ -295,11 +297,6 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
         qualitySamples++;
         if (qualitySamples >= 20) {
           renderer.domElement.dataset.renderFps = String(Math.round(qualitySamples / qualityFrameTime));
-          if (qualityFrameTime / qualitySamples > .0185 && qualityRatio > .75) {
-            qualityRatio = Math.max(.75, qualityRatio - .25);
-            renderer.setPixelRatio(qualityRatio);
-            needsRender = true;
-          }
           qualitySamples = 0;
           qualityFrameTime = 0;
         }
