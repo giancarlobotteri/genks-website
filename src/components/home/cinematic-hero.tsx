@@ -71,11 +71,14 @@ export function CinematicHero() {
       if (Math.abs(current - target) < .0001) current = target;
       progressRef.current = current;
       const fade = smoothstep(.86, .98, current);
-      const ui = 1 - smoothstep(.035, .25, current);
+      const ui = 1 - smoothstep(.002, .045, current);
+      const sceneUi = Math.max(ui, smoothstep(.98, 1, current));
+      document.body.style.setProperty("--cinematic-ui-opacity", String(sceneUi));
+      document.body.toggleAttribute("data-cinematic-ui-hidden", sceneUi < .01);
       const zoom = smoothstep(.56, .92, current);
       section.style.setProperty("--hero-opacity", String(1 - fade));
       section.style.setProperty("--hero-ui-opacity", String(ui));
-      section.style.setProperty("--hero-ui-visibility", current > .28 ? "hidden" : "visible");
+      section.style.setProperty("--hero-ui-visibility", ui < .01 ? "hidden" : "visible");
       section.style.setProperty("--poster-zoom", String(Math.exp(zoom * Math.log(9))));
       stage.style.pointerEvents = fade > .8 ? "none" : "auto";
       section.style.pointerEvents = fade > .8 ? "none" : "auto";
@@ -102,6 +105,8 @@ export function CinematicHero() {
     measure();
     return () => {
       cancelAnimationFrame(frame);
+      document.body.style.removeProperty("--cinematic-ui-opacity");
+      document.body.removeAttribute("data-cinematic-ui-hidden");
       observer.disconnect();
       window.removeEventListener("scroll", scroll);
       window.removeEventListener("resize", measure);

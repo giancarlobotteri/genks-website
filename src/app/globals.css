@@ -4117,3 +4117,9 @@ h1,h2,h3 { font-family:"Manrope",sans-serif; }
 .license-button:hover { background:linear-gradient(120deg,#3679ff,#2864cb); box-shadow:0 5px 20px #416fee30; }
 @media(max-width:720px) { .catalog-discovery { padding:22px; gap:16px; } .catalog-spectrum { flex-basis:65px; gap:3px; height:90px; } .catalog-discovery p { font-size:23px; } .row-actions { gap:8px; } .license-button { padding-inline:10px; gap:7px; } }
 @media(prefers-reduced-motion:reduce) { .catalog-spectrum i,.beat-catalog .beat-row { transition:none; } .catalog-discovery:hover .catalog-spectrum i { transform:none; } }
+
+/* Leave the scrolling scene on its own, then restore the interface at its end. */
+:is(.genks-header,.cart-rail,.cart-rail-toggle,.cart-rail-backdrop,.persistent-player,.site-footer),
+.experience > :not(#home):not(.genks-brand-intro) { opacity:var(--cinematic-ui-opacity,1); }
+body[data-cinematic-ui-hidden] :is(.genks-header,.cart-rail,.cart-rail-toggle,.cart-rail-backdrop,.persistent-player,.site-footer),
+body[data-cinematic-ui-hidden] .experience > :not(#home):not(.genks-brand-intro) { visibility:hidden; pointer-events:none; }
