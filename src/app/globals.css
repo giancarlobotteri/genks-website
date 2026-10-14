@@ -4120,6 +4120,6 @@ h1,h2,h3 { font-family:"Manrope",sans-serif; }
 
 /* Leave the scrolling scene on its own, then restore the interface at its end. */
 :is(.genks-header,.cart-rail,.cart-rail-toggle,.cart-rail-backdrop,.persistent-player,.site-footer),
-.experience > :not(#home):not(.genks-brand-intro) { opacity:var(--cinematic-ui-opacity,1); }
+#main-content > div:has(> #home) > :not(#home):not(.genks-brand-intro) { opacity:var(--cinematic-ui-opacity,1); }
 body[data-cinematic-ui-hidden] :is(.genks-header,.cart-rail,.cart-rail-toggle,.cart-rail-backdrop,.persistent-player,.site-footer),
-body[data-cinematic-ui-hidden] .experience > :not(#home):not(.genks-brand-intro) { visibility:hidden; pointer-events:none; }
+body[data-cinematic-ui-hidden] #main-content > div:has(> #home) > :not(#home):not(.genks-brand-intro) { visibility:hidden; pointer-events:none; }
