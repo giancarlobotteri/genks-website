@@ -56,6 +56,7 @@ export function CinematicHero() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     let target = 0;
     let current = progressRef.current;
+    let interfaceProgress = 1;
     let frame = 0;
     let lastTime = 0;
     let travel = 1;
@@ -71,10 +72,14 @@ export function CinematicHero() {
       if (Math.abs(current - target) < .0001) current = target;
       progressRef.current = current;
       const fade = smoothstep(.86, .98, current);
-      const ui = 1 - smoothstep(.002, .045, current);
-      const sceneUi = Math.max(ui, smoothstep(.98, 1, current));
+      const ui = 1 - smoothstep(.002, .16, current);
+      const desiredInterface = Math.max(ui, smoothstep(.98, 1, current));
+      interfaceProgress += (desiredInterface - interfaceProgress) * (1 - Math.exp(-delta * 5));
+      if (Math.abs(interfaceProgress - desiredInterface) < .001) interfaceProgress = desiredInterface;
+      const sceneUi = interfaceProgress;
       document.body.style.setProperty("--cinematic-ui-opacity", String(sceneUi));
-      document.body.toggleAttribute("data-cinematic-ui-hidden", sceneUi < .01);
+      document.body.style.setProperty("--cinematic-ui-offset", String(1 - sceneUi));
+      document.body.toggleAttribute("data-cinematic-ui-hidden", sceneUi < .001);
       const zoom = smoothstep(.56, .92, current);
       section.style.setProperty("--hero-opacity", String(1 - fade));
       section.style.setProperty("--hero-ui-opacity", String(ui));
@@ -82,7 +87,7 @@ export function CinematicHero() {
       section.style.setProperty("--poster-zoom", String(Math.exp(zoom * Math.log(9))));
       stage.style.pointerEvents = fade > .8 ? "none" : "auto";
       section.style.pointerEvents = fade > .8 ? "none" : "auto";
-      frame = current === target ? 0 : requestAnimationFrame(paint);
+      frame = current === target && interfaceProgress === desiredInterface ? 0 : requestAnimationFrame(paint);
     };
     const scroll = () => {
       target = reduced.matches || paused ? 0 : Math.min(1, Math.max(0, (window.scrollY - sectionTop) / travel));
@@ -106,6 +111,7 @@ export function CinematicHero() {
     return () => {
       cancelAnimationFrame(frame);
       document.body.style.removeProperty("--cinematic-ui-opacity");
+      document.body.style.removeProperty("--cinematic-ui-offset");
       document.body.removeAttribute("data-cinematic-ui-hidden");
       observer.disconnect();
       window.removeEventListener("scroll", scroll);
