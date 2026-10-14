@@ -3,6 +3,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { createGenksGlyphs } from "@/lib/graphics/genks-model";
 
 type Props = {
@@ -50,12 +51,15 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     let previousPaused = pausedRef.current;
     let announcedReady = false;
     let warmed = false;
+    let qualityRatio = Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.25 : 1.5);
+    let qualitySamples = 0;
+    let qualityFrameTime = 0;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const finePointer = window.matchMedia("(pointer: fine)");
     const geometries = new Set<THREE.BufferGeometry>();
     const materials = new Set<THREE.Material>();
     const textures = new Set<THREE.Texture>();
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.5 : 1.75));
+    renderer.setPixelRatio(qualityRatio);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
@@ -100,7 +104,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       return mesh;
     };
     const ring = (radius: number, thickness: number, z: number, material: THREE.Material, parent: THREE.Group = assembly) => {
-      const mesh = addMesh(new THREE.TorusGeometry(radius, thickness, 20, 144), material, parent);
+      const mesh = addMesh(new THREE.TorusGeometry(radius, thickness, 12, 96), material, parent);
       mesh.position.z = z;
       return mesh;
     };
@@ -193,6 +197,27 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       mesh.position.copy(glyph.position);
     });
 
+    // Combine fixed parts sharing a material; the parent groups still rotate and separate normally.
+    for (const group of [assembly, front, diaphragm, logo]) {
+      const batches = new Map<THREE.Material, THREE.Mesh[]>();
+      for (const child of group.children) {
+        if (!(child instanceof THREE.Mesh) || Array.isArray(child.material)) continue;
+        const batch = batches.get(child.material) ?? [];
+        batch.push(child);
+        batches.set(child.material, batch);
+      }
+      for (const [material, meshes] of batches) {
+        if (meshes.length < 2) continue;
+        const copies = meshes.map(mesh => { mesh.updateMatrix(); return mesh.geometry.clone().applyMatrix4(mesh.matrix); });
+        const merged = mergeGeometries(copies, false);
+        copies.forEach(geometry => geometry.dispose());
+        if (!merged) continue;
+        merged.computeBoundingSphere();
+        meshes.forEach(mesh => group.remove(mesh));
+        addMesh(merged, material, group);
+      }
+    }
+
     scene.add(new THREE.HemisphereLight(0x9cbcff, 0x030409, 1.25));
     const key = new THREE.DirectionalLight(0xc8dcff, 4);
     key.position.set(2, 3, 4);
@@ -214,7 +239,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       renderer.setSize(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 700 ? 1.25 : 1.5));
+      renderer.setPixelRatio(qualityRatio);
       needsRender = true;
     };
     const resizeObserver = new ResizeObserver(resize);
@@ -263,6 +288,19 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       previous = time;
       if (!visible || document.hidden) return;
       const moving = !pausedRef.current && !reducedMotion.matches;
+      if (moving && delta > 0 && frameCount > 10) {
+        qualityFrameTime += delta;
+        qualitySamples++;
+        if (qualitySamples >= 45) {
+          if (qualityFrameTime / qualitySamples > .024 && qualityRatio > .9) {
+            qualityRatio = Math.max(.9, qualityRatio - .2);
+            renderer.setPixelRatio(qualityRatio);
+            needsRender = true;
+          }
+          qualitySamples = 0;
+          qualityFrameTime = 0;
+        }
+      }
       if (previousPaused !== pausedRef.current) { needsRender = true; previousPaused = pausedRef.current; }
       if (!moving && !needsRender && frameCount > 2) return;
       if (moving) elapsed += delta;
