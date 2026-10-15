@@ -17,12 +17,11 @@ export function CustomBeatContact() {
   return <section className="custom-beat-contact">
     <span className="eyebrow">PRODUZIONE PERSONALE</span><h2>Il tuo beat, da zero.</h2>
     <p>Il prezzo di un beat su misura dipende dal lavoro da realizzare. Scrivimi: definiamo insieme stile, dettagli e preventivo prima di iniziare.</p>
-    <blockquote>{customBeatMessage}</blockquote>
     <div className="custom-contact-actions">
       {phone ? <a className="button button-primary" href={`https://wa.me/${phone}?text=${encodeURIComponent(customBeatMessage)}`} target="_blank" rel="noopener noreferrer"><MessageCircle size={18}/> Scrivimi su WhatsApp</a> : <p className="muted">WhatsApp sarà disponibile appena configurato. Puoi scrivermi su Instagram.</p>}
       <button type="button" className="button button-secondary" onClick={copy}>{copied ? <Check size={17}/> : <Copy size={17}/>} {copied ? "Messaggio copiato" : "Copia il messaggio per i DM"}</button>
       <a className="button button-secondary" href={`https://ig.me/m/${handle}`} target="_blank" rel="noopener noreferrer" onClick={() => void copy()}><Instagram size={18}/> Apri i DM di Instagram</a>
     </div>
-    <small role="status">{copyError ? "Seleziona e copia il testo qui sopra, poi incollalo nei DM." : "Per Instagram il messaggio viene copiato: incollalo nella conversazione. WhatsApp lo apre già compilato."}</small>
+    <small role="status">{copyError ? "Non è stato possibile copiare il messaggio. Puoi scrivermi direttamente nei DM." : "Per Instagram il messaggio viene copiato: incollalo nella conversazione. WhatsApp lo apre già compilato."}</small>
   </section>;
 }
