@@ -2,12 +2,23 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { hasSupabase } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function getCurrentUser() {
   if (!hasSupabase) return null;
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();
-  return error ? null : data.user;
+  if(error || !data.user) return null;
+  // A profile can be cleared during an owner-authorized reset while the login remains valid.
+  // Recreate only a blank customer profile, and never overwrite an existing role.
+  const db=createSupabaseAdminClient();
+  const {data:profile,error:profileError}=await db.from("profiles").select("id").eq("id",data.user.id).maybeSingle();
+  if(profileError)throw new Error("Verifica dell’account temporaneamente non disponibile.");
+  if(!profile){
+    const {error:restoreError}=await db.from("profiles").upsert({id:data.user.id,role:"customer"},{onConflict:"id",ignoreDuplicates:true});
+    if(restoreError)throw new Error("Non è stato possibile ripristinare il profilo cliente.");
+  }
+  return data.user;
 }
 
 export async function requireUser(next = "/account/library") {
