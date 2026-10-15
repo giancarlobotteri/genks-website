@@ -7,7 +7,7 @@ const serviceHref: Record<string, string> = {
   recording: "/services/recording",
   mix: "/services/project?service=mix",
   master: "/services/project?service=master",
-  "mix-master": "/services/project?service=mix_master",
+  "mix-master": "/services/project",
   "custom-beat": "/services/custom",
 };
 

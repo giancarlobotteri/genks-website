@@ -4298,3 +4298,5 @@ body:has(.admin-shell) :is(.cart-rail,.cart-rail-toggle,.cart-rail-backdrop,.per
 }
 
 .admin-quick-links { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; }.admin-quick-links .admin-form-card { margin:0; transition:border-color .25s,transform .25s; }.admin-quick-links a:hover { border-color:#6b9de2; transform:translateY(-3px); }.admin-quick-links h2 { font-size:21px; margin-block:14px; color:#c4dfff; }.admin-quick-links p { font-size:12px; color:#94afd4; line-height:1.8; }.admin-quick-links>span { color:#84b8ff; }
+
+.custom-contact-actions .button-secondary { background:#102746; border-color:#365e92; color:#c9e3ff; }.custom-contact-actions .button-secondary:hover { background:#194477; border-color:#75adf5; }

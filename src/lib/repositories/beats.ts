@@ -34,7 +34,7 @@ export const beatRepository: BeatRepository = {
         .eq("slug", slug)
         .eq("status", "published")
         .maybeSingle();
-      if (data) return mapBeat(data);
+      return data ? mapBeat(data) : null;
     }
     return (
       mockBeats.find(
