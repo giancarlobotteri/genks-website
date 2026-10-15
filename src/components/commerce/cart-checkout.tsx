@@ -26,7 +26,7 @@ export function CartCheckout() {
   return <>
     <div className="cart-step-heading"><span>1</span><div><strong>Scegli una licenza per ogni beat</strong><small>Necessario prima del pagamento</small></div></div>
     <div className="cart-items">{items.map(({ beat, selectedLicenseId }) => {
-      const available = licenses.filter((license) => beat.licenseIds.includes(license.id) && license.id !== "exclusive");
+      const available = licenses.filter((license) => beat.licenseIds.includes(license.id) && !license.isExclusive && license.id !== "exclusive");
       return <article key={beat.id}>
         <Image src={beat.cover} width={64} height={64} alt="" />
         <div><strong>{beat.title}</strong><small>{italianLabel(beat.genre)} · {beat.bpm} BPM</small></div>

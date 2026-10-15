@@ -21,7 +21,7 @@ export const beatRepository: BeatRepository = {
         .eq("status", "published")
         .order("sort_order")
         .order("published_at", { ascending: false });
-      if (data?.length) return data.map(mapBeat);
+      if (data) return data.map(mapBeat);
     }
     return mockBeats.filter((beat) => beat.status === "published");
   },
@@ -52,9 +52,10 @@ export async function getLicenses(): Promise<License[]> {
       .select("code,name,price_cents,currency,included_assets,short_description,is_exclusive")
       .eq("active", true)
       .order("display_order");
-    if (data?.length)
+    if (data)
       return data.map((item) => ({
         id: item.code as License["id"],
+        isExclusive: item.is_exclusive,
         name: italianLabel(item.name),
         priceCents: item.price_cents,
         currency: "EUR",

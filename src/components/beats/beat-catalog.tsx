@@ -1,4 +1,5 @@
 "use client";
+import { catalogGenres, catalogMoods, catalogKeys } from "@/data/catalog-options";
 import { italianLabel } from "@/lib/italian";
 
 import Image from "next/image";
@@ -107,7 +108,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
           Genere
           <select value={filters.genre} onChange={event => setFilter("genre", event.target.value)}>
             <option value="All">Tutti i generi</option>
-            {[...new Set(beats.map(beat => beat.genre))].sort().map(genre => <option key={genre} value={genre}>{italianLabel(genre)}</option>)}
+            {[...new Set([...catalogGenres, ...beats.map(beat => beat.genre)])].sort().map(genre => <option key={genre} value={genre}>{italianLabel(genre)}</option>)}
           </select>
         </label>
         <label>
@@ -117,7 +118,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
             onChange={(event) => setFilter("mood", event.target.value)}
           >
             <option value="All">Tutte le atmosfere</option>
-            {[...new Set(beats.map((beat) => beat.mood))].map((mood) => (
+            {[...new Set([...catalogMoods, ...beats.map((beat) => beat.mood)])].map((mood) => (
               <option key={mood} value={mood}>{italianLabel(mood)}</option>
             ))}
           </select>
@@ -141,7 +142,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
             onChange={(event) => setFilter("key", event.target.value)}
           >
             <option value="All">Qualsiasi tonalità</option>
-            {[...new Set(beats.map((beat) => beat.key))].map((key) => (
+            {[...new Set([...catalogKeys, ...beats.map((beat) => beat.key)])].map((key) => (
               <option key={key}>{key}</option>
             ))}
           </select>
@@ -228,7 +229,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
             <div className="row-actions" role="cell">
               <FavoriteButton beat={beat} />
               <button type="button" className="cart-add-button" aria-label={`Aggiungi ${beat.title} al carrello`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
-                <ShoppingBag size={17} /><span>Aggiungi</span>
+                <ShoppingBag size={17} /><span>Aggiungi al carrello</span>
               </button>
               <LicenseButton beat={beat} compact />
             </div>

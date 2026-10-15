@@ -1,4 +1,8 @@
-import Link from "next/link";import { requireAdmin } from "@/lib/auth";
+import Link from "next/link";
+import { requireAdmin } from "@/lib/auth";
+import { AdminNavigation } from "@/components/admin/admin-navigation";
 export const dynamic = "force-dynamic";
-const nav=[["Panoramica","/admin"],["Beat","/admin/beats"],["Licenze","/admin/licenses"],["Ordini","/admin/orders"],["Clienti","/admin/customers"],["Prenotazioni","/admin/bookings"],["Mix & Master","/admin/projects"],["Esclusiva","/admin/exclusive"],["Promozioni","/admin/promotions"],["Statistiche","/admin/analytics"],["Impostazioni","/admin/settings"]];
-export default async function AdminLayout({children}:{children:React.ReactNode}){await requireAdmin();return <div className="admin-shell"><aside className="admin-sidebar"><Link href="/" className="admin-brand">GENKS <span>AMMINISTRAZIONE</span></Link><nav>{nav.map(([label,href])=><Link key={href} href={href}>{label}</Link>)}</nav></aside><section className="admin-content">{children}</section></div>}
+export default async function AdminLayout({children}:{children:React.ReactNode}) {
+  await requireAdmin();
+  return <div className="admin-shell"><aside className="admin-sidebar"><Link href="/admin" className="admin-brand">GENKS <span>STUDIO CONTROL</span></Link><AdminNavigation/><Link className="admin-return" href="/">Torna al sito ↗</Link></aside><section className="admin-content">{children}</section></div>;
+}

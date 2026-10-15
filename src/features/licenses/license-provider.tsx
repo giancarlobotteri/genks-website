@@ -52,9 +52,7 @@ export function LicenseProvider({
                   <span className="mono muted">{license.format}</span>
                 </div>
                 <strong>
-                  {license.id === "exclusive"
-                    ? "Su richiesta"
-                    : formatPrice(beat?.licensePrices?.[license.id] ?? license.priceCents)}
+                  {formatPrice(beat?.licensePrices?.[license.id] ?? license.priceCents)}
                 </strong>
                 <ul>
                   {license.features.map((feature) => (
@@ -64,10 +62,10 @@ export function LicenseProvider({
                     </li>
                   ))}
                 </ul>
-                {beat && !license.isDemo && license.id !== "exclusive" && (
+                {beat && !license.isDemo && !license.isExclusive && license.id !== "exclusive" && (
                   <a className="button button-primary" href={`/checkout/${beat.id}/${license.id}`}>ACQUISTA {license.name.toUpperCase()} <ArrowUpRight size={16} /></a>
                 )}
-                {beat && license.id === "exclusive" && (
+                {beat && (license.isExclusive || license.id === "exclusive") && (
                   <a className="button button-secondary" href={`/services/exclusive?beat=${encodeURIComponent(beat.id)}`}>RICHIEDI L’ESCLUSIVA <ArrowUpRight size={16} /></a>
                 )}
               </section>

@@ -12,8 +12,9 @@ export async function sendTransactionalEmail(input: {
   body: string;
   actionUrl?: string;
   actionLabel?: string;
+  serviceRequest?: boolean;
 }) {
-  if (!previewRecipientAllowed(input.to)) throw new Error("Il destinatario non è autorizzato nell’anteprima privata.");
+  if (!("serviceRequest" in input && input.serviceRequest) && !previewRecipientAllowed(input.to)) throw new Error("Il destinatario non è autorizzato nell’anteprima privata.");
   const resend = getResend();
   if (!resend || !process.env.RESEND_FROM_EMAIL)
     return { skipped: true as const };
@@ -38,7 +39,7 @@ export async function sendOrderConfirmationEmail(input: {
   items: Array<{ beatTitle: string; licenseName: string; unitPriceCents: number }>;
   idempotencyKey?: string;
 }) {
-  if (!previewRecipientAllowed(input.to)) throw new Error("Il destinatario non è autorizzato nell’anteprima privata.");
+  if (!("serviceRequest" in input && input.serviceRequest) && !previewRecipientAllowed(input.to)) throw new Error("Il destinatario non è autorizzato nell’anteprima privata.");
   const resend = getResend();
   if (!resend || !process.env.RESEND_FROM_EMAIL) {
     const missing = [

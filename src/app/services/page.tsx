@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { ArrowUpRight, AudioLines, Disc3, Mic2, SlidersHorizontal } from "lucide-react";
+import { ArrowUpRight, AudioLines, Disc3, Mic2 } from "lucide-react";
 import { GenksEmblem } from "@/components/brand/genks-emblem";
 const items = [
   { href: "/services/recording", n: "01", title: "Sessione in studio", copy: "La tua voce, il tuo spazio. Scegli durata, giorno e orario.", icon: Mic2 },
-  { href: "/services/project?service=mix", n: "02", title: "Mix", copy: "Equilibrio e carattere. Racconta il risultato che cerchi.", icon: SlidersHorizontal },
-  { href: "/services/project?service=master", n: "03", title: "Master", copy: "Il tocco finale. Porta il tuo mix alla sua forma definitiva.", icon: Disc3 },
-  { href: "/services/project?service=mix_master", n: "04", title: "Mix & Master", copy: "Un unico percorso per finalizzare il tuo prossimo brano.", icon: AudioLines },
+  { href: "/services/project", n: "02", title: "Mix e master", copy: "Seleziona il tipo di servizio di cui hai bisogno: mix, master oppure mix e master.", icon: AudioLines },
+  { href: "/services/custom", n: "03", title: "Beat su misura", copy: "Una produzione costruita per te. Contattami per un preventivo dedicato.", icon: Disc3 },
 ];
 export default function ServicesPage() {
   return <div className="portal-shell service-portal">

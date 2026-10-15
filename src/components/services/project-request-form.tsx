@@ -8,7 +8,7 @@ const options = [{ code: "mix", title: "Mix", copy: "Equilibrio, spazio e caratt
 export function ProjectRequestForm({ initialService }: { initialService: string }) {
   const [service, setService] = useState(initialService);
   return <form action={createProject} className="premium-form form-grid service-request-form">
-    <div className="booking-step full"><span>01</span><div><strong>Il tuo suono, il tuo percorso</strong><small>Scegli il servizio: riceverai un preventivo prima di pagare.</small></div></div>
+    <div className="booking-step full"><span>01</span><div><strong>Seleziona il tipo di servizio di cui hai bisogno</strong><small>Scegli il servizio: riceverai un preventivo prima di pagare.</small></div></div>
     <fieldset className="full project-service-options"><legend className="sr-only">Servizio</legend>{options.map(option => <label key={option.code} className={service === option.code ? "selected" : ""}>
       <input type="radio" name="service" value={option.code} checked={service === option.code} onChange={() => setService(option.code)} required />
       <strong>{option.title}</strong><small>{option.copy}</small>

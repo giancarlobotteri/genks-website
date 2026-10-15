@@ -35,7 +35,7 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (privatePreview) {
     const path = request.nextUrl.pathname;
-    const publicEndpoints = path === "/admin-access" || path === "/login" || path === "/auth/confirm" || path === "/api/stripe/webhook" || path === "/robots.txt";
+    const publicEndpoints = path === "/admin-access" || path === "/login" || path === "/auth/confirm" || path === "/api/stripe/webhook" || path === "/api/calendar/feed" || path === "/robots.txt";
     if (!publicEndpoints) {
       const ownerEmail = (process.env.GENKS_ADMIN_EMAIL || "prod.genks@gmail.com").trim().toLowerCase();
       if (user?.email?.toLowerCase() !== ownerEmail) {

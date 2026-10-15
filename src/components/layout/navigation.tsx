@@ -2,12 +2,14 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- Native Home fragments must replace the existing catalog hash. */
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 
 export function Navigation() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
   const navId = useId();
   const toggleRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLElement>(null);
@@ -23,6 +25,7 @@ export function Navigation() {
     window.addEventListener("pointerdown", outside);
     return () => { window.removeEventListener("keydown", close); window.removeEventListener("pointerdown", outside); };
   }, [open]);
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin-access")) return null;
   return <header className="genks-header">
     <button ref={toggleRef} type="button" className="genks-menu-toggle" aria-expanded={open} aria-controls={navId} aria-label={open ? "Chiudi il menu" : "Apri il menu"} onClick={() => setOpen(value => !value)}>
       {open ? <X size={21} /> : <Menu size={21} />}<span>Menu</span>

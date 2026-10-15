@@ -5,7 +5,7 @@ export const mockLicenses: License[] = [
   {
     id: "mp3",
     name: "MP3 lease",
-    priceCents: 2900,
+    priceCents: 2999,
     currency: "EUR",
     format: "MP3",
     features: [
@@ -18,7 +18,7 @@ export const mockLicenses: License[] = [
   {
     id: "wav",
     name: "WAV lease",
-    priceCents: 4900,
+    priceCents: 4999,
     currency: "EUR",
     format: "MP3 + WAV",
     features: [
@@ -31,7 +31,7 @@ export const mockLicenses: License[] = [
   {
     id: "stems",
     name: "Trackout lease",
-    priceCents: 9900,
+    priceCents: 9999,
     currency: "EUR",
     format: "MP3 + WAV + STEMS",
     features: [

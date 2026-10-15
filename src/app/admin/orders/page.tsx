@@ -1,15 +1,19 @@
+import { AdminPagination, pageNumber } from "@/components/admin/pagination";
 import { italianLabel } from "@/lib/italian";
 import { BadgeCheck, ReceiptText } from "lucide-react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatPrice } from "@/lib/format";
 import { retryOrderConfirmation } from "../actions";
 
-export default async function Orders({ searchParams }: { searchParams: Promise<{ email?: string }> }) {
+export default async function Orders({ searchParams }: { searchParams: Promise<{ email?: string; page?: string }> }) {
   const query = await searchParams;
   const db = createSupabaseAdminClient();
-  const { data } = await db.from("orders")
+  const {count} = await db.from("orders").select("id", {count:"exact",head:true});
+  const page = Math.min(pageNumber(query.page), Math.max(1,Math.ceil((count ?? 0)/5)));
+  const { data, error } = await db.from("orders")
     .select("id,order_number,customer_email,customer_name,status,total_cents,currency,paid_at,created_at,confirmation_email_sent_at,confirmation_email_last_error,order_items(beat_title_snapshot,license_name_snapshot)")
-    .order("created_at", { ascending: false }).limit(100);
+    .order("created_at", { ascending: false }).order("id").range((page-1)*5,page*5-1);
+  if(error) throw new Error("Impossibile caricare gli ordini.");
   const orders = data ?? [];
   const emailReady = Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL);
   return <><header className="admin-heading"><span className="eyebrow">ORDINI E CONSEGNE</span><h1>Ordini</h1><p>Gli stati di pagamento e consegna derivano dalle conferme verificate di Stripe. Puoi ritentare l’invio di un’email dopo aver corretto la configurazione.</p></header>
@@ -27,5 +31,6 @@ export default async function Orders({ searchParams }: { searchParams: Promise<{
           {!order.confirmation_email_sent_at && <form action={retryOrderConfirmation}><input type="hidden" name="id" value={order.id}/><button className="button button-secondary" type="submit">RIPROVA INVIO EMAIL</button></form>}</>}
       </div>
     </article>)}</div> : <div className="empty-state"><ReceiptText size={30}/><h3>Non hai ancora ordini.</h3></div>}
+    <AdminPagination page={page} total={count ?? 0} path="/admin/orders" />
   </>;
 }

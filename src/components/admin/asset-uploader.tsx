@@ -1,9 +1,10 @@
 "use client";
+import { catalogGenres, catalogMoods, catalogKeys } from "@/data/catalog-options";
 import { italianLabel } from "@/lib/italian";
 
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Check, FileArchive, FileAudio, ImageIcon, RefreshCw, Upload, Video } from "lucide-react";
+import { Check, FileArchive, FileAudio, ImageIcon, RefreshCw, Upload } from "lucide-react";
 import * as tus from "tus-js-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -15,7 +16,6 @@ export type ExistingAsset = { kind: string; filename: string };
 const publicAssets: AssetDefinition[] = [
   { kind: "cover", label: "Copertina", detail: "Copertina pubblica", accept: "image/*", icon: ImageIcon },
   { kind: "preview", label: "Anteprima", detail: "MP3 pubblico facoltativo con firma sonora", accept: ".mp3,audio/mpeg", icon: FileAudio },
-  { kind: "visual", label: "Contenuto visivo", detail: "Immagine o video facoltativi", accept: "image/*,video/*", icon: Video },
 ];
 const premiumAssets: AssetDefinition[] = [
   { kind: "mp3", label: "FILE MP3", detail: "MP3 privato di alta qualità", accept: ".mp3,audio/mpeg", icon: FileAudio },
@@ -105,11 +105,11 @@ export function BeatCreateForm() {
   return <form className="beat-create-form" onSubmit={submit}>
     <section className="beat-create-section"><header><div><span className="eyebrow">01 · DETTAGLI E PUBBLICAZIONE</span><h2>Nuovo beat</h2></div><small>Dettagli, pubblicazione e file in un unico posto.</small></header>
       <div className="premium-form form-grid beat-details-grid">
-        <label>Titolo<input name="title" required /></label><label>Indirizzo del beat<input name="slug" pattern="[a-z0-9-]+" required /></label><label>BPM<input name="bpm" type="number" min="30" max="300" required /></label><label>Tonalità<input name="musicalKey" required /></label>
-        <label>Genere<select name="genre" required>{["TRAP","R&B","AFRO","REGGAE","POP","RAP/HIPHOP","EXPERIMENTAL"].map((genre) => <option key={genre} value={genre}>{italianLabel(genre)}</option>)}</select></label><label>Atmosfera<input name="mood" required /></label>
+        <label>Titolo<input name="title" required /></label><label>Indirizzo del beat<input name="slug" pattern="[a-z0-9-]+" required /></label><label>BPM<input name="bpm" type="number" min="30" max="300" required /></label><label>Tonalità<select name="musicalKey" required>{catalogKeys.map(key => <option key={key}>{key}</option>)}</select></label>
+        <label>Genere<select name="genre" required>{catalogGenres.map((genre) => <option key={genre} value={genre}>{italianLabel(genre)}</option>)}</select></label><label>Atmosfera<select name="mood" required>{catalogMoods.map(mood => <option key={mood} value={mood}>{italianLabel(mood)}</option>)}</select></label>
         <label className="full">Etichette<input name="tags" placeholder="dark, melodic, late night" /></label><label>Stato<select name="status"><option value="draft">Bozza</option><option value="published">Pubblicato</option></select></label>
         <label>Ordine di visualizzazione<input name="sortOrder" type="number" min="0" defaultValue="0" required /></label><label>Data di pubblicazione<input name="publicationDate" type="date" /></label><label className="checkbox"><input name="featured" type="checkbox" /> In evidenza</label>
-        <label className="full">Descrizione<textarea name="description" rows={4} /></label>
+        <label className="full">Descrizione <small>facoltativa</small><textarea name="description" rows={4} /></label>
       </div>
     </section>
     <AssetSelectionGroup index="02" title="Contenuti pubblici" subtitle="Visibile nel negozio" assets={publicAssets} files={files} progress={progress} onSelect={choose} createdBeatId={createdBeatId} busy={busy} onReplace={replaceAfterCreation} />

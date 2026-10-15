@@ -60,7 +60,7 @@ export function BeatCard({
         </div>
         <div className="beat-card-actions">
           <button type="button" className="cart-add-button" aria-label={`Aggiungi ${beat.title} al carrello`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
-            <ShoppingBag size={17} /><span>Aggiungi</span>
+            <ShoppingBag size={17} /><span>Aggiungi al carrello</span>
           </button>
           <LicenseButton beat={beat} compact />
         </div>

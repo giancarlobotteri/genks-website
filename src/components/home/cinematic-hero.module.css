@@ -36,7 +36,7 @@
 .motionPaused + :global(.catalog-section) { margin-top:0; }
 @media(min-width:1280px) {
   /* The shopping rail reserves catalog space, while the opening scene stays on the viewport axis. */
-  .sequence { width:calc(100% + 672px); margin-left:-336px; }
+  .sequence { width:100vw; margin-left:calc(50% - 50vw); }
   .bottomline { left:calc(50% - 260px); right:calc(50% - 260px); }
 }
 @media(max-width:700px) {

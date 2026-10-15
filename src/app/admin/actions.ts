@@ -15,7 +15,7 @@ async function audit(action:string,entityType:string,entityId:string,payload?:un
 
 export async function createBeat(formData:FormData){const data=z.object({title:z.string().trim().min(1).max(160),slug:z.string().trim().regex(/^[a-z0-9-]+$/),bpm:z.coerce.number().int().min(30).max(300),musicalKey:z.string().trim().min(1).max(20),genre:z.string().trim().min(1).max(60),mood:z.string().trim().min(1).max(60),tags:z.string().trim().max(500),description:z.string().trim().max(3000),status:z.enum(["draft","published"]),featured:z.string().optional(),sortOrder:z.coerce.number().int().min(0).max(10000),publicationDate:z.string().trim().max(10)}).parse(Object.fromEntries(formData));const user=await requireAdmin();const db=createSupabaseAdminClient();const {data:beat,error}=await db.from("beats").insert({title:data.title,slug:data.slug,bpm:data.bpm,musical_key:data.musicalKey,genre:data.genre,mood:data.mood,tags:data.tags.split(",").map(x=>x.trim()).filter(Boolean),description:data.description,status:data.status,featured:data.featured==="on",sort_order:data.sortOrder,published_at:data.status==="published"?(data.publicationDate?new Date(`${data.publicationDate}T12:00:00Z`).toISOString():new Date().toISOString()):null}).select("id").single();if(error||!beat)throw new Error(error?.message??"Creazione del beat non riuscita");const {data:licenses}=await db.from("license_types").select("id").eq("active",true);if(licenses?.length)await db.from("beat_license_prices").insert(licenses.map(license=>({beat_id:beat.id,license_type_id:license.id})));await db.from("admin_audit_log").insert({admin_id:user.id,action:"create",entity_type:"beat",entity_id:beat.id,payload:{title:data.title}});revalidatePath("/admin/beats");revalidatePath("/")}
 
-const licenseSchema=z.object({code:z.string().trim().regex(/^[a-z0-9_-]+$/),name:z.string().trim().min(1),price:z.coerce.number().min(0),shortDescription:z.string().trim().max(500),fullDescription:z.string().trim().max(3000),assets:z.string().trim(),streamsLimit:z.string().trim(),monetization:z.string().trim().max(1000),musicVideo:z.string().trim().max(1000),performances:z.string().trim().max(1000),radio:z.string().trim().max(1000),distribution:z.string().trim().max(1000),contentId:z.string().trim().max(1000),contractText:z.string().trim().max(20000),displayOrder:z.coerce.number().int().min(0),exclusive:z.string().optional(),active:z.string().optional()});
+const licenseSchema=z.object({code:z.string().trim().max(50).regex(/^[a-z0-9_-]+$/),name:z.string().trim().min(1),price:z.coerce.number().min(0).max(100000),shortDescription:z.string().trim().max(500),fullDescription:z.string().trim().max(3000),assets:z.string().trim(),streamsLimit:z.string().trim().refine(value=>value===""||/^\d+$/.test(value)),monetization:z.string().trim().max(1000),musicVideo:z.string().trim().max(1000),performances:z.string().trim().max(1000),radio:z.string().trim().max(1000),distribution:z.string().trim().max(1000),contentId:z.string().trim().max(1000),contractText:z.string().trim().max(20000),displayOrder:z.coerce.number().int().min(0),exclusive:z.string().optional(),active:z.string().optional()});
 function licensePayload(data:z.infer<typeof licenseSchema>){return{code:data.code,name:data.name,price_cents:Math.round(data.price*100),short_description:data.shortDescription,full_description:data.fullDescription,included_assets:data.assets.split(",").map(x=>x.trim()).filter(Boolean),streams_limit:data.streamsLimit?Number(data.streamsLimit):null,monetization_permissions:data.monetization||null,music_video_permissions:data.musicVideo||null,performances:data.performances||null,radio:data.radio||null,distribution_restrictions:data.distribution||null,content_id_policy:data.contentId||null,contract_text:data.contractText||null,display_order:data.displayOrder,is_exclusive:data.exclusive==="on",active:data.active==="on"}}
 export async function createLicense(formData:FormData){const data=licenseSchema.parse(Object.fromEntries(formData));const db=await audit("create","license",data.code,{name:data.name});const{data:license,error}=await db.from("license_types").insert(licensePayload(data)).select("id").single();if(error||!license)throw new Error(error?.message??"Creazione della licenza non riuscita");const{data:beats}=await db.from("beats").select("id");if(beats?.length)await db.from("beat_license_prices").insert(beats.map(beat=>({beat_id:beat.id,license_type_id:license.id,active:true})));revalidatePath("/admin/licenses");revalidatePath("/","layout")}
 export async function updateLicense(formData:FormData){const id=z.uuid().parse(formData.get("id"));const data=licenseSchema.parse(Object.fromEntries(formData));const db=await audit("update","license",id,{code:data.code,name:data.name});const{error}=await db.from("license_types").update({...licensePayload(data),updated_at:new Date().toISOString()}).eq("id",id);if(error)throw new Error(error.message);revalidatePath("/admin/licenses");revalidatePath("/","layout")}
@@ -35,27 +35,27 @@ export async function updateSiteSetting(formData:FormData){const key=z.enum(["co
 
 export async function updateBookingStatus(formData:FormData){
   const id=z.uuid().parse(formData.get("id"));
-  const status=z.enum(["approved_awaiting_payment","confirmed","completed","cancelled","rejected","no_show"]).parse(formData.get("status"));
+  const status=z.enum(["pending","approved_awaiting_payment","confirmed","completed","cancelled","rejected","no_show"]).parse(formData.get("status"));
   const db=await audit("status_change","booking",id,{status});
   const {data:current}=await db.from("bookings").select("status,reference,starts_at,ends_at,google_calendar_event_id").eq("id",id).single();
   if(!current)throw new Error("Prenotazione non trovata.");
   let eventId=current.google_calendar_event_id;
   if(status==="confirmed"&&!eventId)eventId=await createBookingCalendarEvent({id,reference:current.reference,startsAt:current.starts_at,endsAt:current.ends_at});
   if(["cancelled","rejected"].includes(status)&&eventId){await deleteGoogleCalendarEvent(eventId);eventId=null;}
-  await db.from("bookings").update({status,google_calendar_event_id:eventId,updated_at:new Date().toISOString()}).eq("id",id);
+  const {error}=await db.from("bookings").update({status,google_calendar_event_id:eventId,updated_at:new Date().toISOString()}).eq("id",id);if(error)throw new Error("Aggiornamento della prenotazione non riuscito.");
   await db.from("booking_status_history").insert({booking_id:id,from_status:current.status,to_status:status});
   revalidatePath("/admin/bookings");
 }
 export async function updateProjectStatus(formData:FormData){
   const id=z.uuid().parse(formData.get("id"));
-  const status=z.enum(["quoted","awaiting_payment","paid","in_progress","review","delivered","cancelled"]).parse(formData.get("status"));
+  const status=z.enum(["requested","quoted","awaiting_payment","paid","in_progress","review","delivered","cancelled"]).parse(formData.get("status"));
   const db=await audit("status_change","project",id,{status});
   const {data:current}=await db.from("service_projects").select("status,reference,service,desired_deadline,google_calendar_event_id").eq("id",id).single();
   if(!current)throw new Error("Progetto non trovato.");
   let eventId=current.google_calendar_event_id;
   if(["paid","in_progress"].includes(status)&&current.desired_deadline&&!eventId)eventId=await createProjectDeadlineEvent({id,reference:current.reference,service:current.service,deadline:current.desired_deadline});
   if(status==="cancelled"&&eventId){await deleteGoogleCalendarEvent(eventId);eventId=null;}
-  await db.from("service_projects").update({status,google_calendar_event_id:eventId,updated_at:new Date().toISOString()}).eq("id",id);
+  const {error}=await db.from("service_projects").update({status,google_calendar_event_id:eventId,updated_at:new Date().toISOString()}).eq("id",id);if(error)throw new Error("Aggiornamento del progetto non riuscito.");
   await db.from("project_status_history").insert({project_id:id,from_status:current.status,to_status:status});
   revalidatePath("/admin/projects");
 }
@@ -94,4 +94,23 @@ export async function retryOrderConfirmation(formData: FormData) {
   }
   revalidatePath("/admin/orders");
   redirect("/admin/orders?email=sent");
+}
+
+export async function deleteLicense(formData: FormData) {
+  const id=z.uuid().parse(formData.get("id")); const db=await audit("delete","license",id);
+  const {count,error:countError}=await db.from("order_items").select("id",{head:true,count:"exact"}).eq("license_type_id",id);
+  if(countError)throw new Error("Impossibile verificare gli acquisti della licenza.");
+  if(count){await db.from("license_types").update({active:false}).eq("id",id);}
+  else {const {error}=await db.from("license_types").delete().eq("id",id);if(error)throw new Error("Impossibile eliminare la licenza. Disattivala per rimuoverla dal catalogo.");}
+  revalidatePath("/","layout");
+}
+
+export async function updateBeatDetails(formData: FormData) {
+  const user=await requireAdmin();
+  const input=z.object({id:z.uuid(),title:z.string().trim().min(1).max(160),slug:z.string().trim().regex(/^[a-z0-9-]+$/),bpm:z.coerce.number().int().min(30).max(300),musicalKey:z.string().trim().min(1).max(20),genre:z.string().trim().min(1).max(60),mood:z.string().trim().min(1).max(60),description:z.string().trim().max(3000),status:z.enum(["draft","published","archived","exclusive_sold"]),featured:z.string().optional()}).parse(Object.fromEntries(formData));
+  const db=createSupabaseAdminClient();
+  const {error}=await db.from("beats").update({title:input.title,slug:input.slug,bpm:input.bpm,musical_key:input.musicalKey,genre:input.genre,mood:input.mood,description:input.description,status:input.status,featured:input.featured==="on",updated_at:new Date().toISOString()}).eq("id",input.id);
+  if(error)throw new Error("Salvataggio del beat non riuscito. Controlla che l’indirizzo non sia già usato.");
+  await db.from("admin_audit_log").insert({admin_id:user.id,action:"update",entity_type:"beat",entity_id:input.id});
+  revalidatePath("/","layout");
 }

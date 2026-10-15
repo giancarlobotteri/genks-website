@@ -46,8 +46,8 @@ export function RecordingRequestForm() {
     <div className="booking-step full"><span>02</span><div><strong>Dettagli della sessione</strong><small>Aggiungi un riferimento facoltativo per la sessione.</small></div></div>
     <label className="full">Collegamento di riferimento <small>facoltativo</small><input name="referenceUrl" type="url" placeholder="https://"/></label>
     <div className="booking-step full"><span>03</span><div><strong>I tuoi dati</strong><small>La richiesta resta in attesa fino all’approvazione di GENKS.</small></div></div>
-    <label>Nome<input name="name" required autoComplete="name"/></label><label>Nome d’arte <small>facoltativo</small><input name="artistName"/></label>
-    <label>Email<input name="email" type="email" required autoComplete="email"/></label><label>Telefono / WhatsApp<input name="phone" type="tel" required autoComplete="tel"/></label>
+    <label>Nome<input name="name" required minLength={2} maxLength={120} autoComplete="name"/></label><label>Nome d’arte <small>facoltativo</small><input name="artistName"/></label>
+    <label>Email<input name="email" type="email" required autoComplete="email"/></label><label>Telefono / WhatsApp<input name="phone" type="tel" required minLength={6} maxLength={40} autoComplete="tel"/></label>
     <label className="full">Note <small>facoltative</small><textarea name="notes" rows={4} placeholder="Obiettivi della sessione, numero di artisti, informazioni utili…"/></label>
     <ServiceSubmit label="Invia la richiesta" disabled={!date || !time || loading} />
     <p className="service-form-note full">Scegli l’orario, invia la richiesta e attendi la conferma di GENKS. Nessun addebito automatico.</p>

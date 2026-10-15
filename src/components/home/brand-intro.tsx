@@ -1,17 +1,15 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
-import { genksLetters } from "@/data/genks-lettering";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import styles from "./brand-intro.module.css";
 
 type Props = { onComplete: () => void };
 
 export function BrandIntro({ onComplete }: Props) {
-  const id = useId().replace(/:/g, "");
-  const skipRef = useRef<HTMLButtonElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const completeRef = useRef(onComplete);
   const [phase, setPhase] = useState<"letters" | "opening">("letters");
-  const openRef = useRef<() => void>(() => {});
   const finishRef = useRef<() => void>(() => {});
 
   useEffect(() => { completeRef.current = onComplete; }, [onComplete]);
@@ -28,14 +26,14 @@ export function BrandIntro({ onComplete }: Props) {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const previousOverflow = document.body.style.overflow;
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const skipButton = skipRef.current;
+    const overlay = overlayRef.current;
     const timers = new Set<ReturnType<typeof setTimeout>>();
     let opening = false;
     let started = false;
     let disposed = false;
     let finished = false;
     document.body.style.overflow = "hidden";
-    skipButton?.focus({ preventScroll: true });
+    overlay?.focus({ preventScroll: true });
 
     const later = (callback: () => void, delay: number) => {
       const timer = setTimeout(() => { timers.delete(timer); callback(); }, delay);
@@ -55,7 +53,6 @@ export function BrandIntro({ onComplete }: Props) {
       // The transition event completes the handoff; this timeout covers interrupted or missing events.
       later(finish, reducedMotion.matches ? 500 : 1800);
     };
-    openRef.current = open;
     const onSceneReady = () => {
       if (started || disposed) return;
       started = true;
@@ -63,7 +60,7 @@ export function BrandIntro({ onComplete }: Props) {
     };
     const introStarted = performance.now();
     window.addEventListener("genks:hero-settled", onSceneReady);
-    later(open, 6500);
+    later(open, 4200);
     const onMotionChange = () => { if (reducedMotion.matches) open(); };
     reducedMotion.addEventListener("change", onMotionChange);
 
@@ -73,7 +70,7 @@ export function BrandIntro({ onComplete }: Props) {
       window.removeEventListener("genks:hero-settled", onSceneReady);
       reducedMotion.removeEventListener("change", onMotionChange);
       document.body.style.overflow = previousOverflow;
-      if (document.activeElement === skipButton) {
+      if (document.activeElement === overlay) {
         (previousFocus && previousFocus !== document.body ? previousFocus : document.getElementById("main-content"))?.focus({ preventScroll: true });
       }
     };
@@ -84,6 +81,8 @@ export function BrandIntro({ onComplete }: Props) {
       <noscript><style>{".genks-brand-intro{display:none!important}"}</style></noscript>
       <div
         className={`genks-brand-intro ${styles.overlay} ${phase === "opening" ? styles.opening : ""}`}
+        ref={overlayRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label="Introduzione GENKS"
@@ -91,33 +90,15 @@ export function BrandIntro({ onComplete }: Props) {
           if (event.target === event.currentTarget && event.propertyName === "opacity") finishRef.current();
         }}
         onKeyDown={event => {
-          if (event.key === "Escape") openRef.current();
-          if (event.key === "Tab") { event.preventDefault(); skipRef.current?.focus(); }
+          if (event.key === "Tab") { event.preventDefault(); overlayRef.current?.focus(); }
         }}
       >
         <div className={styles.leftPanel} aria-hidden="true" />
         <div className={styles.rightPanel} aria-hidden="true" />
         <div className={styles.identity}>
-          <svg className={styles.wordmark} viewBox="0 0 1050 490" role="img" aria-label="GENKS" data-protected-visual>
-            <defs>
-              <linearGradient id={`${id}-chrome`} gradientUnits="userSpaceOnUse" x1="110" y1="20" x2="150" y2="455">
-                <stop offset="0" stopColor="#80b8ff" />
-                <stop offset=".18" stopColor="#f9fcff" />
-                <stop offset=".32" stopColor="#6584ad" />
-                <stop offset=".47" stopColor="#f0f5ff" />
-                <stop offset=".62" stopColor="#185ece" />
-                <stop offset=".76" stopColor="#b9d3ff" />
-                <stop offset="1" stopColor="#90baff" />
-              </linearGradient>
-            </defs>
-              {genksLetters.map((letter, index) => (
-                <g className={styles.glyph} key={letter.label} style={{ "--letter-index": index } as CSSProperties}>
-                  <path className={styles.glyphPath} d={letter.path} pathLength="1" fill={`url(#${id}-chrome)`} fillRule="evenodd" stroke="#619dff" strokeWidth="1.1" strokeLinejoin="round" />
-                </g>
-              ))}
-          </svg>
+          <Image className={styles.wordmark} src="/brand/genks-logo.jpeg" alt="GENKS" width={1320} height={1243} quality={85} priority sizes="(max-width:700px) 88vw, 650px" />
         </div>
-        <button ref={skipRef} type="button" className={styles.skip} onClick={() => openRef.current()}>Salta introduzione</button>
+        <div className={styles.pulse} aria-hidden="true" />
       </div>
     </>
   );

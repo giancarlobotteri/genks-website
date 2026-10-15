@@ -32,6 +32,7 @@ export interface Beat {
 }
 
 export interface License {
+  isExclusive?: boolean;
   id: LicenseTier;
   name: string;
   priceCents: number;
