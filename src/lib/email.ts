@@ -1,108 +1,54 @@
-import { italianLabel } from "@/lib/italian";
 import "server-only";
-import { Resend } from "resend";
-import { previewRecipientAllowed } from "@/lib/preview-mode";
-import { renderGenksStudioEmail } from "@/lib/email-design";
+import {Resend} from "resend";
+import {italianLabel} from "@/lib/italian";
+import {previewRecipientAllowed} from "@/lib/preview-mode";
+import {renderGenksStudioEmail} from "@/lib/email-design";
 
-const getResend = () => process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const getResend=()=>process.env.RESEND_API_KEY?new Resend(process.env.RESEND_API_KEY):null;
 
-export async function sendTransactionalEmail(input: {
-  to: string;
-  subject: string;
-  heading: string;
-  body: string;
-  actionUrl?: string;
-  actionLabel?: string;
-  serviceRequest?: boolean;
-  idempotencyKey?: string;
+export async function sendTransactionalEmail(input:{
+  to:string;subject:string;heading:string;body:string;actionUrl?:string;actionLabel?:string;
+  serviceRequest?:boolean;idempotencyKey?:string;
 }) {
-  if (!("serviceRequest" in input && input.serviceRequest) && !previewRecipientAllowed(input.to)) throw new Error("Il destinatario non è autorizzato nell’anteprima privata.");
-  const resend = getResend();
-  if (!resend || !process.env.RESEND_FROM_EMAIL)
-    throw new Error("Il servizio email non è configurato.");
-  const { error } = await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL,
-    replyTo: process.env.GENKS_SUPPORT_EMAIL || process.env.GENKS_ADMIN_EMAIL,
-    to: input.to,
-    subject: input.subject,
-    html: renderGenksStudioEmail(input),
-    text: `${input.heading}\n\n${input.body}${input.actionUrl?`\n\n${input.actionLabel??"Apri"}: ${input.actionUrl}`:""}\n\nGENKS · prodbygenks.com\nPer assistenza rispondi a questa email.`,
-  }, input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined);
-  if (error) throw new Error(`Transactional email failed: ${error.message}`);
-  return { skipped: false as const };
+  if(!input.serviceRequest&&!previewRecipientAllowed(input.to))throw new Error("Il destinatario non è autorizzato nell’anteprima privata.");
+  const resend=getResend();
+  if(!resend||!process.env.RESEND_FROM_EMAIL)throw new Error("Il servizio email non è configurato.");
+  const {error}=await resend.emails.send({
+    from:process.env.RESEND_FROM_EMAIL,replyTo:process.env.GENKS_SUPPORT_EMAIL||process.env.GENKS_ADMIN_EMAIL,
+    to:input.to,subject:input.subject,html:renderGenksStudioEmail(input),
+    text:`${input.heading}\n\n${input.body}${input.actionUrl?`\n\n${input.actionLabel??"Apri"}: ${input.actionUrl}`:""}\n\nGENKS · prodbygenks.com\nPer assistenza rispondi a questa email.`,
+  },input.idempotencyKey?{idempotencyKey:input.idempotencyKey}:undefined);
+  if(error)throw new Error(`Transactional email failed: ${error.message}`);
+  return {skipped:false as const};
 }
 
-export async function sendOrderConfirmationEmail(input: {
-  to: string;
-  customerName: string;
-  orderId: string;
-  orderNumber: string;
-  paidAt: Date;
-  totalCents: number;
-  discountCents?: number;
-  currency: string;
-  items: Array<{ beatTitle: string; licenseName: string; unitPriceCents: number }>;
-  idempotencyKey?: string;
+export async function sendOrderConfirmationEmail(input:{
+  to:string;customerName:string;orderId:string;orderNumber:string;paidAt:Date;totalCents:number;
+  discountCents?:number;currency:string;items:Array<{beatTitle:string;licenseName:string;unitPriceCents:number}>;
+  idempotencyKey?:string;
 }) {
-  if (!("serviceRequest" in input && input.serviceRequest) && !previewRecipientAllowed(input.to)) throw new Error("Il destinatario non è autorizzato nell’anteprima privata.");
-  const resend = getResend();
-  if (!resend || !process.env.RESEND_FROM_EMAIL) {
-    const missing = [
-      !process.env.RESEND_API_KEY ? "RESEND_API_KEY" : null,
-      !process.env.RESEND_FROM_EMAIL ? "RESEND_FROM_EMAIL" : null,
-    ].filter(Boolean).join(", ");
-    throw new Error(`Email dell’ordine non configurata: ${missing} mancante.`);
-  }
-  const origin = (process.env.NEXT_PUBLIC_SITE_URL || "https://genks-website.vercel.app").replace(/\/$/, "");
-  const money = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: input.currency }).format(cents / 100);
-  const itemRows = input.items.map((item) => `<tr>
-    <td style="padding:16px 0;border-bottom:1px solid #252a38"><strong style="display:block;color:#fff;font-size:15px">${escapeHtml(item.beatTitle)}</strong><span style="display:block;margin-top:4px;color:#b9ceff;font-size:14px">${escapeHtml(italianLabel(item.licenseName))}</span></td>
-    <td style="padding:16px 0;border-bottom:1px solid #252a38;text-align:right;color:#fff;font-weight:700;white-space:nowrap">${escapeHtml(money(item.unitPriceCents))}</td>
-  </tr>`).join("");
-  const date = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", dateStyle: "long", timeStyle: "short" }).format(input.paidAt);
-  const html = `<!doctype html><html lang="it"><body style="margin:0;background:#03050a;color:#f4f6ff;font-family:Arial,Helvetica,sans-serif">
-    <div style="display:none;max-height:0;overflow:hidden">Pagamento confermato — ordine ${escapeHtml(input.orderNumber)}</div>
-    <div style="padding:32px 14px;background:radial-gradient(circle at top,#12275c 0,#050711 42%,#03050a 100%)">
-      <div style="max-width:620px;margin:0 auto;overflow:hidden;border:1px solid #273b72;border-radius:28px;background:#090c15;box-shadow:0 24px 80px #000">
-        <div style="padding:30px 32px 22px;text-align:center;border-bottom:1px solid #202b49;background:linear-gradient(135deg,#0d1834,#090c15)">
-          <img src="${escapeHtml(`${origin}/brand/genks-logo.jpeg`)}" width="92" height="92" alt="GENKS" style="display:block;width:92px;height:92px;margin:0 auto 16px;border:1px solid #315ebe;border-radius:50%;object-fit:cover;box-shadow:0 0 34px #2860ff66" />
-          <div style="color:#87a7ff;font-size:14px;font-weight:700;letter-spacing:3px">PAGAMENTO CONFERMATO</div>
-          <h1 style="margin:12px 0 8px;color:#80bfff;-webkit-text-fill-color:#80bfff;font-size:30px;font-weight:800;line-height:1.15">Acquisto completato.</h1>
-        </div>
-        <div style="padding:28px 32px">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:22px;border-collapse:collapse">
-            <tr><td style="color:#cbd5ed;font-size:14px;letter-spacing:1px">ORDINE</td><td style="text-align:right;color:#fff;font-weight:700">${escapeHtml(input.orderNumber)}</td></tr>
-            <tr><td style="padding-top:8px;color:#cbd5ed;font-size:14px;letter-spacing:1px">DATA</td><td style="padding-top:8px;text-align:right;color:#c4c9d6">${escapeHtml(date)}</td></tr>
-          </table>
-          <div style="color:#87a7ff;font-size:14px;font-weight:700;letter-spacing:2px">RIEPILOGO ORDINE</div>
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">${itemRows}</table>
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;padding:18px;border:1px solid #3155a7;border-radius:16px;background:#0d1730">
-            ${input.discountCents?`<tr><td style="padding:12px 18px;color:#b9ceff">Sconto applicato</td><td style="padding:12px 18px;text-align:right;color:#b9ceff">−${escapeHtml(money(input.discountCents))}</td></tr>`:""}
-            <tr><td style="padding:18px;color:#bdc9ea;font-size:15px;font-weight:700">TOTALE PAGATO</td><td style="padding:18px;text-align:right;color:#fff;font-size:24px;font-weight:800">${escapeHtml(money(input.totalCents))}</td></tr>
-          </table>
-          <p style="margin:24px 0 18px;color:#e3eaff;line-height:1.7">Le licenze e i file disponibili sono stati aggiunti alla tua raccolta. Accedi usando la stessa email utilizzata per l’acquisto.</p>
-          <div style="text-align:center"><a href="${escapeHtml(`${origin}/account/library`)}" style="display:inline-block;padding:15px 24px;border-radius:14px;background:#2860ff;color:#fff;text-decoration:none;font-size:14px;font-weight:800;box-shadow:0 10px 34px #2860ff55">APRI LA RACCOLTA</a></div>
-        </div>
-        <div style="padding:25px 32px;text-align:center;border-top:1px solid #202b49;background:#070910">
-          <img src="${escapeHtml(`${origin}/brand/genks-logo.jpeg`)}" width="48" height="48" alt="" style="display:block;width:48px;height:48px;margin:0 auto 10px;border-radius:50%;object-fit:cover" />
-          <strong style="display:block;color:#fff;font-size:18px;letter-spacing:2px">GENKS</strong>
-          <span style="display:block;margin-top:5px;color:#cbd5ed;font-size:14px;letter-spacing:1px">BEAT E PRODUZIONE</span>
-          <span style="display:block;margin-top:12px;color:#cbd5ed;font-size:14px;line-height:1.5">${process.env.GENKS_SUPPORT_EMAIL||process.env.GENKS_ADMIN_EMAIL?"Per assistenza puoi rispondere a questa email.":"Conserva il riferimento dell’ordine per richiedere assistenza a GENKS."}</span>
-        </div>
-      </div>
-    </div>
-  </body></html>`;
-  const { data, error } = await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL,
-    replyTo: process.env.GENKS_SUPPORT_EMAIL || process.env.GENKS_ADMIN_EMAIL,
-    to: input.to,
-    subject: `Pagamento confermato — ordine ${input.orderNumber} | GENKS`,
-    html,
-  }, { idempotencyKey: input.idempotencyKey ?? `order-confirmation-${input.orderId}` });
-  if (error) throw new Error(`Invio email dell’ordine non riuscito: ${error.message}`);
-  return { skipped: false as const, emailId: data?.id ?? null };
-}
-
-function escapeHtml(value: string) {
-  return value.replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]!);
+  if(!previewRecipientAllowed(input.to))throw new Error("Il destinatario non è autorizzato nell’anteprima privata.");
+  const resend=getResend();
+  if(!resend||!process.env.RESEND_FROM_EMAIL)throw new Error("Email dell’ordine non configurata.");
+  const origin=(process.env.NEXT_PUBLIC_SITE_URL||"https://www.prodbygenks.com").replace(/\/$/,"");
+  const money=(cents:number)=>new Intl.NumberFormat("it-IT",{style:"currency",currency:input.currency}).format(cents/100);
+  const date=new Intl.DateTimeFormat("it-IT",{timeZone:"Europe/Rome",dateStyle:"long",timeStyle:"short"}).format(input.paidAt);
+  const subject=`Pagamento confermato — ordine ${input.orderNumber} | GENKS`;
+  const body=[
+    "Il pagamento è stato confermato. Ecco il riepilogo del tuo acquisto.",
+    `Ordine: ${input.orderNumber}`,`Data: ${date}`,
+    ...input.items.map(item=>`${item.beatTitle} · ${italianLabel(item.licenseName)} — ${money(item.unitPriceCents)}`),
+    ...(input.discountCents?[`Sconto applicato: −${money(input.discountCents)}`]:[]),
+    `Totale: ${money(input.totalCents)}`,
+    "Le licenze e i file disponibili sono nella tua raccolta. Accedi con la stessa email utilizzata per l’acquisto.",
+  ].join("\n");
+  const actionUrl=`${origin}/account/library`;
+  const {data,error}=await resend.emails.send({
+    from:process.env.RESEND_FROM_EMAIL,replyTo:process.env.GENKS_SUPPORT_EMAIL||process.env.GENKS_ADMIN_EMAIL,
+    to:input.to,subject,
+    html:renderGenksStudioEmail({subject,heading:"Acquisto completato.",body,actionUrl,actionLabel:"Apri la raccolta",totalLabel:"TOTALE PAGATO"}),
+    text:`Acquisto completato.\n\n${body}\n\nApri la raccolta: ${actionUrl}\n\nGENKS · Per assistenza rispondi a questa email.`,
+  },{idempotencyKey:input.idempotencyKey??`order-confirmation-${input.orderId}`});
+  if(error)throw new Error(`Invio email dell’ordine non riuscito: ${error.message}`);
+  return {skipped:false as const,emailId:data?.id??null};
 }
