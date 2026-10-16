@@ -24,8 +24,8 @@ function renderGenksEmailFrame(input:StudioEmail,paragraphs:string) {
   const reference=input.subject.match(/\b(?:BKG|PRJ|GK)-[A-Z0-9]+\b/)?.[0];
   let actionUrl:string|undefined;
   try{const url=new URL(input.actionUrl??"");if(url.protocol==="https:")actionUrl=url.href}catch{}
-  return `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>${escape(input.subject)}</title><style>@media only screen and (max-width:600px){.outer{padding:20px 10px!important}.content{padding:28px 24px!important}.hero-title{font-size:32px!important}.brand{font-size:31px!important}.cta{display:block!important;padding:17px 16px!important}}</style></head>
-  <body style="margin:0;padding:0;background:#030917;color:#ffffff;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%">
+  return protectMailColours(`<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark"><title>${escape(input.subject)}</title><style>u + .genks-email .gmail-blend-screen{background:#000;mix-blend-mode:screen}u + .genks-email .gmail-blend-difference{background:#000;mix-blend-mode:difference}@media only screen and (max-width:600px){.outer{padding:20px 10px!important}.content{padding:28px 24px!important}.hero-title{font-size:32px!important}.brand{font-size:31px!important}.cta{display:block!important;padding:17px 16px!important}}</style></head>
+  <body class="genks-email" style="margin:0;padding:0;background:#030917;color:#ffffff;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%">
   <div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${escape(input.heading)}${reference?` · ${reference}`:""}</div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#030917"><tr><td align="center" class="outer" style="padding:44px 16px;background:radial-gradient(ellipse at top,#102b5a,#030917 65%)">
   <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px">
@@ -42,5 +42,26 @@ function renderGenksEmailFrame(input:StudioEmail,paragraphs:string) {
   </td></tr>
   <tr><td bgcolor="#0b1b34" class="content" style="padding:24px 40px;border:1px solid #203f6c;border-radius:0 0 20px 20px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="border-left:3px solid #428fff;padding-left:15px"><strong style="font-size:13px;color:#b7d8ff">Ci siamo, anche dopo questa email.</strong><p style="margin:6px 0 0;font-size:13px;line-height:1.7;color:#b7e4ff">Per un chiarimento puoi rispondere a questo messaggio.${reference?` Conserva il riferimento <strong style="color:#c9e2ff">${escape(reference)}</strong>.`:""}</p></td></tr></table></td></tr>
   <tr><td align="center" style="padding:24px 14px 0;font-size:11px;line-height:1.9;color:#9ed5ff"><strong style="color:#c2e8ff;letter-spacing:2px">GENKS</strong><br>Comunicazione relativa alla tua richiesta.<br><a href="https://www.prodbygenks.com" style="color:#83b9ff;text-decoration:none">prodbygenks.com</a></td></tr>
-  </table></td></tr></table></body></html>`;
+  </table></td></tr></table></body></html>`);
+}
+
+/** Gmail iOS inverts white text, but leaves gradient backgrounds intact. Lock
+ * backgrounds, then restore white glyphs with screen/difference blending only
+ * in Gmail (its injected `u` identifies the client). Other clients use inline
+ * white text normally. This operates only on the controlled frame above. */
+function protectMailColours(html:string) {
+  const locked=html.replace(/style="([^"]*)"/g,(_attribute,style:string)=>{
+    let next=style.replace(/(^|;)color:#[a-f\d]{3,6}(?=;|$)/gi,"$1color:#ffffff");
+    if(!/background:(?:linear|radial)-gradient|background-image:/i.test(next)){
+      const background=next.match(/(?:^|;)background:(#[a-f\d]{3,6})(?:;|$)/i)?.[1];
+      if(background)next+=`;background-image:linear-gradient(${background},${background})`;
+    }
+    return `style="${next}"`;
+  }).replace(/bgcolor="(#[a-f\d]{3,6})"([^>]*?)style="([^"]*)"/gi,(attribute,colour:string,between:string,style:string)=>
+    /background(?:-image)?:/i.test(style)?attribute:`bgcolor="${colour}"${between}style="${style};background:${colour};background-image:linear-gradient(${colour},${colour})"`);
+  const start=locked.indexOf("<body");
+  return locked.slice(0,start)+locked.slice(start).split(/(<[^>]+>)/g).map(part=>{
+    if(part.startsWith("<")||!part.replace(/&nbsp;|\s/g,""))return part;
+    return `<span class="gmail-blend-screen"><span class="gmail-blend-difference" style="color:#ffffff">${part}</span></span>`;
+  }).join("");
 }
