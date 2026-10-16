@@ -21,7 +21,7 @@ export async function syncStripeChargeFee(chargeId:string) {
 
 export async function syncPendingStripeFees() {
   const db=createSupabaseAdminClient();
-  const {data,error}=await db.from("payments").select("provider_payment_id").is("fee_cents",null).like("provider_payment_id","pi_%").order("paid_at").limit(20);
+  const {data,error}=await db.from("payments").select("provider_payment_id").eq("livemode",!stripeTestMode()).is("fee_cents",null).like("provider_payment_id","pi_%").order("paid_at").limit(20);
   if(error)throw new Error("Impossibile leggere le commissioni da aggiornare.");
   let failures=0;
   for(const payment of data??[]){try{const intent=await getStripe().paymentIntents.retrieve(payment.provider_payment_id);const chargeId=objectId(intent.latest_charge);if(chargeId)await syncStripeChargeFee(chargeId)}catch{failures++}}
