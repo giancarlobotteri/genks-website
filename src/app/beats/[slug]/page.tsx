@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const beat = await beatRepository.getBySlug(slug);
   if (!beat) return { title: "Beat non trovato" };
-  return { title: `${beat.title} — ${beat.bpm} BPM ${beat.key}`, description: beat.description || `${beat.title}: beat ${italianLabel(beat.genre)} GENKS, ${beat.bpm} BPM, ${beat.key}. Ascolta e confronta le licenze disponibili.`, alternates: { canonical: `/beats/${beat.slug}` }, openGraph: { title: `${beat.title} by GENKS`, description: beat.description, images: [beat.cover] }, twitter: { card: "summary_large_image", title: `${beat.title} by GENKS`, description: beat.description, images: [beat.cover] } };
+  return { title: `${beat.title} — ${beat.bpm} BPM ${beat.key}`, description: beat.description || `${beat.title}: beat ${italianLabel(beat.genre)} GENKS, ${beat.bpm} BPM, ${beat.key}. Ascolta e confronta le licenze disponibili.`, robots: { index: Boolean(beat.readyLicenseIds?.length), follow: true }, alternates: { canonical: `/beats/${beat.slug}` }, openGraph: { title: `${beat.title} by GENKS`, description: beat.description, images: [beat.cover] }, twitter: { card: "summary_large_image", title: `${beat.title} by GENKS`, description: beat.description, images: [beat.cover] } };
 }
 
 export default async function BeatDetail({ params }: { params: Promise<{ slug: string }> }) {
