@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { BeatCatalog } from "@/components/beats/beat-catalog";
 import { beatRepository } from "@/lib/repositories/beats";
+import { PurchaseHelp } from "@/components/commerce/purchase-help";
 
 export const metadata: Metadata = {
   title: "Negozio di beat",
+  alternates: { canonical: "/beats" },
   description:
     "Esplora i beat GENKS, confronta le licenze e trova il suono giusto per la tua prossima uscita.",
 };
@@ -31,6 +33,7 @@ export default async function BeatStorePage() {
         </p>
       </div>
       <BeatCatalog beats={beats} />
+      <PurchaseHelp compact />
     </div>
   );
 }

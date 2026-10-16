@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     siteName: site.name,
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "GENKS — Produttore musicale",
     description: site.description,
   },

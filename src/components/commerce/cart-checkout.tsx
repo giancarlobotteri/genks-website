@@ -10,6 +10,7 @@ import { formatPrice } from "@/lib/format";
 import { Modal } from "@/components/ui/modal";
 import type { LicenseTier } from "@/types/domain";
 import { CheckoutConsents } from "./checkout-consents";
+import { canBuyLicense } from "@/lib/catalog-availability";
 
 export function CartCheckout() {
   const { items, selectLicense, remove, clear } = useCart();
@@ -21,7 +22,9 @@ export function CartCheckout() {
     const license = licenses.find((entry) => entry.id === selectedLicenseId);
     return license ? [{ beat, license, price: beat.licensePrices?.[license.id] ?? license.priceCents }] : [];
   });
-  const ready = items.length > 0 && selectedItems.length === items.length && selectedItems.every(item=>Boolean(item.beat.previewUrl&&item.license.contractText));
+  const choicesComplete = items.length > 0 && selectedItems.length === items.length;
+  const unavailable = selectedItems.some(item => !canBuyLicense(item.beat, item.license));
+  const ready = choicesComplete && !unavailable;
   const total = selectedItems.reduce((sum, item) => sum + item.price, 0);
 
   return <>
@@ -49,9 +52,10 @@ export function CartCheckout() {
       </div>
     </Modal>
     <div className={`cart-total ${ready ? "ready" : ""}`} aria-live="polite">
-      <div><span>2</span><div><strong>Totale ordine</strong><small>{ready ? `${items.length} ${items.length === 1 ? "licenza selezionata" : "licenze selezionate"}` : `Licenze da scegliere: ${items.length - selectedItems.length}`}</small></div></div>
+      <div><span>2</span><div><strong>Totale ordine</strong><small>{choicesComplete ? unavailable ? "Una licenza è ancora in preparazione" : `${items.length} ${items.length === 1 ? "licenza selezionata" : "licenze selezionate"}` : `Licenze da scegliere: ${items.length - selectedItems.length}`}</small></div></div>
       <strong>{formatPrice(total)}</strong>
     </div>
+    {unavailable && <p className="notice" role="status">Una delle licenze scelte non è ancora acquistabile. Rimuovi il beat oppure scegli un’altra licenza disponibile.</p>}
     <form className="cart-payment-form" onSubmit={async (event) => {
       event.preventDefault();
       if (!ready) return;

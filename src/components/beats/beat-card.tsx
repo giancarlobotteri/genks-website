@@ -9,6 +9,8 @@ import { PlayButton } from "./play-button";
 import { FavoriteButton } from "./favorite-button";
 import { LicenseButton } from "./license-button";
 import type { Beat } from "@/types/domain";
+import { useLicenses } from "@/features/licenses/license-provider";
+import { canBuyBeat } from "@/lib/catalog-availability";
 
 export function BeatCard({
   beat,
@@ -21,6 +23,7 @@ export function BeatCard({
 }) {
   const { currentBeat, isPlaying } = usePlayer();
   const { add } = useCart();
+  const { licenses } = useLicenses();
   const playing = currentBeat?.id === beat.id && isPlaying;
   return (
     <article className={`beat-card ${playing ? "is-playing" : ""}`} data-reveal>
@@ -59,7 +62,7 @@ export function BeatCard({
           </span>
         </div>
         <div className="beat-card-actions">
-          <button type="button" className="cart-add-button" aria-label={`Aggiungi ${beat.title} al carrello`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
+          <button type="button" className="cart-add-button" disabled={!canBuyBeat(beat, licenses)} aria-label={`Aggiungi ${beat.title} al carrello`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
             <ShoppingBag size={17} /><span>Aggiungi al carrello</span>
           </button>
           <LicenseButton beat={beat} compact />

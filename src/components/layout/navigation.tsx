@@ -38,6 +38,7 @@ export function Navigation() {
       <a href="/#collection" onClick={() => setOpen(false)}>Catalogo dei beat <ArrowUpRight size={17} /></a>
       <Link href="/services" onClick={() => setOpen(false)}>Prenota un servizio <ArrowUpRight size={17} /></Link>
       <Link href="/account/library" onClick={() => setOpen(false)}>La tua raccolta <ArrowUpRight size={17} /></Link>
+      <Link href="/guida" onClick={() => setOpen(false)}>Guida all’acquisto <ArrowUpRight size={17} /></Link>
       <Link href="/admin-access" onClick={() => setOpen(false)}>Accesso amministratore <ArrowUpRight size={17} /></Link>
     </nav>
   </header>;

@@ -4,6 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import { useLicenses } from "@/features/licenses/license-provider";
 import { formatPrice } from "@/lib/format";
 import type { Beat } from "@/types/domain";
+import { canBuyBeat } from "@/lib/catalog-availability";
 
 export function LicenseButton({
   beat,
@@ -13,6 +14,7 @@ export function LicenseButton({
   compact?: boolean;
 }) {
   const { licenses, openLicenses } = useLicenses();
+  const ready = canBuyBeat(beat, licenses);
   const available = licenses.filter(
     (license) =>
       beat.licenseIds.includes(license.id) && !license.isExclusive && license.id !== "exclusive",
@@ -24,12 +26,12 @@ export function LicenseButton({
     <button
       type="button"
       className={compact ? "license-button" : "button button-secondary"}
-      aria-label={`Acquista ${beat.title}: scegli la licenza`}
+      aria-label={`${ready ? "Acquista" : "Vedi le licenze di"} ${beat.title}${ready ? ": scegli la licenza" : ""}`}
       onClick={() => openLicenses(beat)}
     >
       {compact && price !== null ? (
         <>
-          <span>Acquista <small>da {formatPrice(price)}</small></span> <ArrowUpRight size={15} aria-hidden="true" />
+          <span>{ready ? "Acquista" : "Vedi licenze"} <small>da {formatPrice(price)}</small></span> <ArrowUpRight size={15} aria-hidden="true" />
         </>
       ) : (
         <>

@@ -19,6 +19,11 @@ export function businessSummary(sales: BusinessSale[], refunds: RefundMovement[]
   const selected = sales.filter(s=>s.currency.toUpperCase()==="EUR");
   const ids = new Set(selected.map(s=>s.id));
   const adjustments = refunds.filter(r=>ids.has(r.payment_id));
+  const customerPayments = new Map<string,number>();
+  for (const sale of selected) {
+    const email = sale.email.trim().toLowerCase();
+    if (email) customerPayments.set(email, (customerPayments.get(email) ?? 0) + 1);
+  }
   const period = (matches:(day:string)=>boolean) => {
     const rows=selected.filter(s=>matches(businessDay(s.paidAt)));
     const gross=rows.reduce((sum,s)=>sum+s.amount,0);
@@ -31,7 +36,8 @@ export function businessSummary(sales: BusinessSale[], refunds: RefundMovement[]
   return {
     lifetime:period(()=>true),today:period(d=>d===today),week:period(d=>d>=weekStart&&d<=today),
     month:period(d=>d.slice(0,7)===today.slice(0,7)),previousMonth:period(d=>d.slice(0,7)===previous.toISOString().slice(0,7)),days,
-    customers:new Set(selected.map(s=>s.email.toLowerCase())).size,
+    customers:customerPayments.size,
+    repeatCustomers:[...customerPayments.values()].filter(count=>count>1).length,
     disputed:selected.filter(s=>s.disputed).reduce((n,s)=>n+s.amount-s.refunded,0),
     categories:Object.entries(kindLabels).map(([kind,label])=>({kind,label,total:selected.filter(s=>s.kind===kind).reduce((n,s)=>n+s.amount-s.refunded,0)})),
   };

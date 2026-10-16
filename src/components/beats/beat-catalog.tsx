@@ -20,6 +20,9 @@ import { LicenseButton } from "./license-button";
 import type { Beat } from "@/types/domain";
 import { paginate } from "@/lib/pagination";
 import { GenksEmblem } from "@/components/brand/genks-emblem";
+import Link from "next/link";
+import { useLicenses } from "@/features/licenses/license-provider";
+import { canBuyBeat } from "@/lib/catalog-availability";
 
 export function BeatCatalog({ beats }: { beats: Beat[] }) {
   const [filters, setFilters] = useState<CatalogFilters>(defaultFilters);
@@ -27,6 +30,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
   const [sort, setSort] = useState("curated");
   const [page, setPage] = useState(1);
   const { favorites } = useWishlist();
+  const { licenses } = useLicenses();
   const { add } = useCart();
   const { currentBeat, isPlaying } = usePlayer();
   const filtersId = useId();
@@ -52,6 +56,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
 
   return (
     <div className="beat-catalog">
+      {beats.length > 0 && !beats.some(beat => canBuyBeat(beat, licenses)) && <div className="catalog-availability-note"><strong>Il catalogo si sta preparando.</strong><p>I beat saranno acquistabili quando anteprime, file e licenze saranno completi. Nel frattempo puoi richiedere una produzione su misura o un servizio.</p><Link href="/services">Scopri i servizi GENKS →</Link></div>}
       <div className="catalog-discovery">
         <div><span className="catalog-kicker">SCEGLI LA TUA FREQUENZA</span><p>Un beat. Infinite direzioni.</p><span>Acquista un singolo beat oppure crea la tua selezione nel carrello.</span></div>
         <GenksEmblem />
@@ -204,7 +209,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
                 <PlayButton beat={beat} queue={visible} />
               </div>
               <div>
-                <h3>{beat.title}</h3>
+                <h3><Link href={`/beats/${beat.slug}`}>{beat.title}</Link></h3>
                 <span className="row-subtitle">
                   GENKS <span>·</span> {italianLabel(beat.genre)}
                   <span className="mobile-metadata">
@@ -228,10 +233,11 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
             </div>
             <div className="row-actions" role="cell">
               <FavoriteButton beat={beat} />
-              <button type="button" className="cart-add-button" aria-label={`Aggiungi ${beat.title} al carrello`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
+              <button type="button" className="cart-add-button" disabled={!canBuyBeat(beat, licenses)} title={canBuyBeat(beat, licenses) ? undefined : "File e licenze in preparazione"} aria-label={`Aggiungi ${beat.title} al carrello`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
                 <ShoppingBag size={17} /><span>Aggiungi al carrello</span>
               </button>
               <LicenseButton beat={beat} compact />
+              {!canBuyBeat(beat, licenses) && <span className="beat-preparing">In preparazione</span>}
             </div>
           </div>
         ))}

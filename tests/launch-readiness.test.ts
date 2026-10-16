@@ -69,3 +69,9 @@ test("manual updates cannot fake payment or skip review before project delivery"
   assert.equal(canChangeServiceStatus("project","delivered","paid"),false);
   assert.equal(canChangeServiceStatus("booking","confirmed","completed"),true);
 });
+
+test("repeat-customer reporting normalizes email and does not count a missing email as a client",()=>{
+  const rows=[{...sale("a","2026-10-16T10:00:00Z"),email:" Artist@Example.invalid "},{...sale("b","2026-10-16T11:00:00Z"),email:"artist@example.invalid"},{...sale("empty","2026-10-16T12:00:00Z"),email:""}];
+  const stats=businessSummary(rows,[],[],now);
+  assert.equal(stats.customers,1);assert.equal(stats.repeatCustomers,1);
+});

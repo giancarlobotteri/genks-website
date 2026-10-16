@@ -1,9 +1,12 @@
 import { italianLabel } from "@/lib/italian";
 import "server-only";
+import { cache } from "react";
 import { mockBeats } from "@/data/mock/beats";
 import { mockLicenses } from "@/data/mock/licenses";
 import { hasSupabase } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { offerReadiness } from "@/lib/commerce/sale-readiness";
 import type { Beat, License } from "@/types/domain";
 
 export interface BeatRepository {
@@ -12,39 +15,40 @@ export interface BeatRepository {
 }
 
 export const beatRepository: BeatRepository = {
-  async listPublished() {
+  listPublished: cache(async () => {
     if (hasSupabase) {
       const supabase = await createSupabaseServerClient();
       const { data } = await supabase
         .from("beats")
-        .select("id,slug,title,bpm,musical_key,genre,mood,description,featured,status,cover_path,preview_path,beat_license_prices(price_override_cents,license_types(code,price_cents))")
+        .select("id,slug,title,bpm,musical_key,genre,mood,description,featured,status,cover_path,preview_path,beat_license_prices(active,price_override_cents,license_types(code,price_cents,active,contract_text,included_assets,is_exclusive))")
         .eq("status", "published")
         .order("sort_order")
         .order("published_at", { ascending: false });
-      if (data) return data.map(mapBeat);
+      if (data) return prepareCatalog(data);
+      throw new Error("Il catalogo non è disponibile. Riprova tra poco.");
     }
     return mockBeats.filter((beat) => beat.status === "published");
-  },
-  async getBySlug(slug) {
+  }),
+  getBySlug: cache(async (slug: string) => {
     if (hasSupabase) {
       const supabase = await createSupabaseServerClient();
       const { data } = await supabase
         .from("beats")
-        .select("id,slug,title,bpm,musical_key,genre,mood,description,featured,status,cover_path,preview_path,beat_license_prices(price_override_cents,license_types(code,price_cents))")
+        .select("id,slug,title,bpm,musical_key,genre,mood,description,featured,status,cover_path,preview_path,beat_license_prices(active,price_override_cents,license_types(code,price_cents,active,contract_text,included_assets,is_exclusive))")
         .eq("slug", slug)
         .eq("status", "published")
         .maybeSingle();
-      return data ? mapBeat(data) : null;
+      return data ? (await prepareCatalog([data]))[0] : null;
     }
     return (
       mockBeats.find(
         (beat) => beat.slug === slug && beat.status === "published",
       ) ?? null
     );
-  },
+  }),
 };
 
-export async function getLicenses(): Promise<License[]> {
+export const getLicenses = cache(async (): Promise<License[]> => {
   if (hasSupabase) {
     const supabase = await createSupabaseServerClient();
     const { data } = await supabase
@@ -64,11 +68,40 @@ export async function getLicenses(): Promise<License[]> {
         features: [italianLabel(item.short_description), ...(item.included_assets ?? []).map((asset: string) => asset === "stems" ? "Tracce separate incluse" : `${italianLabel(asset).toUpperCase()} incluso`)].filter(Boolean),
         isDemo: false,
       }));
+    throw new Error("Le licenze non sono disponibili. Riprova tra poco.");
   }
   return mockLicenses.map(license => ({ ...license, name: italianLabel(license.name), features: license.features.map(italianLabel), format: license.format.replace("STEMS", "TRACCE SEPARATE") }));
-}
+});
 
 type DbBeat = Record<string, unknown>;
+async function prepareCatalog(rows: DbBeat[]): Promise<Beat[]> {
+  const kinds = new Map<string, string[]>();
+  // Read only coarse availability on the server; never send private asset paths.
+  // Chunk both IDs and result rows, so larger catalogues do not lose metadata.
+  if (process.env.SUPABASE_SECRET_KEY) {
+    const db = createSupabaseAdminClient();
+    for (let start = 0; start < rows.length; start += 100) {
+      const ids = rows.slice(start, start + 100).map(row => String(row.id));
+      for (let offset = 0;; offset += 500) {
+        const result = await db.from("beat_assets").select("id,beat_id,kind").eq("bucket", "beat-assets").in("beat_id", ids).order("id").range(offset, offset + 499);
+        if (result.error) throw new Error("Impossibile verificare la disponibilità dei beat.");
+        for (const asset of result.data ?? []) kinds.set(asset.beat_id, [...(kinds.get(asset.beat_id) ?? []), asset.kind]);
+        if (!result.data || result.data.length < 500) break;
+      }
+    }
+  }
+  return rows.map(row => {
+    const beat = mapBeat(row);
+    const prices = Array.isArray(row.beat_license_prices) ? row.beat_license_prices : [];
+    beat.readyLicenseIds = prices.flatMap(entry => {
+      const license = Array.isArray(entry.license_types) ? entry.license_types[0] : entry.license_types;
+      if (!entry.active || !license?.active || license.is_exclusive) return [];
+      const ready = offerReadiness({ contract: license.contract_text, includedAssets: license.included_assets, availableKinds: kinds.get(beat.id) ?? [], hasPreview: Boolean(row.preview_path) });
+      return ready.ready ? [license.code as License["id"]] : [];
+    });
+    return beat;
+  });
+}
 function mapBeat(row: DbBeat): Beat {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_GENKS_SUPABASE_URL;
   const localCovers: Record<string, string> = {
@@ -84,7 +117,7 @@ function mapBeat(row: DbBeat): Beat {
       ? `${url}/storage/v1/object/public/${bucket}/${String(path)}`
       : fallback;
   const prices = Array.isArray(row.beat_license_prices)
-    ? row.beat_license_prices
+    ? row.beat_license_prices.filter(entry => entry.active !== false && (Array.isArray(entry.license_types) ? entry.license_types[0]?.active : entry.license_types?.active) !== false)
     : [];
   return {
     id: String(row.id), slug: String(row.slug), title: String(row.title),

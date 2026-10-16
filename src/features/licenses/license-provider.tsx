@@ -12,7 +12,8 @@ import {
 import { ArrowUpRight, Check } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { formatPrice } from "@/lib/format";
-import { site } from "@/config/site";
+import Link from "next/link";
+import { canBuyLicense } from "@/lib/catalog-availability";
 import type { Beat, License } from "@/types/domain";
 
 const LicenseContext = createContext<{
@@ -62,24 +63,24 @@ export function LicenseProvider({
                     </li>
                   ))}
                 </ul>
-                {beat && !license.isDemo && !license.isExclusive && license.id !== "exclusive" && (
+                {license.contractText && !/bozza da completare/i.test(license.contractText) && <details className="license-terms-preview"><summary>Leggi le condizioni di questa licenza</summary><p className="license-contract-copy">{license.contractText}</p></details>}
+                {beat && canBuyLicense(beat, license) && (
                   <a className="button button-primary" href={`/checkout/${beat.id}/${license.id}`}>ACQUISTA {license.name.toUpperCase()} <ArrowUpRight size={16} /></a>
                 )}
+                {beat && !license.isExclusive && license.id !== "exclusive" && !canBuyLicense(beat, license) && <p className="license-unavailable">In preparazione · acquisto non ancora disponibile.</p>}
                 {beat && (license.isExclusive || license.id === "exclusive") && (
                   <a className="button button-secondary" href={`/services/exclusive?beat=${encodeURIComponent(beat.id)}`}>RICHIEDI L’ESCLUSIVA <ArrowUpRight size={16} /></a>
                 )}
               </section>
             ))}
         </div>
-        {beat?.isDemo && <p className="demo-note">Catalogo dimostrativo e prezzi di esempio. Aggiungi i beat reali dal pannello amministratore dopo aver collegato Supabase.</p>}
-        <a
+        {beat?.isDemo && <p className="demo-note">Anteprima del catalogo: questo beat non è in vendita.</p>}
+        <Link
           className="text-link"
-          href={site.instagram}
-          target="_blank"
-          rel="noreferrer"
+          href="/guida#licenze"
         >
-          Hai domande su una licenza? <ArrowUpRight size={18} aria-hidden="true" />
-        </a>
+          Quale licenza fa per te? <ArrowUpRight size={18} aria-hidden="true" />
+        </Link>
       </Modal>
     </LicenseContext>
   );

@@ -5,6 +5,10 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Services } from "@/components/home/services";
 import { AnnouncementTicker } from "@/components/home/announcement-ticker";
 import { beatRepository } from "@/lib/repositories/beats";
+import { PurchaseHelp } from "@/components/commerce/purchase-help";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default async function Home() {
   const beats = await beatRepository.listPublished();
@@ -34,6 +38,7 @@ export default async function Home() {
           </p>
         </SectionHeading>
         <BeatCatalog beats={beats} />
+        <PurchaseHelp compact />
       </section>
 
 

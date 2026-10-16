@@ -29,6 +29,8 @@ export interface Beat {
   licensePrices?: Partial<Record<LicenseTier, number>>;
   assets: DownloadableAsset[];
   isDemo: boolean;
+  /** Public preflight result only. Private storage keys never leave the server. */
+  readyLicenseIds?: LicenseTier[];
 }
 
 export interface License {

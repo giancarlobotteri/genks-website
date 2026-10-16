@@ -109,7 +109,7 @@ export async function POST(request: Request) {
     expires_at: Math.floor(new Date(order.created_at).getTime()/1000)+2*3600,
     line_items: parsed.data.promoCode ? [{ quantity: 1, price_data: { currency: currency.toLowerCase(), unit_amount: finalAmount, product_data: { name: `GENKS · ${validOffers.length} licenze beat`, description: `Codice sconto ${parsed.data.promoCode} applicato` } } }] : validOffers.map(({ beat, license, amount: unitPrice }) => ({ quantity: 1, price_data: { currency: currency.toLowerCase(), unit_amount: unitPrice, product_data: { name: `${beat.title} — ${italianLabel(license.name)}`, description: "Licenza beat GENKS" } } })),
     success_url: `${origin}/checkout/success?order=${order.id}`,
-    cancel_url: requestedItems.length === 1 ? `${origin}/checkout/${validOffers[0].beat.id}/${validOffers[0].license.code}?cancelled=1` : `${origin}/beats?checkout=cancelled`,
+    cancel_url: requestedItems.length === 1 ? `${origin}/checkout/${validOffers[0].beat.id}/${validOffers[0].license.code}?cancelled=1` : `${origin}/carrello?cancelled=1`,
     metadata: { order_id: order.id, customer_id: user?.id ?? "guest", item_count: String(validOffers.length) },
     customer_email: parsed.data.email,
     // Stripe selects eligible methods configured on the account, including wallets

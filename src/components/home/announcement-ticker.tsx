@@ -7,6 +7,7 @@ type Promotion = {
   discount_type: "percent" | "fixed";
   amount: number;
   expires_at: string | null;
+  minimum_order_cents: number;
 };
 
 function TikTokIcon({ size = 18 }: { size?: number }) {
@@ -18,7 +19,7 @@ async function getActivePromotions(): Promise<Promotion[]> {
   try {
     const { data } = await createSupabaseAdminClient()
       .from("promo_codes")
-      .select("code,discount_type,amount,expires_at")
+      .select("code,discount_type,amount,expires_at,minimum_order_cents")
       .eq("active", true)
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .order("created_at", { ascending: false })
@@ -34,8 +35,8 @@ function TickerContent({ date, promotions, duplicate = false }: { date: string; 
     <span className="announcement-date"><CalendarDays size={17} /> <strong>{date}</strong></span>
     <i />
     {promotions.length ? promotions.map((promo) => <span className="promotion-chip" key={promo.code}>
-      <Sparkles size={16} /> CODICE <strong>{promo.code}</strong> · {promo.discount_type === "percent" ? `${promo.amount}% DI SCONTO` : `€${(promo.amount / 100).toFixed(0)} DI SCONTO`}
-    </span>) : <span className="promotion-placeholder"><Sparkles size={16} /> PROMOZIONI E CODICI SCONTO PUBBLICATI QUI</span>}
+      <Sparkles size={16} /> CODICE <strong>{promo.code}</strong> · {promo.discount_type === "percent" ? `${promo.amount}% DI SCONTO` : `${(promo.amount / 100).toLocaleString("it-IT",{style:"currency",currency:"EUR"})} DI SCONTO`}{promo.minimum_order_cents > 0 ? ` · DA ${(promo.minimum_order_cents / 100).toLocaleString("it-IT",{style:"currency",currency:"EUR"})}` : ""} · VERIFICATO AL PAGAMENTO
+    </span>) : <span className="promotion-placeholder"><Sparkles size={16} /> ASCOLTA · CONFRONTA LE LICENZE · SCEGLI IL TUO SUONO</span>}
     <i />
     <a href={site.instagram} target="_blank" rel="noreferrer" tabIndex={duplicate ? -1 : undefined}>
       <Instagram size={18} /> INSTAGRAM <strong>@PRODBYGENKS</strong>

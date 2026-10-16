@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowUpRight, AudioLines, Disc3, Mic2 } from "lucide-react";
 import { GenksEmblem } from "@/components/brand/genks-emblem";
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Studio, mix, master e beat su misura", description: "Richiedi una sessione in studio a Perugia, un mix, un master o una produzione su misura. Preventivo concordato prima del pagamento.", alternates: { canonical: "/services" } };
 const items = [
   { href: "/services/recording", n: "01", title: "Sessione in studio", copy: "La tua voce, il tuo spazio. Scegli durata, giorno e orario.", icon: Mic2 },
   { href: "/services/project", n: "02", title: "Mix e master", copy: "Seleziona il tipo di servizio di cui hai bisogno: mix, master oppure mix e master.", icon: AudioLines },

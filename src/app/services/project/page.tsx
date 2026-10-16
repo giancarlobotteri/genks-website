@@ -1,5 +1,7 @@
 import { ProjectRequestForm } from "@/components/services/project-request-form";
 import { GenksEmblem } from "@/components/brand/genks-emblem";
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Richiedi mix e master", description: "Scegli mix, master o mix e master. GENKS concorda con te lavoro, consegna e revisioni nel preventivo prima del pagamento.", alternates: { canonical: "/services/project" } };
 
 export default async function ProjectPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;
