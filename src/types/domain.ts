@@ -32,6 +32,7 @@ export interface Beat {
 }
 
 export interface License {
+  contractText?: string;
   isExclusive?: boolean;
   id: LicenseTier;
   name: string;

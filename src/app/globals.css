@@ -4300,3 +4300,19 @@ body:has(.admin-shell) :is(.cart-rail,.cart-rail-toggle,.cart-rail-backdrop,.per
 .admin-quick-links { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; }.admin-quick-links .admin-form-card { margin:0; transition:border-color .25s,transform .25s; }.admin-quick-links a:hover { border-color:#6b9de2; transform:translateY(-3px); }.admin-quick-links h2 { font-size:21px; margin-block:14px; color:#c4dfff; }.admin-quick-links p { font-size:12px; color:#94afd4; line-height:1.8; }.admin-quick-links>span { color:#84b8ff; }
 
 .custom-contact-actions .button-secondary { background:#102746; border-color:#365e92; color:#c9e3ff; }.custom-contact-actions .button-secondary:hover { background:#194477; border-color:#75adf5; }
+
+.form-honeypot { position:absolute!important; left:-10000px!important; width:1px!important; height:1px!important; overflow:hidden!important; }
+.checkout-consents { border:1px solid #294a78; border-radius:18px; padding:18px; margin-block:16px; display:grid; gap:16px; min-width:0; }
+.checkout-consents legend { padding-inline:8px; color:#accfff; font-size:12px; }
+.checkout-consents label { display:flex!important; flex-direction:row!important; align-items:flex-start; gap:12px; font-size:12px; line-height:1.7; color:#bacce5; }
+.checkout-consents input[type=checkbox] { width:18px!important; height:18px!important; min-height:18px!important; flex:none; margin-top:3px; accent-color:#5e9dff; }
+.checkout-consents a { color:#a9d0ff; text-decoration:underline; }
+.license-contract-copy { white-space:pre-wrap; overflow-wrap:anywhere; max-height:380px; overflow:auto; font-size:13px; line-height:1.8; }
+.library-downloads { display:flex; flex-wrap:wrap; gap:10px; }.library-downloads .text-link { flex-basis:100%; margin-top:12px; }
+.sales-period-strip { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:26px; }
+.sales-period-strip>div { border:1px solid #264775; border-radius:15px; padding:16px; display:grid; gap:8px; background:#0b1c33; }
+.sales-period-strip span { color:#a0b9dc; font-size:12px; }
+.service-payment-status small,.operational-health small,.sales-ranking small { display:block; margin-top:7px; color:#a4bfdf; font-size:12px; }
+.operational-health details { margin-top:22px; }.operational-health details p { padding-block:8px; border-bottom:1px solid #233c5d; font-size:13px; }
+.payment-request textarea { min-height:110px; }.payment-request .button { white-space:normal; }
+@media(max-width:600px) { .sales-period-strip { grid-template-columns:1fr; }.checkout-consents { padding:12px; }.library-downloads .button { width:100%; } }

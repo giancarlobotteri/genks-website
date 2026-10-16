@@ -13,17 +13,19 @@ export async function sendTransactionalEmail(input: {
   actionUrl?: string;
   actionLabel?: string;
   serviceRequest?: boolean;
+  idempotencyKey?: string;
 }) {
   if (!("serviceRequest" in input && input.serviceRequest) && !previewRecipientAllowed(input.to)) throw new Error("Il destinatario non è autorizzato nell’anteprima privata.");
   const resend = getResend();
   if (!resend || !process.env.RESEND_FROM_EMAIL)
-    return { skipped: true as const };
+    throw new Error("Il servizio email non è configurato.");
   const { error } = await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL,
+    replyTo: process.env.GENKS_SUPPORT_EMAIL || process.env.GENKS_ADMIN_EMAIL,
     to: input.to,
     subject: input.subject,
     html: `<div style="background:#050506;color:#f0f1f4;padding:40px;font-family:Arial,sans-serif"><div style="max-width:600px;margin:auto;border:1px solid #24252b;border-radius:24px;padding:32px;background:#0d0e11"><div style="color:#829fff;letter-spacing:.18em;font-size:14px">GENKS</div><h1>${escapeHtml(input.heading)}</h1><p style="color:#e3eaff;line-height:1.7">${escapeHtml(input.body)}</p>${input.actionUrl ? `<a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;margin-top:16px;padding:14px 22px;border-radius:14px;background:#2860ff;color:white;text-decoration:none">${escapeHtml(input.actionLabel ?? "Apri")}</a>` : ""}</div></div>`,
-  });
+  }, input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined);
   if (error) throw new Error(`Transactional email failed: ${error.message}`);
   return { skipped: false as const };
 }
@@ -35,6 +37,7 @@ export async function sendOrderConfirmationEmail(input: {
   orderNumber: string;
   paidAt: Date;
   totalCents: number;
+  discountCents?: number;
   currency: string;
   items: Array<{ beatTitle: string; licenseName: string; unitPriceCents: number }>;
   idempotencyKey?: string;
@@ -72,6 +75,7 @@ export async function sendOrderConfirmationEmail(input: {
           <div style="color:#87a7ff;font-size:14px;font-weight:700;letter-spacing:2px">RIEPILOGO ORDINE</div>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">${itemRows}</table>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;padding:18px;border:1px solid #3155a7;border-radius:16px;background:#0d1730">
+            ${input.discountCents?`<tr><td style="padding:12px 18px;color:#b9ceff">Sconto applicato</td><td style="padding:12px 18px;text-align:right;color:#b9ceff">−${escapeHtml(money(input.discountCents))}</td></tr>`:""}
             <tr><td style="padding:18px;color:#bdc9ea;font-size:15px;font-weight:700">TOTALE PAGATO</td><td style="padding:18px;text-align:right;color:#fff;font-size:24px;font-weight:800">${escapeHtml(money(input.totalCents))}</td></tr>
           </table>
           <p style="margin:24px 0 18px;color:#e3eaff;line-height:1.7">Le licenze e i file disponibili sono stati aggiunti alla tua raccolta. Accedi usando la stessa email utilizzata per l’acquisto.</p>
@@ -81,13 +85,14 @@ export async function sendOrderConfirmationEmail(input: {
           <img src="${escapeHtml(`${origin}/brand/genks-logo.jpeg`)}" width="48" height="48" alt="" style="display:block;width:48px;height:48px;margin:0 auto 10px;border-radius:50%;object-fit:cover" />
           <strong style="display:block;color:#fff;font-size:18px;letter-spacing:2px">GENKS</strong>
           <span style="display:block;margin-top:5px;color:#cbd5ed;font-size:14px;letter-spacing:1px">BEAT E PRODUZIONE</span>
-          <span style="display:block;margin-top:12px;color:#cbd5ed;font-size:14px;line-height:1.5">Email automatica: le risposte a questo indirizzo non vengono monitorate.</span>
+          <span style="display:block;margin-top:12px;color:#cbd5ed;font-size:14px;line-height:1.5">${process.env.GENKS_SUPPORT_EMAIL||process.env.GENKS_ADMIN_EMAIL?"Per assistenza puoi rispondere a questa email.":"Conserva il riferimento dell’ordine per richiedere assistenza a GENKS."}</span>
         </div>
       </div>
     </div>
   </body></html>`;
   const { data, error } = await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL,
+    replyTo: process.env.GENKS_SUPPORT_EMAIL || process.env.GENKS_ADMIN_EMAIL,
     to: input.to,
     subject: `Pagamento confermato — ordine ${input.orderNumber} | GENKS`,
     html,

@@ -3,62 +3,29 @@ import { hasSupabase } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getGoogleBusyRanges, hasGoogleCalendar } from "@/lib/google-calendar";
 import { fromRomeWallTime, todayInRome } from "@/lib/rome-time";
+import { availableSlots, shiftDay } from "@/lib/booking-slots";
 
-const querySchema = z.object({
-  date: z.iso.date(),
-  duration: z.coerce.number().int().min(1).max(8).default(1),
-});
-
+export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
-  if (!hasSupabase) {
-    return Response.json({ error: "Gli orari delle prenotazioni non sono configurati." }, { status: 503 });
-  }
-  const search = new URL(request.url).searchParams;
-  const parsed = querySchema.safeParse({ date: search.get("date"), duration: search.get("duration") ?? 1 });
-  if (!parsed.success) return Response.json({ error: "Scegli una data valida." }, { status: 400 });
-
-  const day = new Date(`${parsed.data.date}T12:00:00Z`);
-  if (!Number.isFinite(day.getTime()) || parsed.data.date < todayInRome()) {
-    return Response.json({ slots: [] });
-  }
-  // Read busy ranges on the server; visitors receive only available times, never booking records.
+  if (!hasSupabase) return Response.json({ error: "Prenotazioni temporaneamente non disponibili." }, { status: 503 });
+  const query = new URL(request.url).searchParams;
+  const parsed = z.object({ date: z.iso.date(), duration: z.coerce.number().int().min(1).max(8) }).safeParse({ date: query.get("date"), duration: query.get("duration") ?? 1 });
+  if (!parsed.success) return Response.json({ error: "Scegli una data e una durata valide." }, { status: 400 });
+  const { date, duration } = parsed.data;
+  if (date < todayInRome() || date > shiftDay(todayInRome(), 180)) return Response.json({ slots: [] });
   const db = createSupabaseAdminClient();
-  const weekday = day.getUTCDay();
-  const dayStart = fromRomeWallTime(parsed.data.date, "00:00");
-  const dayEnd = fromRomeWallTime(parsed.data.date, "23:59");
-  let googleBusy: Array<{ starts_at: string; ends_at: string }> = [];
-  try { if (hasGoogleCalendar) googleBusy = await getGoogleBusyRanges(dayStart, dayEnd); }
-  catch { return Response.json({ error: "Il calendario condiviso dello studio è temporaneamente non disponibile." }, { status: 503 }); }
-  const [ruleResult, bookingResult, blackoutResult] = await Promise.all([
-    db.from("availability_rules").select("start_time,end_time,slot_minutes,buffer_minutes").eq("weekday", weekday).eq("active", true),
-    db.from("bookings").select("starts_at,ends_at").in("status", ["pending", "approved_awaiting_payment", "confirmed"]).lt("starts_at", dayEnd.toISOString()).gt("ends_at", dayStart.toISOString()),
-    db.from("blackout_dates").select("starts_at,ends_at").lt("starts_at", dayEnd.toISOString()).gt("ends_at", dayStart.toISOString()),
+  const expired = await db.rpc("expire_booking_holds");
+  if (expired.error) return Response.json({ error: "Calendario temporaneamente non disponibile." }, { status: 503 });
+  const from = fromRomeWallTime(date, "00:00");
+  const to = fromRomeWallTime(shiftDay(date, 1), "23:59");
+  const [rules, bookings, blackouts] = await Promise.all([
+    db.from("availability_rules").select("weekday,start_time,end_time,ends_next_day,flexible_close,slot_minutes,buffer_minutes").eq("active", true),
+    db.from("bookings").select("starts_at,ends_at,blocked_until").in("status", ["pending", "approved_awaiting_payment", "confirmed"]).lt("starts_at", to.toISOString()).gt("blocked_until", from.toISOString()),
+    db.from("blackout_dates").select("starts_at,ends_at").lt("starts_at", to.toISOString()).gt("ends_at", from.toISOString()),
   ]);
-  if (ruleResult.error || bookingResult.error || blackoutResult.error) {
-    return Response.json({ error: "Non è stato possibile verificare gli orari. Riprova tra poco." }, { status: 503 });
-  }
-  const { data: rules } = ruleResult;
-  const { data: bookings } = bookingResult;
-  const { data: blackouts } = blackoutResult;
-
-  const slots: string[] = [];
-  for (const rule of rules ?? []) {
-    const [startHour, startMinute] = rule.start_time.split(":").map(Number);
-    const [endHour, endMinute] = rule.end_time.split(":").map(Number);
-    const durationMinutes = parsed.data.duration * 60;
-    for (let minutes = startHour * 60 + startMinute; minutes + durationMinutes <= endHour * 60 + endMinute; minutes += rule.slot_minutes + rule.buffer_minutes) {
-      const hour = String(Math.floor(minutes / 60)).padStart(2, "0");
-      const minute = String(minutes % 60).padStart(2, "0");
-      const slotStart = fromRomeWallTime(parsed.data.date, `${hour}:${minute}`);
-      const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60_000);
-      const protectedEnd = new Date(slotEnd.getTime() + rule.buffer_minutes * 60_000);
-      const blocked = [...(bookings ?? []), ...(blackouts ?? []), ...googleBusy].some((item) => {
-        const itemStart = new Date(item.starts_at);
-        const itemEnd = new Date(new Date(item.ends_at).getTime() + rule.buffer_minutes * 60_000);
-        return itemStart < protectedEnd && itemEnd > slotStart;
-      });
-      if (!blocked && slotStart > new Date()) slots.push(`${hour}:${minute}`);
-    }
-  }
-  return Response.json({ slots: [...new Set(slots)].sort() });
+  if (rules.error || bookings.error || blackouts.error) return Response.json({ error: "Impossibile verificare gli orari. Riprova tra poco." }, { status: 503 });
+  try {
+    const google = hasGoogleCalendar ? await getGoogleBusyRanges(from, to) : [];
+    return Response.json({ slots: availableSlots(date, duration, rules.data ?? [], [...(bookings.data ?? []), ...(blackouts.data ?? []), ...google]) }, { headers: { "Cache-Control": "no-store" } });
+  } catch { return Response.json({ error: "Il calendario condiviso è temporaneamente non disponibile." }, { status: 503 }); }
 }

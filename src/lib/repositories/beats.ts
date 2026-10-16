@@ -49,13 +49,14 @@ export async function getLicenses(): Promise<License[]> {
     const supabase = await createSupabaseServerClient();
     const { data } = await supabase
       .from("license_types")
-      .select("code,name,price_cents,currency,included_assets,short_description,is_exclusive")
+      .select("code,name,price_cents,currency,included_assets,short_description,is_exclusive,contract_text")
       .eq("active", true)
       .order("display_order");
     if (data)
       return data.map((item) => ({
         id: item.code as License["id"],
         isExclusive: item.is_exclusive,
+        contractText: item.contract_text || undefined,
         name: italianLabel(item.name),
         priceCents: item.price_cents,
         currency: "EUR",

@@ -5,6 +5,8 @@ import { hasStripe, hasSupabase } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { privatePreview, previewRecipientAllowed, stripeTestMode } from "@/lib/preview-mode";
+import { offerReadiness } from "@/lib/commerce/sale-readiness";
+import { assertLiveCommerceReady } from "@/lib/commerce/live-readiness";
 
 const schema = z.object({
   beatId: z.uuid().optional(),
@@ -13,6 +15,8 @@ const schema = z.object({
   email: z.email(),
   name: z.string().trim().min(2).max(120),
   promoCode: z.string().trim().toUpperCase().max(40).optional(),
+  acceptedTerms: z.literal(true),
+  immediateDelivery: z.literal(true),
 }).refine((value) => value.items?.length || (value.beatId && value.licenseCode), { message: "Scegli almeno una licenza per un beat." });
 
 export async function POST(request: Request) {
@@ -25,6 +29,8 @@ export async function POST(request: Request) {
     return Response.json({ error: "Controlla i dati dell’acquisto." }, { status: 400 });
   if (!previewRecipientAllowed(parsed.data.email))
     return Response.json({ error: "Usa l’email del proprietario per gli acquisti di prova privati." }, { status: 403 });
+  try { await assertLiveCommerceReady(); }
+  catch { return Response.json({ error: "Gli acquisti sono in preparazione. Contatta GENKS per informazioni." }, { status: 503 }); }
 
   const db = createSupabaseAdminClient();
   const requestedItems = parsed.data.items ?? [{ beatId: parsed.data.beatId!, licenseCode: parsed.data.licenseCode! }];
@@ -33,7 +39,7 @@ export async function POST(request: Request) {
   const offers = await Promise.all(requestedItems.map(async (requested) => {
     const { data } = await db
       .from("beat_license_prices")
-      .select("price_override_cents,beats!inner(id,title,slug,status,prevent_lease_after_exclusive),license_types!inner(id,code,name,price_cents,currency,contract_text,included_assets,is_exclusive,active)")
+      .select("price_override_cents,beats!inner(id,title,slug,status,preview_path,prevent_lease_after_exclusive),license_types!inner(id,code,name,price_cents,currency,contract_text,included_assets,is_exclusive,active)")
       .eq("beat_id", requested.beatId)
       .eq("license_types.code", requested.licenseCode)
       .eq("active", true)
@@ -42,6 +48,16 @@ export async function POST(request: Request) {
     const beat = Array.isArray(data.beats) ? data.beats[0] : data.beats;
     const license = Array.isArray(data.license_types) ? data.license_types[0] : data.license_types;
     if (!beat || !license || !license.active || beat.status !== "published" || license.is_exclusive) return null;
+    const { data: assets, error: assetError } = await db.from("beat_assets").select("kind,bucket,storage_path").eq("beat_id", beat.id);
+    if (assetError) return null;
+    const readiness = offerReadiness({ contract: license.contract_text, includedAssets: license.included_assets, availableKinds: (assets ?? []).filter(a => a.bucket === "beat-assets").map(a => a.kind), hasPreview: Boolean(beat.preview_path) });
+    if (!readiness.ready) return null;
+    const required = (assets ?? []).filter(a => (license.included_assets ?? []).includes(a.kind));
+    const stored = await Promise.all(required.map(async asset => {
+      const { data: info, error } = await db.storage.from(asset.bucket).info(asset.storage_path);
+      return !error && Boolean(info?.size && info.size > 0);
+    }));
+    if (stored.some(exists => !exists)) return null;
     return { beat, license, amount: data.price_override_cents ?? license.price_cents };
   }));
   if (offers.some((offer) => !offer)) return Response.json({ error: "Una o più licenze selezionate non sono disponibili." }, { status: 409 });
@@ -54,8 +70,8 @@ export async function POST(request: Request) {
   const amount = validOffers.reduce((sum, offer) => sum + offer.amount, 0);
   const { data: order, error } = await db
     .from("orders")
-    .insert({ customer_id: user?.id ?? null, customer_email: parsed.data.email.toLowerCase(), customer_name: parsed.data.name, subtotal_cents: amount, total_cents: amount, currency })
-    .select("id,order_number")
+    .insert({ customer_id: user?.email?.toLowerCase() === parsed.data.email.toLowerCase() ? user.id : null, customer_email: parsed.data.email.toLowerCase(), customer_name: parsed.data.name, subtotal_cents: amount, total_cents: amount, currency, checkout_consents: { termsAccepted: true, immediateDelivery: true, recordedAt: new Date().toISOString(), version: "2026-10-16" } })
+    .select("id,order_number,created_at")
     .single();
   if (error || !order) return Response.json({ error: "Non è stato possibile creare l’ordine." }, { status: 500 });
   const { error: itemError } = await db.from("order_items").insert(validOffers.map(({ beat, license, amount: unitPrice }) => ({
@@ -65,7 +81,10 @@ export async function POST(request: Request) {
     license_terms_snapshot: { contractText: license.contract_text, includedAssets: license.included_assets },
     unit_price_cents: unitPrice,
   })));
-  if (itemError) return Response.json({ error: "Non è stato possibile aggiungere gli articoli all’ordine." }, { status: 500 });
+  if (itemError) {
+    await db.from("orders").update({ status: "failed" }).eq("id", order.id);
+    return Response.json({ error: "Non è stato possibile aggiungere gli articoli all’ordine." }, { status: 500 });
+  }
 
   let finalAmount = amount;
   if (parsed.data.promoCode) {
@@ -86,6 +105,8 @@ export async function POST(request: Request) {
   session = await stripe.checkout.sessions.create({
     mode: "payment",
     locale: "it",
+    payment_method_types: ["card"],
+    expires_at: Math.floor(new Date(order.created_at).getTime()/1000)+2*3600,
     line_items: parsed.data.promoCode ? [{ quantity: 1, price_data: { currency: currency.toLowerCase(), unit_amount: finalAmount, product_data: { name: `GENKS · ${validOffers.length} licenze beat`, description: `Codice sconto ${parsed.data.promoCode} applicato` } } }] : validOffers.map(({ beat, license, amount: unitPrice }) => ({ quantity: 1, price_data: { currency: currency.toLowerCase(), unit_amount: unitPrice, product_data: { name: `${beat.title} — ${italianLabel(license.name)}`, description: "Licenza beat GENKS" } } })),
     success_url: `${origin}/checkout/success?order=${order.id}`,
     cancel_url: requestedItems.length === 1 ? `${origin}/checkout/${validOffers[0].beat.id}/${validOffers[0].license.code}?cancelled=1` : `${origin}/beats?checkout=cancelled`,
@@ -98,6 +119,11 @@ export async function POST(request: Request) {
     await db.from("orders").update({ status: "failed" }).eq("id", order.id);
     return Response.json({ error: "Non è stato possibile aprire il pagamento Stripe. Riprova." }, { status: 502 });
   }
-  await db.from("orders").update({ stripe_checkout_session_id: session.id }).eq("id", order.id);
+  const recorded = await db.from("orders").update({ stripe_checkout_session_id: session.id }).eq("id", order.id);
+  if (recorded.error || !session.url) {
+    await stripe.checkout.sessions.expire(session.id);
+    await db.from("orders").update({ status: "failed" }).eq("id", order.id);
+    return Response.json({ error: "Il pagamento non è stato aperto. Riprova." }, { status: 503 });
+  }
   return Response.json({ url: session.url });
 }

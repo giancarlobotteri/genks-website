@@ -3,13 +3,16 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getStripe } from "@/lib/stripe";
 import { hasStripe } from "@/lib/env";
 import { privatePreview, previewRecipientAllowed, stripeTestMode } from "@/lib/preview-mode";
 import { ensureOrderConfirmationEmail } from "@/lib/order-confirmation";
 import { redirect } from "next/navigation";
-import { sendTransactionalEmail } from "@/lib/email";
 import { createBookingCalendarEvent, createProjectDeadlineEvent, deleteGoogleCalendarEvent } from "@/lib/google-calendar";
+import { issueServicePayment, expireServiceQuotes } from "@/lib/service-payments";
+import { flushNotifications } from "@/lib/notifications";
+import { canChangeServiceStatus } from "@/lib/service-workflow";
+import { fromRomeWallTime } from "@/lib/rome-time";
+import { configureStripeEvents } from "@/lib/stripe-readiness";
 
 async function audit(action:string,entityType:string,entityId:string,payload?:unknown){const user=await requireAdmin();const db=createSupabaseAdminClient();await db.from("admin_audit_log").insert({admin_id:user.id,action,entity_type:entityType,entity_id:entityId,payload});return db}
 
@@ -37,46 +40,106 @@ export async function updateBookingStatus(formData:FormData){
   const id=z.uuid().parse(formData.get("id"));
   const status=z.enum(["pending","approved_awaiting_payment","confirmed","completed","cancelled","rejected","no_show"]).parse(formData.get("status"));
   const db=await audit("status_change","booking",id,{status});
-  const {data:current}=await db.from("bookings").select("status,reference,starts_at,ends_at,google_calendar_event_id").eq("id",id).single();
+  const {data:current}=await db.from("bookings").select("status,reference,starts_at,ends_at,google_calendar_event_id,hold_expires_at").eq("id",id).single();
   if(!current)throw new Error("Prenotazione non trovata.");
+  if(!canChangeServiceStatus("booking",current.status,status))redirect("/admin/bookings?notice=invalid_status");
+  if(["cancelled","rejected"].includes(status)){try{await expireServiceQuotes("booking",id)}catch{redirect("/admin/bookings?notice=status_error")}}
   let eventId=current.google_calendar_event_id;
   if(status==="confirmed"&&!eventId)eventId=await createBookingCalendarEvent({id,reference:current.reference,startsAt:current.starts_at,endsAt:current.ends_at});
   if(["cancelled","rejected"].includes(status)&&eventId){await deleteGoogleCalendarEvent(eventId);eventId=null;}
-  const {error}=await db.from("bookings").update({status,google_calendar_event_id:eventId,updated_at:new Date().toISOString()}).eq("id",id);if(error)throw new Error("Aggiornamento della prenotazione non riuscito.");
+  const {data:changed,error}=await db.from("bookings").update({status,google_calendar_event_id:eventId,hold_expires_at:status==="pending"?(current.status==="pending"?current.hold_expires_at:new Date(Date.now()+48*3600000).toISOString()):status==="approved_awaiting_payment"?current.hold_expires_at:null,updated_at:new Date().toISOString()}).eq("id",id).eq("status",current.status).select("id").maybeSingle();if(error||!changed)redirect("/admin/bookings?notice=status_error");
+  if(status==="cancelled")await db.from("payments").update({review_reason:"Sessione annullata: verificare l’eventuale rimborso in Stripe."}).eq("booking_id",id).eq("status","succeeded");
   await db.from("booking_status_history").insert({booking_id:id,from_status:current.status,to_status:status});
+  await flushNotifications({prefix:`status-bookings-${id}`});
   revalidatePath("/admin/bookings");
 }
 export async function updateProjectStatus(formData:FormData){
   const id=z.uuid().parse(formData.get("id"));
   const status=z.enum(["requested","quoted","awaiting_payment","paid","in_progress","review","delivered","cancelled"]).parse(formData.get("status"));
   const db=await audit("status_change","project",id,{status});
-  const {data:current}=await db.from("service_projects").select("status,reference,service,desired_deadline,google_calendar_event_id").eq("id",id).single();
+  const {data:current}=await db.from("service_projects").select("status,reference,service,agreed_deadline,google_calendar_event_id").eq("id",id).single();
   if(!current)throw new Error("Progetto non trovato.");
+  if(!canChangeServiceStatus("project",current.status,status))redirect("/admin/projects?notice=invalid_status");
+  if(["quoted","cancelled"].includes(status)){try{await expireServiceQuotes("project",id)}catch{redirect("/admin/projects?notice=status_error")}}
   let eventId=current.google_calendar_event_id;
-  if(["paid","in_progress"].includes(status)&&current.desired_deadline&&!eventId)eventId=await createProjectDeadlineEvent({id,reference:current.reference,service:current.service,deadline:current.desired_deadline});
+  if(["paid","in_progress"].includes(status)&&current.agreed_deadline&&!eventId)eventId=await createProjectDeadlineEvent({id,reference:current.reference,service:current.service,deadline:current.agreed_deadline});
   if(status==="cancelled"&&eventId){await deleteGoogleCalendarEvent(eventId);eventId=null;}
-  const {error}=await db.from("service_projects").update({status,google_calendar_event_id:eventId,updated_at:new Date().toISOString()}).eq("id",id);if(error)throw new Error("Aggiornamento del progetto non riuscito.");
+  const {data:changed,error}=await db.from("service_projects").update({status,google_calendar_event_id:eventId,updated_at:new Date().toISOString()}).eq("id",id).eq("status",current.status).select("id").maybeSingle();if(error||!changed)redirect("/admin/projects?notice=status_error");
+  if(status==="cancelled")await db.from("payments").update({review_reason:"Progetto annullato: verificare l’eventuale rimborso in Stripe."}).eq("project_id",id).eq("status","succeeded");
   await db.from("project_status_history").insert({project_id:id,from_status:current.status,to_status:status});
+  await flushNotifications({prefix:`status-service_projects-${id}`});
   revalidatePath("/admin/projects");
 }
 
 async function createServicePayment(formData:FormData,type:"booking"|"project"){
-  if(!hasStripe) throw new Error("Stripe non è configurato.");
-  if(privatePreview&&!stripeTestMode()) throw new Error("Nell’anteprima privata sono consentiti solo pagamenti di prova Stripe.");
-  const input=z.object({id:z.uuid(),price:z.coerce.number().positive().max(100000)}).parse(Object.fromEntries(formData));
-  const priceCents=Math.round(input.price*100);const db=await audit("payment_request",type,input.id,{priceCents});
-  const table=type==="booking"?"bookings":"service_projects";
-  const {data}=await db.from(table).select("id,reference,email,name").eq("id",input.id).single();
-  if(!data)throw new Error("Richiesta non trovata.");
-  if(!previewRecipientAllowed(data.email))throw new Error("Le email di prova private possono essere inviate solo al proprietario.");
-  const origin=process.env.NEXT_PUBLIC_SITE_URL;if(!origin)throw new Error("NEXT_PUBLIC_SITE_URL is required for payment links.");
-  const session=await getStripe().checkout.sessions.create({mode:"payment",locale:"it",customer_email:data.email,line_items:[{quantity:1,price_data:{currency:"eur",unit_amount:priceCents,product_data:{name:type==="booking"?`GENKS Registrazione · ${data.reference}`:`GENKS Mix/Master · ${data.reference}`}}}],success_url:`${origin}/checkout/success?${type}=${data.id}`,cancel_url:`${origin}/services`,metadata:{[`${type}_id`]:data.id,payment_type:type}},{idempotencyKey:`${type}_${data.id}_${priceCents}`});
-  await db.from(table).update({price_cents:priceCents,status:type==="booking"?"approved_awaiting_payment":"awaiting_payment",updated_at:new Date().toISOString()}).eq("id",data.id);
-  await sendTransactionalEmail({to:data.email,subject:`Richiesta di pagamento GENKS ${data.reference}`,heading:"La tua richiesta è approvata.",body:`Completa il pagamento sicuro di €${input.price.toFixed(2)} per proseguire.`,actionUrl:session.url??origin,actionLabel:"Paga in sicurezza"});
-  revalidatePath(type==="booking"?"/admin/bookings":"/admin/projects");
+  await requireAdmin();
+  const path=type==="booking"?"/admin/bookings":"/admin/projects";
+  const parsed=z.object({id:z.uuid(),price:z.coerce.number().min(0.5).max(100000),scope:z.string().trim().min(10).max(2000),revisions:z.coerce.number().int().min(0).max(50),deadline:z.union([z.literal(""),z.iso.date()]).default("")}).safeParse(Object.fromEntries(formData));
+  if(!parsed.success)redirect(`${path}?notice=invalid_quote`);
+  let notice="quote_sent";
+  try {
+    if(!hasStripe)throw new Error("Stripe non configurato");
+    if(privatePreview&&!stripeTestMode())throw new Error("Anteprima privata");
+    await audit("payment_request",type,parsed.data.id,{priceCents:Math.round(parsed.data.price*100)});
+    const result=await issueServicePayment({type,id:parsed.data.id,priceCents:Math.round(parsed.data.price*100),scope:parsed.data.scope,revisions:parsed.data.revisions,deadline:parsed.data.deadline||null});
+    if(result.failures)notice="email_pending";
+  } catch { notice="quote_error"; }
+  revalidatePath(path);
+  redirect(`${path}?notice=${notice}`);
 }
 export async function requestBookingPayment(formData:FormData){await createServicePayment(formData,"booking")}
 export async function requestProjectPayment(formData:FormData){await createServicePayment(formData,"project")}
+
+export async function retryNotifications() {
+  await requireAdmin();
+  await flushNotifications({limit:30});
+  revalidatePath("/admin");redirect("/admin?notice=retried");
+}
+export async function repairStripeConfiguration() {
+  await requireAdmin();
+  try { await configureStripeEvents(); } catch { redirect("/admin/settings?notice=stripe_error"); }
+  revalidatePath("/admin/settings");redirect("/admin/settings?notice=stripe_configured");
+}
+
+export async function createBlackout(form:FormData) {
+  await requireAdmin();
+  const parsed=z.object({start:z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/),end:z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/),reason:z.string().trim().max(200)}).safeParse(Object.fromEntries(form));
+  if(!parsed.success)redirect("/admin/bookings?notice=status_error");
+  const start=fromRomeWallTime(parsed.data.start.slice(0,10),parsed.data.start.slice(11));
+  const end=fromRomeWallTime(parsed.data.end.slice(0,10),parsed.data.end.slice(11));
+  if(!Number.isFinite(start.getTime())||!Number.isFinite(end.getTime())||end<=start)redirect("/admin/bookings?notice=status_error");
+  const db=await audit("blackout","calendar",parsed.data.start);
+  const result=await db.rpc("create_studio_blackout",{p_start:start.toISOString(),p_end:end.toISOString(),p_reason:parsed.data.reason});
+  if(result.error)redirect("/admin/bookings?notice=blackout_conflict");
+  revalidatePath("/admin/bookings");
+}
+export async function deleteBlackout(form:FormData) {
+  const id=z.uuid().parse(form.get("id"));const db=await audit("remove_blackout","calendar",id);
+  const {error}=await db.from("blackout_dates").delete().eq("id",id);if(error)throw new Error("Impossibile rimuovere il blocco.");
+  revalidatePath("/admin/bookings");
+}
+export async function deliverProject(form:FormData) {
+  await requireAdmin();
+  const parsed=z.object({id:z.uuid(),url:z.url().refine(value=>value.startsWith("https://"))}).safeParse(Object.fromEntries(form));
+  if(!parsed.success)redirect("/admin/projects?notice=status_error");
+  const db=await audit("deliver","project",parsed.data.id);
+  const result=await db.rpc("deliver_service_project",{p_id:parsed.data.id,p_url:parsed.data.url});
+  if(result.error)redirect("/admin/projects?notice=status_error");
+  await flushNotifications({prefix:`delivery-${parsed.data.id}`});
+  revalidatePath("/admin/projects");revalidatePath("/account/projects");redirect("/admin/projects?notice=delivered");
+}
+export async function createBusinessCost(form:FormData) {
+  await requireAdmin();
+  const parsed=z.object({description:z.string().trim().min(2).max(300),amount:z.coerce.number().positive().max(1000000),day:z.iso.date(),category:z.enum(["studio","software","marketing","collaborators","other"])}).safeParse(Object.fromEntries(form));
+  if(!parsed.success)redirect("/admin/analytics?notice=invalid_cost");
+  const db=await audit("create_cost","business_cost",parsed.data.day);
+  const result=await db.from("business_costs").insert({description:parsed.data.description,amount_cents:Math.round(parsed.data.amount*100),incurred_on:parsed.data.day,category:parsed.data.category});
+  if(result.error)throw new Error("Impossibile registrare il costo.");revalidatePath("/admin/analytics");
+}
+export async function deleteBusinessCost(form:FormData) {
+  const id=z.uuid().parse(form.get("id"));const db=await audit("delete_cost","business_cost",id);
+  const {error}=await db.from("business_costs").delete().eq("id",id);if(error)throw new Error("Impossibile rimuovere il costo.");revalidatePath("/admin/analytics");
+}
 export async function markExclusiveSold(formData:FormData){const id=z.uuid().parse(formData.get("id"));const db=await audit("sold","exclusive_request",id);const {data:req}=await db.from("exclusive_requests").update({status:"sold",updated_at:new Date().toISOString()}).eq("id",id).select("beat_id").single();if(req)await db.from("beats").update({status:"exclusive_sold"}).eq("id",req.beat_id);revalidatePath("/admin/exclusive");revalidatePath("/")}
 
 export async function retryOrderConfirmation(formData: FormData) {

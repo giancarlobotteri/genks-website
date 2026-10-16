@@ -14,7 +14,7 @@ export async function ensureOrderConfirmationEmail(
   const db = createSupabaseAdminClient();
   const { data: order, error } = await db
     .from("orders")
-    .select("id,customer_email,customer_name,order_number,status,paid_at,total_cents,currency,confirmation_email_id,confirmation_email_sent_at,order_items(beat_title_snapshot,license_name_snapshot,unit_price_cents)")
+    .select("id,customer_email,customer_name,order_number,status,paid_at,total_cents,discount_cents,currency,confirmation_email_id,confirmation_email_sent_at,order_items(beat_title_snapshot,license_name_snapshot,unit_price_cents)")
     .eq("id", orderId)
     .single();
 
@@ -39,6 +39,7 @@ export async function ensureOrderConfirmationEmail(
       orderNumber: order.order_number,
       paidAt: new Date(order.paid_at),
       totalCents: order.total_cents,
+      discountCents: order.discount_cents,
       currency: order.currency,
       items: items.map((item) => ({
         beatTitle: item.beat_title_snapshot,
