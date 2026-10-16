@@ -4,7 +4,7 @@ import { getStripe } from "@/lib/stripe";
 
 export const requiredStripeEvents: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
   "checkout.session.completed", "checkout.session.async_payment_succeeded", "checkout.session.async_payment_failed", "checkout.session.expired",
-  "charge.refunded", "refund.created", "refund.updated", "charge.dispute.created", "charge.dispute.closed",
+  "charge.refunded", "refund.created", "refund.updated", "charge.dispute.created", "charge.dispute.closed", "charge.updated",
 ];
 const endpointUrl=()=>`${(process.env.NEXT_PUBLIC_SITE_URL??"").replace(/\/$/,"")}/api/stripe/webhook`;
 function findEndpoint(endpoints:Stripe.WebhookEndpoint[]) {

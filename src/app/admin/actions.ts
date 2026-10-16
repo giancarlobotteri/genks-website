@@ -177,3 +177,11 @@ export async function updateBeatDetails(formData: FormData) {
   await db.from("admin_audit_log").insert({admin_id:user.id,action:"update",entity_type:"beat",entity_id:input.id});
   revalidatePath("/","layout");
 }
+
+export async function refreshStripeFees(formData:FormData) {
+  await requireAdmin();
+  const {syncPendingStripeFees}=await import("@/lib/stripe-events");
+  await syncPendingStripeFees();
+  revalidatePath("/admin/analytics");
+  redirect(formData.get("mode")==="test"?"/admin/analytics?mode=test":"/admin/analytics");
+}

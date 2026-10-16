@@ -9,6 +9,25 @@ import { syncPaymentCalendar } from "@/lib/payment-calendar";
 import "server-only";
 const objectId = (value: string | { id: string } | null) => typeof value === "string" ? value : value?.id;
 
+export async function syncStripeChargeFee(chargeId:string) {
+  const charge=await getStripe().charges.retrieve(chargeId,{expand:["balance_transaction"]});
+  const intent=objectId(charge.payment_intent);
+  const balance=typeof charge.balance_transaction==="object"?charge.balance_transaction:null;
+  if(!intent||!balance)return;
+  const db=createSupabaseAdminClient();
+  const {error}=await db.from("payments").update({fee_cents:balance.fee}).eq("provider_payment_id",intent).eq("livemode",charge.livemode).eq("currency",balance.currency.toUpperCase());
+  if(error)throw new Error("Commissioni da aggiornare.");
+}
+
+export async function syncPendingStripeFees() {
+  const db=createSupabaseAdminClient();
+  const {data,error}=await db.from("payments").select("provider_payment_id").is("fee_cents",null).like("provider_payment_id","pi_%").order("paid_at").limit(20);
+  if(error)throw new Error("Impossibile leggere le commissioni da aggiornare.");
+  let failures=0;
+  for(const payment of data??[]){try{const intent=await getStripe().paymentIntents.retrieve(payment.provider_payment_id);const chargeId=objectId(intent.latest_charge);if(chargeId)await syncStripeChargeFee(chargeId)}catch{failures++}}
+  return {checked:data?.length??0,failures};
+}
+
 async function recordRefunds(charge: Stripe.Charge) {
   const db = createSupabaseAdminClient();
   const intent = objectId(charge.payment_intent);
@@ -96,6 +115,7 @@ export async function handleStripeEvent(event: Stripe.Event) {
   const registered = await db.from("stripe_event_log").upsert({ id: event.id, event_type: event.type, livemode: event.livemode }, { onConflict: "id", ignoreDuplicates: true });
   if (registered.error) return new Response("Registrazione evento non disponibile", { status: 503 });
   try {
+    if(event.type==="charge.updated")await syncStripeChargeFee(event.data.object.id);
     if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") await fulfil(event.data.object, event);
     if (event.type === "checkout.session.expired" || event.type === "checkout.session.async_payment_failed") {
       const session = event.data.object;

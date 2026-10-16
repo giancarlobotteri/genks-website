@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { flushNotifications } from "@/lib/notifications";
 import { ensureOrderConfirmationEmail } from "@/lib/order-confirmation";
-import { handleStripeEvent } from "@/lib/stripe-events";
+import { handleStripeEvent, syncPendingStripeFees } from "@/lib/stripe-events";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime="nodejs";
@@ -24,7 +24,8 @@ export async function GET(request:Request) {
   let orderFailures=0;
   for(const order of orders??[]){try{await ensureOrderConfirmationEmail(order.id)}catch{orderFailures++}await new Promise(resolve=>setTimeout(resolve,550));}
   const notifications=await flushNotifications({limit:80});
-  const result={expiredHolds:expired.data,ordersChecked:orders?.length??0,orderFailures,eventFailures,...notifications};
+  const fees=await syncPendingStripeFees();
+  const result={expiredHolds:expired.data,ordersChecked:orders?.length??0,orderFailures,eventFailures,feesChecked:fees.checked,feeFailures:fees.failures,...notifications};
   const saved=await db.from("site_settings").upsert({key:"maintenance",value:{...result,last_run:new Date().toISOString()},updated_at:new Date().toISOString()});
-  return Response.json(result,{status:saved.error||orderFailures||eventFailures||notifications.failures?503:200});
+  return Response.json(result,{status:saved.error||orderFailures||eventFailures||notifications.failures||fees.failures?503:200});
 }
