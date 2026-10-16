@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import styles from "./brand-intro.module.css";
 
 type Props = { onComplete: () => void };
@@ -11,6 +10,7 @@ export function BrandIntro({ onComplete }: Props) {
   const completeRef = useRef(onComplete);
   const [phase, setPhase] = useState<"letters" | "opening">("letters");
   const finishRef = useRef<() => void>(() => {});
+  const [logoReady, setLogoReady] = useState(false);
 
   useEffect(() => { completeRef.current = onComplete; }, [onComplete]);
 
@@ -56,7 +56,7 @@ export function BrandIntro({ onComplete }: Props) {
     const onSceneReady = () => {
       if (started || disposed) return;
       started = true;
-      later(open, reducedMotion.matches ? 180 : Math.max(0, 2100 - (performance.now() - introStarted)));
+      later(open, reducedMotion.matches ? 180 : Math.max(0, 2600 - (performance.now() - introStarted)));
     };
     const introStarted = performance.now();
     window.addEventListener("genks:hero-settled", onSceneReady);
@@ -81,6 +81,7 @@ export function BrandIntro({ onComplete }: Props) {
       <noscript><style>{".genks-brand-intro{display:none!important}"}</style></noscript>
       <div
         className={`genks-brand-intro ${styles.overlay} ${phase === "opening" ? styles.opening : ""}`}
+        data-logo-ready={logoReady}
         ref={overlayRef}
         tabIndex={-1}
         role="dialog"
@@ -93,12 +94,15 @@ export function BrandIntro({ onComplete }: Props) {
           if (event.key === "Tab") { event.preventDefault(); overlayRef.current?.focus(); }
         }}
       >
-        <div className={styles.leftPanel} aria-hidden="true" />
-        <div className={styles.rightPanel} aria-hidden="true" />
+        <div className={styles.atmosphere} aria-hidden="true" />
         <div className={styles.identity}>
-          <Image className={styles.wordmark} src="/brand/genks-logo.jpeg" alt="GENKS" width={1320} height={1243} quality={85} priority sizes="(max-width:700px) 88vw, 650px" />
+          <div className={styles.orbitPlane} aria-hidden="true">
+            <div className={styles.orbit}><span /><i /></div>
+          </div>
+          <div className={styles.core} aria-hidden="true" />
+          <div className={styles.wordmark} role="img" aria-label="GENKS" onAnimationEnd={event => { if(event.target === event.currentTarget) setLogoReady(true); }} />
+          <div className={styles.echo} aria-hidden="true" />
         </div>
-        <div className={styles.pulse} aria-hidden="true" />
       </div>
     </>
   );
