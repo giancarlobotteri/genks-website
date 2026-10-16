@@ -2,6 +2,7 @@ import { italianLabel } from "@/lib/italian";
 import "server-only";
 import { Resend } from "resend";
 import { previewRecipientAllowed } from "@/lib/preview-mode";
+import { renderGenksStudioEmail } from "@/lib/email-design";
 
 const getResend = () => process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -24,7 +25,8 @@ export async function sendTransactionalEmail(input: {
     replyTo: process.env.GENKS_SUPPORT_EMAIL || process.env.GENKS_ADMIN_EMAIL,
     to: input.to,
     subject: input.subject,
-    html: `<div style="background:#050506;color:#f0f1f4;padding:40px;font-family:Arial,sans-serif"><div style="max-width:600px;margin:auto;border:1px solid #24252b;border-radius:24px;padding:32px;background:#0d0e11"><div style="color:#829fff;letter-spacing:.18em;font-size:14px">GENKS</div><h1>${escapeHtml(input.heading)}</h1><p style="color:#e3eaff;line-height:1.7">${escapeHtml(input.body)}</p>${input.actionUrl ? `<a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;margin-top:16px;padding:14px 22px;border-radius:14px;background:#2860ff;color:white;text-decoration:none">${escapeHtml(input.actionLabel ?? "Apri")}</a>` : ""}</div></div>`,
+    html: renderGenksStudioEmail(input),
+    text: `${input.heading}\n\n${input.body}${input.actionUrl?`\n\n${input.actionLabel??"Apri"}: ${input.actionUrl}`:""}\n\nGENKS · prodbygenks.com\nPer assistenza rispondi a questa email.`,
   }, input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined);
   if (error) throw new Error(`Transactional email failed: ${error.message}`);
   return { skipped: false as const };

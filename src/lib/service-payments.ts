@@ -69,7 +69,7 @@ export async function issueServicePayment(input: {
   const expires = new Date(quote.expires_at).toLocaleString("it-IT", { timeZone: "Europe/Rome" });
   await queueNotification(`quote-${quote.id}`, {
     to: request.email, subject: `Preventivo GENKS ${request.reference}`, heading: "Il tuo preventivo è pronto.",
-    body: `Totale €${(input.priceCents / 100).toFixed(2)}. Attività incluse: ${input.scope}. Revisioni incluse: ${input.revisions}.${deadline} Link valido fino al ${expires} (ora italiana). Il pagamento conferma il preventivo concordato. Per modifiche o chiarimenti contatta GENKS prima di pagare.`,
+    body: `Abbiamo preparato il tuo preventivo. Ecco tutti i dettagli prima di confermare.\nTotale: ${new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(input.priceCents/100)}\nAttività incluse: ${input.scope}\n${input.type==="project"?`Revisioni incluse: ${input.revisions}.${deadline}\n`:""}Valido fino al ${expires} (ora italiana).\nIl pagamento conferma il preventivo concordato. Per modifiche o chiarimenti, rispondi a questa email prima di pagare.`,
     actionUrl: url, actionLabel: "Conferma e paga in sicurezza",
   });
   return flushNotifications({ prefix: `quote-${quote.id}` });
