@@ -3,6 +3,7 @@ import { useState } from "react";
 export function CalendarConnect({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
   return <section className="admin-form-card calendar-connect"><span className="eyebrow">AGENDA GENKS</span><h2>Porta lo studio su Google Calendar.</h2>
+    <p className="notice">Il collegamento precedente è stato revocato per sicurezza. Se avevi già aggiunto l’agenda, rimuovi la vecchia sottoscrizione da Google Calendar e aggiungi questo nuovo collegamento.</p>
     <p>Usa il tuo account Google attuale. Basta aggiungere questo calendario una volta, senza creare account tecnici o chiavi.</p>
     <ol><li>Copia il collegamento riservato qui sotto.</li><li>Apri Google Calendar dal computer. Accanto ad “Altri calendari”, premi + e scegli “Da URL”.</li><li>Incolla il collegamento e premi “Aggiungi calendario”.</li></ol>
     <label>Collegamento riservato del calendario<input readOnly value={url} onFocus={event => event.currentTarget.select()} /></label>

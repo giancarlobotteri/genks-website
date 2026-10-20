@@ -9,9 +9,8 @@ const nextConfig: NextConfig = {
     return [{ source: "/:path*", headers: [
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-      { key: "Content-Security-Policy", value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'" },
       { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-    ] }, ...["/admin/:path*", "/admin-access", "/account/:path*", "/checkout/:path*", "/carrello", "/login", "/auth/:path*", "/api/downloads/:path*"].map(source => ({ source, headers: [
+    ] }, ...["/admin/:path*", "/admin-access", "/admin-security", "/api/admin/:path*", "/account/:path*", "/checkout/:path*", "/carrello", "/login", "/auth/:path*", "/api/downloads/:path*"].map(source => ({ source, headers: [
       { key: "Cache-Control", value: "private, no-store" },
       { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
     ] }))];

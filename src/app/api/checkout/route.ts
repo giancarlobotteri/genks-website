@@ -1,3 +1,4 @@
+import { allowPublicRequest } from "@/lib/security/request-limit";
 import { italianLabel } from "@/lib/italian";
 import { z } from "zod";
 import { getStripe } from "@/lib/stripe";
@@ -20,6 +21,7 @@ const schema = z.object({
 }).refine((value) => value.items?.length || (value.beatId && value.licenseCode), { message: "Scegli almeno una licenza per un beat." });
 
 export async function POST(request: Request) {
+  if (!await allowPublicRequest("checkout")) return Response.json({error:"Troppe richieste. Attendi qualche minuto e riprova."},{status:429,headers:{"Retry-After":"600","Cache-Control":"no-store"}});
   if (!hasSupabase || !hasStripe)
     return Response.json({ error: "Il pagamento non è ancora configurato." }, { status: 503 });
   if (privatePreview && !stripeTestMode())

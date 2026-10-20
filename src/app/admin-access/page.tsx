@@ -9,6 +9,7 @@ export default async function AdminAccessPage({ searchParams }: { searchParams: 
     <span className="eyebrow">PANNELLO RISERVATO</span>
     <h1>Amministrazione GENKS.</h1>
     <p className="muted">Area riservata al proprietario per pubblicare beat e gestire catalogo, licenze, ordini e prenotazioni.</p>
+    {query.limited && <p className="notice error" role="alert">Troppi tentativi. Attendi dieci minuti prima di riprovare.</p>}
     {query.error && <p className="notice error" role="alert">Email o password non corretti.</p>}
     {query.denied && <p className="notice error" role="alert">Questo account non è autorizzato ad accedere all’Admin.</p>}
     {query.setup && <p className="notice error" role="alert">L’account esiste, ma deve ancora ricevere il ruolo admin in Supabase.</p>}

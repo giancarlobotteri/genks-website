@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { connection } from "next/server";
 import { Navigation } from "@/components/layout/navigation";
 import { CartRail } from "@/components/commerce/cart-rail";
 import { Footer } from "@/components/layout/footer";
@@ -44,6 +45,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  await connection();
   const [beats, licenses] = await Promise.all([
     beatRepository.listPublished(),
     getLicenses(),

@@ -1,3 +1,4 @@
+import { allowPublicRequest } from "@/lib/security/request-limit";
 import { z } from "zod";
 import { hasSupabase } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -7,6 +8,7 @@ import { availableSlots, shiftDay } from "@/lib/booking-slots";
 
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
+  if (!await allowPublicRequest("availability")) return Response.json({error:"Troppe richieste. Attendi qualche minuto e riprova."},{status:429,headers:{"Retry-After":"600","Cache-Control":"no-store"}});
   if (!hasSupabase) return Response.json({ error: "Prenotazioni temporaneamente non disponibili." }, { status: 503 });
   const query = new URL(request.url).searchParams;
   const parsed = z.object({ date: z.iso.date(), duration: z.coerce.number().int().min(1).max(8) }).safeParse({ date: query.get("date"), duration: query.get("duration") ?? 1 });

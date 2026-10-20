@@ -6,7 +6,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const query = await searchParams;
   const errors: Record<string, string> = {
     link: "Il collegamento è scaduto o è già stato usato. Richiedine uno nuovo qui sotto e apri l’email più recente.",
-    rate_limit: "Hai richiesto più collegamenti in poco tempo. Attendi almeno un minuto prima di riprovare.",
+    rate_limit: "Hai richiesto più collegamenti in poco tempo. Attendi dieci minuti prima di riprovare.",
     invalid_email: "Controlla che l’indirizzo email sia scritto correttamente.",
     configuration: "Il collegamento di accesso non è disponibile al momento. Riprova tra poco.",
     send: "Non è stato possibile inviare l’email. Riprova tra poco.",

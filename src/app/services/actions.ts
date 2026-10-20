@@ -1,4 +1,5 @@
 "use server";
+import { allowPublicRequest } from "@/lib/security/request-limit";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { hasSupabase } from "@/lib/env";
@@ -13,6 +14,7 @@ import { flushNotifications, queueNotification } from "@/lib/notifications";
 const text = (min = 1, max = 1000) => z.string().trim().min(min).max(max);
 
 export async function createBooking(formData: FormData) {
+  if (!await allowPublicRequest("service")) redirect("/services/recording?error=limit");
   if (!hasSupabase) redirect("/services/recording?error=setup");
   if(formData.get("website"))redirect("/services/recording?error=invalid");
   const parsed = z.object({ name:text(2,120),artistName:z.string().trim().max(120),email:z.email(),phone:text(6,40),date:z.iso.date(),time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),duration:z.coerce.number().int().min(1).max(8),notes:z.string().trim().max(2000).default(""),referenceUrl:z.union([z.literal(""),z.url()]) }).safeParse(Object.fromEntries(formData));
@@ -44,6 +46,7 @@ export async function createBooking(formData: FormData) {
 }
 
 export async function createProject(formData: FormData) {
+  if (!await allowPublicRequest("service")) redirect("/services/project?error=limit");
   if (!hasSupabase) redirect("/services/project?error=setup");
   if(formData.get("website"))redirect("/services/project?error=invalid");
   const parsed=z.object({name:text(2,120),artistName:z.string().trim().max(120),email:z.email(),phone:z.string().trim().max(40),trackTitle:text(1,160),service:z.enum(["mix","master","mix_master"]),description:text(10,4000),trackCount:z.coerce.number().int().min(1).max(200),referenceLinks:z.string().trim().max(2000).default(""),desiredDeadline:z.union([z.literal(""),z.iso.date()]),notes:z.string().trim().max(2000).default("")}).safeParse(Object.fromEntries(formData));
@@ -58,6 +61,7 @@ export async function createProject(formData: FormData) {
 }
 
 export async function createExclusive(formData: FormData) {
+  if (!await allowPublicRequest("service")) redirect("/services/exclusive?error=limit");
   if(!hasSupabase) redirect("/services/exclusive?error=setup");
   const parsed=z.object({beatId:z.uuid(),name:text(2,120),email:z.email(),phone:z.string().trim().max(40),message:z.string().trim().max(2000)}).safeParse(Object.fromEntries(formData));
   if(!parsed.success) redirect("/services/exclusive?error=invalid"); const user=await getCurrentUser();const db=createSupabaseAdminClient();

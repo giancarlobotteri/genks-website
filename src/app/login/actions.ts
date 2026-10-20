@@ -1,4 +1,5 @@
 "use server";
+import { allowPublicRequest } from "@/lib/security/request-limit";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -15,6 +16,7 @@ function previewEmailAllowed(email: string) {
 }
 
 export async function sendMagicLink(formData: FormData) {
+  if (!await allowPublicRequest("magic-link")) redirect("/login?error=rate_limit");
   const next = safeNext(formData.get("next"), "/account/library");
   const parsed = z.email().safeParse(String(formData.get("email") || "").trim().toLowerCase());
   if (!parsed.success) redirect(`/login?error=invalid_email&next=${encodeURIComponent(next)}`);
@@ -32,6 +34,7 @@ export async function sendMagicLink(formData: FormData) {
 }
 
 export async function signInWithPassword(formData: FormData) {
+  if (!await allowPublicRequest("login")) redirect("/login?error=rate_limit");
   const credentials = z.object({
     email: z.email(),
     password: z.string().min(8),
@@ -45,6 +48,7 @@ export async function signInWithPassword(formData: FormData) {
 }
 
 export async function signInAsAdmin(formData: FormData) {
+  if (!await allowPublicRequest("login")) redirect("/admin-access?limited=1");
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
   const adminEmail = (process.env.GENKS_ADMIN_EMAIL || "prod.genks@gmail.com").trim().toLowerCase();
@@ -65,4 +69,3 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect("/");
 }
-
