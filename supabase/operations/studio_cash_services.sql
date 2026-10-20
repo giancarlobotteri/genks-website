@@ -55,6 +55,7 @@ begin
    if p_type='booking' then body:=body||E'\nAppuntamento: '||to_char(b.starts_at at time zone 'Europe/Rome','DD/MM/YYYY HH24:MI')||' – '||to_char(b.ends_at at time zone 'Europe/Rome','DD/MM/YYYY HH24:MI')||' (ora italiana).';
    else body:=body||E'\nRevisioni incluse: '||p_revisions||E'\nConsegna concordata: '||p_deadline; end if;
  elsif p_action='receive' then
+   if p_amount is distinct from a.amount_cents then raise exception 'Cash total changed'; end if;
    if a.id is null or a.refunded_at is not null or old_status in('cancelled','rejected','no_show') then raise exception 'Agreement not collectable'; end if;
    if a.received_at is not null then return a.id; end if;
    update public.studio_cash_agreements set received_at=now(),received_by=p_admin where id=a.id;
