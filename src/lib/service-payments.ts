@@ -1,4 +1,5 @@
 import "server-only";
+import { studioCashOnly } from "@/lib/studio-payment-mode";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import { previewRecipientAllowed } from "@/lib/preview-mode";
@@ -24,6 +25,7 @@ export async function expireServiceQuotes(type: "booking" | "project", id: strin
 export async function issueServicePayment(input: {
   type: "booking" | "project"; id: string; priceCents: number; scope: string; revisions: number; deadline: string | null;
 }) {
+  if (studioCashOnly) throw new Error("Pagamenti online sospesi: concorda il saldo in contanti presso lo studio.");
   await assertLiveCommerceReady();
   const db = createSupabaseAdminClient();
   const table = input.type === "booking" ? "bookings" : "service_projects";

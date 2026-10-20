@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { studioCashOnly } from "@/lib/studio-payment-mode";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
@@ -44,7 +45,7 @@ export function CartRail() {
           <Image src={beat.cover} alt="" width={46} height={46} /><strong>{beat.title}</strong>
           <button className="icon-button" type="button" aria-label={`Rimuovi ${beat.title}`} onClick={() => remove(beat.id)}><X size={16} /></button>
         </article>)}</div>
-        <Link href="/carrello" className="button button-primary cart-rail-checkout" onClick={() => setOpen(false)}>Vai all’acquisto <ArrowUpRight size={18} /></Link>
+        <Link href="/carrello" className="button button-primary cart-rail-checkout" onClick={() => setOpen(false)}>{studioCashOnly ? "Richiedi la selezione" : "Vai all’acquisto"} <ArrowUpRight size={18} /></Link>
         <button className="button cart-clear cart-clear-prominent" type="button" onClick={() => setConfirmClear(true)}><Trash2 size={17} />Svuota il carrello</button>
       </> : <div className="cart-rail-empty"><span className="cart-orbit" aria-hidden="true"><ShoppingBag size={27} /></span><p>Il prossimo suono<br /><strong>lo scegli tu.</strong></p><span>Aggiungi un beat dal catalogo.</span></div>}
       <Link href="/account/library" className="cart-library-link" onClick={() => setOpen(false)}>I miei acquisti <ArrowUpRight size={15} /></Link>

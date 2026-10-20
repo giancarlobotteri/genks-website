@@ -1,4 +1,5 @@
 import "server-only";
+import { cashSale } from "@/lib/cash-sales";
 import { requireAdmin } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { SaleOrder } from "@/lib/sales";
@@ -38,6 +39,15 @@ export async function getBusinessSales(live = true) {
       });
     }
     if(!data||data.length<500)break;
+  }
+  if (live) for (let offset = 0;; offset += 500) {
+    const result = await db.from("studio_cash_agreements").select("id,booking_id,amount_cents,details,received_at,refunded_at,bookings(reference,name,email,status),service_projects(reference,name,email,status,service,track_title)").not("received_at", "is", null).order("id").range(offset, offset + 499);
+    if (result.error) throw new Error("Impossibile leggere gli incassi in contanti.");
+    for (const row of result.data ?? []) {
+      const entry = cashSale({ ...row, bookings: Array.isArray(row.bookings) ? row.bookings[0] ?? null : row.bookings, service_projects: Array.isArray(row.service_projects) ? row.service_projects[0] ?? null : row.service_projects });
+      if (entry) { sales.push(entry.sale); if (entry.refund) refunds.push(entry.refund); }
+    }
+    if (!result.data || result.data.length < 500) break;
   }
   // Paginate every source instead of silently dropping records past the API limit.
   for(let offset=0;;offset+=500) {

@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { studioCashOnly } from "@/lib/studio-payment-mode";
+import { StudioPaymentNotice } from "@/components/services/studio-payment-notice";
 import { italianLabel } from "@/lib/italian";
 import { notFound } from "next/navigation";
 import { hasStripe, hasSupabase } from "@/lib/env";
@@ -8,6 +11,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { offerReadiness } from "@/lib/commerce/sale-readiness";
 
 export default async function CheckoutPage({ params, searchParams }: { params: Promise<{beatId:string;licenseCode:string}>; searchParams: Promise<Record<string,string|string[]|undefined>> }) {
+  if (studioCashOnly) return <div className="portal-shell narrow-shell"><h1>Concordiamo il tuo acquisto in studio.</h1><StudioPaymentNotice/><Link className="button button-primary" href="/services/beat">Richiedi il tuo beat</Link></div>;
   const { beatId, licenseCode } = await params; const query = await searchParams;
   if (!hasSupabase) return <div className="portal-shell narrow-shell"><h1>Il pagamento deve essere configurato.</h1><p className="muted">Collega Supabase e Stripe tramite le variabili documentate nel file README.</p></div>;
   const db = await createSupabaseServerClient();

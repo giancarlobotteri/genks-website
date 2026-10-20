@@ -9,5 +9,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = getSiteOrigin();
   if (!origin) return [];
   const beats = await beatRepository.listPublished();
-  return ["/", "/beats", "/services", "/services/recording", "/services/project", "/services/custom", "/guida", ...beats.filter(beat=>beat.readyLicenseIds?.length).map(beat=>`/beats/${beat.slug}`)].map(path => ({ url: new URL(path, origin).href }));
+  return ["/", "/beats", "/services", "/services/recording", "/services/project", "/services/custom", "/services/regole", "/guida", ...beats.filter(beat=>beat.readyLicenseIds?.length).map(beat=>`/beats/${beat.slug}`)].map(path => ({ url: new URL(path, origin).href }));
 }

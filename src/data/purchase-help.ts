@@ -1,4 +1,12 @@
-export const purchaseQuestions = [
+import { studioCashOnly } from "@/lib/studio-payment-mode";
+export const purchaseQuestions = studioCashOnly ? [
+ {question:"Come posso acquistare un beat?",answer:"Scegli un beat e usa Richiedi in studio. Concordiamo insieme disponibilità, licenza, prezzo e consegna prima dell’acquisto. Puoi anche richiedere una produzione su misura."},
+ {question:"Come si paga?",answer:"Al momento il pagamento avviene in contanti presso lo studio GENKS, dopo aver concordato il preventivo. I pagamenti con carta non sono attualmente disponibili. La richiesta online non comporta addebiti."},
+ {question:"Come prenoto registrazione, mix o master?",answer:"Invia il modulo del servizio. Per la registrazione scegli un orario disponibile e attendi la conferma di GENKS; per mix e master concordiamo attività, tempi e revisioni prima di iniziare."},
+ {question:"Serve un account per fare una richiesta?",answer:"No. Indica un’email a cui hai accesso: riceverai le comunicazioni e potrai entrare nell’area personale con la stessa email."},
+ {question:"Come ricevo il mio lavoro?",answer:"File, formati, licenza e modalità di consegna vengono concordati prima del pagamento. Il pagamento in contanti non sblocca automaticamente file sul sito."},
+ {question:"Come cambio appuntamento?",answer:"Scrivi a GENKS per concordare il cambio data. Avvisa almeno 24 ore prima quando possibile; in caso di imprevisti contattaci appena puoi."},
+] : [
   { question: "Serve un account per acquistare?", answer: "Puoi pagare senza creare prima un account. Usa un’email a cui hai accesso: sarà la stessa con cui entrerai nella raccolta per ritrovare file e licenza dopo la conferma del pagamento." },
   { question: "Dove trovo il beat dopo il pagamento?", answer: "Dopo la conferma del pagamento, apri La tua raccolta ed entra con l’email usata per acquistare. Da lì trovi i file inclusi nella licenza scelta. Se non trovi l’email, controlla lo spam o richiedi un nuovo collegamento di accesso." },
   { question: "Quale licenza devo scegliere?", answer: "Confronta prima i formati: MP3, MP3 + WAV oppure il pacchetto con tracce separate, utile per lavorare sul mix. I formati non definiscono da soli i diritti di utilizzo: leggi sempre le condizioni della singola licenza prima di pagare. Per l’esclusiva invia una richiesta dedicata." },

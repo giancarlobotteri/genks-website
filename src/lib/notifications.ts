@@ -37,6 +37,18 @@ export async function deliverNotification(id: string) {
         }
       }
     }
+    if (/^cash-agree-[a-f0-9-]{36}$/.test(message.dedupe_key)) {
+      const agreement = await db.from("studio_cash_agreements").select("booking_id,agreed_at").eq("id", message.dedupe_key.slice(11)).maybeSingle();
+      if (agreement.error) throw new Error("Verifica dell’accordo in studio da ripetere.");
+      if (agreement.data?.booking_id) {
+        const result = await db.from("bookings").select("id,reference,email,starts_at,ends_at,status").eq("id", agreement.data.booking_id).eq("status", "confirmed").maybeSingle();
+        if (result.error) throw new Error("Verifica calendario della sessione da ripetere.");
+        if (result.data && result.data.email.toLowerCase() === message.recipient.toLowerCase()) {
+          const booking = { ...result.data, updated_at: agreement.data.agreed_at };
+          calendar = { actionUrl: bookingCalendarUrl(booking), actionLabel: "Aggiungi a Google Calendar", calendarFile: bookingCalendarFile(booking), calendarFilename: `GENKS-${booking.reference}.ics`, body: `${message.body}\nStudio: ${studioAddress}.\nPer Apple Calendar o Outlook apri il file calendario allegato.` };
+        }
+      }
+    }
     await sendTransactionalEmail({
       to: message.recipient, subject: message.subject, heading: message.heading, body: message.body,
       actionUrl: message.action_url ?? undefined, actionLabel: message.action_label ?? undefined,

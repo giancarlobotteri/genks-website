@@ -1,5 +1,6 @@
 import { ProjectRequestForm } from "@/components/services/project-request-form";
 import { GenksEmblem } from "@/components/brand/genks-emblem";
+import { StudioPaymentNotice } from "@/components/services/studio-payment-notice";
 import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Richiedi mix e master", description: "Scegli mix, master o mix e master. GENKS concorda con te lavoro, consegna e revisioni nel preventivo prima del pagamento.", alternates: { canonical: "/services/project" } };
 
@@ -10,6 +11,7 @@ export default async function ProjectPage({ searchParams }: { searchParams: Prom
     <div className="service-page-heading"><div><span className="eyebrow">MIX E MASTER</span><h1>Diamo forma al tuo brano.</h1><p className="muted">Pochi dettagli per iniziare. Riceverai un preventivo e le istruzioni per inviare i file dopo l’accettazione della richiesta.</p></div><GenksEmblem /></div>
     {q.success && <p className="notice success" role="status">Progetto {q.success} ricevuto. Ti risponderemo via email.</p>}
     {q.error && <p className="notice error" role="alert">{q.error === "limit" ? "Hai già inviato diverse richieste. Attendi un’ora prima di riprovare." : q.error === "save" ? "Non è stato possibile salvare la richiesta. Riprova tra poco." : q.error === "setup" ? "Le richieste sono temporaneamente non disponibili. Contatta GENKS." : "Controlla i campi: nome di almeno 2 caratteri, email valida e descrizione di almeno 10 caratteri."}</p>}
+    <StudioPaymentNotice />
     <ProjectRequestForm initialService={service} />
   </div>;
 }

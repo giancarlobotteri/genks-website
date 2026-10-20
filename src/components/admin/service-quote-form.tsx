@@ -1,6 +1,8 @@
+import { studioCashOnly } from "@/lib/studio-payment-mode";
 type Quote = { amount_cents: number; scope: string; revision_count: number; agreed_deadline: string | null; status: string; checkout_url: string | null; expires_at: string; created_at: string };
 export function ServiceQuoteForm({id,type,quotes,action}:{id:string;type:"booking"|"project";quotes:Quote[];action:(form:FormData)=>Promise<void>}) {
   const quote=[...quotes].sort((a,b)=>b.created_at.localeCompare(a.created_at))[0];
+  if (studioCashOnly) return <p className="notice">Modalità contanti: concorda il preventivo con il cliente. La conferma in studio non registra automaticamente un incasso; usa la gestione contanti qui sotto dopo l’accordo.</p>;
   return <form action={action} className="payment-request premium-form">
     <input name="id" type="hidden" value={id}/>
     <label>Totale del preventivo €<input name="price" type="number" min="0.50" max="100000" step="0.01" defaultValue={quote?quote.amount_cents/100:""} required/></label>

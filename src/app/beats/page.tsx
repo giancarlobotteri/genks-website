@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { BeatCatalog } from "@/components/beats/beat-catalog";
 import { beatRepository } from "@/lib/repositories/beats";
+import { StudioPaymentNotice } from "@/components/services/studio-payment-notice";
+import { studioCashOnly } from "@/lib/studio-payment-mode";
 import { PurchaseHelp } from "@/components/commerce/purchase-help";
 
 export const metadata: Metadata = {
@@ -29,9 +31,10 @@ export default async function BeatStorePage() {
         </div>
         <p>Un’atmosfera per ogni storia. Inizia la tua qui.</p>
         <p className="catalog-disclaimer">
-          <span className="demo-badge">GENKS</span>Scegli un beat, confronta le licenze disponibili e prosegui al pagamento sicuro.
+          <span className="demo-badge">GENKS</span>{studioCashOnly ? "Beat su richiesta: concordiamo licenza, prezzo e appuntamento in studio." : "Scegli un beat e confronta le licenze disponibili."}
         </p>
       </div>
+      <StudioPaymentNotice />
       <BeatCatalog beats={beats} />
       <PurchaseHelp compact />
     </div>

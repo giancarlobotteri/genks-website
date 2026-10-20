@@ -1,3 +1,4 @@
+import { studioCashOnly } from "@/lib/studio-payment-mode";
 import { CalendarDays, Instagram, Sparkles } from "lucide-react";
 import { site } from "@/config/site";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -50,7 +51,7 @@ function TickerContent({ date, promotions, duplicate = false }: { date: string; 
 }
 
 export async function AnnouncementTicker() {
-  const promotions = await getActivePromotions();
+  const promotions = studioCashOnly ? [] : await getActivePromotions();
   const date = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date()).toLocaleUpperCase("it-IT");
   return <div className="frequency-strip announcement-ticker" aria-label="Data, promozioni e profili social GENKS">
     <div className="frequency-track">

@@ -51,7 +51,7 @@ export function filterBusinessSales(sales: BusinessSale[], filters:{day?:string;
 
 export function salesCsv(sales:BusinessSale[]) {
   const cell=(value:unknown)=>{let text=String(value??"");if(/^[\s]*[=+@-]/.test(text))text=`'${text}`;return `"${text.replaceAll('"','""')}"`;};
-  const rows=[['Riferimento','Data pagamento','Cliente','Email','Tipo','Importo EUR','Rimborsi EUR','Commissioni EUR','Dopo rimborsi EUR','Ambiente','Pagamento Stripe','Da verificare'],
+  const rows=[['Riferimento','Data pagamento','Cliente','Email','Tipo','Importo EUR','Rimborsi EUR','Commissioni EUR','Dopo rimborsi EUR','Ambiente','Riferimento pagamento','Da verificare'],
     ...sales.map(s=>[s.reference,new Date(s.paidAt).toISOString(),s.customer,s.email,kindLabels[s.kind],(s.amount/100).toFixed(2),(s.refunded/100).toFixed(2),s.fee===null?'Non disponibile':(s.fee/100).toFixed(2),((s.amount-s.refunded)/100).toFixed(2),s.live?'Reale':'Prova',s.providerId,s.review??(s.disputed?'Contestato':'')])];
   return '\uFEFF'+rows.map(row=>row.map(cell).join(';')).join('\r\n');
 }

@@ -1,4 +1,6 @@
 const messages: Record<string,string> = {
+  cash_saved:"Accordo o movimento in contanti registrato. Il cliente riceve il riepilogo via email.",
+  cash_error:"Registrazione non riuscita: verifica conferma del cliente, importo e stato della richiesta. Un accordo già registrato non può essere sovrascritto.",
   reminder_preview_sent:"Anteprima inviata alla tua email amministratore. Nessuna prenotazione reale è stata creata.",
   reminder_preview_error:"Anteprima non inviata. Controlla la quota email e la configurazione Resend.",
   reminder_paused:"Promemoria messi in pausa. Le altre email GENKS restano attive.",

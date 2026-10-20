@@ -123,9 +123,12 @@ export async function deliverProject(form:FormData) {
   const parsed=z.object({id:z.uuid(),url:z.url().refine(value=>value.startsWith("https://"))}).safeParse(Object.fromEntries(form));
   if(!parsed.success)redirect("/admin/projects?notice=status_error");
   const db=await audit("deliver","project",parsed.data.id);
-  const result=await db.rpc("deliver_service_project",{p_id:parsed.data.id,p_url:parsed.data.url});
+  const cash = await db.from("studio_cash_agreements").select("id").eq("project_id", parsed.data.id).maybeSingle();
+  if (cash.error) redirect("/admin/projects?notice=status_error");
+  const admin = await requireAdmin();
+  const result = cash.data ? await db.rpc("manage_studio_cash_service", { p_action: "deliver", p_type: "project", p_id: parsed.data.id, p_admin: admin.id, p_url: parsed.data.url }) : await db.rpc("deliver_service_project",{p_id:parsed.data.id,p_url:parsed.data.url});
   if(result.error)redirect("/admin/projects?notice=status_error");
-  await flushNotifications({prefix:`delivery-${parsed.data.id}`});
+  await flushNotifications({prefix:cash.data ? `cash-deliver-${cash.data.id}` : `delivery-${parsed.data.id}`});
   revalidatePath("/admin/projects");revalidatePath("/account/projects");redirect("/admin/projects?notice=delivered");
 }
 export async function createBusinessCost(form:FormData) {

@@ -1,4 +1,5 @@
 import { allowPublicRequest } from "@/lib/security/request-limit";
+import { studioCashOnly } from "@/lib/studio-payment-mode";
 import { italianLabel } from "@/lib/italian";
 import { z } from "zod";
 import { getStripe } from "@/lib/stripe";
@@ -21,6 +22,7 @@ const schema = z.object({
 }).refine((value) => value.items?.length || (value.beatId && value.licenseCode), { message: "Scegli almeno una licenza per un beat." });
 
 export async function POST(request: Request) {
+  if (studioCashOnly) return Response.json({ error: "Al momento il pagamento avviene in contanti presso lo studio. Contatta GENKS per concordare l’acquisto." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   if (!await allowPublicRequest("checkout")) return Response.json({error:"Troppe richieste. Attendi qualche minuto e riprova."},{status:429,headers:{"Retry-After":"600","Cache-Control":"no-store"}});
   if (!hasSupabase || !hasStripe)
     return Response.json({ error: "Il pagamento non è ancora configurato." }, { status: 503 });

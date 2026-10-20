@@ -45,13 +45,14 @@ export function RecordingRequestForm() {
       <div className="slot-grid">{slots.map((slot) => <label key={slot} className={time === slot ? "slot-option selected" : "slot-option"}><input type="radio" name="time" value={slot} required checked={time === slot} onChange={() => setTime(slot)}/><span>{slot}</span></label>)}</div>
     </fieldset>
     <div className="booking-step full"><span>02</span><div><strong>Dettagli della sessione</strong><small>Aggiungi un riferimento facoltativo per la sessione.</small></div></div>
-    <p className="service-form-note full">Lo studio è in Via Quintina, Ponte San Giovanni, Perugia (PG). Dal lunedì al venerdì: 19:30–01:00. Nel weekend puoi richiedere una sessione dalle 10:00, con durata e termine da concordare. Per iniziare dopo mezzanotte o organizzare più giorni, scrivilo nelle note: GENKS concorderà gli orari prima del pagamento.</p>
+    <p className="service-form-note full">Lo studio è in Via Quintina, Ponte San Giovanni, Perugia (PG). Dal lunedì al venerdì: 19:30–01:00. Nel weekend puoi richiedere una sessione dalle 10:00, con durata e termine da concordare. Per iniziare dopo mezzanotte o organizzare più giorni, scrivilo nelle note: GENKS concorderà con te orari, prezzo e dettagli.</p>
     <label className="full">Collegamento di riferimento <small>facoltativo</small><input name="referenceUrl" type="url" placeholder="https://"/></label>
     <div className="booking-step full"><span>03</span><div><strong>I tuoi dati</strong><small>La richiesta resta in attesa fino all’approvazione di GENKS.</small></div></div>
     <label>Nome<input name="name" required minLength={2} maxLength={120} autoComplete="name"/></label><label>Nome d’arte <small>facoltativo</small><input name="artistName"/></label>
     <label>Email<input name="email" type="email" required autoComplete="email"/></label><label>Telefono / WhatsApp<input name="phone" type="tel" required minLength={6} maxLength={40} autoComplete="tel"/></label>
     <label className="full">Note <small>facoltative</small><textarea name="notes" rows={4} placeholder="Obiettivi della sessione, numero di artisti, informazioni utili…"/></label>
+    <p className="service-form-note full"><a className="text-link" href="/services/regole">Cambi data, cancellazioni e ritardi →</a></p>
     <ServiceSubmit label="Invia la richiesta" disabled={!date || !time || loading} />
-    <p className="service-form-note full">Tutti gli orari sono indicati nel fuso italiano. La richiesta riserva temporaneamente l’orario per un massimo di 48 ore. Il preventivo di pagamento vale 24 ore, entro l’inizio della sessione. Nessun addebito automatico.</p>
+    <p className="service-form-note full">Tutti gli orari sono indicati nel fuso italiano. La richiesta riserva temporaneamente l’orario per un massimo di 48 ore. Concordiamo il prezzo prima della conferma. Pagamento in contanti presso lo studio; pagamento online con carta non disponibile. Nessun addebito automatico.</p>
   </form>;
 }

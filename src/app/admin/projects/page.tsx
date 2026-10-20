@@ -1,3 +1,4 @@
+import { CashServiceForm } from "@/components/admin/cash-service-form";
 import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { AdminPagination, pageNumber } from "@/components/admin/pagination";
@@ -23,6 +24,7 @@ export default async function AdminProjects({searchParams}:{searchParams:Promise
       {(x.reference_links??[]).filter((url:string)=>/^https?:\/\//i.test(url)).map((url:string)=><p key={url}><a href={url} target="_blank" rel="noopener noreferrer">Apri il riferimento</a></p>)}<PaymentStatus payments={x.payments??[]}/>
       {x.delivery_url&&<a href={x.delivery_url} target="_blank" rel="noopener noreferrer">Apri la consegna</a>}</div>
       <div className="admin-card-actions"><form action={updateProjectStatus}><input name="id" type="hidden" value={x.id}/><label>Stato del progetto<select name="status" defaultValue={x.status}>{states.filter(([value])=>value!=="delivered"&&canChangeServiceStatus("project",x.status,value)||value===x.status).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label><button className="button button-secondary">Aggiorna stato</button></form>
+      <CashServiceForm id={x.id} type="project" status={x.status}/>
       {["requested","quoted","awaiting_payment"].includes(x.status)&&<ServiceQuoteForm id={x.id} type="project" quotes={x.service_quotes??[]} action={requestProjectPayment}/>}
       {["review","delivered"].includes(x.status)&&<form action={deliverProject} className="premium-form"><input name="id" type="hidden" value={x.id}/><label>Collegamento privato ai file finali<input name="url" type="url" required defaultValue={x.delivery_url??""} placeholder="https://"/></label><p className="fine-print">Usa una cartella riservata al cliente. Il link sarà salvato nel suo progetto e comunicato via email.</p><button className="button button-primary">Registra e invia consegna</button></form>}</div>
     </article>)}</div>{!data?.length&&<div className="empty-state"><h3>Nessun progetto per questa selezione.</h3></div>}<AdminPagination page={page} total={count??0} path="/admin/projects" params={{status}}/>

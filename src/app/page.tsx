@@ -5,6 +5,8 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Services } from "@/components/home/services";
 import { AnnouncementTicker } from "@/components/home/announcement-ticker";
 import { beatRepository } from "@/lib/repositories/beats";
+import { StudioPaymentNotice } from "@/components/services/studio-payment-notice";
+import { studioCashOnly } from "@/lib/studio-payment-mode";
 import { PurchaseHelp } from "@/components/commerce/purchase-help";
 import type { Metadata } from "next";
 
@@ -17,12 +19,13 @@ export default async function Home() {
       <CinematicHero />
       <section id="collection" className="catalog-section">
       <AnnouncementTicker />
+      <div className="container"><StudioPaymentNotice /></div>
       <section className="container section purchase-guide" aria-labelledby="purchase-guide-title">
         <h2 id="purchase-guide-title">Dal primo ascolto alla tua prossima uscita.</h2>
         <div className="purchase-guide-grid">
           <article><span>01</span><h3>Trova il tuo suono</h3><p>Esplora il catalogo per genere, atmosfera e BPM. Ascolta prima di scegliere.</p></article>
           <article><span>02</span><h3>Scegli la tua licenza</h3><p>Confronta file inclusi e condizioni. La licenza scelta definisce come puoi utilizzare il beat.</p></article>
-          <article><span>03</span><h3>Acquista e scarica</h3><p>Paga in sicurezza con Stripe. Dopo la conferma, accedi ai file disponibili nella tua raccolta con l’email usata per l’acquisto.</p></article>
+          <article><span>03</span><h3>{studioCashOnly ? "Concorda e passa in studio" : "Acquista e scarica"}</h3><p>{studioCashOnly ? "Richiedi il beat o il servizio. Concordiamo prezzo, licenza e consegna; il pagamento avviene in contanti presso lo studio." : "Dopo il pagamento confermato, accedi ai file disponibili nella raccolta con la tua email."}</p></article>
         </div>
       </section>
       <section id="catalog" className="container section">
@@ -34,7 +37,7 @@ export default async function Home() {
           <p>
             Ascolta prima. Scegli la licenza quando trovi il suono che cerchi.
             <br />
-            <span className="muted">Esplora e acquista liberamente. Per ritrovare i file, accedi alla raccolta con l’email usata per pagare.</span>
+            <span className="muted">{studioCashOnly ? "Beat e produzioni su richiesta. Concordiamo insieme licenza, prezzo e consegna in studio." : "Esplora e acquista liberamente. Ritrova i file nella tua raccolta."}</span>
           </p>
         </SectionHeading>
         <BeatCatalog beats={beats} />

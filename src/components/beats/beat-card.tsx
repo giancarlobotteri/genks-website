@@ -10,6 +10,7 @@ import { FavoriteButton } from "./favorite-button";
 import { LicenseButton } from "./license-button";
 import type { Beat } from "@/types/domain";
 import { useLicenses } from "@/features/licenses/license-provider";
+import { studioCashOnly } from "@/lib/studio-payment-mode";
 import { canBuyBeat } from "@/lib/catalog-availability";
 
 export function BeatCard({
@@ -62,7 +63,7 @@ export function BeatCard({
           </span>
         </div>
         <div className="beat-card-actions">
-          <button type="button" className="cart-add-button" disabled={!canBuyBeat(beat, licenses)} aria-label={`Aggiungi ${beat.title} al carrello`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
+          <button type="button" className="cart-add-button" disabled={!studioCashOnly && !canBuyBeat(beat, licenses)} aria-label={`Aggiungi ${beat.title} al carrello`} onClick={(event) => add(beat, event.currentTarget.getBoundingClientRect())}>
             <ShoppingBag size={17} /><span>Aggiungi al carrello</span>
           </button>
           <LicenseButton beat={beat} compact />
