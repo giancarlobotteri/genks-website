@@ -1,4 +1,6 @@
 const messages: Record<string,string> = {
+  booking_alert_preview_sent:"Avviso di prova inviato a prod.genks@gmail.com. Nessuna prenotazione reale è stata creata.",
+  booking_alert_preview_error:"Avviso di prova in attesa di invio. Controlla la quota email e riprova.",
   cash_saved:"Accordo o movimento in contanti registrato. Il cliente riceve il riepilogo via email.",
   cash_error:"Registrazione non riuscita: verifica conferma del cliente, importo e stato della richiesta. Un accordo già registrato non può essere sovrascritto.",
   reminder_preview_sent:"Anteprima inviata alla tua email amministratore. Nessuna prenotazione reale è stata creata.",

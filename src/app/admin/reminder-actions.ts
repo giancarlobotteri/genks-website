@@ -5,6 +5,16 @@ import { bookingCalendarFile, bookingReminderMessage } from "@/lib/booking-calen
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { queueNotification, flushNotifications } from "@/lib/notifications";
+export async function sendBookingAlertPreview() {
+  const user = await requireAdmin();
+  const key = `booking-alert-preview-${user.id}-${Math.floor(Date.now()/300000)}`;
+  try {
+    await queueNotification(key, { to: "prod.genks@gmail.com", subject: "GENKS · TEST avviso prenotazione Gmail", heading: "Prova notifiche Gmail.", body: "Questa è una prova dell’avviso GENKS per le nuove prenotazioni automatiche. Non è stata creata una prenotazione reale e non è richiesto alcun pagamento.\nRegistrazione: 20 EUR/ora. Mix: 100 EUR. Master: 40 EUR. Mix + master: 120 EUR per brano.\nLe nuove prenotazioni saranno già confermate: non dovrai approvarle. Per vedere gli avvisi sull’iPhone, abilita le notifiche Gmail nelle impostazioni di iOS e dell’app.", serviceRequest: true });
+    await flushNotifications({ prefix: key, limit: 1, throwOnFailure: true });
+  } catch { redirect("/admin/bookings?notice=booking_alert_preview_error"); }
+  redirect("/admin/bookings?notice=booking_alert_preview_sent");
+}
 export async function toggleBookingReminders(form: FormData) {
   await requireAdmin();
   const enabled = form.get("enabled") === "true";

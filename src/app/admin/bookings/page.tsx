@@ -7,6 +7,7 @@ import { OperationNotice } from "@/components/admin/operation-notice";
 import { ServiceQuoteForm } from "@/components/admin/service-quote-form";
 import { PaymentStatus } from "@/components/admin/payment-status";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { sendBookingAlertPreview } from "../reminder-actions";
 import { canChangeServiceStatus } from "@/lib/service-workflow";
 import { requestBookingPayment, updateBookingStatus, createBlackout, deleteBlackout } from "../actions";
 const states=[["pending","Da valutare"],["approved_awaiting_payment","In attesa di pagamento"],["confirmed","Confermata"],["completed","Completata"],["cancelled","Annullata"],["rejected","Rifiutata"],["no_show","Mancata presentazione"]];
@@ -23,6 +24,7 @@ export default async function AdminBookings({searchParams}:{searchParams:Promise
   if(bookings.error||blackouts.error)throw new Error("Impossibile leggere il calendario.");
   return <><header className="admin-heading"><span className="eyebrow">GENKS STUDIO</span><h1>Prenotazioni</h1><p>{studioCashOnly ? "Le nuove prenotazioni sono confermate automaticamente a 20 €/ora. Ricevi l’avviso su Gmail: non serve approvarle. Registra i contanti solo dopo averli ricevuti." : "Il pagamento conferma automaticamente la sessione."} Gli orari seguono il fuso italiano.</p></header>
     <OperationNotice code={q.notice}/>
+    <form action={sendBookingAlertPreview}><button className="button button-secondary">Invia avviso Gmail di prova</button></form>
     <details className="admin-form-card"><summary>Blocca un periodo in cui lo studio non è disponibile</summary><p>I blocchi inseriti qui impediscono nuove prenotazioni. Gli impegni aggiunti soltanto a Google Calendar non vengono letti dall’abbonamento all’agenda.</p>
       <form action={createBlackout} className="premium-form form-grid"><label>Inizio<input name="start" type="datetime-local" required/></label><label>Fine<input name="end" type="datetime-local" required/></label><label className="full">Motivo interno<input name="reason" maxLength={200}/></label><button className="button button-primary">Blocca periodo</button></form>
       {blackouts.data?.map(b=><div className="sales-ranking" key={b.id}><span>{new Date(b.starts_at).toLocaleString("it-IT",{timeZone:"Europe/Rome"})} → {new Date(b.ends_at).toLocaleString("it-IT",{timeZone:"Europe/Rome"})}<small>{b.reason}</small></span><form action={deleteBlackout}><input name="id" type="hidden" value={b.id}/><button className="button button-secondary">Rimuovi blocco</button></form></div>)}
