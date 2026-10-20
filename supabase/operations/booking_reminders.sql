@@ -1,7 +1,10 @@
 begin;
 create extension if not exists pg_cron;
 create extension if not exists pg_net with schema extensions;
--- Only the database scheduler may enqueue network requests or inspect their bodies.
+-- Additional least-privilege hardening where the connection owns the extension.
+-- Managed Supabase net objects may be owned by supabase_admin: REVOKE can warn
+-- without changing effective privileges. Verify ACLs explicitly. Keep net out
+-- of exposed Data API schemas; worker tickets and public RPCs are separately protected.
 revoke usage on schema net from public,anon,authenticated;
 revoke all on all tables in schema net from public,anon,authenticated;
 create schema if not exists genks_private;

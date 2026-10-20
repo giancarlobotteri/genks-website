@@ -1,0 +1,20 @@
+import "server-only";
+import Link from "next/link";
+import { legalDocuments } from "@/data/legal";
+import { stripeTestMode } from "@/lib/preview-mode";
+
+export function LaunchChecklist({ ready, total, sellerReady, legalReady }: { ready: number; total: number; sellerReady: boolean; legalReady: boolean }) {
+  const drafts = Object.values(legalDocuments).filter(document => document.body.includes("BOZZA DA COMPLETARE"));
+  const documentsReady = legalReady === true && drafts.length === 0;
+  const paymentMode = !process.env.STRIPE_SECRET_KEY ? "Da collegare" : stripeTestMode() ? "Ambiente di prova" : "Ambiente reale: collaudo da confermare";
+  return <section className="admin-form-card">
+    <span className="eyebrow">VERSO LA PRIMA VENDITA</span><h2>Cosa manca per aprire gli incassi</h2>
+    <p>Il sito pubblico e i test riusciti non equivalgono all’apertura delle vendite reali. Completa questi passaggi prima del collaudo finale.</p>
+    <div className="admin-cards">
+      <article><div><span className="eyebrow">01 · CATALOGO</span><h3>{ready} offerte complete su {total}</h3><p>{ready > 0 ? "Le altre offerte rimangono non acquistabili finché mancano i materiali." : "Servono beat veri: copertina, anteprima ascoltabile, file inclusi e contratto definitivo. I beat di esempio non sono prodotti pronti."}</p><p>Questo controllo riguarda i beat; i servizi seguono il percorso richiesta, preventivo e pagamento.</p><Link className="text-link" href="/admin/beats">Prepara i beat</Link> · <Link className="text-link" href="/admin/licenses">Completa le licenze</Link></div></article>
+      <article><div><span className="eyebrow">02 · VENDITORE E DOCUMENTI</span><h3>{sellerReady === true && documentsReady ? "Preparazione registrata" : "Da completare con il titolare"}</h3><p>Dati del venditore: {sellerReady === true ? "preparazione registrata" : "preparazione non confermata"}. Documenti: {documentsReady ? "versioni definitive registrate" : "non ancora definitivi"}.</p>{drafts.length > 0 && <p>Bozze presenti: {drafts.map(document => document.title).join("; ")}.</p>}<p>Servono le versioni approvate dei documenti, le condizioni delle licenze e le regole di cancellazione. Per mix e master, tempi e revisioni si concordano nel singolo preventivo.</p></div></article>
+      <article><div><span className="eyebrow">03 · PAGAMENTI</span><h3>{paymentMode}</h3><p>Prima dell’apertura: verifica del titolare in Stripe, account corretto, collegamento delle conferme nello stesso ambiente e collaudo autorizzato di pagamento, email, consegna e rimborso.</p><Link className="text-link" href="/admin/settings">Controlla Stripe</Link> · <Link className="text-link" href="/admin/analytics">Apri il registro Vendite</Link></div></article>
+      <article><div><span className="eyebrow">04 · CAPACITÀ E LANCIO</span><h3>Piani e prova finale da verificare</h3><p>Prima degli incassi verifica un piano hosting compatibile con l’uso commerciale e quote sufficienti per email, file e traffico. Ogni sessione può generare due promemoria oltre alle altre email.</p><p>Questo pannello non legge gli abbonamenti dei fornitori e non attiva servizi a pagamento. Dopo i materiali definitivi va ripetuto il percorso completo come cliente.</p></div></article>
+    </div>
+  </section>;
+}
