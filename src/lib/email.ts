@@ -9,17 +9,19 @@ const getResend=()=>process.env.RESEND_API_KEY?new Resend(process.env.RESEND_API
 export async function sendTransactionalEmail(input:{
   to:string;subject:string;heading:string;body:string;actionUrl?:string;actionLabel?:string;
   serviceRequest?:boolean;idempotencyKey?:string;
+  calendarFile?:string;calendarFilename?:string;
 }) {
   if(!input.serviceRequest&&!previewRecipientAllowed(input.to))throw new Error("Il destinatario non è autorizzato nell’anteprima privata.");
   const resend=getResend();
   if(!resend||!process.env.RESEND_FROM_EMAIL)throw new Error("Il servizio email non è configurato.");
-  const {error}=await resend.emails.send({
+  const {data,error}=await resend.emails.send({
     from:process.env.RESEND_FROM_EMAIL,replyTo:process.env.GENKS_SUPPORT_EMAIL||process.env.GENKS_ADMIN_EMAIL,
     to:input.to,subject:input.subject,html:renderGenksStudioEmail(input),
     text:`${input.heading}\n\n${input.body}${input.actionUrl?`\n\n${input.actionLabel??"Apri"}: ${input.actionUrl}`:""}\n\nGENKS · prodbygenks.com\nPer assistenza rispondi a questa email.`,
+    attachments:input.calendarFile?[{filename:input.calendarFilename??"GENKS-appuntamento.ics",content:Buffer.from(input.calendarFile).toString("base64"),contentType:"text/calendar"}]:undefined,
   },input.idempotencyKey?{idempotencyKey:input.idempotencyKey}:undefined);
   if(error)throw new Error(`Transactional email failed: ${error.message}`);
-  return {skipped:false as const};
+  return {skipped:false as const,emailId:data?.id??null};
 }
 
 export async function sendOrderConfirmationEmail(input:{

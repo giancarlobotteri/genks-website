@@ -1,4 +1,8 @@
 const messages: Record<string,string> = {
+  reminder_preview_sent:"Anteprima inviata alla tua email amministratore. Nessuna prenotazione reale è stata creata.",
+  reminder_preview_error:"Anteprima non inviata. Controlla la quota email e la configurazione Resend.",
+  reminder_paused:"Promemoria messi in pausa. Le altre email GENKS restano attive.",
+  reminder_enabled:"Promemoria delle sessioni confermate attivati.",
   blackout_conflict:"Il periodo si sovrappone a una richiesta o sessione esistente: gestiscila prima di bloccare l’orario.",
   stripe_configured:"Gli eventi necessari per pagamenti, scadenze, rimborsi e contestazioni sono configurati in Stripe.",
   stripe_error:"Non è stato possibile aggiornare l’endpoint Stripe. Controlla l’ambiente e le autorizzazioni delle credenziali.",

@@ -1,6 +1,7 @@
 import "server-only";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTransactionalEmail } from "@/lib/email";
+import { bookingCalendarFile, bookingCalendarUrl, studioAddress } from "@/lib/booking-calendar";
 
 type Message = Parameters<typeof sendTransactionalEmail>[0];
 
@@ -20,10 +21,27 @@ export async function deliverNotification(id: string) {
   const message = data?.[0];
   if (!message) return;
   try {
+    let calendar: { actionUrl?: string; actionLabel?: string; calendarFile?: string; calendarFilename?: string; body?: string } = {};
+    if (/^payment-[a-f0-9-]{36}$/.test(message.dedupe_key)) {
+      const payment = await db.from("payments").select("booking_id,review_reason,status").eq("id", message.dedupe_key.slice(8)).maybeSingle();
+      if (payment.error) throw new Error("Verifica calendario del pagamento da ripetere.");
+      if (payment.data?.booking_id && !payment.data.review_reason && payment.data.status === "succeeded") {
+        const result = await db.from("bookings").select("id,reference,name,email,starts_at,ends_at,updated_at,status").eq("id", payment.data.booking_id).eq("status", "confirmed").maybeSingle();
+        if (result.error) throw new Error("Verifica della sessione da ripetere.");
+        const booking = result.data;
+        if (booking && booking.email.toLowerCase() === message.recipient.toLowerCase()) {
+          const date = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", dateStyle: "full", timeStyle: "short" }).format(new Date(booking.starts_at));
+          calendar = { actionUrl: bookingCalendarUrl(booking), actionLabel: "Aggiungi a Google Calendar",
+            calendarFile: bookingCalendarFile(booking), calendarFilename: `GENKS-${booking.reference}.ics`,
+            body: `${message.body}\nSessione in studio: ${date} · ora italiana.\nIndirizzo: ${studioAddress}.\nSalva l’appuntamento su Google Calendar oppure apri il file .ics allegato con Apple Calendar o Outlook.` };
+        }
+      }
+    }
     await sendTransactionalEmail({
       to: message.recipient, subject: message.subject, heading: message.heading, body: message.body,
       actionUrl: message.action_url ?? undefined, actionLabel: message.action_label ?? undefined,
       idempotencyKey: `notification-${message.id}`, serviceRequest: true,
+      ...calendar,
     });
     const saved = await db.from("notification_outbox").update({ sent_at: new Date().toISOString(), locked_until: null, last_error: null }).eq("id", id);
     if (saved.error) throw new Error("Invio completato, salvataggio della conferma da ripetere.");
