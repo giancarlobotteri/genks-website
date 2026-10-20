@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { mfaQrImage } from "@/lib/security/mfa-qr";
 
 export function AdminMfa() {
   const [factorId, setFactorId] = useState("");
@@ -38,7 +39,7 @@ export function AdminMfa() {
       const result = await client.auth.mfa.enroll({ factorType: "totp", friendlyName: "GENKS amministratore", issuer: "GENKS" });
       if (result.error) throw result.error;
       setFactorId(result.data.id);
-      setQr(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(result.data.totp.qr_code)}`);
+      setQr(mfaQrImage(result.data.totp.qr_code));
     } catch { setError("Non è stato possibile configurare l’app. Riprova tra poco."); }
     finally { setBusy(false); }
   }
