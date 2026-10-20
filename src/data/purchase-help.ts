@@ -1,8 +1,8 @@
 import { studioCashOnly } from "@/lib/studio-payment-mode";
 export const purchaseQuestions = studioCashOnly ? [
  {question:"Come posso acquistare un beat?",answer:"Scegli un beat e usa Richiedi in studio. Concordiamo insieme disponibilità, licenza, prezzo e consegna prima dell’acquisto. Puoi anche richiedere una produzione su misura."},
- {question:"Come si paga?",answer:"Al momento il pagamento avviene in contanti presso lo studio GENKS, dopo aver concordato il preventivo. I pagamenti con carta non sono attualmente disponibili. La richiesta online non comporta addebiti."},
- {question:"Come prenoto registrazione, mix o master?",answer:"Invia il modulo del servizio. Per la registrazione scegli un orario disponibile e attendi la conferma di GENKS; per mix e master concordiamo attività, tempi e revisioni prima di iniziare."},
+ {question:"Come si paga?",answer:"Al momento il pagamento avviene in contanti presso lo studio GENKS. Per registrazione, mix e master vedi il totale prima di prenotare. I pagamenti online con carta non sono disponibili e la prenotazione non comporta addebiti automatici."},
+ {question:"Come prenoto registrazione, mix o master?",answer:"La registrazione costa 20 €/ora: scegli durata, giorno e orario disponibili e ricevi subito la conferma. Mix 100 €, master 40 €, mix e master 120 € per un brano, anche a distanza. Prenotazione automatica; file, consegna e revisioni si organizzano prima dell’avvio. Il pagamento rimane in contanti presso lo studio."},
  {question:"Serve un account per fare una richiesta?",answer:"No. Indica un’email a cui hai accesso: riceverai le comunicazioni e potrai entrare nell’area personale con la stessa email."},
  {question:"Come ricevo il mio lavoro?",answer:"File, formati, licenza e modalità di consegna vengono concordati prima del pagamento. Il pagamento in contanti non sblocca automaticamente file sul sito."},
  {question:"Come cambio appuntamento?",answer:"Scrivi a GENKS per concordare il cambio data. Avvisa almeno 24 ore prima quando possibile; in caso di imprevisti contattaci appena puoi."},

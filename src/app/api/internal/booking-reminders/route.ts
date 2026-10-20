@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendDueBookingReminders } from "@/lib/booking-reminders";
+import { flushNotifications } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -13,6 +14,10 @@ export async function POST(request: Request) {
   if (consumed.error || consumed.data !== true) return new Response("Non autorizzato", { status: 401 });
   try {
     const result = await sendDueBookingReminders();
-    return Response.json(result, { status: result.failures ? 503 : 200, headers: { "Cache-Control": "private, no-store" } });
+    await new Promise(resolve => setTimeout(resolve, 600));
+    const alerts = await flushNotifications({ prefix: "reservation-", limit: 10 });
+    await new Promise(resolve => setTimeout(resolve, 600));
+    const confirmations = await flushNotifications({ prefix: "cash-agree-", limit: 10 });
+    return Response.json({ ...result, notificationFailures: alerts.failures + confirmations.failures }, { status: result.failures || alerts.failures || confirmations.failures ? 503 : 200, headers: { "Cache-Control": "private, no-store" } });
   } catch { return Response.json({ error: "Promemoria da verificare." }, { status: 503, headers: { "Cache-Control": "private, no-store" } }); }
 }

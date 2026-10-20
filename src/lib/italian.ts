@@ -4,7 +4,7 @@ const labels: Record<string, string> = {
   draft: "Bozza", published: "Pubblicato", archived: "Archiviato", exclusive_sold: "Esclusiva venduta",
   requested: "Richiesto", quoted: "Preventivo inviato", awaiting_payment: "In attesa di pagamento",
   approved_awaiting_payment: "Approvato, in attesa di pagamento", confirmed: "Confermato", completed: "Completato",
-  rejected: "Rifiutato", no_show: "Mancata presentazione", in_progress: "In lavorazione", review: "In revisione", delivered: "Consegnato", sold: "Venduto",
+  rejected: "Rifiutato", no_show: "Mancata presentazione", in_progress: "Prenotato / in lavorazione", review: "In revisione", delivered: "Consegnato", sold: "Venduto",
   recording: "Registrazione", mix_master: "Mix e master", stems: "Tracce separate", percent: "Percentuale", fixed: "Importo fisso",
   Dark: "Scuro", Floating: "Etereo", Melodic: "Melodico", Hard: "Potente", Experimental: "Sperimentale", EXPERIMENTAL: "SPERIMENTALE",
   "MP3 Lease": "Licenza MP3", "WAV Lease": "Licenza WAV", "Trackout Lease": "Licenza con tracce separate", "Exclusive License": "Licenza esclusiva",

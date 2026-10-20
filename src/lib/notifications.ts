@@ -38,8 +38,18 @@ export async function deliverNotification(id: string) {
       }
     }
     if (/^cash-agree-[a-f0-9-]{36}$/.test(message.dedupe_key)) {
-      const agreement = await db.from("studio_cash_agreements").select("booking_id,agreed_at").eq("id", message.dedupe_key.slice(11)).maybeSingle();
+      const agreement = await db.from("studio_cash_agreements").select("booking_id,project_id,agreed_at").eq("id", message.dedupe_key.slice(11)).maybeSingle();
       if (agreement.error) throw new Error("Verifica dell’accordo in studio da ripetere.");
+      if (agreement.data) {
+        const type = agreement.data.booking_id ? "bookings" : "service_projects";
+        const current = await db.from(type).select("status,email").eq("id", agreement.data.booking_id || agreement.data.project_id).maybeSingle();
+        if (current.error) throw new Error("Verifica della prenotazione da ripetere.");
+        if (!current.data || ["cancelled", "rejected", "no_show"].includes(current.data.status) || current.data.email.toLowerCase() !== message.recipient.toLowerCase()) {
+          const cancelled = await db.from("notification_outbox").update({ cancelled_at: new Date().toISOString(), locked_until: null }).eq("id", id);
+          if (cancelled.error) throw new Error("Annullamento della notifica da ripetere.");
+          return;
+        }
+      }
       if (agreement.data?.booking_id) {
         const result = await db.from("bookings").select("id,reference,email,starts_at,ends_at,status").eq("id", agreement.data.booking_id).eq("status", "confirmed").maybeSingle();
         if (result.error) throw new Error("Verifica calendario della sessione da ripetere.");
