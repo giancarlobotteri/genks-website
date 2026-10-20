@@ -10,11 +10,11 @@ import { z } from "zod";
 
 export async function setBookingExtraTime(form: FormData) {
   const admin = await requireAdmin();
-  const parsed = z.object({ id: z.uuid(), minutes: z.coerce.number().int().min(0).max(1440), expectedMinutes: z.coerce.number().int().min(0).max(1440), confirm: z.literal("on") }).safeParse(Object.fromEntries(form));
+  const parsed = z.object({ id: z.uuid(), minutes: z.coerce.number().int().min(0).max(1440), nightMinutes: z.coerce.number().int().min(0).max(1440), expectedMinutes: z.coerce.number().int().min(0).max(1440), expectedNightMinutes: z.coerce.number().int().min(0).max(1440), confirm: z.literal("on") }).refine(value=>value.minutes+value.nightMinutes<=1440).safeParse(Object.fromEntries(form));
   if (!parsed.success) redirect("/admin/bookings?notice=extra_time_error");
   let notice = "extra_time_saved";
   try {
-    const result = await createSupabaseAdminClient().rpc("set_booking_extra_time", { p_id: parsed.data.id, p_admin: admin.id, p_minutes: parsed.data.minutes, p_expected_minutes: parsed.data.expectedMinutes });
+    const result = await createSupabaseAdminClient().rpc("set_booking_extra_time_v2", { p_id: parsed.data.id, p_admin: admin.id, p_minutes: parsed.data.minutes + parsed.data.nightMinutes, p_expected_minutes: parsed.data.expectedMinutes, p_night_minutes: parsed.data.nightMinutes, p_expected_night_minutes: parsed.data.expectedNightMinutes });
     if (result.error) throw new Error("Aggiornamento non riuscito.");
     if (result.data) {
       const sent = await flushNotifications({ prefix: `reservation-extra-${result.data}` });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { extraTimePolicy } from "@/lib/extra-time";
 import { CalendarDays, Clock3 } from "lucide-react";
 import { createBooking } from "@/app/services/actions";
 import { ServiceSubmit } from "./service-submit";
@@ -46,7 +47,7 @@ export function RecordingRequestForm() {
       <div className="slot-grid">{slots.map((slot) => <label key={slot} className={time === slot ? "slot-option selected" : "slot-option"}><input type="radio" name="time" value={slot} required checked={time === slot} onChange={() => setTime(slot)}/><span>{slot}</span></label>)}</div>
     </fieldset>
     <div className="booking-step full"><span>02</span><div><strong>Dettagli della sessione</strong><small>Aggiungi un riferimento facoltativo per la sessione.</small></div></div>
-    <p className="service-form-note full">Lo studio è in Via Quintina, Ponte San Giovanni, Perugia (PG). Dal lunedì al venerdì: 19:30–00:00. Sabato e domenica: 10:00–00:00. Le sessioni prenotate terminano entro mezzanotte. Eventuale tempo extra viene concordato in studio e registrato personalmente da GENKS a 20 €/ora, in proporzione ai minuti effettivi.</p>
+    <p className="service-form-note full">Lo studio è in Via Quintina, Ponte San Giovanni, Perugia (PG). Dal lunedì al venerdì: 19:30–00:00. Sabato e domenica: 10:00–00:00. Le sessioni prenotate terminano entro mezzanotte. Eventuale tempo extra viene concordato in studio e registrato personalmente da GENKS. Prima di mezzanotte: 20 €/ora. {extraTimePolicy}</p>
     <label className="full">Collegamento di riferimento <small>facoltativo</small><input name="referenceUrl" type="url" placeholder="https://"/></label>
     <div className="booking-step full"><span>03</span><div><strong>I tuoi dati</strong><small>Ricevi subito la conferma via email. Non serve attendere un’approvazione.</small></div></div>
     <label>Nome<input name="name" required minLength={2} maxLength={120} autoComplete="name"/></label><label>Nome d’arte <small>facoltativo</small><input name="artistName"/></label>
