@@ -1,8 +1,10 @@
 import "server-only";
+import { requireAdmin } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { SaleOrder } from "@/lib/sales";
 import type { BusinessSale, BusinessCost, RefundMovement, SaleKind } from "@/lib/business-sales";
 export async function getSalesOrders() {
+  await requireAdmin();
   const db=createSupabaseAdminClient(); const orders:SaleOrder[]=[];
   for(let offset=0;;offset+=500) {
     const {data,error}=await db.from("orders").select("id,order_number,customer_email,customer_name,status,total_cents,subtotal_cents,discount_cents,currency,paid_at,created_at,refunded_at,order_items(beat_title_snapshot,license_name_snapshot,unit_price_cents)").order("created_at",{ascending:false}).order("id").range(offset,offset+499);
@@ -13,6 +15,7 @@ export async function getSalesOrders() {
 }
 
 export async function getBusinessSales(live = true) {
+  await requireAdmin();
   const db = createSupabaseAdminClient();
   const sales: BusinessSale[] = [];
   const refunds: RefundMovement[] = [];

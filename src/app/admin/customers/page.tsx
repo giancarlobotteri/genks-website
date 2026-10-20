@@ -1,7 +1,9 @@
+import { requireAdmin } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { AdminPagination, pageNumber } from "@/components/admin/pagination";
 import { paginate } from "@/lib/pagination";
 export default async function Customers({searchParams}:{searchParams:Promise<{page?:string}>}) {
+  await requireAdmin();
   const q=await searchParams; const db=createSupabaseAdminClient();
   const customers=new Map<string,{email:string;name:string;artist:string;phone:string;created:string}>();
   for(const table of ["orders","bookings","service_projects"] as const){

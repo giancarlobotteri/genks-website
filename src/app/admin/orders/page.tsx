@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth";
 import { AdminPagination, pageNumber } from "@/components/admin/pagination";
 import { italianLabel } from "@/lib/italian";
 import { BadgeCheck, ReceiptText } from "lucide-react";
@@ -6,6 +7,7 @@ import { formatPrice } from "@/lib/format";
 import { retryOrderConfirmation } from "../actions";
 
 export default async function Orders({ searchParams }: { searchParams: Promise<{ email?: string; page?: string }> }) {
+  await requireAdmin();
   const query = await searchParams;
   const db = createSupabaseAdminClient();
   const {count} = await db.from("orders").select("id", {count:"exact",head:true});

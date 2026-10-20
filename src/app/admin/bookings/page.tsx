@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { AdminPagination, pageNumber } from "@/components/admin/pagination";
 import { OperationNotice } from "@/components/admin/operation-notice";
@@ -8,6 +9,7 @@ import { canChangeServiceStatus } from "@/lib/service-workflow";
 import { requestBookingPayment, updateBookingStatus, createBlackout, deleteBlackout } from "../actions";
 const states=[["pending","Da valutare"],["approved_awaiting_payment","In attesa di pagamento"],["confirmed","Confermata"],["completed","Completata"],["cancelled","Annullata"],["rejected","Rifiutata"],["no_show","Mancata presentazione"]];
 export default async function AdminBookings({searchParams}:{searchParams:Promise<{page?:string;status?:string;notice?:string}>}) {
+  await requireAdmin();
   const q=await searchParams;const db=createSupabaseAdminClient();
   const expired=await db.rpc("expire_booking_holds");if(expired.error)throw new Error("Impossibile aggiornare le riserve temporanee.");
   const status=states.some(([value])=>value===q.status)?q.status!:"";

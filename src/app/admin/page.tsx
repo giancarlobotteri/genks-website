@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getBusinessSales } from "@/lib/admin-sales";
@@ -6,6 +7,7 @@ import { formatPrice } from "@/lib/format";
 import { OperationalHealth } from "@/components/admin/operational-health";
 import { OperationNotice } from "@/components/admin/operation-notice";
 export default async function AdminDashboard({searchParams}:{searchParams:Promise<{notice?:string}>}) {
+  await requireAdmin();
   const q=await searchParams;const db=createSupabaseAdminClient();
   const expired=await db.rpc("expire_booking_holds");if(expired.error)throw new Error("Impossibile aggiornare il calendario.");
   const [ledger,bookings,projects,exclusive]=await Promise.all([getBusinessSales(),db.from("bookings").select("id",{count:"exact",head:true}).eq("status","pending"),db.from("service_projects").select("id",{count:"exact",head:true}).not("status","in",'("delivered","cancelled")'),db.from("exclusive_requests").select("id",{count:"exact",head:true}).eq("status","requested")]);

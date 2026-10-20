@@ -33,6 +33,21 @@ export async function proxy(request: NextRequest) {
     },
   );
   const { data: { user } } = await supabase.auth.getUser();
+  // Reject admin requests before Next.js can render any child page or RSC payload.
+  if (path === "/admin" || path.startsWith("/admin/") || path.startsWith("/api/admin/")) {
+    const ownerEmail = (process.env.GENKS_ADMIN_EMAIL || "prod.genks@gmail.com").trim().toLowerCase();
+    const profile = user?.email?.toLowerCase() === ownerEmail
+      ? await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle()
+      : null;
+    if (!user || profile?.data?.role !== "admin") {
+      const denied = path.startsWith("/api/")
+        ? NextResponse.json({ error: "Accesso amministratore richiesto." }, { status: 401 })
+        : NextResponse.redirect(new URL("/admin-access", request.url));
+      response.cookies.getAll().forEach(cookie => denied.cookies.set(cookie));
+      denied.headers.set("Cache-Control", "private, no-store");
+      return denied;
+    }
+  }
   if (privatePreview) {
     const path = request.nextUrl.pathname;
     const publicEndpoints = path === "/admin-access" || path === "/login" || path === "/auth/confirm" || path === "/api/stripe/webhook" || path === "/api/calendar/feed" || path === "/robots.txt";

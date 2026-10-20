@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth";
 import { italianLabel } from "@/lib/italian";
 import { Pencil, Plus } from "lucide-react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -7,6 +8,7 @@ import { formatPrice } from "@/lib/format";
 type LicenseRow = { id:string; code:string; name:string; price_cents:number; included_assets:string[]; active:boolean; is_exclusive:boolean; display_order:number; streams_limit:number|null; short_description:string; full_description:string; monetization_permissions:string|null; music_video_permissions:string|null; performances:string|null; radio:string|null; distribution_restrictions:string|null; content_id_policy:string|null; contract_text:string|null };
 
 export default async function LicensesAdmin() {
+  await requireAdmin();
   const db=createSupabaseAdminClient();
   const {data,error}=await db.from("license_types").select("id,code,name,price_cents,included_assets,active,is_exclusive,display_order,streams_limit,short_description,full_description,monetization_permissions,music_video_permissions,performances,radio,distribution_restrictions,content_id_policy,contract_text").order("display_order");
   if(error)throw new Error("Impossibile caricare le licenze.");

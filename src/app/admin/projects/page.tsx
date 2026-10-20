@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { AdminPagination, pageNumber } from "@/components/admin/pagination";
 import { OperationNotice } from "@/components/admin/operation-notice";
@@ -9,6 +10,7 @@ import { canChangeServiceStatus } from "@/lib/service-workflow";
 import { requestProjectPayment, updateProjectStatus, deliverProject } from "../actions";
 const states=[["requested","Nuova richiesta"],["quoted","Preventivo concordato"],["awaiting_payment","In attesa di pagamento"],["paid","Pagato"],["in_progress","In lavorazione"],["review","In revisione"],["delivered","Consegnato"],["cancelled","Annullato"]];
 export default async function AdminProjects({searchParams}:{searchParams:Promise<{page?:string;status?:string;notice?:string}>}) {
+  await requireAdmin();
   const q=await searchParams;const db=createSupabaseAdminClient();const status=states.some(([v])=>v===q.status)?q.status!:"";
   const counter=db.from("service_projects").select("id",{count:"exact",head:true});if(status)counter.eq("status",status);
   const {count,error:countError}=await counter;if(countError)throw new Error("Impossibile caricare i progetti.");

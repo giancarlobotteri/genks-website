@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 export function calendarFeedToken() {
   const secret = process.env.SUPABASE_SECRET_KEY;
   if (!secret) return null;
-  return createHmac("sha256", secret).update("genks-private-calendar-feed-v1").digest("hex");
+  return createHmac("sha256", secret).update("genks-private-calendar-feed-v2-2026-10-20").digest("hex");
 }
 export function calendarFeedAllowed(token: string | null) {
   const expected = calendarFeedToken();

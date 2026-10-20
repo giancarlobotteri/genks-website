@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { getBusinessSales } from "@/lib/admin-sales";
 import { formatPrice } from "@/lib/format";
@@ -8,6 +9,7 @@ import { createBusinessCost, deleteBusinessCost, refreshStripeFees } from "../ac
 import { MarginPlanner } from "@/components/admin/margin-planner";
 
 export default async function Sales({searchParams}:{searchParams:Promise<{page?:string;day?:string;status?:string;kind?:string;mode?:string;costPage?:string}>}) {
+  await requireAdmin();
   const q=await searchParams;const live=q.mode!=="test";const mode=live?"live":"test";
   const ledger=await getBusinessSales(live);const stats=businessSummary(ledger.sales,ledger.refunds,ledger.costs);
   const day=q.day&&/^\d{4}-\d{2}-\d{2}$/.test(q.day)?q.day:"";

@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth";
 import { AdminPagination, pageNumber } from "@/components/admin/pagination";
 import { updateBeatDetails } from "../actions";
 import { catalogGenres, catalogMoods, catalogKeys } from "@/data/catalog-options";
@@ -8,6 +9,7 @@ import { AssetUploader, BeatCreateForm, type ExistingAsset } from "@/components/
 type AdminBeat = { id: string; title: string; slug: string; bpm: number; musical_key: string; genre: string; mood:string; description:string; status: string; featured: boolean; beat_assets: ExistingAsset[] };
 
 export default async function BeatsAdmin({ searchParams }: { searchParams: Promise<{page?:string}> }) {
+  await requireAdmin();
   const query = await searchParams;
   const db = createSupabaseAdminClient();
   const { count } = await db.from("beats").select("id", {count:"exact",head:true});

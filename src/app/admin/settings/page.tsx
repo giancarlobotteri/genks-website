@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth";
 import { CalendarConnect } from "@/components/admin/calendar-connect";
 import { OperationNotice } from "@/components/admin/operation-notice";
 import { calendarFeedToken } from "@/lib/calendar-feed";
@@ -8,6 +9,7 @@ import { updateSiteSetting, repairStripeConfiguration } from "../actions";
 import { privatePreview, stripeTestMode } from "@/lib/preview-mode";
 import { stripeReadiness } from "@/lib/stripe-readiness";
 export default async function Settings({searchParams}:{searchParams:Promise<{notice?:string}>}) {
+  await requireAdmin();
   const q=await searchParams;const db=createSupabaseAdminClient();
   const [{data,error},stripe]=await Promise.all([db.from("site_settings").select("key,value,updated_at").order("key"),stripeReadiness()]);
   if(error)throw new Error("Impossibile leggere le impostazioni.");
