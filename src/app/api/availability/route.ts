@@ -16,13 +16,13 @@ export async function GET(request: Request) {
   const { date, duration } = parsed.data;
   if (date < todayInRome() || date > shiftDay(todayInRome(), 180)) return Response.json({ slots: [] });
   const db = createSupabaseAdminClient();
-  const expired = await db.rpc("expire_booking_holds");
-  if (expired.error) return Response.json({ error: "Calendario temporaneamente non disponibile." }, { status: 503 });
+  // A public availability read must never change booking state or queue notifications.
+  const asOf = new Date().toISOString();
   const from = fromRomeWallTime(date, "00:00");
   const to = fromRomeWallTime(shiftDay(date, 1), "23:59");
   const [rules, bookings, blackouts] = await Promise.all([
     db.from("availability_rules").select("weekday,start_time,end_time,ends_next_day,flexible_close,slot_minutes,buffer_minutes").eq("active", true),
-    db.from("bookings").select("starts_at,ends_at,blocked_until").in("status", ["pending", "approved_awaiting_payment", "confirmed"]).lt("starts_at", to.toISOString()).gt("blocked_until", from.toISOString()),
+    db.from("bookings").select("starts_at,ends_at,blocked_until").in("status", ["pending", "approved_awaiting_payment", "confirmed"]).or(`hold_expires_at.is.null,hold_expires_at.gt.${asOf}`).lt("starts_at", to.toISOString()).gt("blocked_until", from.toISOString()),
     db.from("blackout_dates").select("starts_at,ends_at").lt("starts_at", to.toISOString()).gt("ends_at", from.toISOString()),
   ]);
   if (rules.error || bookings.error || blackouts.error) return Response.json({ error: "Impossibile verificare gli orari. Riprova tra poco." }, { status: 503 });
