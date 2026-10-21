@@ -1,3 +1,4 @@
+import { operationsStart } from "@/lib/operations-start";
 import { CashServiceForm } from "@/components/admin/cash-service-form";
 import { studioCashOnly } from "@/lib/studio-payment-mode";
 import { requireAdmin } from "@/lib/auth";
@@ -12,14 +13,14 @@ import { canChangeServiceStatus } from "@/lib/service-workflow";
 import { requestBookingPayment, updateBookingStatus, createBlackout, deleteBlackout } from "../actions";
 const states=[["pending","Da valutare"],["approved_awaiting_payment","In attesa di pagamento"],["confirmed","Confermata"],["completed","Completata"],["cancelled","Annullata"],["rejected","Rifiutata"],["no_show","Mancata presentazione"]];
 export default async function AdminBookings({searchParams}:{searchParams:Promise<{page?:string;status?:string;notice?:string}>}) {
-  await requireAdmin();
+  await requireAdmin(); const start=await operationsStart();
   const q=await searchParams;const db=createSupabaseAdminClient();
   const expired=await db.rpc("expire_booking_holds");if(expired.error)throw new Error("Impossibile aggiornare le riserve temporanee.");
   const status=states.some(([value])=>value===q.status)?q.status!:"";
-  const countQuery=db.from("bookings").select("id",{count:"exact",head:true});if(status)countQuery.eq("status",status);
+  const countQuery=db.from("bookings").select("id",{count:"exact",head:true}).gte("created_at",start);if(status)countQuery.eq("status",status);
   const {count,error:countError}=await countQuery;if(countError)throw new Error("Impossibile caricare le prenotazioni.");
   const page=Math.min(pageNumber(q.page),Math.max(1,Math.ceil((count??0)/5)));
-  const query=db.from("bookings").select("id,reference,name,artist_name,email,phone,starts_at,ends_at,status,notes,reference_url,hold_expires_at,service_quotes(*),payments(amount_cents,refunded_cents,status,livemode,review_reason)").order("created_at",{ascending:false}).order("id");if(status)query.eq("status",status);
+  const query=db.from("bookings").select("id,reference,name,artist_name,email,phone,starts_at,ends_at,status,notes,reference_url,hold_expires_at,service_quotes(*),payments(amount_cents,refunded_cents,status,livemode,review_reason)").gte("created_at",start).order("created_at",{ascending:false}).order("id");if(status)query.eq("status",status);
   const [bookings,blackouts]=await Promise.all([query.range((page-1)*5,page*5-1),db.from("blackout_dates").select("id,starts_at,ends_at,reason").gt("ends_at",new Date().toISOString()).order("starts_at").limit(50)]);
   if(bookings.error||blackouts.error)throw new Error("Impossibile leggere il calendario.");
   return <><header className="admin-heading"><span className="eyebrow">GENKS STUDIO</span><h1>Prenotazioni</h1><p>{studioCashOnly ? "Le nuove prenotazioni sono confermate automaticamente a 20 €/ora. Ricevi l’avviso su Gmail: non serve approvarle. Registra i contanti solo dopo averli ricevuti." : "Il pagamento conferma automaticamente la sessione."} Gli orari seguono il fuso italiano.</p></header>
@@ -40,3 +41,4 @@ export default async function AdminBookings({searchParams}:{searchParams:Promise
     <AdminPagination page={page} total={count??0} path="/admin/bookings" params={{status}}/>
   </>;
 }
+

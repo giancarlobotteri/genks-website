@@ -1,4 +1,5 @@
 import "server-only";
+import { operationsStart } from "@/lib/operations-start";
 import { cashSale } from "@/lib/cash-sales";
 import { requireAdmin } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -15,7 +16,7 @@ export async function getSalesOrders() {
   return orders;
 }
 
-export async function getBusinessSales(live = true) {
+export async function getBusinessSales(live = true, includeArchive = false) {
   await requireAdmin();
   const db = createSupabaseAdminClient();
   const sales: BusinessSale[] = [];
@@ -60,5 +61,7 @@ export async function getBusinessSales(live = true) {
     if(result.error)throw new Error("Impossibile leggere i costi.");
     costs.push(...result.data??[]);if(!result.data||result.data.length<500)break;
   }
-  return {sales,refunds,costs};
+  const start=await operationsStart();
+  return {sales:includeArchive?sales:sales.filter(s=>Date.parse(s.paidAt)>=Date.parse(start)),refunds:includeArchive?refunds:refunds.filter(r=>Date.parse(r.occurred_at)>=Date.parse(start)),costs:includeArchive?costs:costs.filter(c=>c.incurred_on>=start.slice(0,10))};
 }
+

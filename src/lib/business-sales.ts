@@ -34,6 +34,7 @@ export function businessSummary(sales: BusinessSale[], refunds: RefundMovement[]
   };
   const days=Array.from({length:30},(_,i)=>{const date=new Date(`${today}T12:00:00Z`);date.setUTCDate(date.getUTCDate()-29+i);const day=date.toISOString().slice(0,10);return {day,...period(d=>d===day)};});
   return {
+    period:(from:string,to:string)=>period(d=>d>=from&&d<=to),
     lifetime:period(()=>true),today:period(d=>d===today),week:period(d=>d>=weekStart&&d<=today),
     month:period(d=>d.slice(0,7)===today.slice(0,7)),previousMonth:period(d=>d.slice(0,7)===previous.toISOString().slice(0,7)),days,
     customers:customerPayments.size,
@@ -43,8 +44,8 @@ export function businessSummary(sales: BusinessSale[], refunds: RefundMovement[]
   };
 }
 
-export function filterBusinessSales(sales: BusinessSale[], filters:{day?:string;kind?:string;status?:string}) {
-  return sales.filter(s=>(!filters.day||businessDay(s.paidAt)===filters.day)&&(!filters.kind||s.kind===filters.kind)&&(
+export function filterBusinessSales(sales: BusinessSale[], filters:{day?:string;kind?:string;status?:string;from?:string;to?:string}) {
+  return sales.filter(s=>(!filters.from||businessDay(s.paidAt)>=filters.from)&&(!filters.to||businessDay(s.paidAt)<=filters.to)&&(!filters.day||businessDay(s.paidAt)===filters.day)&&(!filters.kind||s.kind===filters.kind)&&(
     !filters.status||filters.status==="paid"&&s.refunded===0&&!s.disputed&&!s.review||filters.status==="refunded"&&s.refunded===s.amount||filters.status==="partial"&&s.refunded>0&&s.refunded<s.amount||filters.status==="review"&&Boolean(s.review||s.disputed)
   ));
 }
@@ -55,3 +56,4 @@ export function salesCsv(sales:BusinessSale[]) {
     ...sales.map(s=>[s.reference,new Date(s.paidAt).toISOString(),s.customer,s.email,kindLabels[s.kind],(s.amount/100).toFixed(2),(s.refunded/100).toFixed(2),s.fee===null?'Non disponibile':(s.fee/100).toFixed(2),((s.amount-s.refunded)/100).toFixed(2),s.live?'Reale':'Prova',s.providerId,s.review??(s.disputed?'Contestato':'')])];
   return '\uFEFF'+rows.map(row=>row.map(cell).join(';')).join('\r\n');
 }
+

@@ -60,7 +60,7 @@ export async function deliverNotification(id: string) {
       }
     }
     await sendTransactionalEmail({
-      to: message.recipient, subject: message.subject, heading: message.heading, body: message.body,
+      to: message.recipient, subject: /^reservation-.*-admin$/.test(message.dedupe_key) ? `GENKS · Hai una nuova prenotazione · ${message.subject.match(/(?:BKG|PRJ)-[A-Z0-9-]+/)?.[0]??"Studio"}` : message.subject, heading: /^reservation-.*-admin$/.test(message.dedupe_key) ? "Hai una nuova prenotazione" : message.heading, body: message.body,
       actionUrl: message.action_url ?? undefined, actionLabel: message.action_label ?? undefined,
       idempotencyKey: `notification-${message.id}`, serviceRequest: true,
       ...calendar,
@@ -87,3 +87,4 @@ export async function flushNotifications(options: { prefix?: string; limit?: num
   if (failures && options.throwOnFailure) throw new Error("Notifiche da ritentare.");
   return { attempted: data?.length ?? 0, failures };
 }
+

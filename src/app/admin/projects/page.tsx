@@ -1,3 +1,4 @@
+import { operationsStart } from "@/lib/operations-start";
 import { ProjectContract } from "@/components/admin/project-contract";
 import { CashServiceForm } from "@/components/admin/cash-service-form";
 import { requireAdmin } from "@/lib/auth";
@@ -12,12 +13,12 @@ import { canChangeServiceStatus } from "@/lib/service-workflow";
 import { requestProjectPayment, updateProjectStatus, deliverProject } from "../actions";
 const states=[["requested","Nuova richiesta"],["quoted","Preventivo concordato"],["awaiting_payment","In attesa di pagamento"],["paid","Pagato"],["in_progress","Prenotato / in lavorazione"],["review","In revisione"],["delivered","Consegnato"],["cancelled","Annullato"]];
 export default async function AdminProjects({searchParams}:{searchParams:Promise<{page?:string;status?:string;notice?:string}>}) {
-  await requireAdmin();
+  await requireAdmin(); const start=await operationsStart();
   const q=await searchParams;const db=createSupabaseAdminClient();const status=states.some(([v])=>v===q.status)?q.status!:"";
-  const counter=db.from("service_projects").select("id",{count:"exact",head:true});if(status)counter.eq("status",status);
+  const counter=db.from("service_projects").select("id",{count:"exact",head:true}).gte("created_at",start);if(status)counter.eq("status",status);
   const {count,error:countError}=await counter;if(countError)throw new Error("Impossibile caricare i progetti.");
   const page=Math.min(pageNumber(q.page),Math.max(1,Math.ceil((count??0)/5)));
-  const request=db.from("service_projects").select("id,reference,artist_name,name,email,phone,track_title,service,status,desired_deadline,agreed_deadline,delivery_url,description,notes,reference_links,track_count,service_quotes(*),payments(amount_cents,refunded_cents,status,livemode,review_reason)").order("created_at",{ascending:false}).order("id");if(status)request.eq("status",status);
+  const request=db.from("service_projects").select("id,reference,artist_name,name,email,phone,track_title,service,status,desired_deadline,agreed_deadline,delivery_url,description,notes,reference_links,track_count,service_quotes(*),payments(amount_cents,refunded_cents,status,livemode,review_reason)").gte("created_at",start).order("created_at",{ascending:false}).order("id");if(status)request.eq("status",status);
   const {data,error}=await request.range((page-1)*5,page*5-1);if(error)throw new Error("Impossibile caricare i progetti.");
   return <><header className="admin-heading"><span className="eyebrow">GENKS MIX & MASTER</span><h1>Mix & Master</h1><p>Nuove prenotazioni automatiche: mix 89,99 / 139,99 / 199,99 €; bundle 119,99 / 179,99 / 239,99 € secondo le fasce 1–8 / 9–24 / 25–48 tracce. Master stereo 39,99 €. Nuovi ordini: prima versione entro 7 giorni lavorativi dall’avvio consentito, dopo pagamento e file completi; 2 revisioni incluse. Gli accordi precedenti restano invariati. Ricevi l’avviso su Gmail. Organizza invio file, revisioni e consegna prima di iniziare. In studio registra i contanti soltanto dopo averli ricevuti; i progetti a distanza prevedono carta e si confermano dopo la verifica Stripe.</p></header><OperationNotice code={q.notice}/>
     <nav className="admin-filter-tabs" aria-label="Filtra progetti"><Link href="/admin/projects">Tutti</Link>{states.map(([value,label])=><Link key={value} href={`/admin/projects?status=${value}`} aria-current={status===value?"page":undefined}>{label}</Link>)}</nav>
@@ -31,3 +32,4 @@ export default async function AdminProjects({searchParams}:{searchParams:Promise
     </article>)}</div>{!data?.length&&<div className="empty-state"><h3>Nessun progetto per questa selezione.</h3></div>}<AdminPagination page={page} total={count??0} path="/admin/projects" params={{status}}/>
   </>;
 }
+

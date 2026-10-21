@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Instagram, MessageCircle, Copy, Check } from "lucide-react";
 import { site } from "@/config/site";
 
-export const customBeatMessage = "Ciao, ti scrivo per chiederti un beat su misura e per sapere il prezzo.";
+export const customBeatMessage = "Ciao, sono interessato a un beat su misura. Possiamo concordare il prezzo?";
 
 export function CustomBeatContact() {
   const [copied, setCopied] = useState(false);
@@ -25,3 +25,4 @@ export function CustomBeatContact() {
     <small role="status">{copyError ? "Non è stato possibile copiare il messaggio. Puoi scrivermi direttamente nei DM." : "Per Instagram il messaggio viene copiato: incollalo nella conversazione. WhatsApp lo apre già compilato."}</small>
   </section>;
 }
+
