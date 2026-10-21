@@ -21,10 +21,28 @@ export async function deliverNotification(id: string) {
   const message = data?.[0];
   if (!message) return;
   try {
+    let body=message.body as string;
+    const bookingAlert=message.dedupe_key.match(/^reservation-(BKG-[A-Z0-9-]+)-admin$/);
+    const projectAlert=message.dedupe_key.match(/^reservation-(PRJ-[A-Z0-9-]+)-admin$/);
+    const money=(cents:number)=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(cents/100);
+    const date=(value:string)=>new Date(value).toLocaleString("it-IT",{timeZone:"Europe/Rome",dateStyle:"long",timeStyle:"short"});
+    if(bookingAlert){
+      const result=await db.from("bookings").select("reference,name,email,phone,starts_at,ends_at,price_cents,notes").eq("reference",bookingAlert[1]).single();
+      if(result.error||!result.data)throw new Error("Dati della prenotazione da verificare.");
+      const b=result.data;
+      body=["La prenotazione è già confermata. Non serve approvarla.",`Cliente: ${b.name}`,`Email cliente: ${b.email}`,`Telefono: ${b.phone||"Non indicato"}`,"Servizio: Registrazione in studio",`Inizio: ${date(b.starts_at)}`,`Fine: ${date(b.ends_at)}`,`Totale: ${b.price_cents===null?"Da concordare":money(b.price_cents)}`,"Pagamento: Contanti presso lo studio",`Riferimento: ${b.reference}`,...(b.notes?[`Note: ${b.notes}`]:[]),"Registra l’incasso soltanto dopo aver ricevuto i contanti."].join("\n");
+    }
+    if(projectAlert){
+      const result=await db.from("service_projects").select("reference,name,email,phone,service,track_title,track_count,price_cents,status,notes").eq("reference",projectAlert[1]).single();
+      if(result.error||!result.data)throw new Error("Dati del progetto da verificare.");
+      const p=result.data;
+      body=["Hai ricevuto una nuova richiesta GENKS.",`Cliente: ${p.name}`,`Email cliente: ${p.email}`,`Telefono: ${p.phone||"Non indicato"}`,`Servizio: ${p.service.replaceAll("_"," + ")}`,`Brano: ${p.track_title}`,`Tracce audio: ${p.track_count}`,`Totale: ${p.price_cents===null?"Da concordare":money(p.price_cents)}`,`Pagamento: ${p.status==="paid"?"Carta · pagamento confermato":"Contanti presso lo studio"}`,`Riferimento: ${p.reference}`,...(p.notes?[`Note: ${p.notes}`]:[])].join("\n");
+    }
     let calendar: { actionUrl?: string; actionLabel?: string; calendarFile?: string; calendarFilename?: string; body?: string } = {};
     if (/^payment-[a-f0-9-]{36}$/.test(message.dedupe_key)) {
-      const payment = await db.from("payments").select("booking_id,review_reason,status").eq("id", message.dedupe_key.slice(8)).maybeSingle();
+      const payment = await db.from("payments").select("booking_id,project_id,amount_cents,currency,paid_at,review_reason,status").eq("id", message.dedupe_key.slice(8)).maybeSingle();
       if (payment.error) throw new Error("Verifica calendario del pagamento da ripetere.");
+      if(payment.data?.status==="succeeded")body+=`\nTotale: ${new Intl.NumberFormat("it-IT",{style:"currency",currency:payment.data.currency}).format(payment.data.amount_cents/100)}\nData del pagamento: ${date(payment.data.paid_at)}\nMetodo: Pagamento online verificato da Stripe`;
       if (payment.data?.booking_id && !payment.data.review_reason && payment.data.status === "succeeded") {
         const result = await db.from("bookings").select("id,reference,name,email,starts_at,ends_at,updated_at,status").eq("id", payment.data.booking_id).eq("status", "confirmed").maybeSingle();
         if (result.error) throw new Error("Verifica della sessione da ripetere.");
@@ -33,7 +51,7 @@ export async function deliverNotification(id: string) {
           const date = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", dateStyle: "full", timeStyle: "short" }).format(new Date(booking.starts_at));
           calendar = { actionUrl: bookingCalendarUrl(booking), actionLabel: "Aggiungi a Google Calendar",
             calendarFile: bookingCalendarFile(booking), calendarFilename: `GENKS-${booking.reference}.ics`,
-            body: `${message.body}\nSessione in studio: ${date} · ora italiana.\nIndirizzo: ${studioAddress}.\nSalva l’appuntamento su Google Calendar oppure apri il file .ics allegato con Apple Calendar o Outlook.` };
+            body: `${body}\nSessione in studio: ${date} · ora italiana.\nIndirizzo: ${studioAddress}.\nSalva l’appuntamento su Google Calendar oppure apri il file .ics allegato con Apple Calendar o Outlook.` };
         }
       }
     }
@@ -55,12 +73,12 @@ export async function deliverNotification(id: string) {
         if (result.error) throw new Error("Verifica calendario della sessione da ripetere.");
         if (result.data && result.data.email.toLowerCase() === message.recipient.toLowerCase()) {
           const booking = { ...result.data, updated_at: agreement.data.agreed_at };
-          calendar = { actionUrl: bookingCalendarUrl(booking), actionLabel: "Aggiungi a Google Calendar", calendarFile: bookingCalendarFile(booking), calendarFilename: `GENKS-${booking.reference}.ics`, body: `${message.body}\nStudio: ${studioAddress}.\nPer Apple Calendar o Outlook apri il file calendario allegato.` };
+          calendar = { actionUrl: bookingCalendarUrl(booking), actionLabel: "Aggiungi a Google Calendar", calendarFile: bookingCalendarFile(booking), calendarFilename: `GENKS-${booking.reference}.ics`, body: `${body}\nStudio: ${studioAddress}.\nPer Apple Calendar o Outlook apri il file calendario allegato.` };
         }
       }
     }
     await sendTransactionalEmail({
-      to: message.recipient, subject: /^reservation-.*-admin$/.test(message.dedupe_key) ? `GENKS · Hai una nuova prenotazione · ${message.subject.match(/(?:BKG|PRJ)-[A-Z0-9-]+/)?.[0]??"Studio"}` : message.subject, heading: /^reservation-.*-admin$/.test(message.dedupe_key) ? "Hai una nuova prenotazione" : message.heading, body: message.body,
+      to: message.recipient, subject: /^reservation-.*-admin$/.test(message.dedupe_key) ? `GENKS · Hai una nuova prenotazione · ${message.subject.match(/(?:BKG|PRJ)-[A-Z0-9-]+/)?.[0]??"Studio"}` : message.subject, heading: /^reservation-.*-admin$/.test(message.dedupe_key) ? "Hai una nuova prenotazione" : message.heading, body,
       actionUrl: message.action_url ?? undefined, actionLabel: message.action_label ?? undefined,
       idempotencyKey: `notification-${message.id}`, serviceRequest: true,
       ...calendar,
