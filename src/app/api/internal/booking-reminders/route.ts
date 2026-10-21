@@ -18,6 +18,10 @@ export async function POST(request: Request) {
     const alerts = await flushNotifications({ prefix: "reservation-", limit: 10 });
     await new Promise(resolve => setTimeout(resolve, 600));
     const confirmations = await flushNotifications({ prefix: "cash-agree-", limit: 10 });
-    return Response.json({ ...result, notificationFailures: alerts.failures + confirmations.failures }, { status: result.failures || alerts.failures || confirmations.failures ? 503 : 200, headers: { "Cache-Control": "private, no-store" } });
+    await new Promise(resolve => setTimeout(resolve, 600));
+    const contracts = await flushNotifications({prefix:"contract-",limit:5});
+    await new Promise(resolve => setTimeout(resolve, 600));
+    const withdrawals = await flushNotifications({prefix:"withdrawal-",limit:5});
+    return Response.json({ ...result, notificationFailures: alerts.failures + confirmations.failures + contracts.failures + withdrawals.failures }, { status: result.failures || alerts.failures || confirmations.failures || contracts.failures || withdrawals.failures ? 503 : 200, headers: { "Cache-Control": "private, no-store" } });
   } catch { return Response.json({ error: "Promemoria da verificare." }, { status: 503, headers: { "Cache-Control": "private, no-store" } }); }
 }

@@ -2,22 +2,24 @@
 import { useState } from "react";
 import { createProject } from "@/app/services/actions";
 import { ServiceSubmit } from "./service-submit";
-import { projectRates, serviceAmount, serviceRateVersion } from "@/lib/service-rates";
+import { projectPrice, projectDelivery, serviceAmount, projectRateVersion } from "@/lib/service-rates";
 
 const options = [{ code: "mix", title: "Mix", copy: "Equilibrio, spazio e carattere per le tue tracce." }, { code: "master", title: "Master", copy: "Definizione e resa finale del tuo mix." }, { code: "mix_master", title: "Mix & Master", copy: "Il percorso completo fino al brano finito." }];
 
 export function ProjectRequestForm({ initialService, remoteCardReady }: { initialService: string; remoteCardReady: boolean }) {
   const [service, setService] = useState(initialService);
   const [mode, setMode] = useState("");
-  const total = projectRates[service as keyof typeof projectRates];
+  const [tracks, setTracks] = useState(1);
+  const total = projectPrice(service, service === "master" ? 1 : tracks);
+  const [earlyStart, setEarlyStart] = useState(false);
   return <form action={createProject} className="premium-form form-grid service-request-form">
-    <input type="hidden" name="rateVersion" value={serviceRateVersion}/><label className="form-honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
+    <input type="hidden" name="rateVersion" value={projectRateVersion}/><label className="form-honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
     <div className="booking-step full"><span>01</span><div><strong>Seleziona il tipo di servizio di cui hai bisogno</strong><small>Scegli il servizio: il prezzo per un brano appare dopo la selezione.</small></div></div>
     <fieldset className="full project-service-options"><legend className="sr-only">Servizio</legend>{options.map(option => <label key={option.code} className={service === option.code ? "selected" : ""}>
       <input type="radio" name="service" value={option.code} checked={service === option.code} onChange={() => setService(option.code)} required />
       <strong>{option.title}</strong><small>{option.copy}</small>
     </label>)}</fieldset>
-    {service && <aside className="notice full" aria-live="polite"><strong>Prezzo: {serviceAmount(total)} · 1 brano</strong><p>Il numero di tracce separate non moltiplica il prezzo.</p></aside>}
+    {service && <aside className="notice full" aria-live="polite"><strong>{total === null ? "Oltre 48 tracce: preventivo personalizzato" : `Prezzo: ${serviceAmount(total)} · 1 brano`}</strong><p>Mix: fino a 8 tracce 89,99 €; 9–24 tracce 139,99 €; 25–48 tracce 199,99 €. Mix + master: 119,99 € / 179,99 € / 239,99 €. Master stereo: 39,99 €.</p><p>{projectDelivery}</p></aside>}
     <fieldset className="full project-mode-options"><legend>Come vuoi lavorare?</legend>
       <p>Puoi lavorare a distanza oppure fisicamente in studio. L’incontro in studio si organizza insieme e non occupa automaticamente uno slot di registrazione.</p>
       <label><input type="radio" name="mode" value="remote" required checked={mode === "remote"} onChange={() => setMode("remote")}/><span><strong>A distanza</strong><small>Invio file online · pagamento con carta tramite Stripe{!remoteCardReady && " (in preparazione)"}.</small></span></label>
@@ -25,7 +27,7 @@ export function ProjectRequestForm({ initialService, remoteCardReady }: { initia
     </fieldset>
     {mode === "remote" && !remoteCardReady && <p className="notice full">Il pagamento con carta per il lavoro a distanza è in preparazione. Per informazioni <a className="text-link" href="mailto:assistenza@prodbygenks.com">contatta GENKS</a>.</p>}
     <label>Titolo del brano<input name="trackTitle" required maxLength={160} placeholder="Come si chiama il tuo prossimo brano?" /></label>
-    <label>Numero di tracce separate<input name="trackCount" type="number" min="1" max="200" defaultValue="1" /></label>
+    <label>{service === "master" ? "Un mix stereo pronto per il master" : "Numero di tracce audio separate"}<input name="trackCount" type="number" min="1" max="200" required value={service === "master" ? 1 : tracks} readOnly={service === "master"} onChange={event => setTracks(Number(event.target.value))}/><small>Conta ogni file audio mono o stereo separato. Un brano per progetto; il master stereo utilizza un solo mix, non gli stem.</small></label>{service && total === null && <p className="notice full">Per più di 48 tracce <a href="mailto:assistenza@prodbygenks.com">richiedi un preventivo</a>: nessun prezzo o pagamento automatico.</p>}
     <label className="full">Descrizione del progetto<textarea name="description" required minLength={10} maxLength={4000} rows={4} placeholder="Raccontami il risultato che cerchi e in che fase è il brano." /></label>
     <label className="full">Scadenza desiderata <small>facoltativa</small><input name="desiredDeadline" type="date" /></label>
     <details className="service-optional full"><summary>Aggiungi riferimenti o note <span>facoltativo</span></summary><div>
@@ -37,7 +39,7 @@ export function ProjectRequestForm({ initialService, remoteCardReady }: { initia
     <label>Nome d’arte <small>facoltativo</small><input name="artistName" maxLength={120} /></label>
     <label>Email<input name="email" type="email" required autoComplete="email" /></label>
     <label>Telefono <small>facoltativo</small><input name="phone" type="tel" autoComplete="tel" maxLength={40} /></label>
-    {service && <aside className="notice full" aria-live="polite"><strong>Totale: {serviceAmount(total)} · 1 brano</strong></aside>}<label className="full consent-label"><input type="checkbox" name="accepted" required/>Accetto {service ? `il totale di ${serviceAmount(total)} per un brano` : "il prezzo del servizio selezionato"} e {mode === "remote" ? "il pagamento con carta tramite Stripe" : "il pagamento in contanti presso lo studio"}. Consegna e revisioni saranno concordate prima dell’avvio del lavoro.</label><ServiceSubmit label={mode === "remote" ? "Continua al pagamento" : "Conferma la prenotazione"} disabled={!service || !mode || mode === "remote" && !remoteCardReady} />
-    <p className="service-form-note full">{mode === "remote" ? "Il pagamento si completa su Stripe; la conferma arriva dopo la verifica del pagamento." : "La prenotazione in studio è confermata subito, senza addebiti online."} La scadenza desiderata è una preferenza: file, tempi di consegna e revisioni vengono definiti prima di iniziare.</p>
+    {service && <aside className="notice full" aria-live="polite"><strong>Totale: {total === null ? "preventivo personalizzato" : serviceAmount(total)} · 1 brano</strong></aside>}<label className="full consent-label"><input type="checkbox" name="accepted" required/>Accetto {service && total !== null ? `il totale di ${serviceAmount(total)} per un brano` : "il prezzo del servizio selezionato"} e {mode === "remote" ? "il pagamento con carta tramite Stripe" : "il pagamento in contanti presso lo studio"}. Ho letto le <a href="/legal/terms" target="_blank" rel="noreferrer">condizioni del servizio e dei rimborsi</a> e l’<a href="/legal/privacy" target="_blank" rel="noreferrer">informativa privacy</a>. Sono incluse 2 revisioni; prima versione entro 7 giorni lavorativi dall’avvio consentito, dopo pagamento e file completi.</label><label className="full consent-label"><input type="checkbox" name="earlyStart" checked={earlyStart} onChange={event => setEarlyStart(event.target.checked)}/>Chiedo espressamente che il servizio inizi prima dei 14 giorni previsti per il recesso. Facoltativo: senza questa richiesta il lavoro inizia dopo tale termine.</label>{earlyStart && <label className="full consent-label"><input type="checkbox" name="withdrawalAcknowledged" required/>Riconosco che perderò il diritto di recesso solo quando il servizio sarà stato interamente eseguito. Se recedo prima, può essere dovuto solo l’importo proporzionale al lavoro effettivamente svolto, nei casi previsti dalla legge.</label>}<ServiceSubmit label={mode === "remote" ? "Continua al pagamento" : "Conferma la prenotazione"} disabled={total === null || !service || !mode || mode === "remote" && !remoteCardReady} />
+    <p className="service-form-note full">{mode === "remote" ? "Il pagamento si completa su Stripe; la conferma arriva dopo la verifica del pagamento." : "La prenotazione in studio è confermata subito, senza addebiti online."} La scadenza desiderata è una preferenza. Le 2 revisioni riguardano il materiale iniziale; nuovo materiale o lavorazioni extra richiedono un preventivo separato accettato da te.</p>
   </form>;
 }

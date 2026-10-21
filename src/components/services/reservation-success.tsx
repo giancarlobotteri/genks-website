@@ -19,7 +19,7 @@ export function ReservationSuccess({ reference, project = false, paid = false }:
       <h1 id="reservation-success-title">{paid ? "Il pagamento è andato a buon fine." : "La prenotazione è andata a buon fine."}</h1>
       <p>Grazie per aver scelto GENKS. La tua prenotazione è confermata.</p>
       <p>Riferimento: <strong>{reference}</strong></p>
-      <p>{project ? "Invio file, tempi di consegna e revisioni saranno concordati prima dell’avvio." : "Il riepilogo e i collegamenti al calendario ti arriveranno via email."}</p>
+      <p>{project ? "Riceverai via email le condizioni accettate e i prossimi passi per inviare i file. Per tempi e revisioni fa fede il riepilogo del tuo ordine." : "Il riepilogo e i collegamenti al calendario ti arriveranno via email."}</p>
       {!paid && <p>Il pagamento avviene in contanti presso lo studio. Nessun addebito online.</p>}
       <p className="muted">Tra pochi secondi tornerai automaticamente alla home.</p>
       <Link className="button button-primary" href="/" replace>Torna subito alla home</Link>

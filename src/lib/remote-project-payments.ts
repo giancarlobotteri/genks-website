@@ -1,4 +1,5 @@
 import "server-only";
+import { flushNotifications } from "@/lib/notifications";
 import { hasStripe } from "@/lib/env";
 import { assertLiveCommerceReady } from "@/lib/commerce/live-readiness";
 import { stripeReadiness } from "@/lib/stripe-readiness";
@@ -9,13 +10,13 @@ import { remoteProjectCardAllowed } from "@/lib/remote-project-policy";
 
 export async function remoteProjectPaymentsReady() {
   if (process.env.GENKS_REMOTE_PROJECT_CARD_PAYMENTS !== "true" || !hasStripe || !process.env.GENKS_STRIPE_ACCOUNT_ID) return false;
-  if (privatePreview && !stripeTestMode()) return false;
+  if (privatePreview || stripeTestMode()) return false;
   try {
-    await assertLiveCommerceReady();
+    await assertLiveCommerceReady("services");
     const readiness = await stripeReadiness();
     if (!readiness.ready || readiness.accountId !== process.env.GENKS_STRIPE_ACCOUNT_ID) return false;
     const account = await getStripe().accounts.retrieve();
-    return stripeTestMode() || account.charges_enabled === true;
+    return account.charges_enabled === true && account.capabilities?.card_payments === "active";
   } catch { return false; }
 }
 
@@ -36,7 +37,7 @@ export async function openRemoteProjectPayment(data: Record<string, unknown>) {
     success_url: `${origin}/checkout/success?remote_session={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/services/project?payment=cancelled`,
     metadata: { project_id: quote.project_id, quote_id: quote.id, payment_type: "remote_project" },
-    custom_text: { submit: { message: "Servizio per un brano. Invio file, revisioni e consegna saranno concordati prima dell’avvio. Nessuno slot di registrazione viene prenotato." } },
+    custom_text: { submit: { message: "Servizio per un brano. Prima versione entro 7 giorni lavorativi dall’avvio consentito, dopo pagamento e file completi. Due revisioni incluse. Nessuno slot di registrazione viene prenotato." } },
   }, { idempotencyKey: `remote-project-${quote.id}` });
   const saved = await db.from("service_quotes").update({ stripe_session_id: session.id, checkout_url: session.url, status: "open" })
     .eq("id", quote.id).eq("status", "creating").select("id").maybeSingle();
@@ -44,5 +45,6 @@ export async function openRemoteProjectPayment(data: Record<string, unknown>) {
     if (session.status === "open") await getStripe().checkout.sessions.expire(session.id);
     throw new Error("remote_payment_save");
   }
+  try { await flushNotifications({prefix: `contract-${quote.project_id}`}); } catch { console.error("Contract receipt queued for retry."); }
   return session.url;
 }

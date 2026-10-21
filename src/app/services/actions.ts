@@ -10,7 +10,7 @@ import { fromRomeWallTime } from "@/lib/rome-time";
 import { revalidatePath } from "next/cache";
 import { flushNotifications } from "@/lib/notifications";
 import { openRemoteProjectPayment } from "@/lib/remote-project-payments";
-import { serviceRateVersion } from "@/lib/service-rates";
+import { serviceRateVersion, projectRateVersion, projectPrice } from "@/lib/service-rates";
 
 const text = (min = 1, max = 1000) => z.string().trim().min(min).max(max);
 
@@ -50,8 +50,8 @@ export async function createProject(formData: FormData) {
   if (!await allowPublicRequest("service")) redirect("/services/project?error=limit");
   if (!hasSupabase) redirect("/services/project?error=setup");
   if(formData.get("website"))redirect("/services/project?error=invalid");
-  const parsed=z.object({name:text(2,120),artistName:z.string().trim().max(120),email:z.email(),phone:z.string().trim().max(40),trackTitle:text(1,160),service:z.enum(["mix","master","mix_master"]),description:text(10,4000),trackCount:z.coerce.number().int().min(1).max(200),referenceLinks:z.string().trim().max(2000).default(""),desiredDeadline:z.union([z.literal(""),z.iso.date()]),notes:z.string().trim().max(2000).default(""),mode:z.enum(["studio","remote"]),rateVersion:z.literal(serviceRateVersion),accepted:z.literal("on")}).safeParse(Object.fromEntries(formData));
-  if(!parsed.success) redirect("/services/project?error=invalid"); const user=await getCurrentUser();const db=createSupabaseAdminClient();
+  const parsed=z.object({name:text(2,120),artistName:z.string().trim().max(120),email:z.email(),phone:z.string().trim().max(40),trackTitle:text(1,160),service:z.enum(["mix","master","mix_master"]),description:text(10,4000),trackCount:z.coerce.number().int().min(1).max(200),referenceLinks:z.string().trim().max(2000).default(""),desiredDeadline:z.union([z.literal(""),z.iso.date()]),notes:z.string().trim().max(2000).default(""),mode:z.enum(["studio","remote"]),rateVersion:z.literal(projectRateVersion),accepted:z.literal("on"),earlyStart:z.preprocess(v=>v==="on",z.boolean()),withdrawalAcknowledged:z.preprocess(v=>v==="on",z.boolean())}).safeParse(Object.fromEntries(formData));
+  if(!parsed.success || projectPrice(parsed.data.service,parsed.data.trackCount) === null || parsed.data.earlyStart && !parsed.data.withdrawalAcknowledged) redirect("/services/project?error=invalid"); const user=await getCurrentUser();const db=createSupabaseAdminClient();
   const links=parsed.data.referenceLinks.split(/\s+/).filter(Boolean).filter(link=>URL.canParse(link)&&["https:","http:"].includes(new URL(link).protocol)).slice(0,20);
   if (parsed.data.mode === "remote") {
     let checkoutUrl: string;
@@ -94,5 +94,6 @@ async function flushReservationNotifications(reference: string) {
     await flushNotifications({ prefix: `reservation-${reference}-admin` });
     await new Promise(resolve => setTimeout(resolve, 600));
     await flushNotifications({ prefix: `cash-agree-${agreement.data.id}` });
+    if(type === "project") { await new Promise(resolve=>setTimeout(resolve,600)); await flushNotifications({prefix:`contract-${request.data.id}`}); }
   } catch { console.error("Reservation saved; notification delivery will be retried."); }
 }
