@@ -42,8 +42,8 @@ export function CinematicHero() {
     window.addEventListener("touchstart", cancel, { passive: true });
     window.addEventListener("keydown", cancel);
     const step = (now: number) => {
-      const t = Math.min(1, (now - started) / 1800);
-      const eased = t * t * t * (t * (t * 6 - 15) + 10);
+      const t = Math.min(1, (now - started) / 4200);
+      const eased = t * t * (3 - 2 * t);
       window.scrollTo({ top: from + (to - from) * eased, behavior: "instant" });
       if (t < 1) controller.frame = requestAnimationFrame(step);
       else {
@@ -96,7 +96,7 @@ export function CinematicHero() {
       current = catalogScroll.current ? target : current + (target - current) * (1 - Math.exp(-delta * 14));
       if (Math.abs(current - target) < .0001) current = target;
       progressRef.current = current;
-      const fade = smoothstep(.86, .98, current);
+      const fade = smoothstep(.7, .99, current);
       const ui = 1 - smoothstep(.002, .16, current);
       const desiredInterface = Math.max(ui, smoothstep(.98, 1, current));
       interfaceProgress += (desiredInterface - interfaceProgress) * (1 - Math.exp(-delta * 5));
@@ -163,12 +163,10 @@ export function CinematicHero() {
     <section id="home" ref={sectionRef} className={`${styles.sequence} ${paused ? styles.motionPaused : ""}`} aria-labelledby="cinematic-title">
       <div className={styles.stage}>
         <div className={styles.halo} aria-hidden="true" />
-        <div className={styles.soundscape} aria-hidden="true">
-          <div className={styles.orbital} />
-          <div className={styles.waveLeft}><SoundWave /></div>
-          <div className={styles.waveRight}><SoundWave /></div>
-          <div className={styles.axisLeft}><i /><i /><i /></div>
-          <div className={styles.axisRight}><i /><i /><i /></div>
+        <div className={styles.atmosphere} aria-hidden="true">
+          <div className={styles.currentA} />
+          <div className={styles.currentB} />
+          <div className={styles.currentC} />
         </div>
 
         <h1 id="cinematic-title" className="sr-only">GENKS — Beat e servizi musicali</h1>
@@ -200,9 +198,3 @@ export function CinematicHero() {
   );
 }
 
-function SoundWave() {
-  return <svg viewBox="0 0 360 160" fill="none" focusable="false">
-    <path d="M0 80H35L48 68L60 92L72 48L84 112L96 29L108 131L120 50L132 110L144 66L156 94L168 75L180 85L192 56L204 104L216 37L228 123L240 55L252 105L264 70L276 90L288 77L300 83H360" />
-    <path d="M0 80H360" />
-  </svg>;
-}

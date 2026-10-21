@@ -36,7 +36,7 @@ export async function openRemoteProjectPayment(data: Record<string, unknown>) {
       product_data: { name: `GENKS · ${String(data.service).replaceAll("_", " + ")} · 1 brano`, description: quote.scope.slice(0, 300) } } }],
     success_url: `${origin}/checkout/success?remote_session={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/services/project?payment=cancelled`,
-    metadata: { project_id: quote.project_id, quote_id: quote.id, payment_type: "remote_project" },
+    metadata: { project_id: quote.project_id, quote_id: quote.id, payment_type: "remote_project", fulfillment_mode: String(data.mode) },
     custom_text: { submit: { message: "Servizio per un brano. Prima versione entro 7 giorni lavorativi dall’avvio consentito, dopo pagamento e file completi. Due revisioni incluse. Nessuno slot di registrazione viene prenotato." } },
   }, { idempotencyKey: `remote-project-${quote.id}` });
   const saved = await db.from("service_quotes").update({ stripe_session_id: session.id, checkout_url: session.url, status: "open" })

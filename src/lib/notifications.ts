@@ -36,7 +36,7 @@ export async function deliverNotification(id: string) {
       const result=await db.from("service_projects").select("reference,name,email,phone,service,track_title,track_count,price_cents,status,notes").eq("reference",projectAlert[1]).single();
       if(result.error||!result.data)throw new Error("Dati del progetto da verificare.");
       const p=result.data;
-      body=["Hai ricevuto una nuova richiesta GENKS.",`Cliente: ${p.name}`,`Email cliente: ${p.email}`,`Telefono: ${p.phone||"Non indicato"}`,`Servizio: ${p.service.replaceAll("_"," + ")}`,`Brano: ${p.track_title}`,`Tracce audio: ${p.track_count}`,`Totale: ${p.price_cents===null?"Da concordare":money(p.price_cents)}`,`Pagamento: ${p.status==="paid"?"Carta · pagamento confermato":"Contanti presso lo studio"}`,`Riferimento: ${p.reference}`,...(p.notes?[`Note: ${p.notes}`]:[])].join("\n");
+      body=["Hai ricevuto una nuova richiesta GENKS.",`Cliente: ${p.name}`,`Email cliente: ${p.email}`,`Telefono: ${p.phone||"Non indicato"}`,`Servizio: ${p.service.replaceAll("_"," + ")}`,`Modalità: ${p.notes?.includes("Modalità: studio") ? "Fisicamente in studio" : "A distanza"}`,`Brano: ${p.track_title}`,`Tracce audio: ${p.track_count}`,`Totale: ${p.price_cents===null?"Da concordare":money(p.price_cents)}`,`Pagamento: ${p.status==="paid"?"Carta · pagamento confermato":"Contanti presso lo studio"}`,`Riferimento: ${p.reference}`,...(p.notes?[`Note: ${p.notes}`]:[])].join("\n");
     }
     let calendar: { actionUrl?: string; actionLabel?: string; calendarFile?: string; calendarFilename?: string; body?: string } = {};
     if (/^payment-[a-f0-9-]{36}$/.test(message.dedupe_key)) {
@@ -105,4 +105,3 @@ export async function flushNotifications(options: { prefix?: string; limit?: num
   if (failures && options.throwOnFailure) throw new Error("Notifiche da ritentare.");
   return { attempted: data?.length ?? 0, failures };
 }
-

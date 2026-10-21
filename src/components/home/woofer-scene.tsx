@@ -316,24 +316,24 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       const expansion = reducedMotion.matches ? 0 : (1 - Math.cos(elapsed * Math.PI / 3.8)) * .5;
       const easing = 1 - Math.exp(-delta * 5);
       const smoothstep = (from: number, to: number, value: number) => THREE.MathUtils.smoothstep(value, from, to);
-      const zoom = mode === "hero" ? smoothstep(.48, .96, travel) : 0;
+      const zoom = mode === "hero" ? smoothstep(.12, .98, travel) : 0;
       const turn = Math.sin(Math.PI * smoothstep(.02, .82, travel));
       const reveal = Math.sin(Math.PI * smoothstep(.04, .88, travel));
       const perspective = 1 - smoothstep(0, .7, travel) * .55;
       const orbit = moving ? Math.sin(elapsed * .45) : 0;
       const targetX = mode === "exploded" ? .15 + travel * .22 : reveal * .22 + orbit * .025 + (reducedMotion.matches ? 0 : pointerY * .08);
-      const targetY = mode === "exploded" ? -.6 - travel * .6 : -turn * .95 + orbit * .045 + (reducedMotion.matches ? 0 : pointerX * .12);
+      const targetY = mode === "exploded" ? -.6 - travel * .6 : -turn * .4 + orbit * .045 + (reducedMotion.matches ? 0 : pointerX * .12);
       assembly.rotation.x = THREE.MathUtils.lerp(assembly.rotation.x, targetX, easing || 1);
       assembly.rotation.y = THREE.MathUtils.lerp(assembly.rotation.y, targetY, easing || 1);
       assembly.rotation.z = moving ? Math.sin(elapsed * .3) * .035 + travel * .035 : 0;
       const scale = 1 + expansion * .005;
       diaphragm.scale.set(scale, scale, 1);
-      diaphragm.position.z = expansion * .028 + (mode === "exploded" ? travel * .6 : reveal * .24);
-      front.position.z = mode === "exploded" ? travel * 1.2 : reveal * .55;
+      diaphragm.position.z = expansion * .028 + (mode === "exploded" ? travel * .6 : reveal * .12);
+      front.position.z = mode === "exploded" ? travel * 1.2 : reveal * .25;
       blue.emissiveIntensity = 1.45 + expansion * .3 + reveal * 1.1;
       gate.visible = mode === "hero" && travel > .015 && travel < .98;
-      gateMaterial.opacity = smoothstep(.015, .18, travel) * (1 - smoothstep(.86, .98, travel)) * .85;
-      gate.scale.setScalar(1 + zoom * 11);
+      gateMaterial.opacity = smoothstep(.15, .4, travel) * (1 - smoothstep(.65, .95, travel)) * .22;
+      gate.scale.setScalar(1 + zoom * 3);
       gate.rotation.z = -travel * .65;
       arc.rotation.z = elapsed * .12 + travel * 1.4;
       satellite.rotation.z = moving ? elapsed * .12 + travel * Math.PI : 0;
@@ -346,9 +346,14 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       if (mode === "hero" && (!camera.view || camera.view.offsetY !== 80 * uiSpace || camera.view.fullWidth !== width || camera.view.fullHeight !== height)) {
         camera.setViewOffset(width, height, 0, 80 * uiSpace, width, height);
       }
-      // Travel through the light gate while the intact woofer recedes, rather than enlarging the logo into pixels.
-      assembly.scale.setScalar(mode === "hero" ? 1 - zoom * .65 : 1);
-      assembly.position.z = mode === "hero" ? -zoom * 12 : 0;
+      // Slow optical approach preserves the original mesh and avoids near-plane clipping or a retreating logo.
+      assembly.scale.setScalar(1);
+      assembly.position.z = 0;
+      const cameraZoom = mode === "hero" ? 1 + zoom * 2.6 : 1;
+      if (Math.abs(camera.zoom - cameraZoom) > .0001) {
+        camera.zoom = cameraZoom;
+        camera.updateProjectionMatrix();
+      }
       assembly.position.y = mode === "hero" ? .2 * perspective : 0;
       camera.position.set(mode === "exploded" ? travel * .25 : 0, mode === "exploded" ? travel * .12 : .08 * perspective, distance - (mode === "exploded" ? travel * .35 : 0));
       if (mode === "hero") {

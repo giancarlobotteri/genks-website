@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { availableSlots } from "../src/lib/booking-slots.ts";
-import { remoteProjectCardAllowed } from "../src/lib/remote-project-policy.ts";
+import { remoteProjectCardAllowed, projectPaymentMethod } from "../src/lib/remote-project-policy.ts";
 const rule = [{weekday:6,start_time:"10:00",end_time:"00:00",ends_next_day:true,flexible_close:false,slot_minutes:30,buffer_minutes:15}];
 const now = new Date("2026-10-01T00:00:00Z");
 test("quarter-hour lengths keep midnight, thirty-minute starts and fifteen-minute buffer", () => {
@@ -13,12 +13,25 @@ test("quarter-hour lengths keep midnight, thirty-minute starts and fifteen-minut
   assert.ok(!availableSlots("2026-10-24",1.5,rule,busy,now).includes("10:00"));
   assert.ok(!availableSlots("2026-10-24",0.25,rule,busy,now).includes("12:00"));
 });
-test("card policy allows only remote mix/master and fails closed when disabled", () => {
+test("card policy allows studio and remote mix/master and fails closed outside that scope", () => {
   for (const service of ["mix","master","mix_master"]) {
     assert.ok(remoteProjectCardAllowed({enabled:true,type:"project",mode:"remote",service}));
     assert.ok(!remoteProjectCardAllowed({enabled:false,type:"project",mode:"remote",service}));
-    assert.ok(!remoteProjectCardAllowed({enabled:true,type:"project",mode:"studio",service}));
+    assert.ok(remoteProjectCardAllowed({enabled:true,type:"project",mode:"studio",service}));
+    assert.ok(!remoteProjectCardAllowed({enabled:false,type:"project",mode:"studio",service}));
+    assert.ok(!remoteProjectCardAllowed({enabled:true,type:"project",mode:"invalid",service}));
   }
   for (const type of ["booking","beat","exclusive"]) assert.ok(!remoteProjectCardAllowed({enabled:true,type,mode:"remote",service:"mix"}));
   assert.ok(!remoteProjectCardAllowed({enabled:true,type:"project",mode:"remote",service:"custom"}));
+});
+
+test("payment method is independent of studio work and invalid combinations fail closed", () => {
+  assert.equal(projectPaymentMethod("studio", "card"), "card");
+  assert.equal(projectPaymentMethod("studio", "cash"), "cash");
+  assert.equal(projectPaymentMethod("remote", "card"), "card");
+  assert.equal(projectPaymentMethod("remote", "cash"), null);
+  assert.equal(projectPaymentMethod("studio", "forged"), null);
+  assert.equal(projectPaymentMethod("invalid", "card"), null);
+  assert.equal(projectPaymentMethod("studio"), "cash");
+  assert.equal(projectPaymentMethod("remote"), "card");
 });
