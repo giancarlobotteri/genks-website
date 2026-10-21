@@ -42,14 +42,21 @@ export function CinematicHero() {
     window.addEventListener("touchstart", cancel, { passive: true });
     window.addEventListener("keydown", cancel);
     const step = (now: number) => {
-      const t = Math.min(1, (now - started) / 3800);
+      const t = Math.min(1, (now - started) / 1800);
       const eased = t * t * t * (t * (t * 6 - 15) + 10);
       window.scrollTo({ top: from + (to - from) * eased, behavior: "instant" });
       if (t < 1) controller.frame = requestAnimationFrame(step);
       else {
-        cancel();
-        if (destination === "/services") router.push(destination);
-        else history.replaceState(history.state, "", destination);
+        // Let the final scene frame paint before changing route or moving focus.
+        controller.frame = requestAnimationFrame(() => {
+          cancel();
+          if (destination === "/services") router.push(destination);
+          else {
+            history.replaceState(history.state, "", destination);
+            catalog.tabIndex = -1;
+            catalog.focus({ preventScroll: true });
+          }
+        });
       }
     };
     controller.frame = requestAnimationFrame(step);
@@ -86,7 +93,7 @@ export function CinematicHero() {
     const paint = (time: number) => {
       const delta = lastTime ? Math.min((time - lastTime) / 1000, .05) : 1 / 60;
       lastTime = time;
-      current += (target - current) * (1 - Math.exp(-delta * 10));
+      current = catalogScroll.current ? target : current + (target - current) * (1 - Math.exp(-delta * 14));
       if (Math.abs(current - target) < .0001) current = target;
       progressRef.current = current;
       const fade = smoothstep(.86, .98, current);
@@ -114,6 +121,7 @@ export function CinematicHero() {
       section.style.setProperty("--hero-ui-opacity", String(ui));
       section.style.setProperty("--hero-ui-visibility", ui < .01 ? "hidden" : "visible");
       section.style.setProperty("--poster-zoom", String(Math.exp(zoom * Math.log(9))));
+      section.style.setProperty("--scene-travel", String(current));
       stage.style.pointerEvents = fade > .8 ? "none" : "auto";
       section.style.pointerEvents = fade > .8 ? "none" : "auto";
       frame = current === target && interfaceProgress === desiredInterface ? 0 : requestAnimationFrame(paint);
@@ -155,6 +163,13 @@ export function CinematicHero() {
     <section id="home" ref={sectionRef} className={`${styles.sequence} ${paused ? styles.motionPaused : ""}`} aria-labelledby="cinematic-title">
       <div className={styles.stage}>
         <div className={styles.halo} aria-hidden="true" />
+        <div className={styles.soundscape} aria-hidden="true">
+          <div className={styles.orbital} />
+          <div className={styles.waveLeft}><SoundWave /></div>
+          <div className={styles.waveRight}><SoundWave /></div>
+          <div className={styles.axisLeft}><i /><i /><i /></div>
+          <div className={styles.axisRight}><i /><i /><i /></div>
+        </div>
 
         <h1 id="cinematic-title" className="sr-only">GENKS — Beat e servizi musicali</h1>
         <div className={styles.visual}>
@@ -168,8 +183,8 @@ export function CinematicHero() {
 
         <div className={styles.content}>
           <div className={styles.actions}>
-            <a className={styles.primary} href="#collection" onClick={event => goToCatalog(event)}>Vai al catalogo <ArrowUpRight size={19} aria-hidden="true" /></a>
-            <Link className={styles.secondary} href="/services" onClick={event => goToCatalog(event, "/services")}>Prenota un servizio <ArrowUpRight size={17} aria-hidden="true" /></Link>
+            <a className={styles.primary} href="#collection" onClick={event => goToCatalog(event)}><span>Vai al catalogo<small>Ascolta i beat. Trova il tuo suono.</small></span><ArrowUpRight size={20} aria-hidden="true" /></a>
+            <Link className={styles.secondary} href="/services" onClick={event => goToCatalog(event, "/services")}><span>Prenota un servizio<small>Registrazione, mix e master.</small></span><ArrowUpRight size={20} aria-hidden="true" /></Link>
           </div>
         </div>
 
@@ -183,4 +198,11 @@ export function CinematicHero() {
       </div>
     </section>
   );
+}
+
+function SoundWave() {
+  return <svg viewBox="0 0 360 160" fill="none" focusable="false">
+    <path d="M0 80H35L48 68L60 92L72 48L84 112L96 29L108 131L120 50L132 110L144 66L156 94L168 75L180 85L192 56L204 104L216 37L228 123L240 55L252 105L264 70L276 90L288 77L300 83H360" />
+    <path d="M0 80H360" />
+  </svg>;
 }

@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { Banknote, CreditCard } from "lucide-react";
+import styles from "./project-payment-options.module.css";
 import { createProject } from "@/app/services/actions";
 import { ServiceSubmit } from "./service-submit";
 import { projectPrice, projectDelivery, serviceAmount, projectRateVersion } from "@/lib/service-rates";
@@ -20,10 +22,10 @@ export function ProjectRequestForm({ initialService, remoteCardReady }: { initia
       <strong>{option.title}</strong><small>{option.copy}</small>
     </label>)}</fieldset>
     {service && <aside className="notice full" aria-live="polite"><strong>{total === null ? "Oltre 48 tracce: preventivo personalizzato" : `Prezzo: ${serviceAmount(total)} · 1 brano`}</strong><p>Mix: fino a 8 tracce 89,99 €; 9–24 tracce 139,99 €; 25–48 tracce 199,99 €. Mix + master: 119,99 € / 179,99 € / 239,99 €. Master stereo: 39,99 €.</p><p>{projectDelivery}</p></aside>}
-    <fieldset className="full project-mode-options"><legend>Come vuoi lavorare?</legend>
-      <p>Puoi lavorare a distanza oppure fisicamente in studio. L’incontro in studio si organizza insieme e non occupa automaticamente uno slot di registrazione.</p>
-      <label><input type="radio" name="mode" value="remote" required checked={mode === "remote"} onChange={() => setMode("remote")}/><span><strong>A distanza</strong><small>Invio file online · pagamento con carta tramite Stripe{!remoteCardReady && " (in preparazione)"}.</small></span></label>
-      <label><input type="radio" name="mode" value="studio" required checked={mode === "studio"} onChange={() => setMode("studio")}/><span><strong>Fisicamente in studio</strong><small>Incontro da organizzare · pagamento in contanti presso lo studio.</small></span></label>
+    <fieldset className={`full project-mode-options ${styles.options}`}><legend>Scegli come pagare</legend>
+      <p>Per il lavoro a distanza paga online con carta. Se preferisci lavorare fisicamente in studio, puoi pagare in contanti e organizzare l’incontro con GENKS.</p>
+      <label className={mode === "remote" ? styles.selected : ""}><input type="radio" name="mode" value="remote" required checked={mode === "remote"} onChange={() => setMode("remote")}/><CreditCard size={25} aria-hidden="true"/><span><strong>Carta · pagamento online</strong><small>Stripe · Apple Pay sui dispositivi compatibili. Invio file e lavoro a distanza{!remoteCardReady && " · in preparazione"}.</small></span></label>
+      <label className={mode === "studio" ? styles.selected : ""}><input type="radio" name="mode" value="studio" required checked={mode === "studio"} onChange={() => setMode("studio")}/><Banknote size={25} aria-hidden="true"/><span><strong>Contanti · presso lo studio</strong><small>Per lavorare fisicamente in studio. L’incontro si organizza insieme e non prenota uno slot di registrazione.</small></span></label>
     </fieldset>
     {mode === "remote" && !remoteCardReady && <p className="notice full">Il pagamento con carta per il lavoro a distanza è in preparazione. Per informazioni <a className="text-link" href="mailto:assistenza@prodbygenks.com">contatta GENKS</a>.</p>}
     <label>Titolo del brano<input name="trackTitle" required maxLength={160} placeholder="Come si chiama il tuo prossimo brano?" /></label>

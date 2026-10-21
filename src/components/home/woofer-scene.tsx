@@ -198,6 +198,15 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       mesh.position.copy(glyph.position);
     });
 
+    // A lightweight light gate surrounds the existing model; no extra renderer or postprocessing.
+    const gate = new THREE.Group();
+    scene.add(gate);
+    const gateMaterial = new THREE.MeshBasicMaterial({ color: 0x6bb5ff, transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
+    ring(2.02, .012, -.7, gateMaterial, gate);
+    ring(2.14, .004, -.8, gateMaterial, gate);
+    const arc = addMesh(new THREE.TorusGeometry(2.24, .018, 8, 96, Math.PI * .72), gateMaterial, gate);
+    arc.position.z = -.9;
+
     // Combine fixed parts sharing a material; the parent groups still rotate and separate normally.
     for (const group of [assembly, front, diaphragm, logo]) {
       const batches = new Map<THREE.Material, THREE.Mesh[]>();
@@ -307,13 +316,13 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       const expansion = reducedMotion.matches ? 0 : (1 - Math.cos(elapsed * Math.PI / 3.8)) * .5;
       const easing = 1 - Math.exp(-delta * 5);
       const smoothstep = (from: number, to: number, value: number) => THREE.MathUtils.smoothstep(value, from, to);
-      const zoom = mode === "hero" ? smoothstep(.56, .94, travel) : 0;
-      const turn = smoothstep(.06, .6, travel);
-      const reveal = Math.sin(Math.PI * smoothstep(.1, .62, travel));
+      const zoom = mode === "hero" ? smoothstep(.48, .96, travel) : 0;
+      const turn = Math.sin(Math.PI * smoothstep(.02, .82, travel));
+      const reveal = Math.sin(Math.PI * smoothstep(.04, .88, travel));
       const perspective = 1 - smoothstep(0, .7, travel) * .55;
       const orbit = moving ? Math.sin(elapsed * .45) : 0;
       const targetX = mode === "exploded" ? .15 + travel * .22 : reveal * .22 + orbit * .025 + (reducedMotion.matches ? 0 : pointerY * .08);
-      const targetY = mode === "exploded" ? -.6 - travel * .6 : turn * Math.PI * 2 + orbit * .045 + (reducedMotion.matches ? 0 : pointerX * .12);
+      const targetY = mode === "exploded" ? -.6 - travel * .6 : -turn * .95 + orbit * .045 + (reducedMotion.matches ? 0 : pointerX * .12);
       assembly.rotation.x = THREE.MathUtils.lerp(assembly.rotation.x, targetX, easing || 1);
       assembly.rotation.y = THREE.MathUtils.lerp(assembly.rotation.y, targetY, easing || 1);
       assembly.rotation.z = moving ? Math.sin(elapsed * .3) * .035 + travel * .035 : 0;
@@ -321,7 +330,12 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       diaphragm.scale.set(scale, scale, 1);
       diaphragm.position.z = expansion * .028 + (mode === "exploded" ? travel * .6 : reveal * .24);
       front.position.z = mode === "exploded" ? travel * 1.2 : reveal * .55;
-      blue.emissiveIntensity = 1.45 + expansion * .3;
+      blue.emissiveIntensity = 1.45 + expansion * .3 + reveal * 1.1;
+      gate.visible = mode === "hero" && travel > .015 && travel < .98;
+      gateMaterial.opacity = smoothstep(.015, .18, travel) * (1 - smoothstep(.86, .98, travel)) * .85;
+      gate.scale.setScalar(1 + zoom * 11);
+      gate.rotation.z = -travel * .65;
+      arc.rotation.z = elapsed * .12 + travel * 1.4;
       satellite.rotation.z = moving ? elapsed * .12 + travel * Math.PI : 0;
       satellite.rotation.y = moving ? Math.sin(elapsed * .35) * .15 : 0;
       // Keep the canvas size fixed: resizing its drawing buffer during scroll clears the rendered frame.
@@ -332,15 +346,9 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       if (mode === "hero" && (!camera.view || camera.view.offsetY !== 80 * uiSpace || camera.view.fullWidth !== width || camera.view.fullHeight !== height)) {
         camera.setViewOffset(width, height, 0, 80 * uiSpace, width, height);
       }
-      const frustumHeight = 2 * distance * Math.tan(THREE.MathUtils.degToRad(34 / 2));
-      const fillScale = Math.hypot(frustumHeight * camera.aspect, frustumHeight) / 1.38 * 1.3;
-      const magnification = mode === "hero" ? Math.exp(Math.log(fillScale) * zoom) : 1;
-      // Optical zoom keeps the rotating model in front of the camera's near plane.
-      assembly.scale.setScalar(1);
-      if (Math.abs(camera.zoom - magnification) > .0001) {
-        camera.zoom = magnification;
-        camera.updateProjectionMatrix();
-      }
+      // Travel through the light gate while the intact woofer recedes, rather than enlarging the logo into pixels.
+      assembly.scale.setScalar(mode === "hero" ? 1 - zoom * .65 : 1);
+      assembly.position.z = mode === "hero" ? -zoom * 12 : 0;
       assembly.position.y = mode === "hero" ? .2 * perspective : 0;
       camera.position.set(mode === "exploded" ? travel * .25 : 0, mode === "exploded" ? travel * .12 : .08 * perspective, distance - (mode === "exploded" ? travel * .35 : 0));
       if (mode === "hero") {
