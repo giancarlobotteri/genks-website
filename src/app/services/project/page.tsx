@@ -1,3 +1,4 @@
+import { ReservationSuccess } from "@/components/services/reservation-success";
 import { ProjectRequestForm } from "@/components/services/project-request-form";
 import { GenksEmblem } from "@/components/brand/genks-emblem";
 import { StudioPaymentNotice } from "@/components/services/studio-payment-notice";
@@ -6,6 +7,7 @@ export const metadata: Metadata = { title: "Richiedi mix e master", description:
 
 export default async function ProjectPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;
+  if (typeof q.success === "string" && q.success.startsWith("PRJ-")) return <ReservationSuccess reference={q.success} project />;
   const service = typeof q.service === "string" && ["mix", "master", "mix_master"].includes(q.service) ? q.service : "mix_master";
   return <div className="portal-shell narrow-shell service-portal">
     <div className="service-page-heading"><div><span className="eyebrow">MIX E MASTER</span><h1>Diamo forma al tuo brano.</h1><p className="muted">Mix 100 €, master 40 €, mix + master 120 € per un brano. Prenota anche a distanza: ricevi subito la conferma. Consegna e revisioni vengono concordate prima dell’avvio.</p></div><GenksEmblem /></div>
