@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   if (!await allowPublicRequest("availability")) return Response.json({error:"Troppe richieste. Attendi qualche minuto e riprova."},{status:429,headers:{"Retry-After":"600","Cache-Control":"no-store"}});
   if (!hasSupabase) return Response.json({ error: "Prenotazioni temporaneamente non disponibili." }, { status: 503 });
   const query = new URL(request.url).searchParams;
-  const parsed = z.object({ date: z.iso.date(), duration: z.coerce.number().int().min(1).max(8) }).safeParse({ date: query.get("date"), duration: query.get("duration") ?? 1 });
+  const parsed = z.object({ date: z.iso.date(), duration: z.coerce.number().min(0.25).max(8).multipleOf(0.25) }).safeParse({ date: query.get("date"), duration: query.get("duration") ?? 1 });
   if (!parsed.success) return Response.json({ error: "Scegli una data e una durata valide." }, { status: 400 });
   const { date, duration } = parsed.data;
   if (date < todayInRome() || date > shiftDay(todayInRome(), 180)) return Response.json({ slots: [] });
@@ -28,6 +28,15 @@ export async function GET(request: Request) {
   if (rules.error || bookings.error || blackouts.error) return Response.json({ error: "Impossibile verificare gli orari. Riprova tra poco." }, { status: 503 });
   try {
     const google = hasGoogleCalendar ? await getGoogleBusyRanges(from, to) : [];
-    return Response.json({ slots: availableSlots(date, duration, rules.data ?? [], [...(bookings.data ?? []), ...(blackouts.data ?? []), ...google]) }, { headers: { "Cache-Control": "no-store" } });
+    const busy = [...(bookings.data ?? []), ...(blackouts.data ?? []), ...google];
+    const now = new Date();
+    const durationsBySlot: Record<string, number[]> = {};
+    if (query.get("includeDurations") === "1") {
+      for (let quarters = 1; quarters <= 32; quarters++) {
+        const hours = quarters / 4;
+        for (const slot of availableSlots(date, hours, rules.data ?? [], busy, now)) (durationsBySlot[slot] ??= []).push(hours);
+      }
+    }
+    return Response.json({ slots: availableSlots(date, duration, rules.data ?? [], busy, now), ...(query.get("includeDurations") === "1" ? { durationsBySlot } : {}) }, { headers: { "Cache-Control": "no-store" } });
   } catch { return Response.json({ error: "Il calendario condiviso è temporaneamente non disponibile." }, { status: 503 }); }
 }

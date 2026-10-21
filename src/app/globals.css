@@ -4344,3 +4344,60 @@ body:has(.admin-shell) :is(.cart-rail,.cart-rail-toggle,.cart-rail-backdrop,.per
 .margin-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin-block:28px; }.margin-fields label { display:grid; gap:9px; font-size:13px; color:#fff; }.margin-fields small { color:#a5cfff; font-size:11px; line-height:1.6; }.margin-results { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-block:26px; }.margin-results article { display:grid; align-content:start; gap:14px; padding:20px; border:1px solid #315b91; border-radius:18px; background:#0b203b; }.margin-results span,.margin-results small { color:#afd4ff; font-size:12px; line-height:1.6; }.margin-results strong { color:#fff; font-size:25px; }.margin-planner>p { color:#b9d9ff; line-height:1.8; font-size:13px; }
 @media(max-width:600px) { .purchase-help-heading { align-items:flex-start; flex-direction:column; }.purchase-reassurance { flex-direction:column; gap:14px; }.purchase-questions details { padding:18px; }.margin-fields { grid-template-columns:1fr; }.catalog-availability-note { padding:20px; }.purchase-help { margin-top:40px; } }
 @media(prefers-reduced-motion:reduce) { .purchase-questions summary>span { transition:none; } }
+
+/* Forms must shrink inside narrow phone layouts, including Safari date inputs. */
+.premium-form > *, .premium-form label, .booking-step > div,
+.service-page-heading > div:first-child, .data-list article > div { min-width:0; }
+.premium-form :is(input,select,textarea) { min-width:0; max-width:100%; }
+.premium-form input[type=checkbox] { width:20px; min-height:20px; height:20px; padding:0; flex-shrink:0; accent-color:#428cff; }
+.premium-form .consent-label { display:block; line-height:1.8; }
+.premium-form .consent-label input { display:inline-block; vertical-align:middle; margin-right:10px; }
+.booking-step > span { flex-shrink:0; }
+.booking-duration { padding:18px; border:1px solid #3c63964a; border-radius:18px; background:#091426; }
+.booking-duration > p { margin:0 0 12px; }
+.booking-duration small { display:block; color:#8ea8cb; line-height:1.7; }
+.reservation-success-card h1 { font-size:clamp(28px,5vw,48px); line-height:1.15; overflow-wrap:break-word; }
+@media(max-width:720px) {
+  .service-page-heading { flex-direction:column; }
+  .service-page-heading .genks-emblem { align-self:center; flex-basis:auto; order:-1; }
+  .portal-shell { padding-top:110px; }
+  .portal-shell :is(h1,h2,h3,p,a,strong,small) { overflow-wrap:break-word; }
+  .premium-form :is(input,select,textarea) { font-size:16px; }
+  .premium-form .service-submit { grid-column:1/-1; width:100%; white-space:normal; }
+  .premium-form fieldset { min-width:0; max-width:100%; }
+  .date-field { padding:14px 12px; }
+  .date-field input { inline-size:100%; width:100%; max-inline-size:100%; }
+  .slot-fieldset legend { display:block; max-width:100%; letter-spacing:.03em; line-height:1.6; }
+  .slot-fieldset legend svg { display:inline-block; vertical-align:middle; margin-right:6px; }
+  .data-list article { align-items:flex-start; flex-wrap:wrap; }
+  .data-list article > div { flex:1 1 100%; }
+  .beat-detail-art { width:100%; min-width:0; }
+  .custom-contact-actions { flex-wrap:wrap; }
+  .custom-contact-actions .button { width:100%; white-space:normal; text-align:center; padding-inline:16px; }
+  .portal-shell .button { max-width:100%; }
+  .panel-heading { flex-wrap:wrap; gap:12px; }
+  .portal-tabs { max-width:100%; }
+}
+@media(max-width:370px) {
+  :root { --gutter:16px; }
+  .service-portal .premium-form { padding:18px 12px; }
+  .slot-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+.project-mode-options { min-width:0; border:1px solid #3c63964a; border-radius:18px; padding:18px; display:grid; gap:14px; }
+.project-mode-options legend { padding-inline:8px; color:#d5e9ff; }
+.project-mode-options p { margin:0; font-size:14px; color:#8ea8cb; }
+.premium-form .project-mode-options label { display:flex; align-items:flex-start; gap:12px; padding:14px; border:1px solid #3c63964a; border-radius:14px; cursor:pointer; }
+.premium-form .project-mode-options input { width:20px; height:20px; min-height:20px; flex-shrink:0; padding:0; accent-color:#428cff; }
+.project-mode-options label > span { display:grid; gap:5px; min-width:0; }
+@media(max-width:720px) {
+  .section-heading { flex-wrap:wrap; }
+  .section-heading .text-link { white-space:normal; }
+  .catalog-discovery > div { min-width:0; }
+  .catalog-spectrum { flex-shrink:0; }
+  .hero-actions { flex-wrap:wrap; justify-content:center; }
+  .cart-items article { min-width:0; }
+  .cart-items article > strong { min-width:0; overflow-wrap:anywhere; }
+  .cart-items article > .text-link { white-space:normal; }
+  .admin-quick-links { grid-template-columns:minmax(0,1fr); }
+  .admin-content :is(h1,h2,p,a,strong,small) { overflow-wrap:anywhere; }
+}

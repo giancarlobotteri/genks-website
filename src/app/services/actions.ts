@@ -9,6 +9,7 @@ import { getGoogleBusyRanges, hasGoogleCalendar } from "@/lib/google-calendar";
 import { fromRomeWallTime } from "@/lib/rome-time";
 import { revalidatePath } from "next/cache";
 import { flushNotifications } from "@/lib/notifications";
+import { openRemoteProjectPayment } from "@/lib/remote-project-payments";
 import { serviceRateVersion } from "@/lib/service-rates";
 
 const text = (min = 1, max = 1000) => z.string().trim().min(min).max(max);
@@ -17,7 +18,7 @@ export async function createBooking(formData: FormData) {
   if (!await allowPublicRequest("service")) redirect("/services/recording?error=limit");
   if (!hasSupabase) redirect("/services/recording?error=setup");
   if(formData.get("website"))redirect("/services/recording?error=invalid");
-  const parsed = z.object({ name:text(2,120),artistName:z.string().trim().max(120),email:z.email(),phone:text(6,40),date:z.iso.date(),time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),duration:z.coerce.number().refine(value => [1,2,3,4,6,8].includes(value)),notes:z.string().trim().max(2000).default(""),referenceUrl:z.union([z.literal(""),z.url()]),rateVersion:z.literal(serviceRateVersion),accepted:z.literal("on") }).safeParse(Object.fromEntries(formData));
+  const parsed = z.object({ name:text(2,120),artistName:z.string().trim().max(120),email:z.email(),phone:text(6,40),date:z.iso.date(),time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),duration:z.coerce.number().min(0.25).max(8).multipleOf(0.25),notes:z.string().trim().max(2000).default(""),referenceUrl:z.union([z.literal(""),z.url()]),rateVersion:z.literal(serviceRateVersion),accepted:z.literal("on") }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect("/services/recording?error=invalid");
 
   const start = fromRomeWallTime(parsed.data.date, parsed.data.time); const end = new Date(start.getTime()+parsed.data.duration*3600000);
@@ -52,6 +53,14 @@ export async function createProject(formData: FormData) {
   const parsed=z.object({name:text(2,120),artistName:z.string().trim().max(120),email:z.email(),phone:z.string().trim().max(40),trackTitle:text(1,160),service:z.enum(["mix","master","mix_master"]),description:text(10,4000),trackCount:z.coerce.number().int().min(1).max(200),referenceLinks:z.string().trim().max(2000).default(""),desiredDeadline:z.union([z.literal(""),z.iso.date()]),notes:z.string().trim().max(2000).default(""),mode:z.enum(["studio","remote"]),rateVersion:z.literal(serviceRateVersion),accepted:z.literal("on")}).safeParse(Object.fromEntries(formData));
   if(!parsed.success) redirect("/services/project?error=invalid"); const user=await getCurrentUser();const db=createSupabaseAdminClient();
   const links=parsed.data.referenceLinks.split(/\s+/).filter(Boolean).filter(link=>URL.canParse(link)&&["https:","http:"].includes(new URL(link).protocol)).slice(0,20);
+  if (parsed.data.mode === "remote") {
+    let checkoutUrl: string;
+    try {
+      checkoutUrl = await openRemoteProjectPayment({ ...parsed.data, links, customerId: user?.email?.toLowerCase() === parsed.data.email.toLowerCase() ? user.id : null });
+    } catch { redirect("/services/project?error=remote_payment"); }
+    revalidatePath("/admin/projects");
+    redirect(checkoutUrl);
+  }
   const {data,error}=await db.rpc("reserve_cash_service", {
     p_type: "project", p_owner_email: "prod.genks@gmail.com",
     p_data: { ...parsed.data, links, customerId: user?.email?.toLowerCase() === parsed.data.email.toLowerCase() ? user.id : null },

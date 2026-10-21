@@ -104,7 +104,18 @@ async function fulfil(session: Stripe.Checkout.Session, event: Stripe.Event) {
     if (payment.refunded_cents >= payment.amount_cents || payment.disputed) {
       const result = await db.from("notification_outbox").update({ cancelled_at: new Date().toISOString(), last_error: "Superata dal rimborso o dalla contestazione." }).eq("dedupe_key", `payment-${paymentId}`).is("sent_at", null);
       if (result.error) throw new Error("Notifica da aggiornare.");
-    } else await flushNotifications({ prefix: `payment-${paymentId}`, throwOnFailure: true });
+    } else {
+      await flushNotifications({ prefix: `payment-${paymentId}`, throwOnFailure: true });
+      if (session.metadata?.payment_type === "remote_project" && session.metadata.project_id) {
+        const { data: project, error } = await db.from("service_projects").select("reference,name,email,service,track_title").eq("id", session.metadata.project_id).single();
+        if (error || !project) throw new Error("Progetto pagato da verificare.");
+        await queueNotification(`reservation-${project.reference}-admin`, {
+          to: "prod.genks@gmail.com", subject: `GENKS · Progetto a distanza pagato · ${project.reference}`, heading: "Nuovo progetto a distanza pagato.",
+          body: `${project.name} · ${project.email}\n${project.track_title} · ${project.service}\nPagamento con carta verificato. Organizza invio file, tempi e revisioni prima di iniziare. Nessun contante da registrare.`,
+        });
+        await flushNotifications({ prefix: `reservation-${project.reference}-admin`, throwOnFailure: true });
+      }
+    }
   }
 }
 
