@@ -50,3 +50,6 @@ body:has(.cart-rail) #collection .funnel-guide .purchase-guide-grid { grid-templ
  .funnel-discovery { padding:14px; }
  .funnel-discovery>div:last-child { flex-basis:58px; max-width:58px; }
 }
+
+.funnel-store-heading .genks-emblem-model { width:72px; height:72px; }
+@media(max-width:600px) { .funnel-store-heading .genks-emblem-model { width:52px; height:52px; } }
