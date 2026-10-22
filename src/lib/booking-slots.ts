@@ -6,6 +6,7 @@ export function shiftDay(day: string, offset: number) {
   const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + offset); return d.toISOString().slice(0, 10);
 }
 const minutes = (time: string) => Number(time.slice(0,2))*60+Number(time.slice(3,5));
+const romeClock = new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Rome",hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
 
 export function availableSlots(day: string, durationHours: number, rules: Rule[], busy: Busy[], now = new Date()) {
   const result = new Set<string>();
@@ -22,7 +23,7 @@ export function availableSlots(day: string, durationHours: number, rules: Rule[]
         const start=fromRomeWallTime(slotDay,time);const end=new Date(start.getTime()+durationHours*3600000);
         if(start<=now||(!rule.flexible_close&&end>windowEnd))continue;
         // Round-trip rejects nonexistent wall times during a DST change.
-        const local=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Rome",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(start);
+        const local=romeClock.format(start);
         if(local!==time)continue;
         const protectedEnd=end.getTime()+rule.buffer_minutes*60000;
         if(!busy.some(b=>new Date(b.starts_at).getTime()<protectedEnd&&new Date(b.blocked_until??b.ends_at).getTime()>start.getTime()))result.add(time);

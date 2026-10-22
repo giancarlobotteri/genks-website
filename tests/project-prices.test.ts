@@ -15,7 +15,7 @@ test("unsupported counts and services cannot produce a fixed checkout amount",()
  assert.equal(projectPrice("recording",1),null);
 });
 test("new recording price is versioned independently from project rates",()=>{
- assert.equal(serviceRateVersion,"2026-10-22-recording-v3");
+ assert.equal(serviceRateVersion,"2026-10-22-recording-v4");
  assert.notEqual(projectRateVersion,serviceRateVersion);
  assert.equal(recordingHourlyCents,1999);
  assert.equal(Math.round(recordingHourlyCents*.5),1000);

@@ -43,3 +43,5 @@ test("payment method is independent of studio work and invalid combinations fail
   assert.equal(projectPaymentMethod("studio"), "cash");
   assert.equal(projectPaymentMethod("remote"), "card");
 });
+
+test("back-to-back sessions and Friday night extensions",()=>{const friday=[{...rule[0],weekday:5,start_time:"19:30",buffer_minutes:0,flexible_close:true}];const busy=[{starts_at:"2026-10-23T19:30:00+02:00",ends_at:"2026-10-23T22:30:00+02:00",blocked_until:"2026-10-23T22:30:00+02:00"}];assert.ok(!availableSlots("2026-10-23",1,friday,busy,now).includes("22:00"));assert.ok(availableSlots("2026-10-23",1,friday,busy,now).includes("22:30"));assert.ok(availableSlots("2026-10-23",3,friday,busy,now).includes("23:30"));assert.ok(!availableSlots("2026-10-23",3,[{...friday[0],flexible_close:false}],[],now).includes("23:30"));});

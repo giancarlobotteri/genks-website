@@ -321,15 +321,15 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       const reveal = Math.sin(Math.PI * smoothstep(.04, .88, travel));
       const perspective = 1 - smoothstep(0, .7, travel) * .55;
       const orbit = moving ? Math.sin(elapsed * .45) : 0;
-      const targetX = mode === "exploded" ? .15 + travel * .22 : reveal * .22 + orbit * .025 + (reducedMotion.matches ? 0 : pointerY * .08);
-      const targetY = mode === "exploded" ? -.6 - travel * .6 : -turn * .85 + orbit * .045 + (reducedMotion.matches ? 0 : pointerX * .12);
+      const targetX = mode === "exploded" ? .15 + travel * .22 : reveal * .32 + orbit * .025 + (reducedMotion.matches ? 0 : pointerY * .08);
+      const targetY = mode === "exploded" ? -.6 - travel * .6 : -turn * 1.05 + orbit * .045 + (reducedMotion.matches ? 0 : pointerX * .12);
       assembly.rotation.x = THREE.MathUtils.lerp(assembly.rotation.x, targetX, easing || 1);
       assembly.rotation.y = THREE.MathUtils.lerp(assembly.rotation.y, targetY, easing || 1);
       assembly.rotation.z = moving ? Math.sin(elapsed * .3) * .035 + travel * .035 : 0;
       const scale = 1 + expansion * .005;
       diaphragm.scale.set(scale, scale, 1);
       diaphragm.position.z = expansion * .028 + (mode === "exploded" ? travel * .6 : reveal * .42);
-      front.position.z = mode === "exploded" ? travel * 1.2 : reveal * .95;
+      front.position.z = mode === "exploded" ? travel * 1.2 : reveal * 1.1;
       blue.emissiveIntensity = 1.45 + expansion * .3 + reveal * 1.1;
       gate.visible = mode === "hero" && travel > .015 && travel < .98;
       gateMaterial.opacity = smoothstep(.15, .4, travel) * (1 - smoothstep(.65, .95, travel)) * .22;
@@ -355,7 +355,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
         camera.updateProjectionMatrix();
       }
       assembly.position.y = mode === "hero" ? .2 * perspective : 0;
-      camera.position.set(mode === "exploded" ? travel * .25 : 0, mode === "exploded" ? travel * .12 : .08 * perspective, distance - (mode === "exploded" ? travel * .35 : 0));
+      camera.position.set(mode === "exploded" ? travel * .25 : Math.sin(travel * Math.PI) * .32, mode === "exploded" ? travel * .12 : .08 * perspective, distance - (mode === "exploded" ? travel * .35 : 0));
       if (mode === "hero") {
         logo.getWorldPosition(focus);
         focus.multiplyScalar(smoothstep(.5, .7, travel));

@@ -12,8 +12,8 @@ export function ExtraTimeForm({ id, minutes, nightMinutes, base }: { id: string;
   const valid = value !== "" && nightValue !== "" && Number.isInteger(amount) && Number.isInteger(night) && amount >= 0 && night >= 0 && amount + night <= 1440;
   return <details><summary>Registra o correggi il tempo extra effettivo</summary><form action={setBookingExtraTime} className="premium-form">
     <input name="id" type="hidden" value={id}/><input name="expectedMinutes" type="hidden" value={minutes}/><input name="expectedNightMinutes" type="hidden" value={nightMinutes}/>
-    <label>Minuti extra prima di mezzanotte · 20 €/ora<input name="minutes" type="number" min="0" max="1440" step="1" required value={value} onChange={event=>setValue(event.target.value)}/></label>
-    <label>Minuti extra dopo mezzanotte · 40 €/ora totali<input name="nightMinutes" type="number" min="0" max="1440" step="1" required value={nightValue} onChange={event=>setNightValue(event.target.value)}/></label>
+    <label>Minuti extra prima di mezzanotte · 19,99 €/ora<input name="minutes" type="number" min="0" max="1440" step="1" required value={value} onChange={event=>setValue(event.target.value)}/></label>
+    <label>Minuti extra dopo mezzanotte · base + 9,99 € ogni mezz’ora<input name="nightMinutes" type="number" min="0" max="1440" step="1" required value={nightValue} onChange={event=>setNightValue(event.target.value)}/></label>
     <p>{extraTimePolicy}</p><p>Inserisci i minuti effettivi di ciascuna fascia. Correggere questi numeri sostituisce i valori precedenti: non li somma una seconda volta.</p>
     <p aria-live="polite">{valid ? `Totale aggiornato: ${serviceAmount(base + extraTimeCents(amount, night))} · supplemento ${serviceAmount(extraTimeCents(amount, night))}` : "Inserisci minuti interi validi, al massimo 1440 complessivi."}</p>
     <label><input name="confirm" type="checkbox" required/>Confermo il tempo extra effettivamente svolto e comunicato al cliente.</label>

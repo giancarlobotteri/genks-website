@@ -21,7 +21,7 @@ export function CinematicHero() {
   const catalogScroll = useRef<{ frame: number; cancel: () => void } | null>(null);
   useEffect(() => () => catalogScroll.current?.cancel(), []);
   const goToCatalog = (event: MouseEvent<HTMLAnchorElement>, destination = "#catalog") => {
-    if (destination === "/services") return;
+    if (destination === "/services") router.prefetch("/services");
     const catalog = document.getElementById("catalog") ?? document.getElementById("collection");
     if (!catalog || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     event.preventDefault();
@@ -43,7 +43,7 @@ export function CinematicHero() {
     window.addEventListener("touchstart", cancel, { passive: true });
     window.addEventListener("keydown", cancel);
     const step = (now: number) => {
-      const t = Math.min(1, (now - started) / 2600);
+      const t = Math.min(1, (now - started) / (destination === "/services" ? 1800 : 3000));
       const eased = t * t * (3 - 2 * t);
       window.scrollTo({ top: from + (to - from) * eased, behavior: "instant" });
       if (t < 1) controller.frame = requestAnimationFrame(step);

@@ -1,5 +1,5 @@
 // Existing agreements retain their saved price; this version applies to new bookings.
-export const serviceRateVersion = "2026-10-22-recording-v3";
+export const serviceRateVersion = "2026-10-22-recording-v4";
 export const projectRateVersion = "2026-10-21-v3";
 export const recordingHourlyCents = 1999;
 export const projectRates = { mix: 8999, master: 3999, mix_master: 11999 } as const;
