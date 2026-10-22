@@ -3,3 +3,4 @@
 
 /* Il logo resta al centro su tutte le pagine interne; nella home è a sinistra. */
 .centeredHeader :global(.genks-header-logo){position:absolute;left:50%;top:0;transform:translateX(-50%);margin:0}.adminHeader{pointer-events:none!important}.adminHeader :global(.genks-header-logo){position:absolute;left:50%;transform:translateX(-50%);background:#06132bef;border:1px solid #234d7e;border-radius:16px;pointer-events:auto}@media(max-width:999px){.homeHeader :global(.genks-header-logo){left:14px;transform:none;width:88px}.homeHeader .toggle{position:absolute;right:112px;left:auto;top:0}}@media(max-width:400px){.homeHeader :global(.genks-header-logo){width:78px}.homeHeader .toggle{right:100px}}@media(min-width:1000px){.centeredHeader .menu{margin-left:0}}
+@media(min-width:1000px){.header .toggle{display:none!important}}
