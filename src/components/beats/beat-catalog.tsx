@@ -58,7 +58,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
   return (
     <div className="beat-catalog">
       {!studioCashOnly && beats.length > 0 && !beats.some(beat => canBuyBeat(beat, licenses)) && <div className="catalog-availability-note"><strong>Il catalogo si sta preparando.</strong><p>I beat saranno acquistabili quando anteprime, file e licenze saranno completi. Nel frattempo puoi richiedere una produzione su misura o un servizio.</p><Link href="/services">Scopri i servizi GENKS →</Link></div>}
-      <div className="catalog-discovery">
+      <div className="catalog-discovery funnel-discovery">
         <div><span className="catalog-kicker">SCEGLI LA TUA FREQUENZA</span><p>Un beat. Infinite direzioni.</p><span>{studioCashOnly ? "Scegli un beat o crea una selezione: concordiamo l’acquisto in studio." : "Acquista un singolo beat oppure crea la tua selezione nel carrello."}</span></div>
         <GenksEmblem />
       </div>

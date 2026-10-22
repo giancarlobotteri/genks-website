@@ -65,17 +65,18 @@ export function LicenseProvider({
                   ))}
                 </ul>
                 {license.contractText && !/bozza da completare/i.test(license.contractText) && <details className="license-terms-preview"><summary>Leggi le condizioni di questa licenza</summary><p className="license-contract-copy">{license.contractText}</p></details>}
+                {studioCashOnly && beat && <Link className="button button-primary" href={`${studioBeatHref(beat)}&license=${encodeURIComponent(license.id)}`} onClick={()=>setBeat(null)}>Scegli {license.name} <ArrowUpRight size={16} aria-hidden="true"/></Link>}
                 {!studioCashOnly && beat && canBuyLicense(beat, license) && (
                   <a className="button button-primary" href={`/checkout/${beat.id}/${license.id}`}>ACQUISTA {license.name.toUpperCase()} <ArrowUpRight size={16} /></a>
                 )}
                 {!studioCashOnly && beat && !license.isExclusive && license.id !== "exclusive" && !canBuyLicense(beat, license) && <p className="license-unavailable">In preparazione · acquisto non ancora disponibile.</p>}
-                {beat && (license.isExclusive || license.id === "exclusive") && (
+                {!studioCashOnly && beat && (license.isExclusive || license.id === "exclusive") && (
                   <a className="button button-secondary" href={`/services/exclusive?beat=${encodeURIComponent(beat.id)}`}>RICHIEDI L’ESCLUSIVA <ArrowUpRight size={16} /></a>
                 )}
               </section>
             ))}
         </div>
-        {studioCashOnly && beat && <Link className="button button-primary" href={studioBeatHref(beat)}>Richiedi questo beat in studio</Link>}
+        {studioCashOnly && <p className="fine-print">Pagamento in contanti in studio. Licenza e consegna concordate prima dell’acquisto.</p>}
         {!studioCashOnly && beat?.isDemo && <p className="demo-note">Anteprima del catalogo: questo beat non è in vendita.</p>}
         <Link
           className="text-link"

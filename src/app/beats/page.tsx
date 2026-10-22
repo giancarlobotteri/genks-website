@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import {GenksEmblem} from "@/components/brand/genks-emblem";
 import { BeatCatalog } from "@/components/beats/beat-catalog";
 import { beatRepository } from "@/lib/repositories/beats";
-import { StudioPaymentNotice } from "@/components/services/studio-payment-notice";
 import { studioCashOnly } from "@/lib/studio-payment-mode";
 import { PurchaseHelp } from "@/components/commerce/purchase-help";
 
@@ -17,24 +16,20 @@ export default async function BeatStorePage() {
   const beats = await beatRepository.listPublished();
   return (
     <div className="store-page container">
-      <div className="store-heading">
+      <div className="store-heading funnel-store-heading">
         <div className="store-heading-stage">
-          <Image className="store-heading-logo" src="/brand/genks-logo.jpeg" width={620} height={620} alt="" aria-hidden="true" priority />
+          <GenksEmblem />
           <div className="store-heading-copy">
             <span className="eyebrow">GENKS / NEGOZIO DI BEAT</span>
             <h1 className="store-frequency-title">
-              Trova la tua
-              <br />
-              <span className="chrome-text">frequenza.</span>
+              Scegli il tuo <span className="chrome-text">beat.</span>
             </h1>
           </div>
         </div>
-        <p>Un’atmosfera per ogni storia. Inizia la tua qui.</p>
         <p className="catalog-disclaimer">
-          <span className="demo-badge">GENKS</span>{studioCashOnly ? "Beat su richiesta: concordiamo licenza, prezzo e appuntamento in studio." : "Scegli un beat e confronta le licenze disponibili."}
+          <span className="demo-badge">GENKS</span>{studioCashOnly ? "Scegli il beat e la licenza. Pagamento in contanti presso lo studio." : "Scegli un beat e confronta le licenze disponibili."}
         </p>
       </div>
-      <StudioPaymentNotice />
       <BeatCatalog beats={beats} />
       <PurchaseHelp compact />
     </div>

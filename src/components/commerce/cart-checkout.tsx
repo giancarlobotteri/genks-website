@@ -32,7 +32,7 @@ export function CartCheckout() {
 
   if (studioCashOnly) {
     const message = `Ciao GENKS, vorrei informazioni su questi beat: ${items.map(item => item.beat.title).join(", ")}. Vorrei concordare licenze, prezzo e appuntamento in studio con pagamento in contanti.`;
-    const phone = site.whatsapp.replace(/\\D/g, "");
+    const phone = site.whatsapp.replace(/\D/g, "");
     return <><div className="cart-items">{items.map(({beat}) => <article key={beat.id}><Image src={beat.cover} alt="" width={64} height={64}/><strong>{beat.title}</strong><Link className="text-link" href={studioBeatHref(beat)}>Richiedi in studio</Link><button type="button" className="icon-button" aria-label={`Rimuovi ${beat.title}`} onClick={()=>remove(beat.id)}><Trash2 size={17}/></button></article>)}</div><div className="custom-contact-actions">{phone && <a className="button button-primary" href={`https://wa.me/${phone}?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">Richiedi la selezione su WhatsApp</a>}<a className="button button-secondary" href={`mailto:assistenza@prodbygenks.com?${new URLSearchParams({subject:"Selezione beat GENKS",body:message})}`}>Richiedi via email</a><button type="button" className="button cart-clear cart-clear-prominent" onClick={()=>clear()}><Trash2 size={17}/>Svuota il carrello</button></div></>;
   }
   return <>
