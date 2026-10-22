@@ -2,7 +2,7 @@ import { allowPublicRequest } from "@/lib/security/request-limit";
 import { z } from "zod";
 import { hasSupabase } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getGoogleBusyRanges, hasGoogleCalendar } from "@/lib/google-calendar";
+import { getGoogleBusyRanges, hasGoogleBusyCalendar } from "@/lib/google-calendar";
 import { fromRomeWallTime, todayInRome } from "@/lib/rome-time";
 import { availableSlots, shiftDay } from "@/lib/booking-slots";
 
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   ]);
   if (rules.error || bookings.error || blackouts.error) return Response.json({ error: "Impossibile verificare gli orari. Riprova tra poco." }, { status: 503 });
   try {
-    const google = hasGoogleCalendar ? await getGoogleBusyRanges(from, to) : [];
+    const google = hasGoogleBusyCalendar ? await getGoogleBusyRanges(from, to) : [];
     const busy = [...(bookings.data ?? []), ...(blackouts.data ?? []), ...google];
     const now = new Date();
     const durationsBySlot: Record<string, number[]> = {};

@@ -3,11 +3,21 @@ import { createHash, createSign } from "node:crypto";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const API_ROOT = "https://www.googleapis.com/calendar/v3";
-const SCOPE = "https://www.googleapis.com/auth/calendar";
+const SCOPE = process.env.GOOGLE_CALENDAR_ID
+  ? "https://www.googleapis.com/auth/calendar"
+  : "https://www.googleapis.com/auth/calendar.freebusy";
 let tokenCache: { value: string; expiresAt: number } | null = null;
 
 export const hasGoogleCalendar = Boolean(
   process.env.GOOGLE_CALENDAR_ID &&
+  process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+  process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
+);
+
+// Availability can use a separately shared, free/busy-only calendar.
+// Keeping it separate prevents writes to the owner's personal calendar.
+export const hasGoogleBusyCalendar = Boolean(
+  (process.env.GOOGLE_BUSY_CALENDAR_ID || process.env.GOOGLE_CALENDAR_ID) &&
   process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
   process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
 );
@@ -17,7 +27,7 @@ function base64url(value: string | Buffer) {
 }
 
 async function getAccessToken() {
-  if (!hasGoogleCalendar) throw new Error("Google Calendar is not configured.");
+  if (!hasGoogleBusyCalendar) throw new Error("Google Calendar is not configured.");
   if (tokenCache && tokenCache.expiresAt > Date.now() + 60_000) return tokenCache.value;
   const now = Math.floor(Date.now() / 1000);
   const header = base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
@@ -39,8 +49,8 @@ async function googleRequest(path: string, init: RequestInit = {}) {
 }
 
 export async function getGoogleBusyRanges(timeMin: Date, timeMax: Date) {
-  if (!hasGoogleCalendar) return [];
-  const calendarId = process.env.GOOGLE_CALENDAR_ID!;
+  if (!hasGoogleBusyCalendar) return [];
+  const calendarId = (process.env.GOOGLE_BUSY_CALENDAR_ID || process.env.GOOGLE_CALENDAR_ID)!;
   const response = await googleRequest("/freeBusy", { method: "POST", body: JSON.stringify({ timeMin: timeMin.toISOString(), timeMax: timeMax.toISOString(), timeZone: "Europe/Rome", items: [{ id: calendarId }] }) });
   const result = await response.json() as { calendars?: Record<string, { busy?: Array<{ start: string; end: string }>; errors?: unknown[] }> };
   const calendar = result.calendars?.[calendarId];

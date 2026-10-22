@@ -5,7 +5,7 @@ import { z } from "zod";
 import { hasSupabase } from "@/lib/env";
 import { getCurrentUser } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getGoogleBusyRanges, hasGoogleCalendar } from "@/lib/google-calendar";
+import { getGoogleBusyRanges, hasGoogleBusyCalendar } from "@/lib/google-calendar";
 import { fromRomeWallTime } from "@/lib/rome-time";
 import { revalidatePath } from "next/cache";
 import { flushNotifications } from "@/lib/notifications";
@@ -27,7 +27,7 @@ export async function createBooking(formData: FormData) {
   const start = fromRomeWallTime(parsed.data.date, parsed.data.time); const end = new Date(start.getTime()+parsed.data.duration*3600000);
   if (!Number.isFinite(start.getTime()) || start < new Date()) redirect("/services/recording?error=date");
   const db=createSupabaseAdminClient();
-  if (hasGoogleCalendar) {
+  if (hasGoogleBusyCalendar) {
     const weekday=new Date(`${parsed.data.date}T12:00:00Z`).getUTCDay();
     const rules=await db.from("availability_rules").select("buffer_minutes").eq("active",true).eq("weekday",weekday);
     if(rules.error || !rules.data?.length) redirect("/services/recording?error=calendar");
