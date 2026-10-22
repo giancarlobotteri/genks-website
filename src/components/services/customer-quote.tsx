@@ -1,9 +1,11 @@
 import { remoteProjectPaymentsReady } from "@/lib/remote-project-payments";
 import { studioCashOnly } from "@/lib/studio-payment-mode";
+import { projectRateVersion } from "@/lib/service-rates";
 export type CustomerServiceQuote = {
   booking_id: string | null; project_id: string | null; amount_cents: number; currency: string;
   scope: string; fixed_price?: boolean; revision_count: number | null; agreed_deadline: string | null; status: string;
   checkout_url: string | null; expires_at: string;
+  commerce_snapshot?: {version?: string} | null;
 };
 
 export async function CustomerQuote({quote,payable,asOf}:{quote?:CustomerServiceQuote;payable:boolean;asOf:number}) {
@@ -16,7 +18,7 @@ export async function CustomerQuote({quote,payable,asOf}:{quote?:CustomerService
     <strong>{quote.fixed_price ? "Servizio" : "Preventivo"} · {new Intl.NumberFormat("it-IT",{style:"currency",currency:quote.currency}).format(quote.amount_cents/100)}</strong>
     <p style={{whiteSpace:"pre-wrap"}}>{quote.scope}</p>
     {quote.project_id&&!quote.fixed_price&&<small>Revisioni incluse: {quote.revision_count} · Consegna concordata: {quote.agreed_deadline??"Da concordare"}</small>}
-    {quote.fixed_price && <small>Invio file, revisioni e consegna da concordare prima dell’avvio.</small>}
+    {quote.fixed_price && <small>{quote.commerce_snapshot?.version===projectRateVersion?"Tempi, revisioni ed extra sono quelli indicati nel riepilogo e nelle condizioni accettate. Invia tutti i file per avviare il lavoro.":"Invio file, revisioni e consegna da concordare prima dell’avvio."}</small>}
     {open&&paymentUrl?<><small>Valido fino al {new Date(quote.expires_at).toLocaleString("it-IT",{timeZone:"Europe/Rome"})}. Per modifiche contatta GENKS prima di pagare.</small><a className="button button-primary" href={paymentUrl}>Conferma e paga in sicurezza</a></>:<small>{quote.status==="paid"?"Pagamento ricevuto.":quote.fixed_price?"Pagamento con carta non completato o non disponibile. Contatta GENKS per assistenza.":studioCashOnly?"Concorda con GENKS la conferma e il pagamento in contanti presso lo studio.":"Contatta GENKS per aggiornare il preventivo."}</small>}
   </div>;
 }

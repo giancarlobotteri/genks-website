@@ -11,18 +11,12 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { previewRecipientAllowed, privatePreview, stripeTestMode } from "@/lib/preview-mode";
 import { remoteProjectCardAllowed } from "@/lib/remote-project-policy";
 
-// Explicit opt-in on a Vercel preview only; production can never use test payments.
-const checkoutTestPreview = () => process.env.VERCEL_ENV === "preview" &&
-  process.env.GENKS_SERVICE_CHECKOUT_TESTS === "true" && stripeTestMode();
-
 export async function remoteProjectPaymentsReady() {
-  if (process.env.VERCEL_ENV === "preview" && process.env.GENKS_SERVICE_CHECKOUT_TESTS === "true") console.info("GENKS checkout QA", {testMode:stripeTestMode(),hasStripe,enabled:process.env.GENKS_REMOTE_PROJECT_CARD_PAYMENTS,privatePreview});
   if (process.env.GENKS_REMOTE_PROJECT_CARD_PAYMENTS !== "true" || !hasStripe || !process.env.GENKS_STRIPE_ACCOUNT_ID) return false;
-  if (!checkoutTestPreview() && (privatePreview || stripeTestMode())) return false;
+  if (privatePreview || stripeTestMode()) return false;
   try {
     await assertLiveCommerceReady("services");
     const readiness = await stripeReadiness();
-    if (checkoutTestPreview()) console.info("GENKS checkout QA readiness",readiness);
     if (!readiness.ready || readiness.accountId !== process.env.GENKS_STRIPE_ACCOUNT_ID) return false;
     const account = await getStripe().accounts.retrieve();
     return account.charges_enabled === true && account.capabilities?.card_payments === "active";
@@ -32,7 +26,6 @@ export async function remoteProjectPaymentsReady() {
 export async function openRemoteProjectPayment(data: Record<string, unknown>) {
   if (!remoteProjectCardAllowed({ enabled: await remoteProjectPaymentsReady(), type: "project", mode: String(data.mode), service: String(data.service) })) throw new Error("remote_payment_unavailable");
   if (!previewRecipientAllowed(String(data.email))) throw new Error("remote_payment_unavailable");
-  if (checkoutTestPreview() && !/^prod\.genks(?:\+genks-v6-\d+)?@gmail\.com$/.test(String(data.email).trim().toLowerCase())) throw new Error("remote_payment_unavailable");
   const db = createSupabaseAdminClient();
   const serverQuote=data.serverQuote as ServiceQuote;
   if(!serverQuote || serverQuote.totalCents!==data.expectedTotal || !serverQuote.lines.length)throw new Error("invalid_quote");
