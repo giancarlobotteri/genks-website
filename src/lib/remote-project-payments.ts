@@ -16,11 +16,13 @@ const checkoutTestPreview = () => process.env.VERCEL_ENV === "preview" &&
   process.env.GENKS_SERVICE_CHECKOUT_TESTS === "true" && stripeTestMode();
 
 export async function remoteProjectPaymentsReady() {
+  if (process.env.VERCEL_ENV === "preview" && process.env.GENKS_SERVICE_CHECKOUT_TESTS === "true") console.info("GENKS checkout QA", {testMode:stripeTestMode(),hasStripe,enabled:process.env.GENKS_REMOTE_PROJECT_CARD_PAYMENTS,privatePreview});
   if (process.env.GENKS_REMOTE_PROJECT_CARD_PAYMENTS !== "true" || !hasStripe || !process.env.GENKS_STRIPE_ACCOUNT_ID) return false;
   if (!checkoutTestPreview() && (privatePreview || stripeTestMode())) return false;
   try {
     await assertLiveCommerceReady("services");
     const readiness = await stripeReadiness();
+    if (checkoutTestPreview()) console.info("GENKS checkout QA readiness",readiness);
     if (!readiness.ready || readiness.accountId !== process.env.GENKS_STRIPE_ACCOUNT_ID) return false;
     const account = await getStripe().accounts.retrieve();
     return account.charges_enabled === true && account.capabilities?.card_payments === "active";
