@@ -182,8 +182,8 @@ export function CinematicHero() {
 
         <div className={styles.content}>
           <div className={styles.actions}>
-            <a className={styles.primary} href="#catalog" onClick={event => goToCatalog(event)}><span>Vai al catalogo<small>Ascolta i beat. Trova il tuo suono.</small></span><ArrowUpRight size={20} aria-hidden="true" /></a>
-            <Link className={styles.secondary} href="/services" onClick={event => goToCatalog(event, "/services")}><span>Prenota un servizio<small>Registrazione, mix e master.</small></span><ArrowUpRight size={20} aria-hidden="true" /></Link>
+            <Link className={styles.primary} href="/services" onClick={event => goToCatalog(event, "/services")}><span>Prenota un servizio<small>Registrazione, mix e master.</small></span><ArrowUpRight size={20} aria-hidden="true" /></Link>
+            <a className={styles.secondary} href="#catalog" onClick={event => goToCatalog(event)}><span>Vai al catalogo<small>Ascolta i beat. Trova il tuo suono.</small></span><ArrowUpRight size={20} aria-hidden="true" /></a>
           </div>
         </div>
 

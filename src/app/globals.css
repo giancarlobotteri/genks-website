@@ -4410,3 +4410,5 @@ body:has(.admin-shell) :is(.cart-rail,.cart-rail-toggle,.cart-rail-backdrop,.per
 .booking-days button > span { display:block; white-space:nowrap; font-size:12px; line-height:20px; letter-spacing:-.02em; }
 .booking-days button > small { display:flex; align-items:center; justify-content:center; min-width:0; line-height:13px; }
 @media(max-width:650px) { .booking-days button > span { font-size:11px; } }
+
+@media(max-width:650px){.booking-days{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.booking-days button{min-height:82px}.booking-days button > span{font-size:12px}.booking-days button > small{font-size:11px;line-height:14px}.slot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.slot-option{min-height:64px}.slot-option span{font-size:15px}.slot-option span small{font-size:11px;line-height:15px;margin-top:7px}.booking-calendar-nav strong{font-size:13px}.calendar-key{font-size:12px;line-height:1.6}}
