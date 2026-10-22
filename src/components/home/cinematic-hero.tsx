@@ -43,7 +43,7 @@ export function CinematicHero() {
     window.addEventListener("touchstart", cancel, { passive: true });
     window.addEventListener("keydown", cancel);
     const step = (now: number) => {
-      const t = Math.min(1, (now - started) / (destination === "/services" ? 5600 : 6200));
+      const t = Math.min(1, (now - started) / (destination === "/services" ? 4600 : 4900));
       const eased = t * t * (3 - 2 * t);
       controller.progress = eased;
       window.dispatchEvent(new Event("genks:hero-progress"));
@@ -202,4 +202,3 @@ export function CinematicHero() {
     </section>
   );
 }
-

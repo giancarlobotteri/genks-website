@@ -209,29 +209,36 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
 
     const modelMaterials = [...materials];
     modelMaterials.forEach(material => { material.transparent = true; });
-    // One instanced mesh for the light gates keeps the corridor inexpensive to draw.
-    const tunnel = new THREE.Group();
-    scene.add(tunnel);
-    const tunnelMaterial = new THREE.MeshBasicMaterial({color:0x4bafff,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false});
-    materials.add(tunnelMaterial);
-    const tunnelGeometry = new THREE.TorusGeometry(2.7,.022,6,96);
-    geometries.add(tunnelGeometry);
-    const tunnelRings = new THREE.InstancedMesh(tunnelGeometry,tunnelMaterial,30);
-    const dummy = new THREE.Object3D();
-    for(let i=0;i<30;i++){dummy.position.set(0,0,-i*4);dummy.rotation.set(0,0,i*.055);dummy.updateMatrix();tunnelRings.setMatrixAt(i,dummy.matrix);}
-    tunnel.add(tunnelRings);
-    const railPositions:number[]=[];
-    for(let i=0;i<16;i++){const a=i*Math.PI/8;const x=Math.cos(a)*2.72,y=Math.sin(a)*2.72;railPositions.push(x,y,1,x,y,-124);}
-    const railGeometry=new THREE.BufferGeometry();railGeometry.setAttribute("position",new THREE.Float32BufferAttribute(railPositions,3));geometries.add(railGeometry);
-    const railMaterial=new THREE.LineBasicMaterial({color:0x246fff,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});materials.add(railMaterial);
-    tunnel.add(new THREE.LineSegments(railGeometry,railMaterial));
-    const wallMaterial=new THREE.MeshBasicMaterial({color:0x061a37,side:THREE.BackSide,transparent:true,opacity:0,depthWrite:false});
-    const wall=addMesh(new THREE.CylinderGeometry(2.78,2.78,128,64,1,true),wallMaterial,tunnel);wall.rotation.x=Math.PI/2;wall.position.z=-62;
-    const streakPositions:number[]=[];
-    for(let i=0;i<100;i++){const angle=i*2.3999632297;const radius=2.15+(i%7)*.07;const z=-(i/100)*120;streakPositions.push(Math.cos(angle)*radius,Math.sin(angle)*radius,z,Math.cos(angle)*radius,Math.sin(angle)*radius,z-.65);}
-    const streakGeometry=new THREE.BufferGeometry();streakGeometry.setAttribute("position",new THREE.Float32BufferAttribute(streakPositions,3));geometries.add(streakGeometry);
-    const streakMaterial=new THREE.LineBasicMaterial({color:0xb5eaff,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});materials.add(streakMaterial);
-    const streaks=new THREE.LineSegments(streakGeometry,streakMaterial);tunnel.add(streaks);
+    // A single screen-space wave travels out from the speaker, with no corridor geometry.
+    const waveMaterial = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, depthTest: false,
+      uniforms: { progress: { value: 0 }, aspect: { value: 1 } },
+      vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+      fragmentShader: `
+        varying vec2 vUv; uniform float progress; uniform float aspect;
+        void main(){
+          vec2 p=(vUv-.5)*vec2(aspect,1.0);
+          float radius=length(p);
+          float angle=atan(p.y,p.x);
+          float advance=smoothstep(.23,.92,progress);
+          float edge=advance*2.4-.25;
+          float organic=sin(angle*3.0+progress*4.0)*.045+sin(angle*5.0-progress*3.0)*.018;
+          float distanceToWave=radius-edge+organic;
+          float crest=exp(-pow(distanceToWave/.13,2.0));
+          float bloom=exp(-pow(distanceToWave/.4,2.0));
+          float wake=(1.0-smoothstep(-.35,.06,distanceToWave))*.55;
+          float reveal=smoothstep(.19,.38,progress);
+          vec3 color=mix(vec3(.025,.12,.36),vec3(.12,.48,.95),bloom);
+          color=mix(color,vec3(.58,.83,1.0),crest*.8);
+          float alpha=clamp((bloom*.8+crest*.2+wake)*reveal,0.0,.96);
+          gl_FragColor=vec4(color,alpha);
+        }`,
+    });
+    materials.add(waveMaterial);
+    const waveGeometry = new THREE.PlaneGeometry(2,2); geometries.add(waveGeometry);
+    const wave = new THREE.Mesh(waveGeometry,waveMaterial);
+    wave.position.z=-1; wave.renderOrder=100;
+    camera.add(wave); scene.add(camera);
 
     // Combine fixed parts sharing a material; the parent groups still rotate and separate normally.
     for (const group of [assembly, front, diaphragm, logo]) {
@@ -343,12 +350,13 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       const easing = 1 - Math.exp(-delta * 5);
       const smoothstep = (from: number, to: number, value: number) => THREE.MathUtils.smoothstep(value, from, to);
       const zoom = mode === "hero" ? smoothstep(.02, .4, travel) : 0;
-      const entry = mode === "hero" ? smoothstep(.3,.95,travel) : 0;
-      const tunnelReveal = mode === "hero" ? smoothstep(.22,.5,travel) : 0;
-      tunnel.visible = tunnelReveal > .001;
-      tunnelMaterial.opacity = tunnelReveal*.85; railMaterial.opacity=tunnelReveal*.42; wallMaterial.opacity=tunnelReveal; streakMaterial.opacity=tunnelReveal*.75;
-      tunnel.rotation.z = entry*.16; streaks.position.z=(entry*100)%4;
-      const modelOpacity=1-smoothstep(.26,.48,travel);
+      const entry = mode === "hero" ? smoothstep(.18,.88,travel) : 0;
+      wave.visible = mode === "hero" && travel > .19;
+      waveMaterial.uniforms.progress.value = travel;
+      waveMaterial.uniforms.aspect.value = camera.aspect;
+      const waveHeight = Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/camera.zoom;
+      wave.scale.set(waveHeight*camera.aspect,waveHeight,1);
+      const modelOpacity=1-smoothstep(.44,.76,travel);
       modelMaterials.forEach(material=>{material.opacity=mode === "hero"?modelOpacity:1;});
       assembly.visible=mode!=="hero"||modelOpacity>.001;
       const turn = Math.sin(Math.PI * smoothstep(.01, .34, travel))*.22;
@@ -365,7 +373,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       diaphragm.position.z = expansion * .028 + (mode === "exploded" ? travel * .6 : reveal * .42);
       front.position.z = mode === "exploded" ? travel * 1.2 : reveal * 1.1;
       blue.emissiveIntensity = 1.45 + expansion * .3 + reveal * 1.1;
-      gate.visible = mode === "hero" && travel > .015 && travel < .98;
+      gate.visible = false;
       gateMaterial.opacity = smoothstep(.15, .4, travel) * (1 - smoothstep(.65, .95, travel)) * .22;
       gate.scale.setScalar(1 + zoom * 3);
       gate.rotation.z = -travel * .65;
@@ -389,11 +397,10 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
         camera.updateProjectionMatrix();
       }
       assembly.position.y = mode === "hero" ? .2 * perspective : 0;
-      camera.position.set(mode === "exploded" ? travel * .25 : Math.sin(entry*Math.PI*2)*.16, mode === "exploded" ? travel * .12 : .08 * perspective*(1-entry), mode === "hero" ? distance*(1-entry)-entry*98 : distance-travel*.35);
+      camera.position.set(mode === "exploded" ? travel * .25 : 0, mode === "exploded" ? travel * .12 : .08 * perspective*(1-entry), mode === "hero" ? THREE.MathUtils.lerp(distance,1.5,entry) : distance-travel*.35);
       if (mode === "hero") {
         logo.getWorldPosition(focus);
-        focus.multiplyScalar(smoothstep(.5, .7, travel));
-        focus.lerp(new THREE.Vector3(0,0,camera.position.z-15),smoothstep(.22,.42,travel));
+        focus.multiplyScalar(0);
         camera.lookAt(focus);
       } else camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
