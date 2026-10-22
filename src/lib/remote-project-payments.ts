@@ -32,7 +32,7 @@ export async function remoteProjectPaymentsReady() {
 export async function openRemoteProjectPayment(data: Record<string, unknown>) {
   if (!remoteProjectCardAllowed({ enabled: await remoteProjectPaymentsReady(), type: "project", mode: String(data.mode), service: String(data.service) })) throw new Error("remote_payment_unavailable");
   if (!previewRecipientAllowed(String(data.email))) throw new Error("remote_payment_unavailable");
-  if (checkoutTestPreview() && String(data.email).trim().toLowerCase() !== "prod.genks@gmail.com") throw new Error("remote_payment_unavailable");
+  if (checkoutTestPreview() && !/^prod\.genks(?:\+genks-v6-\d+)?@gmail\.com$/.test(String(data.email).trim().toLowerCase())) throw new Error("remote_payment_unavailable");
   const db = createSupabaseAdminClient();
   const serverQuote=data.serverQuote as ServiceQuote;
   if(!serverQuote || serverQuote.totalCents!==data.expectedTotal || !serverQuote.lines.length)throw new Error("invalid_quote");
