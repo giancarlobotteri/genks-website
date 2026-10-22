@@ -23,9 +23,10 @@ export function RecordingRequestForm({discounts=[]}:{discounts?:PublicDiscount[]
     return [Math.floor(minutes / 60) ? `${Math.floor(minutes / 60)} ${minutes < 120 ? "ora" : "ore"}` : "", minutes % 60 ? `${minutes % 60} minuti` : ""].filter(Boolean).join(" e ");
   };
   const availableDurations = durationsBySlot[time] ?? [];
+  const matchingSlots = slots.filter(slot => durationsBySlot[slot]?.includes(Number(duration)));
   async function loadAvailability(nextDate: string) {
     const request = ++requestId.current;
-    setDate(nextDate); setLoading(true); setTime(""); setDuration("1");
+    setDate(nextDate); setLoading(true); setTime("");
     setAvailabilityError(""); setSlots([]); setDurationsBySlot({});
     if (!nextDate) { setLoading(false); return; }
     try {
@@ -40,10 +41,10 @@ export function RecordingRequestForm({discounts=[]}:{discounts?:PublicDiscount[]
       setAvailabilityError(error instanceof Error ? error.message : "Non è stato possibile caricare gli orari disponibili.");
     } finally { if (request === requestId.current) setLoading(false); }
   }
-  function chooseTime(slot: string) {
-    setTime(slot);
-    const options = durationsBySlot[slot] ?? [];
-    setDuration(String(options.includes(1) ? 1 : options.filter(value => value < 1).at(-1) ?? options[0] ?? 1));
+  function chooseTime(slot: string) { setTime(slot); }
+  function chooseDuration(value: string) {
+    setDuration(value);
+    if (time && !durationsBySlot[time]?.includes(Number(value))) setTime("");
   }
 
   return <form action={createBooking} className="premium-form form-grid booking-form">
@@ -51,25 +52,16 @@ export function RecordingRequestForm({discounts=[]}:{discounts?:PublicDiscount[]
     <input type="hidden" name="duration" value={duration}/><input type="hidden" name="expectedTotal" value={Math.max(50,Math.round(hourly*Number(duration)))}/>
     <div className="booking-step full"><span>01</span><div><strong>Scegli la data</strong><small>Prima scegli il giorno, poi uno degli orari disponibili.</small></div></div>
     <label className="date-field full"><CalendarDays size={18}/><span>Data</span><input name="date" type="date" required value={date} min={new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())} onChange={(event) => void loadAvailability(event.target.value)}/></label>
-    <div className="booking-step full"><span>02</span><div><strong>Scegli l’orario</strong><small>Vedrai la durata disponibile per l’orario che selezioni.</small></div></div>
+    <div className="booking-step full"><span>02</span><div><strong>Quanto tempo ti serve?</strong><small>Gli orari vengono filtrati per l’intera durata scelta.</small></div></div>
+    <label className="full">Durata della sessione<select aria-label="Durata della sessione" value={duration} onChange={event=>chooseDuration(event.target.value)}>{Array.from({length:32},(_,i)=>(i+1)/4).map(hours=><option key={hours} value={hours}>{durationLabel(hours)}</option>)}</select><small>Puoi scegliere anche mezz’ore e quarti d’ora, fino a 8 ore.</small></label>
+    <div className="booking-step full"><span>03</span><div><strong>Scegli l’orario</strong><small>Solo orari liberi per {durationLabel(Number(duration))}, entro la chiusura.</small></div></div>
     <fieldset className="full slot-fieldset"><legend><Clock3 size={17}/> Orario di inizio disponibile</legend>
       {!date && <p className="muted">Scegli una data per vedere gli orari disponibili.</p>}
       {loading && <p className="muted" role="status">Controllo degli orari disponibili…</p>}
       {availabilityError && <p className="notice error">{availabilityError}</p>}
-      {!loading && date && !availabilityError && !slots.length && <p className="notice">Non ci sono orari disponibili per questo giorno.</p>}
-      <div className="slot-grid">{slots.map((slot) => <label key={slot} className={time === slot ? "slot-option selected" : "slot-option"}><input type="radio" name="time" value={slot} required checked={time === slot} onChange={() => chooseTime(slot)}/><span>{slot}</span></label>)}</div>
+      {!loading && date && !availabilityError && !matchingSlots.length && <p className="notice" role="status">Non ci sono orari liberi per questa durata. Cambia giorno oppure scegli una durata più breve.</p>}
+      <div className="slot-grid">{matchingSlots.map(slot=><label key={slot} className={time===slot?"slot-option selected":"slot-option"}><input type="radio" name="time" value={slot} required checked={time===slot} onChange={()=>chooseTime(slot)}/><span>{slot}</span></label>)}</div>
     </fieldset>
-    <div className="booking-step full"><span>03</span><div><strong>La durata della sessione</strong><small>Puoi lasciare la durata proposta oppure personalizzarla.</small></div></div>
-    <div className="full booking-duration">
-      <p>{time ? <>Durata: <strong>{durationLabel(Number(duration))}</strong>{!availableDurations.includes(1) && <small> Per questo orario rimane meno di un’ora disponibile.</small>}</> : "Scegli prima un orario. Se disponibile, la durata iniziale è di 1 ora."}</p>
-      <details className="service-optional"><summary>Personalizza la durata <span>facoltativo</span></summary><div>
-        <label>Quanto tempo ti serve?<select aria-label="Durata della sessione" value={duration} disabled={!time || loading} onChange={event => setDuration(event.target.value)}>
-          {!time && <option value="1">1 ora</option>}
-          {availableDurations.map(value => <option key={value} value={value}>{durationLabel(value)}</option>)}
-        </select></label>
-        <small>Puoi scegliere anche mezz’ore e quarti d’ora. Sono mostrate solo le durate compatibili con gli altri appuntamenti e la chiusura a mezzanotte.</small>
-      </div></details>
-    </div>
     <div className="booking-step full"><span>04</span><div><strong>Dettagli e contatti</strong><small>Riceverai la conferma e il riepilogo via email.</small></div></div>
     <details className="service-optional full"><summary>Indirizzo, orari e tempo extra</summary><p className="service-form-note">Lo studio è in Via Quintina, Ponte San Giovanni, Perugia (PG). Dal lunedì al venerdì: 19:30–00:00. Sabato e domenica: 10:00–00:00. Le sessioni prenotate terminano entro mezzanotte. Eventuale tempo extra viene concordato in studio e registrato personalmente da GENKS. Tempo extra prima di mezzanotte: 20 €/ora, escluso dagli sconti sulla sessione prenotata. {extraTimePolicy}</p></details>
     <details className="service-optional full"><summary>Riferimenti e note facoltativi</summary><div><label className="full">Collegamento di riferimento <small>facoltativo</small><input name="referenceUrl" type="url" placeholder="https://"/></label>

@@ -44,7 +44,7 @@ export async function getGoogleBusyRanges(timeMin: Date, timeMax: Date) {
   const response = await googleRequest("/freeBusy", { method: "POST", body: JSON.stringify({ timeMin: timeMin.toISOString(), timeMax: timeMax.toISOString(), timeZone: "Europe/Rome", items: [{ id: calendarId }] }) });
   const result = await response.json() as { calendars?: Record<string, { busy?: Array<{ start: string; end: string }>; errors?: unknown[] }> };
   const calendar = result.calendars?.[calendarId];
-  if (!response.ok || calendar?.errors?.length) throw new Error("Il calendario condiviso dello studio è temporaneamente non disponibile.");
+  if (!response.ok || !calendar || !Array.isArray(calendar.busy) || calendar.errors?.length) throw new Error("Il calendario condiviso dello studio è temporaneamente non disponibile.");
   return (calendar?.busy ?? []).map((range) => ({ starts_at: range.start, ends_at: range.end }));
 }
 

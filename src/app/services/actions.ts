@@ -26,15 +26,20 @@ export async function createBooking(formData: FormData) {
 
   const start = fromRomeWallTime(parsed.data.date, parsed.data.time); const end = new Date(start.getTime()+parsed.data.duration*3600000);
   if (!Number.isFinite(start.getTime()) || start < new Date()) redirect("/services/recording?error=date");
+  const db=createSupabaseAdminClient();
   if (hasGoogleCalendar) {
+    const weekday=new Date(`${parsed.data.date}T12:00:00Z`).getUTCDay();
+    const rules=await db.from("availability_rules").select("buffer_minutes").eq("active",true).eq("weekday",weekday);
+    if(rules.error || !rules.data?.length) redirect("/services/recording?error=calendar");
+    const buffer=Math.max(0,...rules.data.map(rule=>Number(rule.buffer_minutes)||0));
+    const protectedEnd=new Date(end.getTime()+buffer*60000);
     let busy;
     try {
-      busy = await getGoogleBusyRanges(start, end);
+      busy = await getGoogleBusyRanges(start, protectedEnd);
     } catch { redirect("/services/recording?error=calendar"); }
-    if (busy.some((range) => new Date(range.starts_at) < end && new Date(range.ends_at) > start)) redirect("/services/recording?error=conflict");
+    if (busy.some((range) => new Date(range.starts_at) < protectedEnd && new Date(range.ends_at) > start)) redirect("/services/recording?error=conflict");
   }
   const user = await getCurrentUser();
-  const db=createSupabaseAdminClient();
   const { data, error } = await db.rpc("reserve_cash_service", {
     p_type: "booking", p_owner_email: "prod.genks@gmail.com",
     p_data: { ...parsed.data, startsAt: start.toISOString(), customerId: user?.email?.toLowerCase() === parsed.data.email.toLowerCase() ? user.id : null },

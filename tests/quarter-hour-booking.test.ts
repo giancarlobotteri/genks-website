@@ -4,6 +4,14 @@ import { availableSlots } from "../src/lib/booking-slots.ts";
 import { remoteProjectCardAllowed, projectPaymentMethod } from "../src/lib/remote-project-policy.ts";
 const rule = [{weekday:6,start_time:"10:00",end_time:"00:00",ends_next_day:true,flexible_close:false,slot_minutes:30,buffer_minutes:15}];
 const now = new Date("2026-10-01T00:00:00Z");
+
+test("a booking must fit its whole duration before an occupied interval, including buffer",()=>{
+ const busy=[{starts_at:"2026-10-24T13:00:00+02:00",ends_at:"2026-10-24T14:00:00+02:00",blocked_until:"2026-10-24T14:15:00+02:00"}];
+ assert.ok(availableSlots("2026-10-24",2,rule,busy,now).includes("10:00"));
+ assert.ok(!availableSlots("2026-10-24",3,rule,busy,now).includes("10:00"));
+ assert.ok(!availableSlots("2026-10-24",1,rule,busy,now).includes("14:00"));
+ assert.ok(availableSlots("2026-10-24",1,rule,busy,now).includes("14:30"));
+});
 test("quarter-hour lengths keep midnight, thirty-minute starts and fifteen-minute buffer", () => {
   assert.ok(availableSlots("2026-10-24",0.5,rule,[],now).includes("23:30"));
   assert.ok(!availableSlots("2026-10-24",0.75,rule,[],now).includes("23:30"));
