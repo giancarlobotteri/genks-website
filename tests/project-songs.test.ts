@@ -4,9 +4,9 @@ import { emptyProjectSong, priceProjectSongs } from "../src/lib/project-songs.ts
 const song=(tracks=1)=>({...emptyProjectSong(),trackTitle:"Brano prova",description:"Descrizione valida per questo brano",trackCount:tracks});
 test("different songs use their own tier and forged amounts are ignored",()=>{
  const songs=priceProjectSongs("mix",[{...song(8),amountCents:1},song(9),song(25)]);
- assert.deepEqual(songs?.map(s=>s.amountCents),[8999,13999,19999]);
- assert.equal(songs?.reduce((sum,s)=>sum+s.amountCents,0),42997);
- assert.deepEqual(priceProjectSongs("mix_master",[song(8),song(24)])?.map(s=>s.amountCents),[11999,17999]);
+ assert.deepEqual(songs?.map(s=>s.amountCents),[9999,14999,19999]);
+ assert.equal(songs?.reduce((sum,s)=>sum+s.amountCents,0),44997);
+ assert.deepEqual(priceProjectSongs("mix_master",[song(8),song(24)])?.map(s=>s.amountCents),[12999,18999]);
  assert.equal(priceProjectSongs("master",[song(),song()])?.reduce((sum,s)=>sum+s.amountCents,0),7998);
 });
 test("an invalid song rejects the whole request without dropping it",()=>{
@@ -17,14 +17,14 @@ test("an invalid song rejects the whole request without dropping it",()=>{
 });
 test("per-song notes, dates and references survive normalization",()=>{
  const item={...song(),trackTitle:"  Primo  ",notes:"Nota del primo brano",referenceLinks:"https://example.com/a",desiredDeadline:"2026-11-03"};
- assert.deepEqual(priceProjectSongs("mix",[item])?.[0],{...item,service:"mix",trackTitle:"Primo",amountCents:8999});
+ assert.deepEqual(priceProjectSongs("mix",[item])?.[0],{...item,service:"mix",trackTitle:"Primo",amountCents:9999});
  assert.equal(priceProjectSongs("mix",Array.from({length:20},()=>song()))?.length,20);
 });
 test("each song chooses its own service and its own applicable discount",()=>{
  const songs=[{...song(8),service:"mix"},{...song(),service:"master"},{...song(24),service:"mix_master"}];
  const result=priceProjectSongs("",songs,[{target:"master",label:"Master",kind:"percent",amount:20,active:true}]);
- assert.deepEqual(result?.map(s=>s.amountCents),[8999,3199,17999]);
- assert.equal(result?.reduce((sum,s)=>sum+s.amountCents,0),30197);
+ assert.deepEqual(result?.map(s=>s.amountCents),[9999,3199,18999]);
+ assert.equal(result?.reduce((sum,s)=>sum+s.amountCents,0),32197);
  assert.equal(priceProjectSongs("",[{...song(),service:""}]),null);
  assert.equal(priceProjectSongs("mix",[{...song(),service:"invalid"}]),null);
 });

@@ -6,7 +6,7 @@ import { purchaseQuestions } from "@/data/purchase-help";
 export function PurchaseHelp({ compact = false }: { compact?: boolean }) {
   return <section className="purchase-help" aria-label="Risposte prima dell’acquisto">
     <div className="purchase-reassurance">
-      <span><ShieldCheck size={19} aria-hidden="true" />{studioCashOnly ? "Pagamento in contanti in studio" : "Pagamento gestito da Stripe"}</span>
+      <span><ShieldCheck size={19} aria-hidden="true" />{studioCashOnly ? "Mix e master: carta o Apple Pay" : "Pagamento gestito da Stripe"}</span>
       <span><Download size={19} aria-hidden="true" />{studioCashOnly ? "File e consegna concordati" : "File nella tua raccolta"}</span>
       <span><Mail size={19} aria-hidden="true" />Assistenza GENKS via email</span>
     </div>

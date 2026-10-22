@@ -1,4 +1,7 @@
 import "server-only";
+import type {ServiceQuote} from "@/lib/service-quote";
+import {deliveryDateLabel} from "@/lib/service-delivery";
+import {serviceTerms,serviceTermsVersion} from "@/data/legal";
 import { flushNotifications } from "@/lib/notifications";
 import { hasStripe } from "@/lib/env";
 import { assertLiveCommerceReady } from "@/lib/commerce/live-readiness";
@@ -24,22 +27,23 @@ export async function openRemoteProjectPayment(data: Record<string, unknown>) {
   if (!remoteProjectCardAllowed({ enabled: await remoteProjectPaymentsReady(), type: "project", mode: String(data.mode), service: String(data.service) })) throw new Error("remote_payment_unavailable");
   if (!previewRecipientAllowed(String(data.email))) throw new Error("remote_payment_unavailable");
   const db = createSupabaseAdminClient();
-  const prepared = Array.isArray(data.songs)
-    ? await db.rpc("reserve_project_batch", {p_data:data,p_payment:"card",p_owner_email:"prod.genks@gmail.com"})
-    : await db.rpc("reserve_remote_project", { p_data: data, p_owner_email: "prod.genks@gmail.com" });
+  const serverQuote=data.serverQuote as ServiceQuote;
+  if(!serverQuote || serverQuote.totalCents!==data.expectedTotal || !serverQuote.lines.length)throw new Error("invalid_quote");
+  const summary=serverQuote.lines.map(l=>`${l.name} · ${l.quantity} × ${(l.unitAmount/100).toFixed(2)} EUR = ${(l.quantity*l.unitAmount/100).toFixed(2)} EUR`).join("\n")+`\nTotale: ${(serverQuote.totalCents/100).toFixed(2)} EUR\nData prevista prima versione: ${deliveryDateLabel(serverQuote.estimatedFirstVersionAt)}\n${serverQuote.estimateBasis}`;
+  const prepared=await db.rpc("reserve_project_checkout_v6",{p_data:data,p_quote:serverQuote,p_summary:summary,p_terms:serviceTerms,p_terms_version:serviceTermsVersion,p_owner_email:"prod.genks@gmail.com"});
   if (prepared.error || !prepared.data) throw new Error("remote_payment_save");
   const quote = prepared.data as { id: string; project_id: string; amount_cents: number; scope: string; expires_at: string; songs?: {service?:string;trackTitle:string;trackCount:number;amountCents:number}[] };
+  if(quote.amount_cents!==serverQuote.totalCents)throw new Error("quote_mismatch");
   const origin = process.env.NEXT_PUBLIC_SITE_URL;
   if (!origin) throw new Error("remote_payment_unavailable");
   const session = await getStripe().checkout.sessions.create({
     mode: "payment", locale: "it", payment_method_types: ["card"], customer_email: String(data.email),
     expires_at: Math.floor(new Date(quote.expires_at).getTime() / 1000),
-    line_items: quote.songs?.length ? quote.songs.map((song,index)=>({quantity:1,price_data:{currency:"eur",unit_amount:song.amountCents,product_data:{name:`GENKS · ${String(song.service??data.service).replaceAll("_"," + ")} · ${song.trackTitle}`,description:`Brano ${index+1} · ${song.trackCount} tracce · 2 revisioni incluse`}}})) : [{ quantity: 1, price_data: { currency: "eur", unit_amount: quote.amount_cents,
-      product_data: { name: `GENKS · ${String(data.service).replaceAll("_", " + ")} · 1 brano`, description: quote.scope.slice(0, 300) } } }],
+    line_items: serverQuote.lines.map(line=>({quantity:line.quantity,price_data:{currency:"eur",unit_amount:line.unitAmount,product_data:{name:`GENKS · ${line.name}`.slice(0,250),description:line.code==="package"?`${serverQuote.songs.length} brani · fasce nel riepilogo`:"Dettaglio nel riepilogo GENKS"}}})),
     success_url: `${origin}/checkout/success?remote_session={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/services/project?payment=cancelled`,
     metadata: { project_id: quote.project_id, quote_id: quote.id, payment_type: "remote_project", fulfillment_mode: String(data.mode) },
-    custom_text: { submit: { message: `${quote.songs?.length ?? 1} brani nel riepilogo. Prima versione entro 7 giorni lavorativi dall’avvio consentito, dopo pagamento e file completi. Due revisioni per brano. Nessuno slot di registrazione prenotato.` } },
+    custom_text: {submit:{message:`Prima versione prevista: ${deliveryDateLabel(serverQuote.estimatedFirstVersionAt)}. ${serverQuote.rush?"48 ore":"7 giorni lavorativi"} da pagamento, file completi e avvio consentito. Dettagli e condizioni nel riepilogo GENKS.`}},
   }, { idempotencyKey: `remote-project-${quote.id}` });
   const saved = await db.from("service_quotes").update({ stripe_session_id: session.id, checkout_url: session.url, status: "open" })
     .eq("id", quote.id).eq("status", "creating").select("id").maybeSingle();

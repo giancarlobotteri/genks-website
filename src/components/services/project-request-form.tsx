@@ -22,7 +22,7 @@ export function ProjectRequestForm({ initialService, remoteCardReady }: { initia
       <input type="radio" name="service" value={option.code} checked={service === option.code} onChange={() => setService(option.code)} required />
       <strong>{option.title}</strong><small>{option.copy}</small>
     </label>)}</fieldset>
-    {service && <aside className="notice full" aria-live="polite"><strong>{total === null ? "Oltre 48 tracce: preventivo personalizzato" : `Prezzo: ${serviceAmount(total)} · 1 brano`}</strong><p>Mix: fino a 8 tracce 89,99 €; 9–24 tracce 139,99 €; 25–48 tracce 199,99 €. Mix + master: 119,99 € / 179,99 € / 239,99 €. Master stereo: 39,99 €.</p><p>{projectDelivery}</p></aside>}
+    {service && <aside className="notice full" aria-live="polite"><strong>{total === null ? "Oltre 48 tracce: preventivo personalizzato" : `Prezzo: ${serviceAmount(total)} · 1 brano`}</strong><p>Mix: fino a 8 tracce 99,99 €; 9–24 tracce 149,99 €; 25–48 tracce 199,99 €. Mix + master: 129,99 € / 189,99 € / 239,99 €. Master stereo: 39,99 €.</p><p>{projectDelivery}</p></aside>}
     <fieldset className="full project-mode-options"><legend>Come vuoi lavorare?</legend>
       <label><input type="radio" name="mode" value="remote" required checked={mode === "remote"} onChange={() => { setMode("remote"); if (payment === "cash") setPayment(""); }}/><span><strong>A distanza</strong><small>Invia i file online e lavora con GENKS da dove vuoi.</small></span></label>
       <label><input type="radio" name="mode" value="studio" required checked={mode === "studio"} onChange={() => setMode("studio")}/><span><strong>Fisicamente in studio</strong><small>L’incontro si organizza insieme e non prenota uno slot di registrazione.</small></span></label>

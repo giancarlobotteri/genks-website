@@ -33,17 +33,26 @@ export async function deliverNotification(id: string) {
       body=["La prenotazione è già confermata. Non serve approvarla.",`Cliente: ${b.name}`,`Email cliente: ${b.email}`,`Telefono: ${b.phone||"Non indicato"}`,"Servizio: Registrazione in studio",`Inizio: ${date(b.starts_at)}`,`Fine: ${date(b.ends_at)}`,`Totale: ${b.price_cents===null?"Da concordare":money(b.price_cents)}`,"Pagamento: Contanti presso lo studio",`Riferimento: ${b.reference}`,...(b.notes?[`Note: ${b.notes}`]:[]),"Registra l’incasso soltanto dopo aver ricevuto i contanti."].join("\n");
     }
     if(projectAlert){
-      const result=await db.from("service_projects").select("songs,reference,name,email,phone,service,track_title,track_count,price_cents,status,notes").eq("reference",projectAlert[1]).single();
+      const result=await db.from("service_projects").select("id,songs,reference,name,email,phone,service,track_title,track_count,price_cents,status,notes").eq("reference",projectAlert[1]).single();
       if(result.error||!result.data)throw new Error("Dati del progetto da verificare.");
       const p=result.data;
       const songLines=Array.isArray(p.songs)?p.songs.map((song,index)=>`Brano ${index+1}: ${song.trackTitle} · ${String(song.service??p.service).replaceAll("_"," + ")} · ${song.trackCount} tracce · ${money(song.amountCents)}`):[];
       body=["Hai ricevuto una nuova richiesta GENKS.",`Cliente: ${p.name}`,`Email cliente: ${p.email}`,`Telefono: ${p.phone||"Non indicato"}`,`Servizio: ${p.service.replaceAll("_"," + ")}`,`Modalità: ${p.notes?.includes("Modalità: studio") ? "Fisicamente in studio" : "A distanza"}`,`Brano: ${p.track_title}`,`Tracce audio complessive: ${p.track_count}`,...songLines,`Totale: ${p.price_cents===null?"Da concordare":money(p.price_cents)}`,`Pagamento: ${p.status==="paid"?"Carta · pagamento confermato":"Contanti presso lo studio"}`,`Riferimento: ${p.reference}`,...(p.notes?[`Note: ${p.notes}`]:[])].join("\n");
+      const detail=await db.from("service_quotes").select("scope").eq("project_id",p.id).order("created_at",{ascending:false}).limit(1).maybeSingle();
+      if(detail.error)throw new Error("Dettagli del preventivo da verificare.");
+      if(detail.data)body+="\n\nVOCI DEL RIEPILOGO\n"+detail.data.scope;
+
     }
     let calendar: { actionUrl?: string; actionLabel?: string; calendarFile?: string; calendarFilename?: string; body?: string } = {};
     if (/^payment-[a-f0-9-]{36}$/.test(message.dedupe_key)) {
       const payment = await db.from("payments").select("booking_id,project_id,amount_cents,currency,paid_at,review_reason,status").eq("id", message.dedupe_key.slice(8)).maybeSingle();
       if (payment.error) throw new Error("Verifica calendario del pagamento da ripetere.");
       if(payment.data?.status==="succeeded")body+=`\nTotale: ${new Intl.NumberFormat("it-IT",{style:"currency",currency:payment.data.currency}).format(payment.data.amount_cents/100)}\nData del pagamento: ${date(payment.data.paid_at)}\nMetodo: Pagamento online verificato da Stripe`;
+      if(payment.data?.project_id&&payment.data.status==="succeeded"){
+        const detail=await db.from("service_quotes").select("scope").eq("project_id",payment.data.project_id).eq("status","paid").maybeSingle();
+        if(detail.error)throw new Error("Riepilogo del progetto non disponibile.");
+        if(detail.data)body+="\n\nRIEPILOGO DEL TUO PROGETTO\n"+detail.data.scope;
+      }
       if (payment.data?.booking_id && !payment.data.review_reason && payment.data.status === "succeeded") {
         const result = await db.from("bookings").select("id,reference,name,email,starts_at,ends_at,updated_at,status").eq("id", payment.data.booking_id).eq("status", "confirmed").maybeSingle();
         if (result.error) throw new Error("Verifica della sessione da ripetere.");

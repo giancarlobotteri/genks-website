@@ -1,12 +1,12 @@
 // Existing agreements retain their saved price; this version applies to new bookings.
-export const serviceRateVersion = "2026-10-22-recording-v4";
-export const projectRateVersion = "2026-10-21-v3";
-export const recordingHourlyCents = 1999;
-export const projectRates = { mix: 8999, master: 3999, mix_master: 11999 } as const;
+export const serviceRateVersion = "2026-10-22-recording-v5";
+export const projectRateVersion = "2026-10-22-project-v6";
+export const recordingHourlyCents = 2499;
+export const projectRates = { mix: 9999, master: 3999, mix_master: 12999 } as const;
 export type ProjectService = keyof typeof projectRates;
 export const projectTiers = [
-  { min: 1, max: 8, mix: 8999, mix_master: 11999 },
-  { min: 9, max: 24, mix: 13999, mix_master: 17999 },
+  { min: 1, max: 8, mix: 9999, mix_master: 12999 },
+  { min: 9, max: 24, mix: 14999, mix_master: 18999 },
   { min: 25, max: 48, mix: 19999, mix_master: 23999 },
 ] as const;
 export function projectPrice(service: string, tracks: number): number | null {
