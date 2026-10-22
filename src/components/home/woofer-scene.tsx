@@ -69,7 +69,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(34, 1, .1, 50);
+    const camera = new THREE.PerspectiveCamera(34, 1, .08, 180);
     const focus = new THREE.Vector3();
     const environment = new RoomEnvironment();
     const lightPanel = new THREE.Mesh(new THREE.BoxGeometry(.25, 5, 3), new THREE.MeshBasicMaterial({ color: 0x1258ff, toneMapped: false }));
@@ -207,6 +207,32 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     const arc = addMesh(new THREE.TorusGeometry(2.24, .018, 8, 96, Math.PI * .72), gateMaterial, gate);
     arc.position.z = -.9;
 
+    const modelMaterials = [...materials];
+    modelMaterials.forEach(material => { material.transparent = true; });
+    // One instanced mesh for the light gates keeps the corridor inexpensive to draw.
+    const tunnel = new THREE.Group();
+    scene.add(tunnel);
+    const tunnelMaterial = new THREE.MeshBasicMaterial({color:0x4bafff,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false});
+    materials.add(tunnelMaterial);
+    const tunnelGeometry = new THREE.TorusGeometry(2.7,.022,6,96);
+    geometries.add(tunnelGeometry);
+    const tunnelRings = new THREE.InstancedMesh(tunnelGeometry,tunnelMaterial,30);
+    const dummy = new THREE.Object3D();
+    for(let i=0;i<30;i++){dummy.position.set(0,0,-i*4);dummy.rotation.set(0,0,i*.055);dummy.updateMatrix();tunnelRings.setMatrixAt(i,dummy.matrix);}
+    tunnel.add(tunnelRings);
+    const railPositions:number[]=[];
+    for(let i=0;i<16;i++){const a=i*Math.PI/8;const x=Math.cos(a)*2.72,y=Math.sin(a)*2.72;railPositions.push(x,y,1,x,y,-124);}
+    const railGeometry=new THREE.BufferGeometry();railGeometry.setAttribute("position",new THREE.Float32BufferAttribute(railPositions,3));geometries.add(railGeometry);
+    const railMaterial=new THREE.LineBasicMaterial({color:0x246fff,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});materials.add(railMaterial);
+    tunnel.add(new THREE.LineSegments(railGeometry,railMaterial));
+    const wallMaterial=new THREE.MeshBasicMaterial({color:0x061a37,side:THREE.BackSide,transparent:true,opacity:0,depthWrite:false});
+    const wall=addMesh(new THREE.CylinderGeometry(2.78,2.78,128,64,1,true),wallMaterial,tunnel);wall.rotation.x=Math.PI/2;wall.position.z=-62;
+    const streakPositions:number[]=[];
+    for(let i=0;i<100;i++){const angle=i*2.3999632297;const radius=2.15+(i%7)*.07;const z=-(i/100)*120;streakPositions.push(Math.cos(angle)*radius,Math.sin(angle)*radius,z,Math.cos(angle)*radius,Math.sin(angle)*radius,z-.65);}
+    const streakGeometry=new THREE.BufferGeometry();streakGeometry.setAttribute("position",new THREE.Float32BufferAttribute(streakPositions,3));geometries.add(streakGeometry);
+    const streakMaterial=new THREE.LineBasicMaterial({color:0xb5eaff,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});materials.add(streakMaterial);
+    const streaks=new THREE.LineSegments(streakGeometry,streakMaterial);tunnel.add(streaks);
+
     // Combine fixed parts sharing a material; the parent groups still rotate and separate normally.
     for (const group of [assembly, front, diaphragm, logo]) {
       const batches = new Map<THREE.Material, THREE.Mesh[]>();
@@ -316,9 +342,17 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       const expansion = reducedMotion.matches ? 0 : (1 - Math.cos(elapsed * Math.PI / 3.8)) * .5;
       const easing = 1 - Math.exp(-delta * 5);
       const smoothstep = (from: number, to: number, value: number) => THREE.MathUtils.smoothstep(value, from, to);
-      const zoom = mode === "hero" ? smoothstep(.12, .98, travel) : 0;
-      const turn = Math.sin(Math.PI * smoothstep(.02, .82, travel));
-      const reveal = Math.sin(Math.PI * smoothstep(.04, .88, travel));
+      const zoom = mode === "hero" ? smoothstep(.02, .4, travel) : 0;
+      const entry = mode === "hero" ? smoothstep(.3,.95,travel) : 0;
+      const tunnelReveal = mode === "hero" ? smoothstep(.22,.5,travel) : 0;
+      tunnel.visible = tunnelReveal > .001;
+      tunnelMaterial.opacity = tunnelReveal*.85; railMaterial.opacity=tunnelReveal*.42; wallMaterial.opacity=tunnelReveal; streakMaterial.opacity=tunnelReveal*.75;
+      tunnel.rotation.z = entry*.16; streaks.position.z=(entry*100)%4;
+      const modelOpacity=1-smoothstep(.26,.48,travel);
+      modelMaterials.forEach(material=>{material.opacity=mode === "hero"?modelOpacity:1;});
+      assembly.visible=mode!=="hero"||modelOpacity>.001;
+      const turn = Math.sin(Math.PI * smoothstep(.01, .34, travel))*.22;
+      const reveal = Math.sin(Math.PI * smoothstep(.02, .38, travel))*.3;
       const perspective = 1 - smoothstep(0, .7, travel) * .55;
       const orbit = moving ? Math.sin(elapsed * .45) : 0;
       const targetX = mode === "exploded" ? .15 + travel * .22 : reveal * .32 + orbit * .025 + (reducedMotion.matches ? 0 : pointerY * .08);
@@ -349,16 +383,17 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       // Slow optical approach preserves the original mesh and avoids near-plane clipping or a retreating logo.
       assembly.scale.setScalar(1);
       assembly.position.z = 0;
-      const cameraZoom = mode === "hero" ? 1 + zoom * 1.15 : 1;
+      const cameraZoom = mode === "hero" ? 1 + zoom * .22 * (1-entry) : 1;
       if (Math.abs(camera.zoom - cameraZoom) > .0001) {
         camera.zoom = cameraZoom;
         camera.updateProjectionMatrix();
       }
       assembly.position.y = mode === "hero" ? .2 * perspective : 0;
-      camera.position.set(mode === "exploded" ? travel * .25 : Math.sin(travel * Math.PI) * .32, mode === "exploded" ? travel * .12 : .08 * perspective, distance - (mode === "exploded" ? travel * .35 : 0));
+      camera.position.set(mode === "exploded" ? travel * .25 : Math.sin(entry*Math.PI*2)*.16, mode === "exploded" ? travel * .12 : .08 * perspective*(1-entry), mode === "hero" ? distance*(1-entry)-entry*98 : distance-travel*.35);
       if (mode === "hero") {
         logo.getWorldPosition(focus);
         focus.multiplyScalar(smoothstep(.5, .7, travel));
+        focus.lerp(new THREE.Vector3(0,0,camera.position.z-15),smoothstep(.22,.42,travel));
         camera.lookAt(focus);
       } else camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);

@@ -18,7 +18,7 @@ export function CinematicHero() {
   const progressRef = useRef(0);
   const [paused, setPaused] = useState(false);
   const [ready, setReady] = useState(false);
-  const catalogScroll = useRef<{ frame: number; cancel: () => void } | null>(null);
+  const catalogScroll = useRef<{ frame: number; progress: number; cancel: () => void } | null>(null);
   useEffect(() => () => catalogScroll.current?.cancel(), []);
   const goToCatalog = (event: MouseEvent<HTMLAnchorElement>, destination = "#catalog") => {
     if (destination === "/services") router.prefetch("/services");
@@ -29,7 +29,7 @@ export function CinematicHero() {
     const from = window.scrollY;
     const to = Math.max(0, catalog.getBoundingClientRect().top + from);
     const started = performance.now();
-    const controller = { frame: 0, cancel: () => {} };
+    const controller = { frame: 0, progress: 0, cancel: () => {} };
     const cancel = () => {
       cancelAnimationFrame(controller.frame);
       window.removeEventListener("wheel", cancel);
@@ -43,9 +43,10 @@ export function CinematicHero() {
     window.addEventListener("touchstart", cancel, { passive: true });
     window.addEventListener("keydown", cancel);
     const step = (now: number) => {
-      const t = Math.min(1, (now - started) / (destination === "/services" ? 1800 : 3000));
+      const t = Math.min(1, (now - started) / (destination === "/services" ? 5600 : 6200));
       const eased = t * t * (3 - 2 * t);
-      window.scrollTo({ top: from + (to - from) * eased, behavior: "instant" });
+      controller.progress = eased;
+      window.dispatchEvent(new Event("genks:hero-progress"));
       if (t < 1) controller.frame = requestAnimationFrame(step);
       else {
         // Let the final scene frame paint before changing route or moving focus.
@@ -53,6 +54,7 @@ export function CinematicHero() {
           cancel();
           if (destination === "/services") router.push(destination);
           else {
+            window.scrollTo({ top: to, behavior: "instant" });
             history.replaceState(history.state, "", destination);
             catalog.tabIndex = -1;
             catalog.focus({ preventScroll: true });
@@ -97,7 +99,7 @@ export function CinematicHero() {
       current = catalogScroll.current ? target : current + (target - current) * (1 - Math.exp(-delta * 14));
       if (Math.abs(current - target) < .0001) current = target;
       progressRef.current = current;
-      const fade = smoothstep(.7, .99, current);
+      const fade = smoothstep(.9, 1, current);
       const ui = 1 - smoothstep(.002, .16, current);
       const desiredInterface = Math.max(ui, smoothstep(.98, 1, current));
       interfaceProgress += (desiredInterface - interfaceProgress) * (1 - Math.exp(-delta * 5));
@@ -128,7 +130,7 @@ export function CinematicHero() {
       frame = current === target && interfaceProgress === desiredInterface ? 0 : requestAnimationFrame(paint);
     };
     const scroll = () => {
-      target = reduced.matches || paused ? 0 : Math.min(1, Math.max(0, (window.scrollY - sectionTop) / travel));
+      target = reduced.matches || paused ? 0 : (catalogScroll.current?.progress ?? Math.min(1, Math.max(0, (window.scrollY - sectionTop) / travel)));
       if (!frame) { lastTime = 0; frame = requestAnimationFrame(paint); }
     };
     const measure = () => {
@@ -143,6 +145,7 @@ export function CinematicHero() {
     observer.observe(section);
     observer.observe(stage);
     window.addEventListener("scroll", scroll, { passive: true });
+    window.addEventListener("genks:hero-progress", scroll);
     window.addEventListener("resize", measure, { passive: true });
     reduced.addEventListener("change", measure);
     measure();
@@ -155,6 +158,7 @@ export function CinematicHero() {
       document.body.removeAttribute("data-cinematic-ui-hidden");
       observer.disconnect();
       window.removeEventListener("scroll", scroll);
+      window.removeEventListener("genks:hero-progress", scroll);
       window.removeEventListener("resize", measure);
       reduced.removeEventListener("change", measure);
     };
