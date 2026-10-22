@@ -1,0 +1,52 @@
+import {ReturnSuggestions} from "@/components/commerce/interest-memory";
+import { CinematicHero } from "@/components/home/cinematic-hero";
+import { CinematicHome } from "@/components/home/cinematic-home";
+import { BeatCatalog } from "@/components/beats/beat-catalog";
+import { SectionHeading } from "@/components/ui/section-heading";
+import { Services } from "@/components/home/services";
+import { AnnouncementTicker } from "@/components/home/announcement-ticker";
+import { beatRepository } from "@/lib/repositories/beats";
+import { studioCashOnly } from "@/lib/studio-payment-mode";
+import { PurchaseHelp } from "@/components/commerce/purchase-help";
+
+
+
+
+export default async function BeatHome() {
+  const beats = await beatRepository.listPublished();
+  return (
+    <CinematicHome>
+      <CinematicHero />
+      <section id="collection" className="catalog-section">
+      <AnnouncementTicker />
+      <section className="container section purchase-guide funnel-guide" aria-labelledby="purchase-guide-title">
+        <h2 id="purchase-guide-title">Ascolta · scegli la licenza · richiedi il beat</h2>
+        <div className="purchase-guide-grid">
+          <article><span>01</span><h3>Trova il tuo suono</h3><p>Esplora il catalogo per genere, atmosfera e BPM. Ascolta prima di scegliere.</p></article>
+          <article><span>02</span><h3>Scegli la tua licenza</h3><p>Confronta file inclusi e condizioni. La licenza scelta definisce come puoi utilizzare il beat.</p></article>
+          <article><span>03</span><h3>{studioCashOnly ? "Concorda e passa in studio" : "Acquista e scarica"}</h3><p>{studioCashOnly ? "Richiedi il beat scelto. Paghi in contanti in studio, con licenza e consegna concordate." : "Dopo il pagamento confermato, accedi ai file disponibili nella raccolta con la tua email."}</p></article>
+        </div>
+      </section>
+      <section id="catalog" className="container section funnel-catalog">
+        <SectionHeading
+          index="02"
+          eyebrow="IL CATALOGO"
+          title="Trova il tuo prossimo beat."
+        >
+          <p>
+            Ascolta e scegli il beat per il tuo prossimo brano.
+            <br />
+            <span className="muted">{studioCashOnly ? "Beat: acquisto in contanti presso lo studio." : "Esplora e acquista liberamente. Ritrova i file nella tua raccolta."}</span>
+          </p>
+        </SectionHeading>
+        <BeatCatalog beats={beats} />
+        <ReturnSuggestions beats={beats}/>
+        <PurchaseHelp compact />
+      </section>
+
+
+      </section>
+      <Services />
+    </CinematicHome>
+  );
+}

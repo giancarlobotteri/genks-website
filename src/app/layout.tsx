@@ -1,3 +1,5 @@
+import { BEATS_ENABLED } from "@/config/features";
+import { WhatsAppLink } from "@/components/layout/whatsapp-link";
 import { InterestMemory } from "@/components/commerce/interest-memory";
 import type { Metadata, Viewport } from "next";
 import { connection } from "next/server";
@@ -49,13 +51,13 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   await connection();
-  const [beats, licenses] = await Promise.all([
+  const [beats, licenses] = BEATS_ENABLED ? await Promise.all([
     beatRepository.listPublished(),
     getLicenses(),
-  ]);
+  ]) : [[], []];
   return (
     <html lang="it">
-      <body><SiteAtmosphere/><InterestMemory/>
+      <body><SiteAtmosphere/>{BEATS_ENABLED && <InterestMemory/>}
         <a className="skip-link" href="#main-content">
           Vai al contenuto
         </a>
@@ -63,12 +65,13 @@ export default async function RootLayout({
           <LicenseProvider licenses={licenses}>
             <CartProvider catalog={beats}>
               <Navigation />
-              <CartRail />
+              {BEATS_ENABLED && <CartRail />}
               <main id="main-content" tabIndex={-1}>
                 {children}
               </main>
               <Footer />
-              <PersistentPlayer />
+              {BEATS_ENABLED && <PersistentPlayer />}
+              <WhatsAppLink />
               <MotionObserver />
               <AssetGuard />
             </CartProvider>

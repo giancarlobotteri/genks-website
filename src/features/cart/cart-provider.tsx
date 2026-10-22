@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { BEATS_ENABLED } from "@/config/features";
 import { usePathname } from "next/navigation";
 import { cartStorageKey, restoreCart } from "@/lib/cart-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -39,6 +40,7 @@ export function CartProvider({ children, catalog }: { children: ReactNode; catal
   const setItems = useCallback((update: (current: CartItem[]) => CartItem[]) => setSelection(current => ({ ...current, items: update(current.items) })), []);
 
   useEffect(() => {
+    if (!BEATS_ENABLED) return;
     let cancelled = false;
     const controller = new AbortController();
     const hydrate = async () => {

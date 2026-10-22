@@ -1,7 +1,7 @@
 export const site = {
   name: "GENKS",
   description:
-    "Il suono di GENKS. Esplora i beat, trova il suono per il tuo prossimo brano e richiedi una produzione musicale su misura.",
+    "Mix, master e registrazione per rap, trap e R&B. In studio a Perugia o a distanza, da ovunque.",
   instagram:
     process.env.NEXT_PUBLIC_GENKS_INSTAGRAM ||
     "https://www.instagram.com/prodbygenks/",

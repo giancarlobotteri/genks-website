@@ -1,3 +1,4 @@
+import { BEATS_ENABLED } from "@/config/features";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { privatePreview } from "@/lib/preview-mode";
@@ -18,6 +19,12 @@ export async function proxy(request: NextRequest) {
     const origin = request.headers.get("origin");
     if (request.headers.get("sec-fetch-site") === "cross-site" || !origin || origin !== request.nextUrl.origin) {
       return protect(NextResponse.json({ error: "Origine della richiesta non autorizzata." }, { status: 403 }));
+    }
+  }
+  if (!BEATS_ENABLED) {
+    if (path === "/api/checkout") return protect(NextResponse.json({ error: "Il catalogo beat è in pausa." }, { status: 503, headers: { "Cache-Control": "no-store" } }));
+    if (path === "/beats" || path.startsWith("/beats/") || path === "/carrello" || (path.startsWith("/checkout/") && path !== "/checkout/success")) {
+      return protect(NextResponse.redirect(new URL("/services", request.url)));
     }
   }
   if (

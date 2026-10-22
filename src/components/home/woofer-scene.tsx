@@ -11,7 +11,7 @@ type Props = {
   paused: boolean;
   onReady: () => void;
   onUnavailable: () => void;
-  mode?: "hero" | "exploded";
+  mode?: "hero" | "exploded" | "showcase";
   heroProgressRef?: RefObject<number>;
 };
 
