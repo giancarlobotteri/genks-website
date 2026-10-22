@@ -10,7 +10,7 @@ export function ReservationSuccess({ reference, project = false, paid = false }:
       <div className={styles.header}>
         <div className={styles.seal} aria-hidden="true"><span/><Check size={42} strokeWidth={2.3}/></div>
         <p className={styles.badge}>{paid?"PAGAMENTO CONFERMATO":"PRENOTAZIONE CONFERMATA"}</p>
-        <h1 id="reservation-success-title">{paid?<>È tutto pronto.<br/><em>Il tuo suono continua qui.</em></>:<>Ci siamo.<br/><em>La tua sessione ti aspetta.</em></>}</h1>
+        <h1 id="reservation-success-title">{paid?<>È tutto pronto.<br/><em>Il tuo suono continua qui.</em></>:<>Ci siamo.<br/><em>{project?"Il tuo progetto prende forma.":"La tua sessione ti aspetta."}</em></>}</h1>
         <p className={styles.intro}>{paid?"Pagamento ricevuto. Grazie per aver scelto GENKS.":"Prenotazione confermata. Grazie per aver scelto GENKS."}</p>
       </div>
       <div className={styles.reference}><span>IL TUO RIFERIMENTO</span><strong>{reference}</strong><small>Conservalo per ritrovare subito la richiesta.</small></div>
