@@ -11,7 +11,7 @@ import styles from "./cinematic-hero.module.css";
 
 const WooferScene = dynamic(() => import("./woofer-scene"), { ssr: false });
 
-export function CinematicHero() {
+export function CinematicHero({ serviceLanding = false }: { serviceLanding?: boolean }) {
   const router = useRouter();
   const active = useHomeSceneActive();
   const sectionRef = useRef<HTMLElement>(null);
@@ -21,7 +21,7 @@ export function CinematicHero() {
   const catalogScroll = useRef<{ frame: number; progress: number; cancel: () => void } | null>(null);
   useEffect(() => () => catalogScroll.current?.cancel(), []);
   const goToCatalog = (event: MouseEvent<HTMLAnchorElement>, destination = "#catalog") => {
-    if (destination === "/services") router.prefetch("/services");
+    if (destination.startsWith("/")) router.prefetch(destination);
     const catalog = document.getElementById("catalog") ?? document.getElementById("collection");
     if (!catalog || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     event.preventDefault();
@@ -43,7 +43,7 @@ export function CinematicHero() {
     window.addEventListener("touchstart", cancel, { passive: true });
     window.addEventListener("keydown", cancel);
     const step = (now: number) => {
-      const t = Math.min(1, (now - started) / (destination === "/services" ? 4600 : 4900));
+      const t = Math.min(1, (now - started) / (destination.startsWith("/") ? 4600 : 4900));
       const eased = t * t * (3 - 2 * t);
       controller.progress = eased;
       window.dispatchEvent(new Event("genks:hero-progress"));
@@ -52,7 +52,7 @@ export function CinematicHero() {
         // Let the final scene frame paint before changing route or moving focus.
         controller.frame = requestAnimationFrame(() => {
           cancel();
-          if (destination === "/services") router.push(destination);
+          if (destination.startsWith("/")) router.push(destination);
           else {
             window.scrollTo({ top: to, behavior: "instant" });
             history.replaceState(history.state, "", destination);
@@ -165,7 +165,7 @@ export function CinematicHero() {
   }, [paused]);
 
   return (
-    <section id="home" ref={sectionRef} className={`${styles.sequence} ${paused ? styles.motionPaused : ""}`} aria-labelledby="cinematic-title">
+    <section id="home" ref={sectionRef} className={`${styles.sequence} ${paused ? styles.motionPaused : ""} ${serviceLanding ? styles.serviceLanding : ""}`} aria-labelledby="cinematic-title">
       <div className={styles.stage}>
         <div className={styles.halo} aria-hidden="true" />
         <div className={styles.atmosphere} aria-hidden="true">
@@ -174,10 +174,10 @@ export function CinematicHero() {
           <div className={styles.currentC} />
         </div>
 
-        <h1 id="cinematic-title" className="sr-only">GENKS — Beat e servizi musicali</h1>
+        <h1 id="cinematic-title" className="sr-only">{serviceLanding ? "GENKS — Mix, master e registrazione" : "GENKS — Beat e servizi musicali"}</h1>
         <div className={styles.visual}>
           <div className={`${styles.poster} ${ready ? styles.posterHidden : ""}`}>
-            <Image src="/brand/genks-logo.jpeg" alt="" fill preload sizes="(max-width: 700px) 85vw, 500px" />
+            <Image src={serviceLanding ? "/brand/genks-header.svg" : "/brand/genks-logo.jpeg"} alt="" fill preload sizes="(max-width: 700px) 85vw, 500px" />
           </div>
           {active ? <WooferScene sectionRef={sectionRef} heroProgressRef={progressRef} paused={paused}
             onReady={() => { setReady(true); window.dispatchEvent(new Event("genks:hero-settled")); }}
@@ -186,19 +186,25 @@ export function CinematicHero() {
 
         <div className={styles.content}>
           <div className={styles.actions}>
+            {serviceLanding ? <>
+            <Link className={styles.primary} href="/services/project" onClick={event => goToCatalog(event, "/services/project")}><span>Scegli il tuo mix</span><ArrowUpRight size={20} aria-hidden="true" /></Link>
+            <Link className={styles.secondary} href="/services/recording" onClick={event => goToCatalog(event, "/services/recording")}><span>Prenota lo studio</span><ArrowUpRight size={20} aria-hidden="true" /></Link>
+            </> : <>
             <Link className={styles.primary} href="/services" onClick={event => goToCatalog(event, "/services")}><span>Prenota un servizio<small>Registrazione, mix e master.</small></span><ArrowUpRight size={20} aria-hidden="true" /></Link>
             <a className={styles.secondary} href="#catalog" onClick={event => goToCatalog(event)}><span>Vai al catalogo<small>Ascolta i beat. Trova il tuo suono.</small></span><ArrowUpRight size={20} aria-hidden="true" /></a>
+            </>}
           </div>
         </div>
 
-        <div className={styles.bottomline}>
+        {!serviceLanding && <div className={styles.bottomline}>
           <a className={styles.scroll} href="#catalog" onClick={event => goToCatalog(event)}><ArrowDown size={14} aria-hidden="true" /> Scopri il tuo prossimo suono</a>
           <button type="button" className={styles.motion} disabled={!ready} aria-pressed={paused} onClick={() => setPaused(value => !value)}>
             {paused ? <Play size={12} aria-hidden="true" /> : <Pause size={12} aria-hidden="true" />}
             {paused ? "Riprendi animazione" : "Pausa animazione"}
           </button>
-        </div>
+        </div>}
       </div>
     </section>
   );
 }
+

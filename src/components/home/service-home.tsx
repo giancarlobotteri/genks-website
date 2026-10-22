@@ -2,19 +2,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { ServiceCards } from "@/components/services/service-cards";
 import { genksBiography, studioPortrait } from "@/data/home-content";
-import { HomeLogo } from "./home-logo";
+import { CinematicHero } from "./cinematic-hero";
 import { HomeProof } from "./home-proof";
 import styles from "./service-home.module.css";
 export function ServiceHome() {
- return <div className={styles.home}>
-  <section id="home" className={styles.hero}>
-   <div className={styles.heroGlow} aria-hidden="true" />
-   <h1>Il tuo brano, al livello di quelli che ascolti.</h1>
-   <p className={styles.subtitle}>Mix, master e registrazione per rap, trap e R&amp;B. In studio a Perugia o a distanza, da ovunque.</p>
-   <HomeLogo />
-   <p className={styles.promise}>Prima versione in 7 giorni · 2 revisioni incluse · Pagamento online sicuro</p>
-   <div className={styles.actions}><Link className="button button-primary" href="/services/project">Scegli il tuo mix</Link><Link className="button button-secondary" href="/services/recording">Prenota lo studio</Link></div>
-  </section>
+ return <div className={`${styles.home} ${styles.cinematicHome}`}>
+  <CinematicHero serviceLanding />
+  <div id="collection">
   <section className={styles.section}><h2>COME FUNZIONA</h2><div className={styles.steps}>
    <article><span>01</span><h3>Scegli e paga</h3><p>Scegli il servizio e paga online in 2 minuti.</p></article>
    <article><span>02</span><h3>Invia le tracce</h3><p>Mandami il link alle tracce seguendo la guida.</p></article>
@@ -31,5 +25,6 @@ export function ServiceHome() {
    <details><summary>Come pago?</summary><p>Mix e master online con carta o Apple Pay. La registrazione si paga in studio.</p></details>
   </section>
   <section className={`${styles.section} ${styles.closing}`}><h2>Il tuo prossimo brano merita di suonare così.</h2><Link className="button button-primary" href="/services/project">Scegli il tuo mix</Link></section>
+  </div>
  </div>;
 }
