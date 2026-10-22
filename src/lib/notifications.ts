@@ -33,10 +33,11 @@ export async function deliverNotification(id: string) {
       body=["La prenotazione è già confermata. Non serve approvarla.",`Cliente: ${b.name}`,`Email cliente: ${b.email}`,`Telefono: ${b.phone||"Non indicato"}`,"Servizio: Registrazione in studio",`Inizio: ${date(b.starts_at)}`,`Fine: ${date(b.ends_at)}`,`Totale: ${b.price_cents===null?"Da concordare":money(b.price_cents)}`,"Pagamento: Contanti presso lo studio",`Riferimento: ${b.reference}`,...(b.notes?[`Note: ${b.notes}`]:[]),"Registra l’incasso soltanto dopo aver ricevuto i contanti."].join("\n");
     }
     if(projectAlert){
-      const result=await db.from("service_projects").select("reference,name,email,phone,service,track_title,track_count,price_cents,status,notes").eq("reference",projectAlert[1]).single();
+      const result=await db.from("service_projects").select("songs,reference,name,email,phone,service,track_title,track_count,price_cents,status,notes").eq("reference",projectAlert[1]).single();
       if(result.error||!result.data)throw new Error("Dati del progetto da verificare.");
       const p=result.data;
-      body=["Hai ricevuto una nuova richiesta GENKS.",`Cliente: ${p.name}`,`Email cliente: ${p.email}`,`Telefono: ${p.phone||"Non indicato"}`,`Servizio: ${p.service.replaceAll("_"," + ")}`,`Modalità: ${p.notes?.includes("Modalità: studio") ? "Fisicamente in studio" : "A distanza"}`,`Brano: ${p.track_title}`,`Tracce audio: ${p.track_count}`,`Totale: ${p.price_cents===null?"Da concordare":money(p.price_cents)}`,`Pagamento: ${p.status==="paid"?"Carta · pagamento confermato":"Contanti presso lo studio"}`,`Riferimento: ${p.reference}`,...(p.notes?[`Note: ${p.notes}`]:[])].join("\n");
+      const songLines=Array.isArray(p.songs)?p.songs.map((song,index)=>`Brano ${index+1}: ${song.trackTitle} · ${song.trackCount} tracce · ${money(song.amountCents)}`):[];
+      body=["Hai ricevuto una nuova richiesta GENKS.",`Cliente: ${p.name}`,`Email cliente: ${p.email}`,`Telefono: ${p.phone||"Non indicato"}`,`Servizio: ${p.service.replaceAll("_"," + ")}`,`Modalità: ${p.notes?.includes("Modalità: studio") ? "Fisicamente in studio" : "A distanza"}`,`Brano: ${p.track_title}`,`Tracce audio complessive: ${p.track_count}`,...songLines,`Totale: ${p.price_cents===null?"Da concordare":money(p.price_cents)}`,`Pagamento: ${p.status==="paid"?"Carta · pagamento confermato":"Contanti presso lo studio"}`,`Riferimento: ${p.reference}`,...(p.notes?[`Note: ${p.notes}`]:[])].join("\n");
     }
     let calendar: { actionUrl?: string; actionLabel?: string; calendarFile?: string; calendarFilename?: string; body?: string } = {};
     if (/^payment-[a-f0-9-]{36}$/.test(message.dedupe_key)) {

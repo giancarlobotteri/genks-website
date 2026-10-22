@@ -24,20 +24,22 @@ export async function openRemoteProjectPayment(data: Record<string, unknown>) {
   if (!remoteProjectCardAllowed({ enabled: await remoteProjectPaymentsReady(), type: "project", mode: String(data.mode), service: String(data.service) })) throw new Error("remote_payment_unavailable");
   if (!previewRecipientAllowed(String(data.email))) throw new Error("remote_payment_unavailable");
   const db = createSupabaseAdminClient();
-  const prepared = await db.rpc("reserve_remote_project", { p_data: data, p_owner_email: "prod.genks@gmail.com" });
+  const prepared = Array.isArray(data.songs)
+    ? await db.rpc("reserve_project_batch", {p_data:data,p_payment:"card",p_owner_email:"prod.genks@gmail.com"})
+    : await db.rpc("reserve_remote_project", { p_data: data, p_owner_email: "prod.genks@gmail.com" });
   if (prepared.error || !prepared.data) throw new Error("remote_payment_save");
-  const quote = prepared.data as { id: string; project_id: string; amount_cents: number; scope: string; expires_at: string };
+  const quote = prepared.data as { id: string; project_id: string; amount_cents: number; scope: string; expires_at: string; songs?: {trackTitle:string;trackCount:number;amountCents:number}[] };
   const origin = process.env.NEXT_PUBLIC_SITE_URL;
   if (!origin) throw new Error("remote_payment_unavailable");
   const session = await getStripe().checkout.sessions.create({
     mode: "payment", locale: "it", payment_method_types: ["card"], customer_email: String(data.email),
     expires_at: Math.floor(new Date(quote.expires_at).getTime() / 1000),
-    line_items: [{ quantity: 1, price_data: { currency: "eur", unit_amount: quote.amount_cents,
+    line_items: quote.songs?.length ? quote.songs.map((song,index)=>({quantity:1,price_data:{currency:"eur",unit_amount:song.amountCents,product_data:{name:`GENKS · ${String(data.service).replaceAll("_"," + ")} · ${song.trackTitle}`,description:`Brano ${index+1} · ${song.trackCount} tracce · 2 revisioni incluse`}}})) : [{ quantity: 1, price_data: { currency: "eur", unit_amount: quote.amount_cents,
       product_data: { name: `GENKS · ${String(data.service).replaceAll("_", " + ")} · 1 brano`, description: quote.scope.slice(0, 300) } } }],
     success_url: `${origin}/checkout/success?remote_session={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/services/project?payment=cancelled`,
     metadata: { project_id: quote.project_id, quote_id: quote.id, payment_type: "remote_project", fulfillment_mode: String(data.mode) },
-    custom_text: { submit: { message: "Servizio per un brano. Prima versione entro 7 giorni lavorativi dall’avvio consentito, dopo pagamento e file completi. Due revisioni incluse. Nessuno slot di registrazione viene prenotato." } },
+    custom_text: { submit: { message: `${quote.songs?.length ?? 1} brani nel riepilogo. Prima versione entro 7 giorni lavorativi dall’avvio consentito, dopo pagamento e file completi. Due revisioni per brano. Nessuno slot di registrazione prenotato.` } },
   }, { idempotencyKey: `remote-project-${quote.id}` });
   const saved = await db.from("service_quotes").update({ stripe_session_id: session.id, checkout_url: session.url, status: "open" })
     .eq("id", quote.id).eq("status", "creating").select("id").maybeSingle();
