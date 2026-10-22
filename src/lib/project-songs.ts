@@ -2,7 +2,7 @@ import { projectPrice } from "./service-rates.ts";
 import {discountPrice,type PublicDiscount} from "./public-discounts.ts";
 
 export const maxProjectSongs = 20;
-export type ProjectSong = { service?:string; trackTitle: string; trackCount: number; description: string; referenceLinks: string; notes: string; desiredDeadline: string };
+export type ProjectSong = { service?:string; vocalTracks?:number; versions?:boolean; extraRevision?:boolean; trackTitle: string; trackCount: number; description: string; referenceLinks: string; notes: string; desiredDeadline: string };
 export type PricedProjectSong = ProjectSong & { amountCents: number };
 export function emptyProjectSong(): ProjectSong {
   return { trackTitle: "", trackCount: 1, description: "", referenceLinks: "", notes: "", desiredDeadline: "" };

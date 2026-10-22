@@ -11,7 +11,7 @@ export const site = {
   youtube:
     process.env.NEXT_PUBLIC_GENKS_YOUTUBE ||
     "https://www.youtube.com/@prodbygenks",
-  whatsapp: process.env.NEXT_PUBLIC_GENKS_WHATSAPP || "",
+  whatsapp: process.env.NEXT_PUBLIC_GENKS_WHATSAPP || "+393450236299",
   navigation: [
     { label: "Inizio", href: "/#home" },
     { label: "Negozio di beat", href: "/beats" },

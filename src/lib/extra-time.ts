@@ -1,7 +1,7 @@
 import { fromRomeWallTime } from "./rome-time.ts";
-export const extraTimePolicy = "Per le sessioni del venerdì e del sabato, dopo mezzanotte si aggiungono 9,99 € ogni 30 minuti alla tariffa base di 19,99 €/ora. Il calcolo è proporzionale ai minuti effettivi. Negli altri giorni la sessione termina entro mezzanotte.";
-export function extraTimeCents(dayMinutes: number, nightMinutes: number) {
-  return Math.round(((dayMinutes+nightMinutes)*1999)/60) + Math.round(nightMinutes*999/30);
+export const extraTimePolicy = "Per le sessioni del venerdì e del sabato, dopo mezzanotte si aggiungono 9,99 € ogni 30 minuti alla tariffa base di 24,99 €/ora. Il calcolo è proporzionale ai minuti effettivi. Negli altri giorni la sessione termina entro mezzanotte.";
+export function extraTimeCents(dayMinutes: number, nightMinutes: number, hourly = 2499) {
+  return Math.round(((dayMinutes+nightMinutes)*hourly)/60) + Math.round(nightMinutes*999/30);
 }
 export function recordingSessionCents(day: string, time: string, hours: number, hourly: number) {
   if (!day || !time) return Math.max(50,Math.round(hourly*hours));
