@@ -1,9 +1,11 @@
+import { InterestMemory } from "@/components/commerce/interest-memory";
 import type { Metadata, Viewport } from "next";
 import { connection } from "next/server";
 import { Navigation } from "@/components/layout/navigation";
 import { CartRail } from "@/components/commerce/cart-rail";
 import { Footer } from "@/components/layout/footer";
 import { PersistentPlayer } from "@/components/player/persistent-player";
+import { SiteAtmosphere } from "@/components/ui/site-atmosphere";
 import { MotionObserver } from "@/components/ui/motion-observer";
 import { AssetGuard } from "@/components/ui/asset-guard";
 import { PlayerProvider } from "@/features/player/player-provider";
@@ -13,6 +15,7 @@ import { beatRepository, getLicenses } from "@/lib/repositories/beats";
 import { getSiteOrigin, site } from "@/config/site";
 import { privatePreview } from "@/lib/preview-mode";
 import "./globals.css";
+import "./storefront-motion.css";
 import "@fontsource/manrope/latin-400.css";
 import "@fontsource/manrope/latin-600.css";
 import "@fontsource/manrope/latin-700.css";
@@ -52,7 +55,7 @@ export default async function RootLayout({
   ]);
   return (
     <html lang="it">
-      <body>
+      <body><SiteAtmosphere/><InterestMemory/>
         <a className="skip-link" href="#main-content">
           Vai al contenuto
         </a>

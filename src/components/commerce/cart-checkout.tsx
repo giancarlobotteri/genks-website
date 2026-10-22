@@ -70,14 +70,13 @@ export function CartCheckout() {
       setBusy(true); setError("");
       const fields = new FormData(event.currentTarget);
       try {
-      const response = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: fields.get("name"), email: fields.get("email"), promoCode: fields.get("promoCode") || undefined, acceptedTerms: fields.get("acceptedTerms") === "on", immediateDelivery: fields.get("immediateDelivery") === "on", items: items.map((item) => ({ beatId: item.beat.id, licenseCode: item.selectedLicenseId })) }) });
+      const response = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: fields.get("name"), email: fields.get("email"), expectedTotal:total, acceptedTerms: fields.get("acceptedTerms") === "on", immediateDelivery: fields.get("immediateDelivery") === "on", items: items.map((item) => ({ beatId: item.beat.id, licenseCode: item.selectedLicenseId })) }) });
       const result = await response.json().catch(() => ({}));
       if (response.ok && result.url) window.location.assign(result.url);
       else { setError(result.error ?? "Il pagamento non è stato avviato. Riprova."); setBusy(false); }
       } catch { setError("Connessione interrotta. Riprova ad aprire il pagamento."); setBusy(false); }
     }}>
       <div className="cart-customer-fields"><label>Nome<input name="name" autoComplete="name" required minLength={2} /></label><label>Email<input name="email" type="email" autoComplete="email" required /></label></div>
-      <details><summary>Hai un codice sconto?</summary><label>Codice sconto<input name="promoCode" autoComplete="off" maxLength={40} /></label></details>
       {selectedItems.map(({beat,license})=><details key={beat.id}><summary>Licenza di {beat.title}</summary><p className="license-contract-copy">{license.contractText||"Licenza in preparazione: acquisto non ancora disponibile."}</p></details>)}
       {error ? <p className="notice error" role="alert">{error}</p> : null}
       <CheckoutConsents />

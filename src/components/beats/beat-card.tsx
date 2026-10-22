@@ -27,7 +27,7 @@ export function BeatCard({
   const { licenses } = useLicenses();
   const playing = currentBeat?.id === beat.id && isPlaying;
   return (
-    <article className={`beat-card ${playing ? "is-playing" : ""}`} data-reveal>
+    <article data-beat-id={beat.id} className={`beat-card ${playing ? "is-playing" : ""}`} data-reveal>
       <div className="beat-artwork">
         <Image
           src={beat.cover}

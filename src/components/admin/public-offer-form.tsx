@@ -1,0 +1,12 @@
+"use client";
+import {useState} from "react";
+import {savePublicDiscount} from "@/app/admin/promotions/actions";
+import {discountPrice} from "@/lib/public-discounts";
+import {serviceAmount} from "@/lib/service-rates";
+export function PublicOfferForm({choices}:{choices:{value:string;label:string;base?:number}[]}){
+ const [target,setTarget]=useState("all"),[kind,setKind]=useState("percent"),[amount,setAmount]=useState("");
+ const cents=kind==="fixed"?Math.round(Number(amount)*100):Number(amount);
+ const examples=choices.filter(x=>x.base&&(target==="all"||x.value===target||target==="services"&&["recording","mix","master","mix_master"].includes(x.value)||target==="projects"&&["mix","master","mix_master"].includes(x.value))).slice(0,5);
+ return <form action={savePublicDiscount} className="premium-form form-grid"><label>Applica a<select name="target" value={target} onChange={e=>setTarget(e.target.value)}>{choices.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}</select></label><label>Nome pubblico<input name="label" required maxLength={80} placeholder="Offerta GENKS"/></label><label>Tipo<select name="kind" value={kind} onChange={e=>{setKind(e.target.value);setAmount("");}}><option value="percent">Percentuale</option><option value="fixed">Riduzione in euro per articolo / ora studio</option></select></label><label>{kind==="percent"?"Sconto %":"Sconto €"}<input name="amount" type="number" min={kind==="percent"?1:.01} max={kind==="percent"?99:10000} step={kind==="percent"?1:.01} required value={amount} onChange={e=>setAmount(e.target.value)}/></label><input type="hidden" name="active" value="true"/>
+ <aside className="notice full"><strong>Anteprima · nessuna modifica finché non salvi</strong>{examples.map(c=><p key={c.value}>{c.label}: {serviceAmount(c.base!)} → <strong>{serviceAmount(cents>0?discountPrice(c.base!,[target],[{target,kind:kind as "percent"|"fixed",amount:cents,label:"Anteprima",active:true}]):c.base!)}</strong></p>)}<small>«Tutto il listino» sospende gli sconti specifici precedenti e applica un solo valore a tutto. Gli sconti specifici impostati successivamente prevalgono sul generale, senza sommarsi. Importo minimo 0,50 €. Registrazione: sconto sulla tariffa oraria; supplementi extra esclusi. Ordini e preventivi già emessi restano invariati.</small></aside><button className="button button-primary full">Applica lo sconto a tutti i clienti</button></form>;
+}

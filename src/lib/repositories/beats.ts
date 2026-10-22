@@ -1,3 +1,5 @@
+import { getPublicDiscounts } from "@/lib/public-discounts-server";
+import { discountPrice } from "@/lib/public-discounts";
 import { italianLabel } from "@/lib/italian";
 import "server-only";
 import { cache } from "react";
@@ -56,18 +58,18 @@ export const getLicenses = cache(async (): Promise<License[]> => {
       .select("code,name,price_cents,currency,included_assets,short_description,is_exclusive,contract_text")
       .eq("active", true)
       .order("display_order");
-    if (data)
+    if (data) { const discounts=await getPublicDiscounts();
       return data.map((item) => ({
         id: item.code as License["id"],
         isExclusive: item.is_exclusive,
         contractText: item.contract_text || undefined,
         name: italianLabel(item.name),
-        priceCents: item.price_cents,
+        priceCents: discountPrice(item.price_cents,[`license:${item.code}`,"beats"],discounts),
         currency: "EUR",
         format: (item.included_assets ?? []).map((asset: string) => italianLabel(asset).toUpperCase()).join(" + "),
         features: [italianLabel(item.short_description), ...(item.included_assets ?? []).map((asset: string) => asset === "stems" ? "Tracce separate incluse" : `${italianLabel(asset).toUpperCase()} incluso`)].filter(Boolean),
         isDemo: false,
-      }));
+      })); }
     throw new Error("Le licenze non sono disponibili. Riprova tra poco.");
   }
   return mockLicenses.map(license => ({ ...license, name: italianLabel(license.name), features: license.features.map(italianLabel), format: license.format.replace("STEMS", "TRACCE SEPARATE") }));
@@ -90,8 +92,10 @@ async function prepareCatalog(rows: DbBeat[]): Promise<Beat[]> {
       }
     }
   }
+  const discounts=await getPublicDiscounts();
   return rows.map(row => {
     const beat = mapBeat(row);
+    beat.licensePrices=Object.fromEntries(Object.entries(beat.licensePrices??{}).map(([code,base])=>[code,discountPrice(base as number,[`beat:${beat.id}`,`license:${code}`,"beats"],discounts)]));
     const prices = Array.isArray(row.beat_license_prices) ? row.beat_license_prices : [];
     beat.readyLicenseIds = prices.flatMap(entry => {
       const license = Array.isArray(entry.license_types) ? entry.license_types[0] : entry.license_types;

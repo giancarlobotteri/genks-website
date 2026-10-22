@@ -20,8 +20,9 @@ export function CinematicHero() {
   const [ready, setReady] = useState(false);
   const catalogScroll = useRef<{ frame: number; cancel: () => void } | null>(null);
   useEffect(() => () => catalogScroll.current?.cancel(), []);
-  const goToCatalog = (event: MouseEvent<HTMLAnchorElement>, destination = "#collection") => {
-    const catalog = document.getElementById("collection");
+  const goToCatalog = (event: MouseEvent<HTMLAnchorElement>, destination = "#catalog") => {
+    if (destination === "/services") return;
+    const catalog = document.getElementById("catalog") ?? document.getElementById("collection");
     if (!catalog || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     event.preventDefault();
     catalogScroll.current?.cancel();
@@ -42,7 +43,7 @@ export function CinematicHero() {
     window.addEventListener("touchstart", cancel, { passive: true });
     window.addEventListener("keydown", cancel);
     const step = (now: number) => {
-      const t = Math.min(1, (now - started) / 4200);
+      const t = Math.min(1, (now - started) / 2600);
       const eased = t * t * (3 - 2 * t);
       window.scrollTo({ top: from + (to - from) * eased, behavior: "instant" });
       if (t < 1) controller.frame = requestAnimationFrame(step);
@@ -181,13 +182,13 @@ export function CinematicHero() {
 
         <div className={styles.content}>
           <div className={styles.actions}>
-            <a className={styles.primary} href="#collection" onClick={event => goToCatalog(event)}><span>Vai al catalogo<small>Ascolta i beat. Trova il tuo suono.</small></span><ArrowUpRight size={20} aria-hidden="true" /></a>
+            <a className={styles.primary} href="#catalog" onClick={event => goToCatalog(event)}><span>Vai al catalogo<small>Ascolta i beat. Trova il tuo suono.</small></span><ArrowUpRight size={20} aria-hidden="true" /></a>
             <Link className={styles.secondary} href="/services" onClick={event => goToCatalog(event, "/services")}><span>Prenota un servizio<small>Registrazione, mix e master.</small></span><ArrowUpRight size={20} aria-hidden="true" /></Link>
           </div>
         </div>
 
         <div className={styles.bottomline}>
-          <a className={styles.scroll} href="#collection" onClick={event => goToCatalog(event)}><ArrowDown size={14} aria-hidden="true" /> Scopri il tuo prossimo suono</a>
+          <a className={styles.scroll} href="#catalog" onClick={event => goToCatalog(event)}><ArrowDown size={14} aria-hidden="true" /> Scopri il tuo prossimo suono</a>
           <button type="button" className={styles.motion} disabled={!ready} aria-pressed={paused} onClick={() => setPaused(value => !value)}>
             {paused ? <Play size={12} aria-hidden="true" /> : <Pause size={12} aria-hidden="true" />}
             {paused ? "Riprendi animazione" : "Pausa animazione"}

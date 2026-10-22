@@ -1,3 +1,5 @@
+import {getPublicDiscounts} from "@/lib/public-discounts-server";
+import {discountPrice} from "@/lib/public-discounts";
 import { allowPublicRequest } from "@/lib/security/request-limit";
 import { studioCashOnly } from "@/lib/studio-payment-mode";
 import { italianLabel } from "@/lib/italian";
@@ -16,7 +18,7 @@ const schema = z.object({
   items: z.array(z.object({ beatId: z.uuid(), licenseCode: z.string().min(1).max(50) })).min(1).max(20).optional(),
   email: z.email(),
   name: z.string().trim().min(2).max(120),
-  promoCode: z.string().trim().toUpperCase().max(40).optional(),
+  expectedTotal: z.number().int().min(50).optional(),
   acceptedTerms: z.literal(true),
   immediateDelivery: z.literal(true),
 }).refine((value) => value.items?.length || (value.beatId && value.licenseCode), { message: "Scegli almeno una licenza per un beat." });
@@ -40,6 +42,7 @@ export async function POST(request: Request) {
   const requestedItems = parsed.data.items ?? [{ beatId: parsed.data.beatId!, licenseCode: parsed.data.licenseCode! }];
   if (new Set(requestedItems.map((item) => item.beatId)).size !== requestedItems.length)
     return Response.json({ error: "Ogni beat può comparire una sola volta nell’ordine." }, { status: 400 });
+  const discounts=await getPublicDiscounts();
   const offers = await Promise.all(requestedItems.map(async (requested) => {
     const { data } = await db
       .from("beat_license_prices")
@@ -62,7 +65,8 @@ export async function POST(request: Request) {
       return !error && Boolean(info?.size && info.size > 0);
     }));
     if (stored.some(exists => !exists)) return null;
-    return { beat, license, amount: data.price_override_cents ?? license.price_cents };
+    const baseAmount=data.price_override_cents ?? license.price_cents;
+    return { beat, license, baseAmount, amount:discountPrice(baseAmount,[`beat:${beat.id}`,`license:${license.code}`,"beats"],discounts) };
   }));
   if (offers.some((offer) => !offer)) return Response.json({ error: "Una o più licenze selezionate non sono disponibili." }, { status: 409 });
   const validOffers = offers.filter((offer): offer is NonNullable<typeof offer> => Boolean(offer));
@@ -72,6 +76,7 @@ export async function POST(request: Request) {
 
   const user = await getCurrentUser();
   const amount = validOffers.reduce((sum, offer) => sum + offer.amount, 0);
+  if (parsed.data.expectedTotal!==undefined ? parsed.data.expectedTotal!==amount : validOffers.some(x=>x.amount!==x.baseAmount)) return Response.json({error:"Il prezzo è stato aggiornato. Ricarica il riepilogo prima di pagare."},{status:409});
   const { data: order, error } = await db
     .from("orders")
     .insert({ customer_id: user?.email?.toLowerCase() === parsed.data.email.toLowerCase() ? user.id : null, customer_email: parsed.data.email.toLowerCase(), customer_name: parsed.data.name, subtotal_cents: amount, total_cents: amount, currency, checkout_consents: { termsAccepted: true, immediateDelivery: true, recordedAt: new Date().toISOString(), version: "2026-10-16" } })
@@ -90,17 +95,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Non è stato possibile aggiungere gli articoli all’ordine." }, { status: 500 });
   }
 
-  let finalAmount = amount;
-  if (parsed.data.promoCode) {
-    const { data: discounted, error: promoError } = await db.rpc("apply_promo_to_order", {
-      p_order_id: order.id, p_code: parsed.data.promoCode,
-    });
-    if (promoError || !discounted?.[0]) {
-      await db.from("orders").update({ status: "failed" }).eq("id", order.id);
-      return Response.json({ error: "Il codice sconto non è valido, è scaduto oppure non si applica a queste licenze." }, { status: 409 });
-    }
-    finalAmount = discounted[0].total_cents;
-  }
+
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
   const stripe = getStripe();
@@ -111,7 +106,7 @@ export async function POST(request: Request) {
     locale: "it",
     payment_method_types: ["card"],
     expires_at: Math.floor(new Date(order.created_at).getTime()/1000)+2*3600,
-    line_items: parsed.data.promoCode ? [{ quantity: 1, price_data: { currency: currency.toLowerCase(), unit_amount: finalAmount, product_data: { name: `GENKS · ${validOffers.length} licenze beat`, description: `Codice sconto ${parsed.data.promoCode} applicato` } } }] : validOffers.map(({ beat, license, amount: unitPrice }) => ({ quantity: 1, price_data: { currency: currency.toLowerCase(), unit_amount: unitPrice, product_data: { name: `${beat.title} — ${italianLabel(license.name)}`, description: "Licenza beat GENKS" } } })),
+    line_items: validOffers.map(({ beat, license, amount: unitPrice }) => ({ quantity: 1, price_data: { currency: currency.toLowerCase(), unit_amount: unitPrice, product_data: { name: `${beat.title} — ${italianLabel(license.name)}`, description: "Licenza beat GENKS" } } })),
     success_url: `${origin}/checkout/success?order=${order.id}`,
     cancel_url: requestedItems.length === 1 ? `${origin}/checkout/${validOffers[0].beat.id}/${validOffers[0].license.code}?cancelled=1` : `${origin}/carrello?cancelled=1`,
     metadata: { order_id: order.id, customer_id: user?.id ?? "guest", item_count: String(validOffers.length) },

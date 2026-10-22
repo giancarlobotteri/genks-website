@@ -36,7 +36,7 @@ export async function deliverNotification(id: string) {
       const result=await db.from("service_projects").select("songs,reference,name,email,phone,service,track_title,track_count,price_cents,status,notes").eq("reference",projectAlert[1]).single();
       if(result.error||!result.data)throw new Error("Dati del progetto da verificare.");
       const p=result.data;
-      const songLines=Array.isArray(p.songs)?p.songs.map((song,index)=>`Brano ${index+1}: ${song.trackTitle} · ${song.trackCount} tracce · ${money(song.amountCents)}`):[];
+      const songLines=Array.isArray(p.songs)?p.songs.map((song,index)=>`Brano ${index+1}: ${song.trackTitle} · ${String(song.service??p.service).replaceAll("_"," + ")} · ${song.trackCount} tracce · ${money(song.amountCents)}`):[];
       body=["Hai ricevuto una nuova richiesta GENKS.",`Cliente: ${p.name}`,`Email cliente: ${p.email}`,`Telefono: ${p.phone||"Non indicato"}`,`Servizio: ${p.service.replaceAll("_"," + ")}`,`Modalità: ${p.notes?.includes("Modalità: studio") ? "Fisicamente in studio" : "A distanza"}`,`Brano: ${p.track_title}`,`Tracce audio complessive: ${p.track_count}`,...songLines,`Totale: ${p.price_cents===null?"Da concordare":money(p.price_cents)}`,`Pagamento: ${p.status==="paid"?"Carta · pagamento confermato":"Contanti presso lo studio"}`,`Riferimento: ${p.reference}`,...(p.notes?[`Note: ${p.notes}`]:[])].join("\n");
     }
     let calendar: { actionUrl?: string; actionLabel?: string; calendarFile?: string; calendarFilename?: string; body?: string } = {};

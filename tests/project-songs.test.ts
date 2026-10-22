@@ -17,6 +17,14 @@ test("an invalid song rejects the whole request without dropping it",()=>{
 });
 test("per-song notes, dates and references survive normalization",()=>{
  const item={...song(),trackTitle:"  Primo  ",notes:"Nota del primo brano",referenceLinks:"https://example.com/a",desiredDeadline:"2026-11-03"};
- assert.deepEqual(priceProjectSongs("mix",[item])?.[0],{...item,trackTitle:"Primo",amountCents:8999});
+ assert.deepEqual(priceProjectSongs("mix",[item])?.[0],{...item,service:"mix",trackTitle:"Primo",amountCents:8999});
  assert.equal(priceProjectSongs("mix",Array.from({length:20},()=>song()))?.length,20);
+});
+test("each song chooses its own service and its own applicable discount",()=>{
+ const songs=[{...song(8),service:"mix"},{...song(),service:"master"},{...song(24),service:"mix_master"}];
+ const result=priceProjectSongs("",songs,[{target:"master",label:"Master",kind:"percent",amount:20,active:true}]);
+ assert.deepEqual(result?.map(s=>s.amountCents),[8999,3199,17999]);
+ assert.equal(result?.reduce((sum,s)=>sum+s.amountCents,0),30197);
+ assert.equal(priceProjectSongs("",[{...song(),service:""}]),null);
+ assert.equal(priceProjectSongs("mix",[{...song(),service:"invalid"}]),null);
 });

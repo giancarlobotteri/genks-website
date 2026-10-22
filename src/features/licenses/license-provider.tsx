@@ -54,7 +54,7 @@ export function LicenseProvider({
                   <span className="mono muted">{license.format}</span>
                 </div>
                 <strong>
-                  {studioCashOnly ? "Preventivo in studio" : formatPrice(beat?.licensePrices?.[license.id] ?? license.priceCents)}
+                  {formatPrice(beat?.licensePrices?.[license.id] ?? license.priceCents)}
                 </strong>
                 <ul>
                   {license.features.map((feature) => (

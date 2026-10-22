@@ -8,6 +8,8 @@ export function MotionObserver() {
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const elements = document.querySelectorAll<HTMLElement>("[data-reveal]");
+    const entry=document.getElementById("main-content");
+    const entrance=media.matches?null:entry?.animate([{opacity:.45,transform:"translate3d(0,12px,0)"},{opacity:1,transform:"translate3d(0,0,0)"}],{duration:520,easing:"cubic-bezier(.2,.7,.2,1)"});
     let frame = 0;
     const move = (event: PointerEvent) => {
       if (media.matches) return;
@@ -44,6 +46,7 @@ export function MotionObserver() {
     };
     media.addEventListener("change", revealAll);
     return () => {
+      entrance?.cancel();
       observer.disconnect();
       cancelAnimationFrame(frame);
       window.removeEventListener("pointermove", move);

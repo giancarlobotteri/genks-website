@@ -28,13 +28,13 @@ export async function openRemoteProjectPayment(data: Record<string, unknown>) {
     ? await db.rpc("reserve_project_batch", {p_data:data,p_payment:"card",p_owner_email:"prod.genks@gmail.com"})
     : await db.rpc("reserve_remote_project", { p_data: data, p_owner_email: "prod.genks@gmail.com" });
   if (prepared.error || !prepared.data) throw new Error("remote_payment_save");
-  const quote = prepared.data as { id: string; project_id: string; amount_cents: number; scope: string; expires_at: string; songs?: {trackTitle:string;trackCount:number;amountCents:number}[] };
+  const quote = prepared.data as { id: string; project_id: string; amount_cents: number; scope: string; expires_at: string; songs?: {service?:string;trackTitle:string;trackCount:number;amountCents:number}[] };
   const origin = process.env.NEXT_PUBLIC_SITE_URL;
   if (!origin) throw new Error("remote_payment_unavailable");
   const session = await getStripe().checkout.sessions.create({
     mode: "payment", locale: "it", payment_method_types: ["card"], customer_email: String(data.email),
     expires_at: Math.floor(new Date(quote.expires_at).getTime() / 1000),
-    line_items: quote.songs?.length ? quote.songs.map((song,index)=>({quantity:1,price_data:{currency:"eur",unit_amount:song.amountCents,product_data:{name:`GENKS · ${String(data.service).replaceAll("_"," + ")} · ${song.trackTitle}`,description:`Brano ${index+1} · ${song.trackCount} tracce · 2 revisioni incluse`}}})) : [{ quantity: 1, price_data: { currency: "eur", unit_amount: quote.amount_cents,
+    line_items: quote.songs?.length ? quote.songs.map((song,index)=>({quantity:1,price_data:{currency:"eur",unit_amount:song.amountCents,product_data:{name:`GENKS · ${String(song.service??data.service).replaceAll("_"," + ")} · ${song.trackTitle}`,description:`Brano ${index+1} · ${song.trackCount} tracce · 2 revisioni incluse`}}})) : [{ quantity: 1, price_data: { currency: "eur", unit_amount: quote.amount_cents,
       product_data: { name: `GENKS · ${String(data.service).replaceAll("_", " + ")} · 1 brano`, description: quote.scope.slice(0, 300) } } }],
     success_url: `${origin}/checkout/success?remote_session={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/services/project?payment=cancelled`,

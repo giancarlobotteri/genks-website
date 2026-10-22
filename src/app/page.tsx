@@ -1,3 +1,4 @@
+import {ReturnSuggestions} from "@/components/commerce/interest-memory";
 import { CinematicHero } from "@/components/home/cinematic-hero";
 import { CinematicHome } from "@/components/home/cinematic-home";
 import { BeatCatalog } from "@/components/beats/beat-catalog";
@@ -40,6 +41,7 @@ export default async function Home() {
             <span className="muted">{studioCashOnly ? "Beat e produzioni su richiesta. Concordiamo insieme licenza, prezzo e consegna in studio." : "Esplora e acquista liberamente. Ritrova i file nella tua raccolta."}</span>
           </p>
         </SectionHeading>
+        <ReturnSuggestions beats={beats}/>
         <BeatCatalog beats={beats} />
         <PurchaseHelp compact />
       </section>

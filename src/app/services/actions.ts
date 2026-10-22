@@ -9,6 +9,7 @@ import { getGoogleBusyRanges, hasGoogleCalendar } from "@/lib/google-calendar";
 import { fromRomeWallTime } from "@/lib/rome-time";
 import { revalidatePath } from "next/cache";
 import { flushNotifications } from "@/lib/notifications";
+import { getPublicDiscounts } from "@/lib/public-discounts-server";
 import { projectPaymentMethod } from "@/lib/remote-project-policy";
 import { priceProjectSongs, type PricedProjectSong } from "@/lib/project-songs";
 import { openRemoteProjectPayment } from "@/lib/remote-project-payments";
@@ -20,7 +21,7 @@ export async function createBooking(formData: FormData) {
   if (!await allowPublicRequest("service")) redirect("/services/recording?error=limit");
   if (!hasSupabase) redirect("/services/recording?error=setup");
   if(formData.get("website"))redirect("/services/recording?error=invalid");
-  const parsed = z.object({ name:text(2,120),artistName:z.string().trim().max(120),email:z.email(),phone:text(6,40),date:z.iso.date(),time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),duration:z.coerce.number().min(0.25).max(8).multipleOf(0.25),notes:z.string().trim().max(2000).default(""),referenceUrl:z.union([z.literal(""),z.url()]),rateVersion:z.literal(serviceRateVersion),accepted:z.literal("on") }).safeParse(Object.fromEntries(formData));
+  const parsed = z.object({ name:text(2,120),artistName:z.string().trim().max(120),email:z.email(),phone:text(6,40),date:z.iso.date(),time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),duration:z.coerce.number().min(0.25).max(8).multipleOf(0.25),notes:z.string().trim().max(2000).default(""),referenceUrl:z.union([z.literal(""),z.url()]),expectedTotal:z.coerce.number().int().min(50).optional(),rateVersion:z.literal(serviceRateVersion),accepted:z.literal("on") }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect("/services/recording?error=invalid");
 
   const start = fromRomeWallTime(parsed.data.date, parsed.data.time); const end = new Date(start.getTime()+parsed.data.duration*3600000);
@@ -56,11 +57,12 @@ export async function createProject(formData: FormData) {
   if (formData.has("songs")) {
     const raw = formData.get("songs");
     if (typeof raw !== "string" || raw.length > 200000) redirect("/services/project?error=invalid");
-    try { songs = priceProjectSongs(String(formData.get("service")), JSON.parse(raw)); } catch { songs = null; }
+    try { songs = priceProjectSongs(String(formData.get("service")), JSON.parse(raw), await getPublicDiscounts()); } catch { songs = null; }
     if (!songs) redirect("/services/project?error=invalid");
+    formData.set("service", songs[0].service!);
     for (const key of ["trackTitle", "trackCount", "description", "referenceLinks", "notes", "desiredDeadline"] as const) formData.set(key, String(songs[0][key]));
   }
-  const parsed=z.object({name:text(2,120),artistName:z.string().trim().max(120),email:z.email(),phone:z.string().trim().max(40),trackTitle:text(1,160),service:z.enum(["mix","master","mix_master"]),description:text(10,4000),trackCount:z.coerce.number().int().min(1).max(200),referenceLinks:z.string().trim().max(2000).default(""),desiredDeadline:z.union([z.literal(""),z.iso.date()]),notes:z.string().trim().max(2000).default(""),mode:z.enum(["studio","remote"]),payment:z.enum(["card","cash"]).optional(),rateVersion:z.literal(projectRateVersion),accepted:z.literal("on"),earlyStart:z.preprocess(v=>v==="on",z.boolean()),withdrawalAcknowledged:z.preprocess(v=>v==="on",z.boolean())}).safeParse(Object.fromEntries(formData));
+  const parsed=z.object({name:text(2,120),artistName:z.string().trim().max(120),email:z.email(),phone:z.string().trim().max(40),trackTitle:text(1,160),service:z.enum(["mix","master","mix_master"]),description:text(10,4000),trackCount:z.coerce.number().int().min(1).max(200),referenceLinks:z.string().trim().max(2000).default(""),desiredDeadline:z.union([z.literal(""),z.iso.date()]),notes:z.string().trim().max(2000).default(""),mode:z.enum(["studio","remote"]),payment:z.enum(["card","cash"]).optional(),expectedTotal:z.coerce.number().int().min(50).optional(),rateVersion:z.literal(projectRateVersion),accepted:z.literal("on"),earlyStart:z.preprocess(v=>v==="on",z.boolean()),withdrawalAcknowledged:z.preprocess(v=>v==="on",z.boolean())}).safeParse(Object.fromEntries(formData));
   if(!parsed.success || projectPrice(parsed.data.service,parsed.data.trackCount) === null || parsed.data.earlyStart && !parsed.data.withdrawalAcknowledged) redirect("/services/project?error=invalid"); const user=await getCurrentUser();const db=createSupabaseAdminClient();
   const links=parsed.data.referenceLinks.split(/\s+/).filter(Boolean).filter(link=>URL.canParse(link)&&["https:","http:"].includes(new URL(link).protocol)).slice(0,20);
   const payment = projectPaymentMethod(parsed.data.mode, parsed.data.payment);

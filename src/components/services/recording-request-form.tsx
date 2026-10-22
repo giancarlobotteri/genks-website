@@ -1,5 +1,6 @@
 "use client";
 
+import { discountPrice, type PublicDiscount } from "@/lib/public-discounts";
 import { useRef, useState } from "react";
 import { extraTimePolicy } from "@/lib/extra-time";
 import { CalendarDays, Clock3 } from "lucide-react";
@@ -7,7 +8,8 @@ import { createBooking } from "@/app/services/actions";
 import { ServiceSubmit } from "./service-submit";
 import { recordingHourlyCents, serviceAmount, serviceRateVersion } from "@/lib/service-rates";
 
-export function RecordingRequestForm() {
+export function RecordingRequestForm({discounts=[]}:{discounts?:PublicDiscount[]}) {
+  const hourly=discountPrice(recordingHourlyCents,["recording","services"],discounts);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState("1");
@@ -46,7 +48,7 @@ export function RecordingRequestForm() {
 
   return <form action={createBooking} className="premium-form form-grid booking-form">
     <input type="hidden" name="rateVersion" value={serviceRateVersion}/><label className="form-honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
-    <input type="hidden" name="duration" value={duration}/>
+    <input type="hidden" name="duration" value={duration}/><input type="hidden" name="expectedTotal" value={Math.max(50,Math.round(hourly*Number(duration)))}/>
     <div className="booking-step full"><span>01</span><div><strong>Scegli la data</strong><small>Prima scegli il giorno, poi uno degli orari disponibili.</small></div></div>
     <label className="date-field full"><CalendarDays size={18}/><span>Data</span><input name="date" type="date" required value={date} min={new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())} onChange={(event) => void loadAvailability(event.target.value)}/></label>
     <div className="booking-step full"><span>02</span><div><strong>Scegli l’orario</strong><small>Vedrai la durata disponibile per l’orario che selezioni.</small></div></div>
@@ -69,13 +71,13 @@ export function RecordingRequestForm() {
       </div></details>
     </div>
     <div className="booking-step full"><span>04</span><div><strong>Dettagli e contatti</strong><small>Riceverai la conferma e il riepilogo via email.</small></div></div>
-    <p className="service-form-note full">Lo studio è in Via Quintina, Ponte San Giovanni, Perugia (PG). Dal lunedì al venerdì: 19:30–00:00. Sabato e domenica: 10:00–00:00. Le sessioni prenotate terminano entro mezzanotte. Eventuale tempo extra viene concordato in studio e registrato personalmente da GENKS. Prima di mezzanotte: 20 €/ora. {extraTimePolicy}</p>
+    <p className="service-form-note full">Lo studio è in Via Quintina, Ponte San Giovanni, Perugia (PG). Dal lunedì al venerdì: 19:30–00:00. Sabato e domenica: 10:00–00:00. Le sessioni prenotate terminano entro mezzanotte. Eventuale tempo extra viene concordato in studio e registrato personalmente da GENKS. Tempo extra prima di mezzanotte: 20 €/ora, escluso dagli sconti sulla sessione prenotata. {extraTimePolicy}</p>
     <label className="full">Collegamento di riferimento <small>facoltativo</small><input name="referenceUrl" type="url" placeholder="https://"/></label>
     <label>Nome<input name="name" required minLength={2} maxLength={120} autoComplete="name"/></label><label>Nome d’arte <small>facoltativo</small><input name="artistName"/></label>
     <label>Email<input name="email" type="email" required autoComplete="email"/></label><label>Telefono / WhatsApp<input name="phone" type="tel" required minLength={6} maxLength={40} autoComplete="tel"/></label>
     <label className="full">Note <small>facoltative</small><textarea name="notes" rows={4} placeholder="Obiettivi della sessione, numero di artisti, informazioni utili…"/></label>
     <p className="service-form-note full"><a className="text-link" href="/services/regole">Cambi data, cancellazioni e ritardi →</a></p>
-    <aside className="notice full" aria-live="polite"><strong>Totale: {serviceAmount(recordingHourlyCents * Number(duration))}</strong><p>{durationLabel(Number(duration))} × {serviceAmount(recordingHourlyCents)}/ora. Pagamento in contanti presso lo studio.</p></aside><label className="full consent-label"><input type="checkbox" name="accepted" required/>Accetto il totale di {serviceAmount(recordingHourlyCents * Number(duration))}, il pagamento in contanti e le <a className="text-link" href="/services/regole" target="_blank" rel="noopener noreferrer">regole degli appuntamenti</a>.</label><ServiceSubmit label="Conferma la prenotazione" disabled={!date || !time || loading || !availableDurations.includes(Number(duration))} />
+    <aside className="notice full" aria-live="polite"><strong>Totale: {serviceAmount(Math.max(50,Math.round(hourly * Number(duration))))}</strong><p>{durationLabel(Number(duration))} × {serviceAmount(hourly)}/ora. Pagamento in contanti presso lo studio.</p></aside><label className="full consent-label"><input type="checkbox" name="accepted" required/>Accetto il totale di {serviceAmount(Math.max(50,Math.round(hourly * Number(duration))))}, il pagamento in contanti e le <a className="text-link" href="/services/regole" target="_blank" rel="noopener noreferrer">regole degli appuntamenti</a>.</label><ServiceSubmit label="Conferma la prenotazione" disabled={!date || !time || loading || !availableDurations.includes(Number(duration))} />
     <p className="service-form-note full">Tutti gli orari sono indicati nel fuso italiano. La prenotazione conferma subito il tuo orario, salvo che sia appena stato occupato da un’altra persona. Pagamento in contanti presso lo studio; pagamento online con carta non disponibile. Nessun addebito automatico.</p>
   </form>;
 }

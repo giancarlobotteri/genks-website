@@ -185,7 +185,7 @@ export function BeatCatalog({ beats }: { beats: Beat[] }) {
         </div>
         {pagination.items.map((beat, index) => (
           <div
-            className={`beat-row ${currentBeat?.id === beat.id ? "active" : ""}`}
+            data-beat-id={beat.id} className={`beat-row ${currentBeat?.id === beat.id ? "active" : ""}`}
             style={{ "--beat-accent": ["#70a9ff", "#5591ec", "#92c6ff", "#497ad1"][index % 4] } as CSSProperties}
             key={beat.id}
             role="row"
