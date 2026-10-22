@@ -23,7 +23,7 @@ export default async function AdminBookings({searchParams}:{searchParams:Promise
   const query=db.from("bookings").select("id,reference,name,artist_name,email,phone,starts_at,ends_at,status,notes,reference_url,hold_expires_at,service_quotes(*),payments(amount_cents,refunded_cents,status,livemode,review_reason)").gte("created_at",start).order("created_at",{ascending:false}).order("id");if(status)query.eq("status",status);
   const [bookings,blackouts]=await Promise.all([query.range((page-1)*5,page*5-1),db.from("blackout_dates").select("id,starts_at,ends_at,reason").gt("ends_at",new Date().toISOString()).order("starts_at").limit(50)]);
   if(bookings.error||blackouts.error)throw new Error("Impossibile leggere il calendario.");
-  return <><header className="admin-heading"><span className="eyebrow">GENKS STUDIO</span><h1>Prenotazioni</h1><p>{studioCashOnly ? "Le nuove prenotazioni sono confermate automaticamente a 20 €/ora. Ricevi l’avviso su Gmail: non serve approvarle. Registra i contanti solo dopo averli ricevuti." : "Il pagamento conferma automaticamente la sessione."} Gli orari seguono il fuso italiano.</p></header>
+  return <><header className="admin-heading"><span className="eyebrow">GENKS STUDIO</span><h1>Prenotazioni</h1><p>{studioCashOnly ? "Le nuove prenotazioni sono confermate automaticamente a 19,99 €/ora. Ricevi l’avviso su Gmail: non serve approvarle. Registra i contanti solo dopo averli ricevuti." : "Il pagamento conferma automaticamente la sessione."} Gli orari seguono il fuso italiano.</p></header>
     <OperationNotice code={q.notice}/>
     <form action={sendBookingAlertPreview}><button className="button button-secondary">Invia avviso Gmail di prova</button></form>
     <details className="admin-form-card"><summary>Blocca un periodo in cui lo studio non è disponibile</summary><p>I blocchi inseriti qui impediscono nuove prenotazioni. Gli impegni aggiunti soltanto a Google Calendar non vengono letti dall’abbonamento all’agenda.</p>
@@ -41,4 +41,3 @@ export default async function AdminBookings({searchParams}:{searchParams:Promise
     <AdminPagination page={page} total={count??0} path="/admin/bookings" params={{status}}/>
   </>;
 }
-
