@@ -71,7 +71,7 @@ export function ProjectRequestForm({initialService,remoteCardReady,discounts=[],
 
   </fieldset>
   {step===review&&<section className={`${styles.review} full`} aria-label="Riepilogo dei brani"><p>{count} {count===1?"brano":"brani"} · Servizi scelti per ciascun brano · {mode==="studio"?"Fisicamente in studio":"A distanza"} · {payment==="card"?"Carta":"Contanti in studio"}</p>
-   {songs.map((s,i)=><article key={i}><div><span>BRANO {i+1}</span><strong>{s.trackTitle}</strong><small>{services.find(v=>v.code===s.service)?.title} · {s.trackCount} tracce · 2 revisioni incluse</small></div><button type="button" onClick={()=>go(i)}>Modifica</button></article>)}
+   {(quote?.songs??songs).map((s,i)=><article key={i}><div><span>BRANO {i+1}</span><strong>{s.trackTitle}</strong><small>{services.find(v=>v.code===s.service)?.title} · {s.trackCount} tracce · {s.extraRevision?"2 revisioni incluse + 1 revisione extra":"2 revisioni incluse"}</small>{s.versions&&<small>Versioni strumentale e a cappella{packageCode==="single"?" incluse nel pacchetto":""}</small>}{Boolean(s.vocalTracks)&&<small>Tuning ed editing: {s.vocalTracks} tracce vocali</small>}</div><button type="button" onClick={()=>go(i)}>Modifica</button></article>)}
    {quote?.lines.map((line,i)=><p key={i}>{line.name} · {line.quantity} × {serviceAmount(line.unitAmount)} = <strong>{serviceAmount(line.quantity*line.unitAmount)}</strong></p>)}
    {quote&&<p>Data prevista della prima versione: <strong>{deliveryDateLabel(quote.estimatedFirstVersionAt)}</strong><br/>{quote.estimateBasis}</p>}
    <div className={styles.total}><span>Totale · {count} {count===1?"brano":"brani"}</span><strong>{total===null?"Controlla i brani":serviceAmount(total)}</strong></div>
