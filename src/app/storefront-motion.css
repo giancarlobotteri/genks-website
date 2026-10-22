@@ -1,3 +1,6 @@
+body:has(> .site-atmosphere) { isolation:isolate; }
+body:has(> .site-atmosphere) #main-content { background:transparent; }
+#main-content:has(#home)>div { background:transparent; }
 .site-atmosphere { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:-1; background:#030812; }
 .site-atmosphere i { position:absolute; inset:-25%; background:radial-gradient(ellipse at 30% 40%,#164b8c44,transparent 56%); animation:genks-drift 19s ease-in-out infinite alternate; will-change:transform; }
 .site-atmosphere i:nth-child(2) { background:radial-gradient(ellipse at 75% 60%,#204e9f2e,transparent 60%); animation-duration:27s; animation-direction:alternate-reverse; }
