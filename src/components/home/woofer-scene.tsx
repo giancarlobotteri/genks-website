@@ -388,9 +388,9 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       // Fit the complete opening composition: model above its two actions, centered in the usable viewport.
       const compact = width <= 700;
       const modelHeight = wideLayout
-        ? Math.min(compact ? 270 : 520, Math.max(compact ? 170 : 220, height - (compact ? 330 : 300)))
+        ? Math.min(compact ? Math.min(width * .9, 300) : 520, Math.max(compact ? 150 : 220, height - (compact ? 330 : 300)))
         : Math.max(250, height - 340 * uiSpace);
-      const offset = (wideLayout ? (compact ? 12 : -16) : 80) * uiSpace;
+      const offset = (wideLayout ? (compact ? 24 : -16) : 80) * uiSpace;
       const fitHeight = wideLayout ? THREE.MathUtils.lerp(modelHeight, height, 1 - uiSpace) : modelHeight;
       const distance = mode === "hero" ? Math.max(6.3 * height / fitHeight, 6.3 / camera.aspect) : Math.max(5.95, 5.95 / camera.aspect) + .5;
       if (mode === "hero" && (!camera.view || camera.view.offsetY !== offset || camera.view.fullWidth !== width || camera.view.fullHeight !== height)) {
