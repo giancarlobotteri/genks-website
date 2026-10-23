@@ -11,6 +11,23 @@ test('all seven service prices and tier boundaries',()=>{for(const [n,m,b] of [[
 test('extras itemized, counts validated, amount fields from browser ignored',()=>{const q=buildServiceQuote({songs:[{...song(),vocalTracks:2,versions:true,extraRevision:true,amountCents:1}],rush:true,earlyStart:true},[],now);assert.equal(q.totalCents,12999+3000+3000+1999+1500);assert.equal(q.lines.length,5);assert.equal(q.totalCents,q.lines.reduce((s,l)=>s+l.quantity*l.unitAmount,0));assert.throws(()=>buildServiceQuote({songs:[{...song(),vocalTracks:-1}]}));assert.throws(()=>buildServiceQuote({songs:[{...song(),versions:'true'}]}));});
 test('every online package, no double charge for included extras',()=>{for(const code of ['single','ep','masters'] as const){const p=packages[code];const q=buildServiceQuote({packageCode:code,songs:Array.from({length:p.songs},()=>song(p.service,p.service==='master'?1:8))});assert.equal(q.totalCents,p.price);assert.equal(q.songs.reduce((s,l)=>s+l.amountCents,0),p.price);}const q=buildServiceQuote({packageCode:'single',songs:[{...song(),versions:true,extraRevision:true}]});assert.equal(q.totalCents,14999);});
 test('package upgrades per song and rejected tampered packages',()=>{assert.equal(buildServiceQuote({packageCode:'ep',songs:[song('mix_master',9),song('mix_master',25),song(),song()]}).totalCents,61999);assert.throws(()=>buildServiceQuote({packageCode:'ep',songs:[song()]}));assert.throws(()=>buildServiceQuote({packageCode:'single',songs:[song('mix',8)]}));assert.equal(buildServiceQuote({packageCode:'voice',songs:[song()]}).totalCents,18999);});
+
+test('every mix bundle changes tier at 9 and 25 tracks per song and returns to base when tracks are removed',()=>{
+ for(const code of ['single','ep','voice','turnkey'] as const){
+  const p=packages[code];
+  const quote=(tracks:number)=>buildServiceQuote({packageCode:code,songs:Array.from({length:p.songs},(_,i)=>song('mix_master',i===0?tracks:8))});
+  for(const [tracks,extra] of [[1,0],[8,0],[9,6000],[24,6000],[25,11000],[48,11000],[8,0]]){
+   const q=quote(tracks);
+   assert.equal(q.totalCents,p.price+extra,code+' '+tracks);
+   assert.equal(q.lines.filter(l=>l.code==='tier').reduce((n,l)=>n+l.quantity*l.unitAmount,0),extra);
+   assert.equal(q.songs.reduce((n,s)=>n+s.amountCents,0),q.totalCents);
+  }
+  assert.throws(()=>quote(49));
+ }
+ const ep=buildServiceQuote({packageCode:'ep',songs:[song('mix_master',9),song('mix_master',25),song('mix_master',48),song('mix_master',8)]});
+ assert.equal(ep.totalCents,72999);
+ assert.deepEqual(ep.lines.filter(l=>l.code==='tier').map(l=>l.songIndex),[0,1,2]);
+});
 test('real separate prices and precise guarantee calculation',()=>{const separate=separatePackagePrices();for(const code of Object.keys(packages) as (keyof typeof packages)[])assert.equal(separate[code],packages[code].separate);assert.equal(guaranteeRefund(12999,44999,51996),5625);assert.equal(customBeat.deposit+customBeat.balance,customBeat.total);});
 test('package discounts do not stack with individual discounts',()=>{const discounts=[{target:'all',label:'Test',kind:'percent' as const,amount:10,active:true}];assert.equal(buildServiceQuote({packageCode:'single',songs:[song()]},discounts).totalCents,14999);assert.equal(buildServiceQuote({songs:[song()]},discounts).totalCents,11699);});
 test('48 hours, seven business days, holidays and withdrawal delay',()=>{assert.equal(firstVersionEstimate(now,true,true),'2026-10-24T10:00:00.000Z');assert.equal(firstVersionEstimate(now,false,true).slice(0,10),'2026-11-02');assert.equal(firstVersionEstimate(now,true,false),'2026-11-07T10:00:00.000Z');assert.equal(isItalianBusinessDay(new Date('2027-03-29T12:00:00Z')),false);});
