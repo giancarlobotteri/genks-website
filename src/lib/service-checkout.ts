@@ -2,7 +2,7 @@ import {buildRecordingQuote} from "@/lib/recording-quote";
 import {getPublicDiscounts} from "@/lib/public-discounts-server";
 import "server-only";
 import type {ServiceQuote} from "@/lib/service-quote";
-import {serviceTerms,serviceTermsVersion} from "@/data/legal";
+import {serviceTerms,serviceTermsVersion,legalDocuments} from "@/data/legal";
 import {deliveryDateLabel} from "@/lib/service-delivery";
 import {serviceAmount} from "@/lib/service-rates";
 import {createSupabaseAdminClient} from "@/lib/supabase/admin";
@@ -51,7 +51,7 @@ export async function reserveRecordingPayment(data:Record<string,unknown>,summar
  if(!await remoteProjectPaymentsReady()||!previewRecipientAllowed(String(data.email)))throw new Error("card_unavailable");
  const quote=buildRecordingQuote(String(data.date),String(data.time),Number(data.duration),await getPublicDiscounts());
  if(data.expectedTotal!==undefined&&data.expectedTotal!==quote.total)throw new Error("price_changed");
- const db=createSupabaseAdminClient();const result=await db.rpc("reserve_recording_checkout_v7",{p_data:{...data,expectedTotal:quote.total},p_summary:summary+` Totale: ${serviceAmount(quote.total)}.`});
+ const db=createSupabaseAdminClient();const result=await db.rpc("reserve_recording_checkout_v7",{p_data:{...data,expectedTotal:quote.total,bookingTerms:legalDocuments.booking.body},p_summary:summary+` Totale: ${serviceAmount(quote.total)}.`});
  if(result.error||!result.data)throw new Error(result.error?.message.includes("booking_conflict")?"booking_conflict":"booking_payment_error");
  const prepared=result.data as Prepared;
  if(prepared.amount_cents!==quote.total)throw new Error("quote_mismatch");
