@@ -12,10 +12,11 @@ type Props = {
   onReady: () => void;
   onUnavailable: () => void;
   mode?: "hero" | "exploded" | "showcase";
+  wideLayout?: boolean;
   heroProgressRef?: RefObject<number>;
 };
 
-export default function WooferScene({ sectionRef, paused, onReady, onUnavailable, mode = "hero", heroProgressRef }: Props) {
+export default function WooferScene({ sectionRef, paused, onReady, onUnavailable, mode = "hero", heroProgressRef, wideLayout = false }: Props) {
   const mountRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(paused);
   const callbacks = useRef({ onReady, onUnavailable });
@@ -384,9 +385,12 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       const height = mount.clientHeight;
       const width = mount.clientWidth;
       const uiSpace = 1 - smoothstep(.035, .25, travel);
-      const distance = mode === "hero" ? Math.max(6.3 * height / Math.max(250, height - 340 * uiSpace), 6.3 / camera.aspect) : Math.max(5.95, 5.95 / camera.aspect) + .5;
-      if (mode === "hero" && (!camera.view || camera.view.offsetY !== 80 * uiSpace || camera.view.fullWidth !== width || camera.view.fullHeight !== height)) {
-        camera.setViewOffset(width, height, 0, 80 * uiSpace, width, height);
+      const wide = wideLayout && width >= 1100;
+      const reserve = wide ? 220 : 340;
+      const offset = (wide ? 20 : 80) * uiSpace;
+      const distance = mode === "hero" ? Math.max(6.3 * height / Math.max(250, height - reserve * uiSpace), 6.3 / camera.aspect) : Math.max(5.95, 5.95 / camera.aspect) + .5;
+      if (mode === "hero" && (!camera.view || camera.view.offsetY !== offset || camera.view.fullWidth !== width || camera.view.fullHeight !== height)) {
+        camera.setViewOffset(width, height, 0, offset, width, height);
       }
       // Slow optical approach preserves the original mesh and avoids near-plane clipping or a retreating logo.
       assembly.scale.setScalar(1);
@@ -431,7 +435,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     };
     }).catch(() => { if (!disposed) callbacks.current.onUnavailable(); });
     return () => { disposed = true; teardown(); };
-  }, [sectionRef, mode, heroProgressRef]);
+  }, [sectionRef, mode, heroProgressRef, wideLayout]);
 
   return <div ref={mountRef} style={{ position: "absolute", inset: 0 }} aria-hidden="true" />;
 }

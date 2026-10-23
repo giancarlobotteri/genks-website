@@ -18,6 +18,7 @@ import { getSiteOrigin, site } from "@/config/site";
 import { privatePreview } from "@/lib/preview-mode";
 import "./globals.css";
 import "./storefront-motion.css";
+import "./responsive-layout.css";
 import "@fontsource/manrope/latin-400.css";
 import "@fontsource/manrope/latin-600.css";
 import "@fontsource/manrope/latin-700.css";

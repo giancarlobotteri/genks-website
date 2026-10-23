@@ -93,3 +93,18 @@
 .serviceLanding{width:100vw;margin-left:calc(50% - 50vw)}.serviceLanding .stage{min-height:0}.serviceLanding .content{bottom:max(48px,8svh)}.serviceLanding .primary,.serviceLanding .secondary{min-height:60px}.serviceLanding .poster img{mask-image:none}@media(max-width:700px){.serviceLanding .stage{min-height:0}.serviceLanding .content{bottom:max(36px,7svh)}.serviceLanding .primary,.serviceLanding .secondary{min-height:56px}}
 
 .sequence.serviceLanding{width:100%;margin-left:0}
+
+/* Desktop: azioni sui due lati del modello, senza coprire la scena. */
+@media(min-width:1100px){
+ .serviceLanding .content{left:clamp(40px,4.5vw,96px);right:clamp(40px,4.5vw,96px);top:calc(50% - 20px);bottom:auto;margin-top:-36px}
+ .serviceLanding .actions{display:grid;grid-template-columns:clamp(185px,19vw,280px) minmax(0,1fr) clamp(185px,19vw,280px);width:100%;gap:24px;align-items:center}
+ .serviceLanding .primary{grid-column:1}.serviceLanding .secondary{grid-column:3}
+ .serviceLanding .primary,.serviceLanding .secondary{width:100%;min-height:72px;font-size:clamp(14px,1.05vw,17px);padding:18px 22px}
+ .serviceLanding .poster{top:calc(50% - 20px);width:min(50vw,600px,calc(100svh - 220px))}
+}
+@media(min-width:701px) and (max-width:1099px){.serviceLanding .actions{flex-direction:row;gap:20px}.serviceLanding .content{bottom:100px}.serviceLanding .primary,.serviceLanding .secondary{width:min(300px,43%);min-height:64px}}
+@media(max-width:700px){
+ .serviceLanding .content{left:24px;right:24px;bottom:calc(92px + env(safe-area-inset-bottom))}
+ .serviceLanding .actions{gap:12px}.serviceLanding .primary,.serviceLanding .secondary{width:min(360px,100%);min-height:58px;font-size:14px;padding:15px 20px}
+}
+@media(max-width:380px) and (max-height:620px){.serviceLanding .content{left:20px;right:20px;bottom:84px}.serviceLanding .actions{gap:10px}.serviceLanding .primary,.serviceLanding .secondary{min-height:52px;padding:12px 18px}}

@@ -1,0 +1,9 @@
+/* Impaginazione pubblica GENKS. Area amministratore e account restano indipendenti. */
+.portal-shell.service-portal{width:min(1480px,calc(100% - clamp(48px,8vw,144px)));padding-top:clamp(120px,9vw,160px)}
+.portal-shell.narrow-shell.service-portal{width:min(1240px,calc(100% - clamp(48px,8vw,144px)))}
+.service-portal .premium-form{min-width:0;padding:clamp(24px,3vw,44px);gap:24px}
+.service-portal .premium-form > *{min-width:0}
+.service-portal .premium-form :is(input,select,textarea){max-width:100%;min-width:0;font-size:16px}
+@media(min-width:1100px){.service-portal .service-page-heading{gap:72px;margin-bottom:40px}.service-portal .service-page-heading > div:first-child{max-width:900px}.service-portal .service-page-heading p{max-width:760px}.service-portal .service-page-heading .genks-emblem{width:220px;height:220px;flex-basis:220px}.service-portal .booking-days{gap:14px}.service-portal .slot-grid{gap:14px}}
+@media(max-width:720px){.portal-shell.service-portal,.portal-shell.narrow-shell.service-portal{width:calc(100% - 36px);padding-top:112px;padding-bottom:100px}.service-portal .premium-form{padding:22px 16px;gap:20px;border-radius:22px}.service-portal .service-page-heading{gap:12px;align-items:center}.service-portal .service-page-heading h1{font-size:clamp(26px,7vw,36px);line-height:1.15;overflow-wrap:normal}.service-portal .service-page-heading .genks-emblem{width:76px;height:90px;flex-basis:76px}.service-portal .service-page-heading p{font-size:14px;line-height:1.65}.service-portal .button{white-space:normal}.service-portal .booking-days button{min-width:0}.service-portal .slot-fieldset{min-width:0}.service-portal .slot-option span{min-width:0}}
+@media(max-width:380px){.portal-shell.service-portal,.portal-shell.narrow-shell.service-portal{width:calc(100% - 28px)}.service-portal .premium-form{padding:18px 13px}.service-portal .service-page-heading .genks-emblem{width:60px;flex-basis:60px}}

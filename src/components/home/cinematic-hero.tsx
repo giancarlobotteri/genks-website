@@ -179,7 +179,7 @@ export function CinematicHero({ serviceLanding = false }: { serviceLanding?: boo
           <div className={`${styles.poster} ${ready ? styles.posterHidden : ""}`}>
             <Image src={serviceLanding ? "/brand/genks-header.svg" : "/brand/genks-logo.jpeg"} alt="" fill preload sizes="(max-width: 700px) 85vw, 500px" />
           </div>
-          {active ? <WooferScene sectionRef={sectionRef} heroProgressRef={progressRef} paused={paused}
+          {active ? <WooferScene sectionRef={sectionRef} heroProgressRef={progressRef} paused={paused} wideLayout={serviceLanding}
             onReady={() => { setReady(true); window.dispatchEvent(new Event("genks:hero-settled")); }}
             onUnavailable={() => { setReady(false); window.dispatchEvent(new Event("genks:hero-settled")); }} /> : null}
         </div>
