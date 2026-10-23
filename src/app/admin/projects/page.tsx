@@ -1,3 +1,4 @@
+import {StudioPackageCredit} from "@/components/services/studio-package-credit";
 import { ProjectSongs } from "@/components/services/project-songs";
 import { operationsStart } from "@/lib/operations-start";
 import { ProjectContract } from "@/components/admin/project-contract";
@@ -27,9 +28,9 @@ export default async function AdminProjects({searchParams}:{searchParams:Promise
       {(x.reference_links??[]).filter((url:string)=>/^https?:\/\//i.test(url)).map((url:string)=><p key={url}><a href={url} target="_blank" rel="noopener noreferrer">Apri il riferimento</a></p>)}<PaymentStatus payments={x.payments??[]}/>
       {x.delivery_url&&<a href={x.delivery_url} target="_blank" rel="noopener noreferrer">Apri la consegna</a>}</div>
       <div className="admin-card-actions"><form action={updateProjectStatus}><input name="id" type="hidden" value={x.id}/><label>Stato del progetto<select name="status" defaultValue={x.status}>{states.filter(([value])=>value!=="delivered"&&canChangeServiceStatus("project",x.status,value)||value===x.status).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label><button className="button button-secondary">Aggiorna stato</button></form>
-      <ProjectSongs songs={x.songs}/><ProjectContract id={x.id}/><CashServiceForm id={x.id} type="project" status={x.status}/>
+      <StudioPackageCredit id={x.id} admin/><ProjectSongs songs={x.songs}/><ProjectContract id={x.id} studioOnly={x.service==="studio_package"}/><CashServiceForm id={x.id} type="project" status={x.status}/>
       {["requested","quoted","awaiting_payment"].includes(x.status)&&<ServiceQuoteForm id={x.id} type="project" quotes={x.service_quotes??[]} action={requestProjectPayment}/>}
-      {["review","delivered"].includes(x.status)&&<form action={deliverProject} className="premium-form"><input name="id" type="hidden" value={x.id}/><label>Collegamento privato ai file finali<input name="url" type="url" required defaultValue={x.delivery_url??""} placeholder="https://"/></label><p className="fine-print">Usa una cartella riservata al cliente. Il link sarà salvato nel suo progetto e comunicato via email.</p><button className="button button-primary">Registra e invia consegna</button></form>}</div>
+      {["review","delivered"].includes(x.status)&&<form action={deliverProject} className="premium-form"><input name="id" type="hidden" value={x.id}/><a className="button button-secondary" href="https://www.swisstransfer.com/it" target="_blank" rel="noopener noreferrer">Carica i file finali su SwissTransfer ↗</a><label>Collegamento privato ai file finali<input name="url" type="url" required defaultValue={x.delivery_url??""} placeholder="https://"/></label><p className="fine-print">Usa una cartella riservata al cliente. Il link sarà salvato nel suo progetto e comunicato via email.</p><button className="button button-primary">Registra e invia consegna</button></form>}</div>
     </article>)}</div>{!data?.length&&<div className="empty-state"><h3>Nessun progetto per questa selezione.</h3></div>}<AdminPagination page={page} total={count??0} path="/admin/projects" params={{status}}/>
   </>;
 }

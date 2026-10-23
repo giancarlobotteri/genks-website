@@ -2,7 +2,7 @@ import { projectPrice } from "./service-rates.ts";
 import {discountPrice,type PublicDiscount} from "./public-discounts.ts";
 
 export const maxProjectSongs = 20;
-export type ProjectSong = { service?:string; vocalTracks?:number; versions?:boolean; extraRevision?:boolean; trackTitle: string; trackCount: number; description: string; referenceLinks: string; notes: string; desiredDeadline: string };
+export type ProjectSong = { fileUrl?:string; service?:string; vocalTracks?:number; versions?:boolean; extraRevision?:boolean; trackTitle: string; trackCount: number; description: string; referenceLinks: string; notes: string; desiredDeadline: string };
 export type PricedProjectSong = ProjectSong & { amountCents: number };
 export function emptyProjectSong(): ProjectSong {
   return { trackTitle: "", trackCount: 1, description: "", referenceLinks: "", notes: "", desiredDeadline: "" };
@@ -23,7 +23,9 @@ export function priceProjectSongs(service: string, input: unknown, discounts:Pub
     const selected = typeof song.service === "string" ? song.service : service;
     const price = typeof song.trackCount === "number" ? projectPrice(selected, song.trackCount) : null;
     if (price === null) return null;
-    result.push({ service:selected,trackTitle: title, trackCount: song.trackCount as number, description, referenceLinks: song.referenceLinks as string, notes: song.notes as string, desiredDeadline: deadline, amountCents: discountPrice(price,[selected,"projects","services"],discounts) });
+    if(song.fileUrl!==undefined&&(typeof song.fileUrl!=="string"||song.fileUrl.length>2000||song.fileUrl&&!/^https:\/\//i.test(song.fileUrl)))return null;
+    if(song.fileUrl){try{const url=new URL(String(song.fileUrl));if(url.protocol!=="https:"||url.username||url.password)return null;}catch{return null;}}
+    result.push({ ...(typeof song.fileUrl==="string"?{fileUrl:song.fileUrl}:{}),service:selected,trackTitle: title, trackCount: song.trackCount as number, description, referenceLinks: song.referenceLinks as string, notes: song.notes as string, desiredDeadline: deadline, amountCents: discountPrice(price,[selected,"projects","services"],discounts) });
   }
   return result;
 }

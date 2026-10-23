@@ -73,7 +73,7 @@ export function CinematicHero({ serviceLanding = false }: { serviceLanding?: boo
     const uiTargets = [
       [".genks-header", 0, 0, true], [".genks-menu-toggle", -180, 0, false],
       [".genks-header-logo", 0, -110, false], [".cart-rail", 380, 0, true],
-      [".cart-rail-toggle", 110, 0, true], [".cart-rail-backdrop", 0, 0, true],
+      [".cart-rail-toggle", 110, 0, true], [".offers-rail", -380, 0, true], [".offers-toggle", -110, 0, true], [".cart-rail-backdrop", 0, 0, true],
       [".persistent-player", 0, 140, true], [".site-footer", 0, 140, true],
     ].flatMap(([selector, x, y, fade]) => {
       const element = document.querySelector<HTMLElement>(String(selector));
@@ -187,7 +187,7 @@ export function CinematicHero({ serviceLanding = false }: { serviceLanding?: boo
         <div className={styles.content}>
           <div className={styles.actions}>
             {serviceLanding ? <>
-            <Link className={styles.primary} href="/services/project" onClick={event => goToCatalog(event, "/services/project")}><span>Scegli il tuo mix</span><ArrowUpRight size={20} aria-hidden="true" /></Link>
+            <Link className={styles.primary} href="/services" onClick={event => goToCatalog(event, "/services")}><span>Scegli un servizio</span><ArrowUpRight size={20} aria-hidden="true" /></Link>
             <Link className={styles.secondary} href="/services/recording" onClick={event => goToCatalog(event, "/services/recording")}><span>Prenota lo studio</span><ArrowUpRight size={20} aria-hidden="true" /></Link>
             </> : <>
             <Link className={styles.primary} href="/services" onClick={event => goToCatalog(event, "/services")}><span>Prenota un servizio<small>Registrazione, mix e master.</small></span><ArrowUpRight size={20} aria-hidden="true" /></Link>

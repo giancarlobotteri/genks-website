@@ -27,10 +27,11 @@ export async function deliverNotification(id: string) {
     const money=(cents:number)=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(cents/100);
     const date=(value:string)=>new Date(value).toLocaleString("it-IT",{timeZone:"Europe/Rome",dateStyle:"long",timeStyle:"short"});
     if(bookingAlert){
-      const result=await db.from("bookings").select("reference,name,email,phone,starts_at,ends_at,price_cents,notes").eq("reference",bookingAlert[1]).single();
+      const result=await db.from("bookings").select("id,reference,name,email,phone,starts_at,ends_at,price_cents,notes").eq("reference",bookingAlert[1]).single();
       if(result.error||!result.data)throw new Error("Dati della prenotazione da verificare.");
       const b=result.data;
-      body=["La prenotazione è già confermata. Non serve approvarla.",`Cliente: ${b.name}`,`Email cliente: ${b.email}`,`Telefono: ${b.phone||"Non indicato"}`,"Servizio: Registrazione in studio",`Inizio: ${date(b.starts_at)}`,`Fine: ${date(b.ends_at)}`,`Totale: ${b.price_cents===null?"Da concordare":money(b.price_cents)}`,"Pagamento: Contanti presso lo studio",`Riferimento: ${b.reference}`,...(b.notes?[`Note: ${b.notes}`]:[]),"Registra l’incasso soltanto dopo aver ricevuto i contanti."].join("\n");
+      const paid=await db.from("payments").select("id").eq("booking_id",b.id).eq("status","succeeded").limit(1);if(paid.error)throw new Error("Pagamento da verificare");const card=Boolean(paid.data?.length);
+      body=["La prenotazione è già confermata. Non serve approvarla.",`Cliente: ${b.name}`,`Email cliente: ${b.email}`,`Telefono: ${b.phone||"Non indicato"}`,"Servizio: Registrazione in studio",`Inizio: ${date(b.starts_at)}`,`Fine: ${date(b.ends_at)}`,`Totale: ${b.price_cents===null?"Da concordare":money(b.price_cents)}`,card?"Pagamento: Carta · pagamento confermato":"Pagamento: Contanti presso lo studio",`Riferimento: ${b.reference}`,...(b.notes?[`Note: ${b.notes}`]:[]),card?"Pagamento online già registrato nelle Vendite. Non registrare un secondo incasso.":"Registra l’incasso soltanto dopo aver ricevuto i contanti."].join("\n");
     }
     if(projectAlert){
       const result=await db.from("service_projects").select("id,songs,reference,name,email,phone,service,track_title,track_count,price_cents,status,notes").eq("reference",projectAlert[1]).single();

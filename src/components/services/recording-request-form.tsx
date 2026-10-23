@@ -1,15 +1,16 @@
 "use client";
+import {buildRecordingQuote} from "@/lib/recording-quote";
 
-import { discountPrice, type PublicDiscount } from "@/lib/public-discounts";
+import { type PublicDiscount } from "@/lib/public-discounts";
 import { useEffect, useRef, useState } from "react";
-import { extraTimePolicy, recordingSessionCents } from "@/lib/extra-time";
+import { extraTimePolicy } from "@/lib/extra-time";
 import { CalendarDays, Clock3 } from "lucide-react";
 import { createBooking } from "@/app/services/actions";
 import { ServiceSubmit } from "./service-submit";
-import { recordingHourlyCents, serviceAmount, serviceRateVersion } from "@/lib/service-rates";
+import { serviceAmount, serviceRateVersion } from "@/lib/service-rates";
 
-export function RecordingRequestForm({discounts=[]}:{discounts?:PublicDiscount[]}) {
-  const hourly=discountPrice(recordingHourlyCents,["recording","services"],discounts);
+export function RecordingRequestForm({discounts=[],cardReady=false}:{discounts?:PublicDiscount[];cardReady?:boolean}) {
+  const [payment,setPayment]=useState("cash");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState("1");
@@ -27,9 +28,8 @@ export function RecordingRequestForm({discounts=[]}:{discounts?:PublicDiscount[]
     const minutes = Math.round(hours * 60);
     return [Math.floor(minutes / 60) ? `${Math.floor(minutes / 60)} ${minutes < 120 ? "ora" : "ore"}` : "", minutes % 60 ? `${minutes % 60} minuti` : ""].filter(Boolean).join(" e ");
   };
-  const total = recordingSessionCents(date,time,Number(duration),hourly);
-  const baseTotal = Math.round(hourly * Number(duration));
-  const nightSupplement = time ? Math.max(0, total - baseTotal) : 0;
+  const quote=buildRecordingQuote(date,time,Number(duration),discounts);
+  const {total,hourly,base:baseTotal,night:nightSupplement}=quote;
   const availableDurations = durationsBySlot[time] ?? [];
   const matchingSlots = slots.filter(slot => durationsBySlot[slot]?.includes(Number(duration)));
   useEffect(() => {
@@ -55,7 +55,8 @@ export function RecordingRequestForm({discounts=[]}:{discounts?:PublicDiscount[]
 
   return <form action={createBooking} className="premium-form form-grid booking-form">
     <input type="hidden" name="rateVersion" value={serviceRateVersion}/><label className="form-honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
-    <input type="hidden" name="duration" value={duration}/><input type="hidden" name="expectedTotal" value={total}/>
+    <input type="hidden" name="payment" value={payment}/><input type="hidden" name="duration" value={duration}/><input type="hidden" name="expectedTotal" value={total}/>
+    <aside className="quote-running full" aria-live="polite"><div><span>Totale sessione aggiornato</span><strong>{serviceAmount(total)}</strong></div><small>{durationLabel(Number(duration))} · supplementi selezionati inclusi</small></aside>
     <div className="booking-step full"><span>01</span><div><strong>Scegli la data</strong><small>I giorni pieni restano visibili e non sono selezionabili.</small></div></div>
     <input type="hidden" name="date" value={date}/>
     <div className="booking-calendar full">
@@ -83,7 +84,8 @@ export function RecordingRequestForm({discounts=[]}:{discounts?:PublicDiscount[]
     </div></details><label>Nome<input name="name" required minLength={2} maxLength={120} autoComplete="name"/></label><label>Nome d’arte <small>facoltativo</small><input name="artistName"/></label>
     <label>Email<input name="email" type="email" required autoComplete="email"/></label><label>Telefono / WhatsApp<input name="phone" type="tel" required minLength={6} maxLength={40} autoComplete="tel"/></label>
     <p className="service-form-note full"><a className="text-link" href="/services/regole">Cambi data, cancellazioni e ritardi →</a></p>
-    <aside className="notice full" aria-live="polite"><strong>Totale: {serviceAmount(total)}</strong><p>Sessione: {durationLabel(Number(duration))} × {serviceAmount(hourly)}/ora = <strong>{serviceAmount(baseTotal)}</strong></p>{nightSupplement > 0 && <p style={{color:"#bfdbfe", borderLeft:"3px solid #60a5fa", paddingLeft:"12px"}}><strong>Supplemento dopo mezzanotte: +{serviceAmount(nightSupplement)}</strong><br/>Già incluso nel totale. Si aggiunge alla tariffa base: 9,99 € ogni 30 minuti dopo le 00:00.</p>}<p>Pagamento in contanti presso lo studio.</p></aside><label className="full consent-label"><input type="checkbox" name="accepted" required/>Accetto il totale di {serviceAmount(total)}, il pagamento in contanti e le <a className="text-link" href="/services/regole" target="_blank" rel="noopener noreferrer">regole degli appuntamenti</a>.</label><ServiceSubmit label="Conferma la prenotazione" disabled={!date || !time || loading || !availableDurations.includes(Number(duration))} />
-    <p className="service-form-note full">Tutti gli orari sono indicati nel fuso italiano. La prenotazione conferma subito il tuo orario, salvo che sia appena stato occupato da un’altra persona. Pagamento in contanti presso lo studio; pagamento online con carta non disponibile. Nessun addebito automatico.</p>
+    <fieldset className="payment-choice full"><legend>Come vuoi pagare?</legend><label><input type="radio" name="paymentChoice" checked={payment==="card"} disabled={!cardReady} onChange={()=>setPayment("card")}/><span>Carta o Apple Pay online</span></label><label><input type="radio" name="paymentChoice" checked={payment==="cash"} onChange={()=>setPayment("cash")}/><span>Contanti in studio</span></label></fieldset><aside className="quote-current full" aria-live="polite"><strong>Totale: {serviceAmount(total)}</strong><p>Sessione: {durationLabel(Number(duration))} × {serviceAmount(hourly)}/ora = <strong>{serviceAmount(baseTotal)}</strong></p>{nightSupplement > 0 && <p style={{color:"#bfdbfe", borderLeft:"3px solid #60a5fa", paddingLeft:"12px"}}><strong>Supplemento dopo mezzanotte: +{serviceAmount(nightSupplement)}</strong><br/>Già incluso nel totale. Si aggiunge alla tariffa base: 9,99 € ogni 30 minuti dopo le 00:00.</p>}{quote.minimum>0&&<p>Minimo di pagamento: +{serviceAmount(quote.minimum)}</p>}<p>{payment==="card"?"Carta o Apple Pay · pagamento sicuro su Stripe.":"Pagamento in contanti presso lo studio."}</p></aside><label className="full consent-label"><input type="checkbox" name="accepted" required/>Accetto il totale di {serviceAmount(total)}, il pagamento {payment==="card"?"con carta tramite Stripe":"in contanti"} e le <a className="text-link" href="/services/regole" target="_blank" rel="noopener noreferrer">regole degli appuntamenti</a>.</label><ServiceSubmit label={payment==="card"?"Continua al pagamento":"Conferma la prenotazione"} disabled={!date || !time || loading || !availableDurations.includes(Number(duration))} />
+
+    <p className="service-form-note full">Tutti gli orari sono indicati nel fuso italiano. La disponibilità viene ricontrollata alla conferma per evitare sovrapposizioni. {payment==="card"?"L’orario resta riservato temporaneamente mentre completi il pagamento. La prenotazione è confermata solo dopo verifica Stripe. Per la carta scegli un inizio almeno 35 minuti nel futuro.":"Paghi in contanti presso lo studio, senza addebiti online."}</p>
   </form>;
 }

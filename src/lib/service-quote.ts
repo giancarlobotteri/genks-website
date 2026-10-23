@@ -6,9 +6,10 @@ import {firstVersionEstimate} from "./service-delivery.ts";
 export type QuoteLine={code:string;name:string;quantity:number;unitAmount:number;songIndex?:number;listAmount:number};
 export function buildServiceQuote(input:{songs:unknown;packageCode?:unknown;rush?:unknown;earlyStart?:boolean},discounts:PublicDiscount[]=[],now=new Date()){
  const pack=packageByCode(input.packageCode);
- if(input.packageCode&&!pack||pack?.studio)throw new Error("invalid_package");
+ if(input.packageCode&&!pack)throw new Error("invalid_package");
  if(input.rush!==undefined&&typeof input.rush!=="boolean")throw new Error("invalid_rush");
- const songs=priceProjectSongs("",input.songs,pack?[]:discounts);if(!songs)throw new Error("invalid_songs");
+ if(pack?.service==="recording"&&(!Array.isArray(input.songs)||input.songs.length!==0))throw new Error("invalid_package_songs");
+ const songs=pack?.service==="recording"?[]:priceProjectSongs("",input.songs,pack?[]:discounts);if(!songs)throw new Error("invalid_songs");
  if(pack&&(songs.length!==pack.songs||songs.some(s=>s.service!==pack.service)))throw new Error("invalid_package_songs");
  const lines:QuoteLine[]=[];
  if(pack)lines.push({code:"package",name:pack.name,quantity:1,unitAmount:pack.price,listAmount:pack.separate});
@@ -32,9 +33,11 @@ export function buildServiceQuote(input:{songs:unknown;packageCode?:unknown;rush
    guaranteeCents:pack?guaranteeRefund(list,pack.price,pack.separate):guaranteeRefund(s.amountCents),
    amountCents:base+extraLines.reduce((n,l)=>n+l.quantity*l.unitAmount,0)};
  });
+ if(input.rush&&pack?.service==="recording")throw new Error("invalid_rush");
  if(input.rush)lines.push({code:"rush",name:"Consegna in 48 ore",quantity:1,unitAmount:extraRates.rush,listAmount:extraRates.rush});
  const total=lines.reduce((n,l)=>n+l.quantity*l.unitAmount,0);
  return {version:projectRateVersion,packageCode:pack?String(input.packageCode):null,packageName:pack?.name??null,packageListCents:pack?.separate??null,packagePriceCents:pack?.price??null,
+  studioMinutes:pack?.studio?(input.packageCode==="hours"?300:180):0,validityDays:input.packageCode==="hours"?90:null,hasProduction:normalized.length>0,
   rush:input.rush===true,lines,songs:normalized,totalCents:total,estimatedFirstVersionAt:firstVersionEstimate(now,input.rush===true,input.earlyStart===true),
   estimateBasis:"Data prevista se pagamento e file completi sono disponibili oggi; si aggiorna se i file arrivano dopo. Senza avvio anticipato si attende il termine di recesso."};
 }

@@ -8,6 +8,10 @@ export default async function SuccessPage({ searchParams }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const q=await searchParams;
+  if(typeof q.service_session==="string"){
+    const result=await confirmedService(q.service_session);
+    return result?<ReservationSuccess reference={result.reference} project={result.project} paid/>:<PaymentPending/>;
+  }
   if (typeof q.remote_session === "string") {
     // A success URL alone is never proof of payment. Read the Stripe session and
     // the quote settled by the signed webhook before displaying confirmation.
@@ -34,4 +38,13 @@ async function remotePaymentReference(sessionId: string): Promise<string | null>
     if (!payment || payment.status !== "succeeded" || payment.refunded_cents > 0 || payment.disputed || payment.review_reason) return null;
     return project.reference;
   } catch { return null; }
+}
+
+async function confirmedService(id:string):Promise<{reference:string;project:boolean}|null>{
+ if(!/^cs_(test_|live_)?[A-Za-z0-9_]{10,250}$/.test(id))return null;
+ try{const session=await getStripe().checkout.sessions.retrieve(id);if(session.payment_status!=="paid"||!session.metadata?.quote_id)return null;
+ const db=createSupabaseAdminClient();const q=await db.from("service_quotes").select("id,status,booking_id,project_id").eq("id",session.metadata.quote_id).eq("stripe_session_id",session.id).single();if(q.error||q.data.status!=="paid")return null;
+ const paid=await db.from("payments").select("status,review_reason,disputed,refunded_cents").eq("quote_id",q.data.id).eq("livemode",session.livemode).single();if(paid.error||paid.data.status!=="succeeded"||paid.data.review_reason||paid.data.disputed||paid.data.refunded_cents>0)return null;
+ const project=Boolean(q.data.project_id);const target=await db.from(project?"service_projects":"bookings").select("reference").eq("id",q.data.project_id??q.data.booking_id).single();return target.error?null:{reference:target.data.reference,project};
+ }catch{return null;}
 }

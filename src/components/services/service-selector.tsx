@@ -1,10 +1,9 @@
 "use client";
 import {useState} from "react";
-import {packages} from "@/lib/service-catalog";
 import {site} from "@/config/site";
 export function packageWhatsApp(name:string){return `https://wa.me/${site.whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(`Ciao GENKS, vorrei prenotare il pacchetto ${name}. Quando sei disponibile?`)}`;}
 export function ServiceSelector(){
  const [voice,setVoice]=useState(""),[mixed,setMixed]=useState(""),[count,setCount]=useState("");
- const result=voice==="no"?{name:"Dalla voce al master",href:packageWhatsApp(packages.voice.name)}:voice==="yes"&&mixed==="yes"?{name:"Master",href:"/services/project?service=master"}:voice==="yes"&&mixed==="no"&&count?count==="1"?{name:"Mix + master",href:"/services/project?service=mix_master"}:count==="2-3"?{name:"Singolo completo",href:"/services/project?package=single"}:{name:"EP Pack",href:"/services/project?package=ep"}:null;
+ const result=voice==="no"?{name:"Dalla voce al master",href:"/services/project?package=voice"}:voice==="yes"&&mixed==="yes"?{name:"Master",href:"/services/project?service=master"}:voice==="yes"&&mixed==="no"&&count?count==="1"?{name:"Mix + master",href:"/services/project?service=mix_master"}:count==="2-3"?{name:"Singolo completo",href:"/services/project?package=single"}:{name:"EP Pack",href:"/services/project?package=ep"}:null;
  return <section className="admin-form-card"><h2>Quale servizio fa per me?</h2><fieldset><legend>Hai già registrato la voce?</legend>{[["no","No"],["yes","Sì"]].map(([v,label])=><label key={v}><input type="radio" name="voice" checked={voice===v} onChange={()=>{setVoice(v);setMixed("");setCount("");}}/>{label}</label>)}</fieldset>{voice==="yes"&&<fieldset><legend>Il brano è già mixato?</legend>{[["yes","Sì"],["no","No"]].map(([v,label])=><label key={v}><input type="radio" name="mixed" checked={mixed===v} onChange={()=>{setMixed(v);setCount("");}}/>{label}</label>)}</fieldset>}{voice==="yes"&&mixed==="no"&&<fieldset><legend>Quanti brani vuoi far uscire nei prossimi 3 mesi?</legend>{["1","2-3","4 o più"].map(v=><label key={v}><input type="radio" name="count" checked={count===v} onChange={()=>setCount(v)}/>{v}</label>)}</fieldset>}{result&&<div className="notice" aria-live="polite"><h3>{result.name}</h3><a className="button button-primary" href={result.href}>Scegli {result.name}</a></div>}</section>;
 }

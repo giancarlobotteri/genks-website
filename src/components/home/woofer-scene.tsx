@@ -360,15 +360,15 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       const modelOpacity=1-smoothstep(.44,.76,travel);
       modelMaterials.forEach(material=>{material.opacity=mode === "hero"?modelOpacity:1;});
       assembly.visible=mode!=="hero"||modelOpacity>.001;
-      const turn = Math.sin(Math.PI * smoothstep(.01, .34, travel))*.22;
-      const reveal = Math.sin(Math.PI * smoothstep(.02, .38, travel))*.3;
+      const turn = 0;
+      const reveal = 0;
       const perspective = 1 - smoothstep(0, .7, travel) * .55;
       const orbit = moving ? Math.sin(elapsed * .45) : 0;
-      const targetX = mode === "exploded" ? .15 + travel * .22 : reveal * .32 + orbit * .025 + (reducedMotion.matches ? 0 : pointerY * .08);
-      const targetY = mode === "exploded" ? -.6 - travel * .6 : -turn * 1.05 + orbit * .045 + (reducedMotion.matches ? 0 : pointerX * .12);
+      const targetX = mode === "exploded" ? .15 + travel * .22 : reveal * .32 + (orbit * .025 + (reducedMotion.matches ? 0 : pointerY * .08)) * (1-smoothstep(0,.08,travel));
+      const targetY = mode === "exploded" ? -.6 - travel * .6 : -turn * 1.05 + (orbit * .045 + (reducedMotion.matches ? 0 : pointerX * .12)) * (1-smoothstep(0,.08,travel));
       assembly.rotation.x = THREE.MathUtils.lerp(assembly.rotation.x, targetX, easing || 1);
       assembly.rotation.y = THREE.MathUtils.lerp(assembly.rotation.y, targetY, easing || 1);
-      assembly.rotation.z = moving ? Math.sin(elapsed * .3) * .035 + travel * .035 : 0;
+      assembly.rotation.z = moving ? Math.sin(elapsed * .3) * .035 * (1-smoothstep(0,.08,travel)) : 0;
       const scale = 1 + expansion * .005;
       diaphragm.scale.set(scale, scale, 1);
       diaphragm.position.z = expansion * .028 + (mode === "exploded" ? travel * .6 : reveal * .42);
@@ -399,7 +399,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       // Slow optical approach preserves the original mesh and avoids near-plane clipping or a retreating logo.
       assembly.scale.setScalar(1);
       assembly.position.z = 0;
-      const cameraZoom = mode === "hero" ? 1 + zoom * .22 * (1-entry) : 1;
+      const cameraZoom = mode === "hero" ? 1 + zoom * .36 : 1;
       if (Math.abs(camera.zoom - cameraZoom) > .0001) {
         camera.zoom = cameraZoom;
         camera.updateProjectionMatrix();

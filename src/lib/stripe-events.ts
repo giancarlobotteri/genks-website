@@ -106,6 +106,12 @@ async function fulfil(session: Stripe.Checkout.Session, event: Stripe.Event) {
       if (result.error) throw new Error("Notifica da aggiornare.");
     } else {
       await flushNotifications({ prefix: `payment-${paymentId}`, throwOnFailure: true });
+      if(session.metadata?.payment_type==="recording"&&session.metadata.booking_id&&!payment.review_reason){
+        const booking=await db.from("bookings").select("reference,name").eq("id",session.metadata.booking_id).eq("status","confirmed").single();
+        if(booking.error)throw new Error("Prenotazione pagata da verificare");
+        await queueNotification(`reservation-${booking.data.reference}-admin`,{to:"prod.genks@gmail.com",subject:`GENKS · Nuova prenotazione · ${booking.data.reference}`,heading:"Hai una nuova prenotazione",body:"Registrazione pagata con carta e confermata."});
+        await flushNotifications({prefix:`reservation-${booking.data.reference}-admin`,throwOnFailure:true});
+      }
       if (session.metadata?.payment_type === "remote_project" && session.metadata.project_id) {
         const { data: project, error } = await db.from("service_projects").select("reference,name,email,service,track_title").eq("id", session.metadata.project_id).single();
         if (error || !project) throw new Error("Progetto pagato da verificare.");
@@ -138,6 +144,10 @@ export async function handleStripeEvent(event: Stripe.Event) {
       if (session.metadata?.quote_id) {
         const result = await db.from("service_quotes").update({ status: "expired" }).eq("id", session.metadata.quote_id).eq("stripe_session_id", session.id).in("status", ["creating", "open"]);
         if (result.error) throw new Error("Preventivo da aggiornare.");
+        if(session.metadata.payment_type==="recording"&&session.metadata.booking_id){
+          const booking=await db.from("bookings").update({status:"cancelled"}).eq("id",session.metadata.booking_id).eq("status","approved_awaiting_payment");
+          if(booking.error)throw new Error("Orario da liberare");
+        }
       }
     }
     if (event.type === "charge.refunded" || event.type === "refund.updated" || event.type === "refund.created") {

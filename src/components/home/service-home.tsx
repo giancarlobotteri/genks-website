@@ -1,12 +1,20 @@
+import {discountPrice} from "@/lib/public-discounts";
 import Link from "next/link";
+import {OffersRail} from "./offers-rail";
+import {packages} from "@/lib/service-catalog";
+import {projectRates,recordingHourlyCents,serviceAmount} from "@/lib/service-rates";
+import {getPublicDiscounts} from "@/lib/public-discounts-server";
 import Image from "next/image";
 import { ServiceCards } from "@/components/services/service-cards";
 import { genksBiography, studioPortrait } from "@/data/home-content";
 import { CinematicHero } from "./cinematic-hero";
 import { HomeProof } from "./home-proof";
 import styles from "./service-home.module.css";
-export function ServiceHome() {
+export async function ServiceHome() {
+ const discounts=await getPublicDiscounts();
+ const offerServices=[...Object.entries(projectRates).map(([code,base])=>({code,base,label:code.replaceAll("_"," + "),href:`/services/project?service=${code}`})),{code:"recording",base:recordingHourlyCents,label:"Registrazione",href:"/services/recording"}].flatMap(s=>{const p=discountPrice(s.base,[s.code,s.code==="recording"?"services":"projects","services"],discounts);return p<s.base?[{name:`${s.label} in offerta`,price:serviceAmount(p),description:`Listino ${serviceAmount(s.base)}${s.code==="recording"?"/ora":" · fascia iniziale"}`,href:s.href}]:[];});
  return <div className={`${styles.home} ${styles.cinematicHome}`}>
+  <OffersRail offers={[...offerServices,...Object.entries(packages).map(([code,p])=>({name:p.name,price:serviceAmount(p.price),description:p.description,href:`/services/project?package=${code}`}))]}/>
   <CinematicHero serviceLanding />
   <div id="collection">
   <section className={styles.section}><h2>COME FUNZIONA</h2><div className={styles.steps}>
@@ -14,7 +22,7 @@ export function ServiceHome() {
    <article><span>02</span><h3>Invia le tracce</h3><p>Mandami il link alle tracce seguendo la guida.</p></article>
    <article><span>03</span><h3>Ricevi il brano</h3><p>Prima versione entro 7 giorni lavorativi, poi 2 revisioni.</p></article>
   </div></section>
-  <section className={styles.section}><h2>SERVIZI</h2><ServiceCards /><Link className={styles.more} href="/services">Vedi tutti i prezzi e i pacchetti</Link></section>
+  <section className={styles.section}><h2>SERVIZI</h2><ServiceCards discounts={discounts}/><Link className={styles.more} href="/services">Vedi tutti i prezzi e i pacchetti</Link></section>
   <HomeProof />
   <section id="about" className={`${styles.section} ${studioPortrait ? styles.about : ""}`}>{studioPortrait && <Image src={studioPortrait} width={640} height={720} alt="Gianca, GENKS, nel suo studio a Perugia" className={styles.portrait} />}<div><h2>CHI È GENKS</h2><p className={styles.biography}>{genksBiography}</p><Link className={styles.more} href="/chi-sono">La mia storia</Link></div></section>
   <section className={`${styles.section} ${styles.faq}`}><h2>DOMANDE FREQUENTI</h2>
@@ -22,7 +30,7 @@ export function ServiceHome() {
    <details><summary>Quanto tempo ci vuole?</summary><p>Prima versione entro 7 giorni lavorativi, oppure 48 ore con la consegna veloce.</p></details>
    <details><summary>E se il risultato non mi piace?</summary><p>Hai 2 revisioni incluse. Se ancora non ti convince, ti rimborso il 50%.</p></details>
    <details><summary>Come preparo le tracce?</summary><p><Link href="/guida/tracce">Segui la guida in 5 minuti</Link></p></details>
-   <details><summary>Come pago?</summary><p>Mix e master online con carta o Apple Pay. La registrazione si paga in studio.</p></details>
+   <details><summary>Come pago?</summary><p>Mix, master, registrazione e pacchetti con carta o Apple Pay online; contanti disponibili per il lavoro in studio.</p></details>
   </section>
   <section className={`${styles.section} ${styles.closing}`}><h2>Il tuo prossimo brano merita di suonare così.</h2><Link className="button button-primary" href="/services/project">Scegli il tuo mix</Link></section>
   </div>

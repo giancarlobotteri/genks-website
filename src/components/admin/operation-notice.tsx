@@ -1,4 +1,5 @@
 const messages: Record<string,string> = {
+ package_saved: "Ore del pacchetto aggiornate.", package_error: "Aggiornamento non eseguito: verifica pagamento, ore residue e scadenza.",
   extra_time_saved:"Tempo extra e totale da incassare aggiornati. Nessun pagamento automatico registrato.",
   extra_time_error:"Tempo extra non aggiornato: ricarica la pagina e verifica che la sessione sia terminata e il pagamento non sia già stato registrato.",
   booking_alert_preview_sent:"Avviso di prova inviato a prod.genks@gmail.com. Nessuna prenotazione reale è stata creata.",

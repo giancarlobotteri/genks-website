@@ -12,7 +12,7 @@ export async function CustomerQuote({quote,payable,asOf}:{quote?:CustomerService
   if(!quote)return null;
   let paymentUrl:string|undefined;
   try{const url=new URL(quote.checkout_url??"");if(url.protocol==="https:"&&url.hostname==="checkout.stripe.com")paymentUrl=url.href}catch{}
-  const cardAllowed = !studioCashOnly || Boolean(quote.fixed_price && quote.project_id && await remoteProjectPaymentsReady());
+  const cardAllowed = !studioCashOnly || Boolean(quote.fixed_price && await remoteProjectPaymentsReady());
   const open=cardAllowed&&payable&&quote.status==="open"&&new Date(quote.expires_at).getTime()>asOf;
   return <div className="service-form-note" style={{marginTop:16}}>
     <strong>{quote.fixed_price ? "Servizio" : "Preventivo"} · {new Intl.NumberFormat("it-IT",{style:"currency",currency:quote.currency}).format(quote.amount_cents/100)}</strong>
