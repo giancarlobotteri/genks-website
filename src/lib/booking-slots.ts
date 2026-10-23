@@ -21,7 +21,7 @@ export function availableSlots(day: string, durationHours: number, rules: Rule[]
         if(slotDay!==day)continue;
         const time=`${String(Math.floor(minute%1440/60)).padStart(2,"0")}:${String(minute%60).padStart(2,"0")}`;
         const start=fromRomeWallTime(slotDay,time);const end=new Date(start.getTime()+durationHours*3600000);
-        if(start<=now||(!rule.flexible_close&&end>windowEnd))continue;
+        if(!Number.isFinite(start.getTime())||start<=now||(!rule.flexible_close&&end>windowEnd))continue;
         // Round-trip rejects nonexistent wall times during a DST change.
         const local=romeClock.format(start);
         if(local!==time)continue;

@@ -19,8 +19,8 @@ export function buildServiceQuote(input:{songs:unknown;packageCode?:unknown;rush
   if(raw.versions!==undefined&&typeof raw.versions!=="boolean"||raw.extraRevision!==undefined&&typeof raw.extraRevision!=="boolean")throw new Error("invalid_extras");
   const list=projectPrice(s.service!,s.trackCount)!;
   const upgrade=pack&&s.service!=="master"?packageUpgrade(s.trackCount)!:0;
-  if(!pack)lines.push({code:"service",name:`${s.trackTitle} · ${s.service!.replaceAll("_"," + ")} · ${s.trackCount} tracce`,songIndex:i,quantity:1,unitAmount:s.amountCents,listAmount:list});
-  else if(upgrade)lines.push({code:"tier",name:`${s.trackTitle} · differenza fascia ${s.trackCount} tracce`,songIndex:i,quantity:1,unitAmount:upgrade,listAmount:upgrade});
+  if(!pack)lines.push({code:"service",name:`${s.trackTitle} · ${s.service!.replaceAll("_"," + ")} · ${s.trackCount} ${s.trackCount===1?"traccia":"tracce"}`,songIndex:i,quantity:1,unitAmount:s.amountCents,listAmount:list});
+  else if(upgrade)lines.push({code:"tier",name:`${s.trackTitle} · differenza fascia ${s.trackCount} ${s.trackCount===1?"traccia":"tracce"}`,songIndex:i,quantity:1,unitAmount:upgrade,listAmount:upgrade});
   const included=input.packageCode==="single";
   const extraLines:QuoteLine[]=[];
   if(raw.vocalTracks)extraLines.push({code:"vocal",name:`${s.trackTitle} · Tuning ed editing voce`,songIndex:i,quantity:raw.vocalTracks,unitAmount:extraRates.vocal,listAmount:raw.vocalTracks*extraRates.vocal});
