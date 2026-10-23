@@ -10,12 +10,12 @@ import { createBooking } from "@/app/services/actions";
 import { ServiceSubmit } from "./service-submit";
 import { serviceAmount, serviceRateVersion } from "@/lib/service-rates";
 
-export function RecordingRequestForm({discounts=[],cardReady=false}:{discounts?:PublicDiscount[];cardReady?:boolean}) {
+export function RecordingRequestForm({discounts=[],cardReady=false,initialDuration=1}:{discounts?:PublicDiscount[];cardReady?:boolean;initialDuration?:number}) {
   const [payment,setPayment]=useState("cash");
   const [clock,setClock]=useState(()=>Date.now());
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [duration, setDuration] = useState("1");
+  const [duration, setDuration] = useState(String(initialDuration));
   type CalendarDay = { date: string; allSlots: string[]; durationsBySlot: Record<string, number[]> };
   const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const shift = (day: string, offset: number) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate()+offset); return d.toISOString().slice(0,10); };

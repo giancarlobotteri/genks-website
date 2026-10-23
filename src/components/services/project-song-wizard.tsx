@@ -12,13 +12,13 @@ import {deliveryDateLabel} from "@/lib/service-delivery";
 import {discountPrice,type PublicDiscount} from "@/lib/public-discounts";
 const services=[{code:"mix",title:"Mix"},{code:"master",title:"Master"},{code:"mix_master",title:"Mix & Master"}];
 
-export function ProjectRequestForm({initialService,initialTrackCount=1,remoteCardReady,discounts=[],packageCode=""}:{packageCode?:string;initialService:string;initialTrackCount?:number;remoteCardReady:boolean;discounts?:PublicDiscount[]}) {
+export function ProjectRequestForm({initialService,initialTrackCount=1,initialSongs,initialMode,remoteCardReady,discounts=[],packageCode=""}:{packageCode?:string;initialService:string;initialTrackCount?:number;initialSongs?:ProjectSong[];initialMode?:"studio"|"remote";remoteCardReady:boolean;discounts?:PublicDiscount[]}) {
  const pack=packageByCode(packageCode);
  const hoursOnly=pack?.service==="recording";
- const [mode,setMode]=useState(pack?.studio?"studio":""),[payment,setPayment]=useState("card");
+ const [mode,setMode]=useState(pack?.studio?"studio":initialMode??""),[payment,setPayment]=useState("card");
  const [rush,setRush]=useState(false);
- const [songs,setSongs]=useState<ProjectSong[]>(Array.from({length:pack?.songs??1},()=>({...emptyProjectSong(),service:pack?.service??initialService,trackCount:pack?1:initialTrackCount})));
- const [step,setStep]=useState(pack?0:-1),[early,setEarly]=useState(false),[error,setError]=useState("");
+ const [songs,setSongs]=useState<ProjectSong[]>(initialSongs??Array.from({length:pack?.songs??1},()=>({...emptyProjectSong(),service:pack?.service??initialService,trackCount:pack?1:initialTrackCount})));
+ const [step,setStep]=useState(pack||initialSongs?0:-1),[early,setEarly]=useState(false),[error,setError]=useState("");
  const form=useRef<HTMLFormElement>(null),title=useRef<HTMLHeadingElement>(null);
  const count=hoursOnly?0:songs.length,review=count+1,song=step>=0&&step<count?songs[step]:null;
  const service=song?.service??songs[0]?.service??initialService;
