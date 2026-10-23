@@ -108,3 +108,11 @@
  .serviceLanding .actions{gap:12px}.serviceLanding .primary,.serviceLanding .secondary{width:min(360px,100%);min-height:58px;font-size:14px;padding:15px 20px}
 }
 @media(max-width:380px) and (max-height:620px){.serviceLanding .content{left:20px;right:20px;bottom:84px}.serviceLanding .actions{gap:10px}.serviceLanding .primary,.serviceLanding .secondary{min-height:52px;padding:12px 18px}}
+
+/* Gruppo woofer + azioni centrato; due pulsanti sotto su ogni desktop. */
+.serviceLanding .content{left:24px;right:24px;top:calc(50% + min(235px,calc((100svh - 300px)*.45)) + 24px);bottom:auto;margin-top:0}
+.serviceLanding .actions{display:flex;flex-direction:row;justify-content:center;align-items:center;gap:18px;width:100%}
+.serviceLanding .primary,.serviceLanding .secondary{width:clamp(230px,22vw,280px);min-height:64px;font-size:15px;padding:16px 22px}
+.serviceLanding .poster{top:50%;width:min(50vw,520px,calc(100svh - 300px))}
+@media(max-width:700px){.serviceLanding .content{left:24px;right:24px;top:auto;bottom:calc(92px + env(safe-area-inset-bottom));margin-top:0}.serviceLanding .actions{flex-direction:column;gap:12px}.serviceLanding .primary,.serviceLanding .secondary{width:min(360px,100%);min-height:58px;font-size:14px;padding:15px 20px}.serviceLanding .poster{top:calc(50% - 12px);width:min(75vw,300px,calc(100svh - 330px))}}
+@media(max-width:380px) and (max-height:620px){.serviceLanding .content{left:20px;right:20px;bottom:84px}.serviceLanding .actions{gap:10px}.serviceLanding .primary,.serviceLanding .secondary{min-height:52px;padding:12px 18px}}

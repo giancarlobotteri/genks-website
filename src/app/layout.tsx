@@ -1,4 +1,4 @@
-import { BEATS_ENABLED } from "@/config/features";
+import { BEATS_ENABLED, CART_ENABLED } from "@/config/features";
 import { WhatsAppLink } from "@/components/layout/whatsapp-link";
 import { InterestMemory } from "@/components/commerce/interest-memory";
 import type { Metadata, Viewport } from "next";
@@ -66,7 +66,7 @@ export default async function RootLayout({
           <LicenseProvider licenses={licenses}>
             <CartProvider catalog={beats}>
               <Navigation />
-              {BEATS_ENABLED && <CartRail />}
+              {CART_ENABLED && <CartRail />}
               <main id="main-content" tabIndex={-1}>
                 {children}
               </main>
