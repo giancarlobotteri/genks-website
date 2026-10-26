@@ -1,4 +1,6 @@
 "use client";
+import {CheckoutContactFields} from "./checkout-contact-fields";
+import type {ContactContext} from "@/lib/customer-contact";
 import {buildRecordingQuote} from "@/lib/recording-quote";
 import {recordingStartAllowed,recordingAppointmentLabel} from "@/lib/recording-selection";
 
@@ -10,7 +12,7 @@ import { createBooking } from "@/app/services/actions";
 import { ServiceSubmit } from "./service-submit";
 import { serviceAmount, serviceRateVersion } from "@/lib/service-rates";
 
-export function RecordingRequestForm({discounts=[],cardReady=false,initialDuration=1}:{discounts?:PublicDiscount[];cardReady?:boolean;initialDuration?:number}) {
+export function RecordingRequestForm({contact=null,discounts=[],cardReady=false,initialDuration=1}:{contact?:ContactContext|null;discounts?:PublicDiscount[];cardReady?:boolean;initialDuration?:number}) {
   const [payment,setPayment]=useState("cash");
   const [clock,setClock]=useState(()=>Date.now());
   const [date, setDate] = useState("");
@@ -88,8 +90,7 @@ export function RecordingRequestForm({discounts=[],cardReady=false,initialDurati
     <details className="service-optional full"><summary>Indirizzo, orari e tempo extra</summary><p className="service-form-note">Lo studio è in Via Quintina, Ponte San Giovanni, Perugia (PG). Dal lunedì al venerdì: 19:30–00:00. Sabato e domenica: 10:00–00:00. Venerdì e sabato la durata scelta può proseguire oltre mezzanotte. Negli altri giorni si termina entro le 00:00. Eventuale tempo extra viene concordato in studio e registrato personalmente da GENKS. Tempo extra prima di mezzanotte: 24,99 €/ora, escluso dagli sconti sulla sessione prenotata. {extraTimePolicy}</p></details>
     <details className="service-optional full"><summary>Riferimenti e note facoltativi</summary><div><label className="full">Collegamento di riferimento <small>facoltativo</small><input name="referenceUrl" type="url" placeholder="https://"/></label>
     <label className="full">Note <small>facoltative</small><textarea name="notes" rows={4} placeholder="Obiettivi della sessione, numero di artisti, informazioni utili…"/></label>
-    </div></details><label>Nome<input name="name" required minLength={2} maxLength={120} autoComplete="name"/></label><label>Nome d’arte <small>facoltativo</small><input name="artistName"/></label>
-    <label>Email<input name="email" type="email" required autoComplete="email"/></label><label>Telefono / WhatsApp<input name="phone" type="tel" required minLength={6} maxLength={40} autoComplete="tel"/></label>
+    </div></details><CheckoutContactFields key={contact?.userId??"guest"} context={contact} phoneRequired next="/services/recording"/>
     <p className="service-form-note full"><a className="text-link" href="/services/regole">Cambi data, cancellazioni e ritardi →</a></p>
     <fieldset className="payment-choice full"><legend>Come vuoi pagare?</legend><label><input type="radio" name="paymentChoice" checked={payment==="card"} disabled={!cardReady} onChange={()=>choosePayment("card")}/><span>Carta o Apple Pay online</span></label><label><input type="radio" name="paymentChoice" checked={payment==="cash"} onChange={()=>choosePayment("cash")}/><span>Contanti in studio</span></label></fieldset><aside className="quote-current full" aria-live="polite"><strong>Totale: {serviceAmount(total)}</strong>{date&&time&&<p className="booking-appointment"><strong>Il tuo appuntamento</strong><br/>{recordingAppointmentLabel(date,time,Number(duration))}</p>}<p>Sessione: {durationLabel(Number(duration))} × {serviceAmount(hourly)}/ora = <strong>{serviceAmount(baseTotal)}</strong></p>{nightSupplement > 0 && <p style={{color:"#bfdbfe", borderLeft:"3px solid #60a5fa", paddingLeft:"12px"}}><strong>Supplemento dopo mezzanotte: +{serviceAmount(nightSupplement)}</strong><br/>Già incluso nel totale. Si aggiunge alla tariffa base: 9,99 € ogni 30 minuti dopo le 00:00.</p>}{quote.minimum>0&&<p>Minimo di pagamento: +{serviceAmount(quote.minimum)}</p>}<p>{payment==="card"?"Carta o Apple Pay · pagamento sicuro su Stripe.":"Pagamento in contanti presso lo studio."}</p></aside><label className="full consent-label"><input type="checkbox" name="accepted" required/>Accetto il totale di {serviceAmount(total)}, il pagamento {payment==="card"?"con carta tramite Stripe":"in contanti"} e le <a className="text-link" href="/services/regole" target="_blank" rel="noopener noreferrer">regole degli appuntamenti</a>.</label><ServiceSubmit label={payment==="card"?"Continua al pagamento":"Conferma la prenotazione"} disabled={!date || !time || loading || !availableDurations.includes(Number(duration))||!matchingSlots.includes(time)} />
 

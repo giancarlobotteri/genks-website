@@ -1,4 +1,6 @@
 "use client";
+import {CheckoutContactFields} from "./checkout-contact-fields";
+import type {ContactContext} from "@/lib/customer-contact";
 import { useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, CreditCard, Banknote, UploadCloud } from "lucide-react";
 import { createProject } from "@/app/services/actions";
@@ -12,7 +14,7 @@ import {deliveryDateLabel} from "@/lib/service-delivery";
 import {discountPrice,type PublicDiscount} from "@/lib/public-discounts";
 const services=[{code:"mix",title:"Mix"},{code:"master",title:"Master"},{code:"mix_master",title:"Mix & Master"}];
 
-export function ProjectRequestForm({initialService,initialTrackCount=1,initialSongs,initialMode,remoteCardReady,discounts=[],packageCode=""}:{packageCode?:string;initialService:string;initialTrackCount?:number;initialSongs?:ProjectSong[];initialMode?:"studio"|"remote";remoteCardReady:boolean;discounts?:PublicDiscount[]}) {
+export function ProjectRequestForm({contact=null,initialService,initialTrackCount=1,initialSongs,initialMode,remoteCardReady,discounts=[],packageCode=""}:{contact?:ContactContext|null;packageCode?:string;initialService:string;initialTrackCount?:number;initialSongs?:ProjectSong[];initialMode?:"studio"|"remote";remoteCardReady:boolean;discounts?:PublicDiscount[]}) {
  const pack=packageByCode(packageCode);
  const hoursOnly=pack?.service==="recording";
  const [mode,setMode]=useState(pack?.studio?"studio":initialMode??""),[payment,setPayment]=useState("card");
@@ -50,7 +52,7 @@ export function ProjectRequestForm({initialService,initialTrackCount=1,initialSo
 
   </fieldset>
   <fieldset hidden={hoursOnly?step!==count:step!==0} disabled={step<0} data-step="0" className={`${styles.step} full`}><legend>I tuoi contatti · una sola volta</legend><p className="fine-print">{hoursOnly?"I contatti per il tuo pacchetto.":"Valgono per tutti i brani della richiesta."}</p>
-   <label>Nome<input name="name" required minLength={2} maxLength={120} autoComplete="name"/></label><label>Nome d’arte <small>facoltativo</small><input name="artistName" maxLength={120}/></label><label>Email<input name="email" type="email" required autoComplete="email"/></label><label>Telefono <small>facoltativo</small><input name="phone" type="tel" maxLength={40} autoComplete="tel"/></label>
+   <CheckoutContactFields key={contact?.userId??"guest"} context={contact} next={"/services/project"+(packageCode?"?package="+encodeURIComponent(packageCode):initialService?"?service="+encodeURIComponent(initialService):"")}/>
   </fieldset>
   {song&&<fieldset className={`${styles.step} full`} key={step} data-step={step}><legend className="sr-only">Dettagli brano {step+1}</legend>
    {pack&&<p className="notice">{pack.name} · {pack.songs} {pack.songs===1?"brano":"brani"} · {pack.description}</p>}<div className="project-service-options">{services.map(s=><label key={s.code} className={service===s.code?"selected":""}><input type="radio" name="serviceChoice" checked={service===s.code} value={s.code} disabled={Boolean(pack)} required onChange={()=>{update({service:s.code,...(s.code==="master"?{trackCount:1}:{})});}}/><strong>{s.title}</strong></label>)}</div>

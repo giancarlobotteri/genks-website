@@ -3,6 +3,7 @@ import { allowPublicRequest } from "@/lib/security/request-limit";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { hasSupabase } from "@/lib/env";
+import {saveContactChoice} from "@/lib/customer-contact-server";
 import { getCurrentUser } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getGoogleBusyRanges, hasGoogleBusyCalendar } from "@/lib/google-calendar";
@@ -42,6 +43,7 @@ export async function createBooking(formData: FormData) {
     if (busy.some((range) => new Date(range.starts_at) < protectedEnd && new Date(range.ends_at) > start)) redirect("/services/recording?error=conflict");
   }
   const user = await getCurrentUser();
+  try{await saveContactChoice(formData,user);}catch{redirect("/services/recording?error=contact");}
   if(parsed.data.payment==="card"){
     let url:string;
     try{url=await reserveRecordingPayment({...parsed.data,startsAt:start.toISOString(),customerId:user?.email?.toLowerCase()===parsed.data.email.toLowerCase()?user.id:null},`Registrazione in studio · ${parsed.data.duration} ore · ${parsed.data.date} ${parsed.data.time} (Europe/Rome). Tariffa base 24,99 €/ora; supplemento notturno 9,99 € ogni 30 minuti, già incluso nel totale.`);}
@@ -74,7 +76,9 @@ export async function createProject(formData: FormData) {
   let serverQuote:ReturnType<typeof buildServiceQuote>;
   try{serverQuote=buildServiceQuote({songs:JSON.parse(raw),packageCode,rush:formData.get("rush")==="true",earlyStart:parsed.data.earlyStart},await getPublicDiscounts());}catch{redirect("/services/project?error=invalid");}
   if(serverQuote.totalCents!==parsed.data.expectedTotal)redirect("/services/project?error=price");
-  const user=await getCurrentUser();let result:{reference:string;url?:string};
+  const user=await getCurrentUser();
+  try{await saveContactChoice(formData,user);}catch{redirect("/services/project?error=contact");}
+  let result:{reference:string;url?:string};
   try{result=await reserveServiceOrder({...parsed.data,notes:"",links:serverQuote.songs.flatMap(s=>s.referenceLinks.split(/\s+/).filter(link=>/^https?:\/\//i.test(link))),customerId:user?.email?.toLowerCase()===parsed.data.email.toLowerCase()?user.id:null},serverQuote);}catch{redirect("/services/project?error=remote_payment");}
   revalidatePath("/admin/projects");
   if(result.url)redirect(result.url);
