@@ -1,4 +1,4 @@
-export type SaleKind = "beat" | "recording" | "mix" | "master" | "mix_master";
+export type SaleKind = "beat" | "recording" | "mix" | "master" | "mix_master" | "services";
 export type BusinessSale = {
   id: string; reference: string; customer: string; email: string; kind: SaleKind;
   amount: number; refunded: number; fee: number | null; currency: string; paidAt: string;
@@ -9,7 +9,7 @@ export type RefundMovement = { payment_id: string; amount_cents: number; occurre
 export type BusinessCost = { id: string; description: string; amount_cents: number; incurred_on: string; category: string };
 const formatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" });
 export const businessDay = (value: string | Date) => formatter.format(new Date(value));
-export const kindLabels: Record<SaleKind,string> = { beat: "Beat", recording: "Studio", mix: "Mix", master: "Master", mix_master: "Mix & Master" };
+export const kindLabels: Record<SaleKind,string> = { beat: "Beat", recording: "Studio", mix: "Mix", master: "Master", mix_master: "Mix & Master", services: "Ordini servizi e pacchetti" };
 
 export function businessSummary(sales: BusinessSale[], refunds: RefundMovement[], costs: BusinessCost[], now = new Date()) {
   const today = businessDay(now);

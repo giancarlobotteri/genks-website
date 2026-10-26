@@ -29,6 +29,8 @@ export async function issueServicePayment(input: {
   await assertLiveCommerceReady();
   const db = createSupabaseAdminClient();
   const table = input.type === "booking" ? "bookings" : "service_projects";
+  const modern=await db.from("service_order_parts_v8").select("id").eq(input.type==="booking"?"booking_id":"project_id",input.id).limit(1);if(modern.error)throw Error("Verifica del saldo non disponibile.");if(modern.data?.length)throw Error("Questo ordine usa anticipi e saldi separati: usa Pagamento personalizzato / incassi e verifica il residuo, senza creare un secondo pagamento completo.");
+  if(input.type === "booking"){const credit=await db.from("service_credit_bookings_v8").select("part_id").eq("booking_id",input.id).limit(1);if(credit.error)throw Error("Verifica del credito non disponibile.");if(credit.data?.length)throw Error("Sessione del pacchetto: gestisci il residuo dall’ordine originale.");}
   const { data: request, error } = await db.from(table).select("id,reference,email,name").eq("id", input.id).single();
   if (error || !request) throw new Error("Richiesta non trovata.");
   if (!previewRecipientAllowed(request.email)) throw new Error("Nell’anteprima privata usa l’email del proprietario.");

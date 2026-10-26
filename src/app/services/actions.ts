@@ -21,6 +21,7 @@ import { serviceRateVersion, projectRateVersion } from "@/lib/service-rates";
 const text = (min = 1, max = 1000) => z.string().trim().min(min).max(max);
 
 export async function createBooking(formData: FormData) {
+  if(formData.get("rateVersion")!=="legacy-disabled") redirect("/services/recording?notice=updated");
   if (!await allowPublicRequest("service")) redirect("/services/recording?error=limit");
   if (!hasSupabase) redirect("/services/recording?error=setup");
   if(formData.get("website"))redirect("/services/recording?error=invalid");
@@ -65,6 +66,7 @@ export async function createBooking(formData: FormData) {
 }
 
 export async function createProject(formData: FormData) {
+  if(formData.get("rateVersion")!=="legacy-disabled") redirect("/services/project?notice=updated");
   if (!await allowPublicRequest("service")) redirect("/services/project?error=limit");
   if (!hasSupabase) redirect("/services/project?error=setup");
   if(formData.get("website"))redirect("/services/project?error=invalid");

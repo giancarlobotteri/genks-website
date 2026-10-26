@@ -64,7 +64,9 @@ async function fulfil(session: Stripe.Checkout.Session, event: Stripe.Event) {
   const intentId = objectId(session.payment_intent);
   if (session.amount_total === null || !session.currency) throw new Error("Dati del pagamento incompleti.");
   const db = createSupabaseAdminClient();
-  const { data: paymentId, error } = await db.rpc("fulfil_stripe_checkout", {
+  const isV8=session.metadata?.payment_type==="service_cart_v8";
+  const settledV8=isV8?await db.rpc("settle_service_cart_v8",{p_quote:quoteId,p_session:session.id,p_payment:intentId??session.id,p_amount:session.amount_total,p_currency:session.currency,p_live:session.livemode,p_event:event.id,p_paid_at:new Date(event.created*1000).toISOString()}):null;
+  const { data: paymentId, error } = settledV8??await db.rpc("fulfil_stripe_checkout", {
     p_session: session.id, p_payment: intentId ?? session.id, p_amount: session.amount_total,
     p_currency: session.currency, p_live: session.livemode, p_event: event.id,
     p_paid_at: new Date(event.created * 1000).toISOString(), p_order: orderId ?? null, p_quote: quoteId ?? null,
@@ -106,6 +108,7 @@ async function fulfil(session: Stripe.Checkout.Session, event: Stripe.Event) {
       if (result.error) throw new Error("Notifica da aggiornare.");
     } else {
       await flushNotifications({ prefix: `payment-${paymentId}`, throwOnFailure: true });
+      if(isV8)await flushNotifications({prefix:`v8-paid-owner-${paymentId}`,throwOnFailure:true});
       if(session.metadata?.payment_type==="recording"&&session.metadata.booking_id&&!payment.review_reason){
         const booking=await db.from("bookings").select("reference,name").eq("id",session.metadata.booking_id).eq("status","confirmed").single();
         if(booking.error)throw new Error("Prenotazione pagata da verificare");

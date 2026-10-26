@@ -1,0 +1,3 @@
+import type {OrderSelection} from './service-order-v8';
+export async function serviceCartKey(){const r=await fetch('/api/cart/identity',{cache:'no-store'});if(!r.ok)throw Error('Accedi di nuovo o riprova.');const {owner}=await r.json();return 'genks:services:v8:'+owner;}
+export async function storeService(selection:OrderSelection,direct=false){const key=(await serviceCartKey())+(direct?':direct':'');let items:OrderSelection[]=[];if(!direct){try{items=JSON.parse(sessionStorage.getItem(key)??'[]');}catch{items=[];}}if(items.length>=20)throw Error('Il carrello può contenere massimo 20 servizi.');sessionStorage.setItem(key,JSON.stringify([...items,selection]));sessionStorage.removeItem(key+':request');window.dispatchEvent(new Event('genks-services-cart'));}

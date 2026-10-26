@@ -61,10 +61,10 @@ export function recommendServices(input:AdvisorInput,discounts:PublicDiscount[]=
    if(sum(candidate)<sum(best)||sum(candidate)===sum(best)&&candidate.length<best.length)best=candidate;
   };
   if(service==="mix_master"){
-   consider(audio(i,1,"single"),1,quarters,beats);
+
    if(tracks.length-i>=4)consider(audio(i,4,"ep"),4,quarters,beats);
-   if(quarters>0)consider(audio(i,1,"voice"),1,Math.max(0,quarters-12),beats);
-   if(beats>0)consider(audio(i,1,"turnkey"),1,Math.max(0,quarters-12),beats-1);
+   if(quarters>0){const extra=Math.max(0,quarters/4-2);const p=audio(i,1,"voice");if(Number.isInteger(extra)&&extra<=6)consider({...p,priceCents:p.priceCents+extra*999,href:p.href+"&extraHours="+extra},1,0,beats);else consider(p,1,Math.max(0,quarters-8),beats);}
+   if(beats>0){const extra=Math.max(0,quarters/4-2);const p=audio(i,1,"turnkey");if(Number.isInteger(extra)&&extra<=6)consider({...p,priceCents:p.priceCents+extra*999,href:p.href+"&extraHours="+extra},1,0,beats-1);else consider(p,1,Math.max(0,quarters-8),beats-1);}
   }else if(service==="master"&&tracks.length-i>=3)consider(audio(i,3,"masters"),3,quarters,beats);
   memo.set(key,best);return best;
  }

@@ -1,20 +1,3 @@
-import { BEATS_ENABLED } from "@/config/features";
-import { StudioPaymentNotice } from "@/components/services/studio-payment-notice";
-import type { Metadata } from "next";
 import Link from "next/link";
-import { PurchaseHelp } from "@/components/commerce/purchase-help";
-import { getLicenses } from "@/lib/repositories/beats";
-import { formatPrice } from "@/lib/format";
-
-export const metadata: Metadata = { title: "Guida a beat, licenze e acquisti", description: "Come scegliere una licenza GENKS, acquistare un beat, ritrovare i file e richiedere studio, mix o master.", alternates: { canonical: "/guida" } };
-
-export default async function Guide() {
-  const licenses = await getLicenses();
-  return <div className="portal-shell purchase-guide-page">
-    <header className="service-page-heading"><div><span className="eyebrow">GENKS · GUIDA ALL’ACQUISTO</span><h1>Scegli il suono.<br />Sai già come continuare.</h1><p>Ascolta, confronta la licenza e scegli come portare avanti il tuo brano.</p></div></header>
-    <StudioPaymentNotice />
-    <section id="licenze" className="license-guide"><h2>Parti dai file di cui hai bisogno.</h2><p>Questa è una sintesi dei formati. Le condizioni della licenza del beat scelto definiscono i diritti di utilizzo.</p><div className="license-guide-grid">{licenses.map(license => <article key={license.id}><span className="eyebrow">{license.format}</span><h3>{license.name}</h3><strong>{`da ${formatPrice(license.priceCents)}`}</strong><p>{license.id === "mp3" ? "Il file MP3, per chi cerca questo formato." : license.id === "wav" ? "Anche il WAV non compresso, per lavorare sul brano." : license.isExclusive || license.id === "exclusive" ? "Un accordo dedicato: invia una richiesta a GENKS." : "Tracce separate, per intervenire sui singoli elementi nel mix."}</p><small>Il prezzo specifico del beat e le condizioni sono mostrati prima del pagamento.</small></article>)}</div></section>
-    <PurchaseHelp />
-    <div className="guide-actions">{BEATS_ENABLED && <Link className="button button-primary" href="/beats">Esplora i beat</Link>}<Link className="button button-secondary" href="/services">Richiedi un servizio</Link></div>
-  </div>;
-}
+export const metadata={title:"Guida ai servizi GENKS"};
+export default function Page(){return <section className="portal-shell service-portal"><h1>Dal tuo brano al risultato finale.</h1><div className="premium-form"><h2>1. Configura il servizio</h2><p>Mix da 59,99 €, mix + master da 79,99 €, master stereo 29,99 €. Scegli i file audio per ogni brano e gli extra: il totale si aggiorna subito. Una revisione inclusa per lavorazione.</p><Link href="/guida/tracce">Come contare e preparare i file →</Link><h2>2. Scegli come pagare</h2><p>Acquisto diretto oppure carrello. Mix e master si pagano prima dell’avvio. Registrazione a 19,99 €/ora e beat su misura da 100 € richiedono anticipo del 50%. Carta o Apple Pay online; per i contanti passa in studio e presenta il codice ordine. Le sessioni sono confermate solo dopo incasso dell’anticipo; quelle in attesa di contanti hanno una riserva con scadenza.</p><h2>3. Invia i file</h2><p>Usa un collegamento HTTPS, ad esempio SwissTransfer, o rispondi alla conferma. Conserva sempre una copia. Per mix/master, prima versione entro 7 giorni lavorativi da pagamento, file completi e avvio consentito; consegna veloce +19,99 € per brano entro 48 ore dagli stessi presupposti.</p><h2>Revisioni, diritti e garanzia</h2><p>Una revisione inclusa; prima aggiuntiva 9,99 €, seconda 14,99 €, poi +5 € sul prezzo della precedente, con disponibilità da concordare oltre due extra. Nei beat composti da GENKS lo split standard è 50/50; il 100% dei diritti patrimoniali trasferibili richiede preventivo. Il solo mix/master non attribuisce diritti sul materiale del cliente.</p><p>Garanzia commerciale del 30% sulla lavorazione mix/master dopo la revisione inclusa, richiesta entro 14 giorni. Restano salvi i diritti di legge.</p><Link href="/legal/refunds">Condizioni della garanzia →</Link><Link href="/services/regole">Anticipi, cancellazioni e ritardi →</Link><Link className="button button-primary" href="/services">Scegli il servizio</Link></div></section>;}

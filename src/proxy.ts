@@ -23,7 +23,7 @@ export async function proxy(request: NextRequest) {
   }
   if (!BEATS_ENABLED) {
     if (path === "/api/checkout") return protect(NextResponse.json({ error: "Il catalogo beat è in pausa." }, { status: 503, headers: { "Cache-Control": "no-store" } }));
-    if (path === "/beats" || path.startsWith("/beats/") || path === "/carrello" || (path.startsWith("/checkout/") && path !== "/checkout/success")) {
+    if (path === "/beats" || path.startsWith("/beats/") || (path.startsWith("/checkout/") && path !== "/checkout/success")) {
       return protect(NextResponse.redirect(new URL("/services", request.url)));
     }
   }

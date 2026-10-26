@@ -30,6 +30,7 @@ export async function manageCashService(form: FormData) {
   const parsed = z.object({ type: z.enum(["booking", "project"]), id: z.uuid(), action: z.enum(["agree", "receive", "refund"]), confirm: z.literal("on") }).safeParse(Object.fromEntries(form));
   if (!parsed.success) redirect("/admin?notice=cash_error");
   const input = parsed.data;
+  const v8=await createSupabaseAdminClient().from("service_order_parts_v8").select("id").eq(input.type==="booking"?"booking_id":"project_id",input.id).limit(1);if(v8.error)throw Error("Verifica ordine non disponibile.");if(v8.data?.length)redirect("/admin/payments");if(input.type==="booking"){const credit=await createSupabaseAdminClient().from("service_credit_bookings_v8").select("part_id").eq("booking_id",input.id).maybeSingle();if(credit.error)throw Error("Verifica pacchetto non disponibile.");if(credit.data)redirect("/admin/payments");}
   const path = input.type === "booking" ? "/admin/bookings" : "/admin/projects";
   const details = z.object({ amount: z.coerce.number().min(0.5).max(100000), details: z.string().trim().min(10).max(2000), revisions: z.coerce.number().int().min(0).max(50), deadline: z.union([z.literal(""), z.iso.date()]) }).safeParse(Object.fromEntries(form));
   if (input.action === "agree" && (!studioCashOnly || !details.success || input.type === "project" && !details.data.deadline)) redirect(`${path}?notice=cash_error`);

@@ -18,7 +18,7 @@ export async function CustomerQuote({quote,payable,asOf}:{quote?:CustomerService
     <strong>{quote.fixed_price ? "Servizio" : "Preventivo"} · {new Intl.NumberFormat("it-IT",{style:"currency",currency:quote.currency}).format(quote.amount_cents/100)}</strong>
     <p style={{whiteSpace:"pre-wrap"}}>{quote.scope}</p>
     {quote.project_id&&!quote.fixed_price&&<small>Revisioni incluse: {quote.revision_count} · Consegna concordata: {quote.agreed_deadline??"Da concordare"}</small>}
-    {quote.fixed_price && <small>{quote.commerce_snapshot?.version===projectRateVersion?"Tempi, revisioni ed extra sono quelli indicati nel riepilogo e nelle condizioni accettate. Invia tutti i file per avviare il lavoro.":"Invio file, revisioni e consegna da concordare prima dell’avvio."}</small>}
+    {quote.fixed_price && <small>{[projectRateVersion,"2026-10-26-commerce-v8"].includes(quote.commerce_snapshot?.version??"")?"Tempi, revisioni ed extra sono quelli indicati nel riepilogo e nelle condizioni accettate. Invia tutti i file per avviare il lavoro.":"Invio file, revisioni e consegna da concordare prima dell’avvio."}</small>}
     {open&&paymentUrl?<><small>Valido fino al {new Date(quote.expires_at).toLocaleString("it-IT",{timeZone:"Europe/Rome"})}. Per modifiche contatta GENKS prima di pagare.</small><a className="button button-primary" href={paymentUrl}>Conferma e paga in sicurezza</a></>:<small>{quote.status==="paid"?"Pagamento ricevuto.":quote.fixed_price?"Pagamento con carta non completato o non disponibile. Contatta GENKS per assistenza.":studioCashOnly?"Concorda con GENKS la conferma e il pagamento in contanti presso lo studio.":"Contatta GENKS per aggiornare il preventivo."}</small>}
   </div>;
 }

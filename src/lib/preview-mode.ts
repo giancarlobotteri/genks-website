@@ -2,7 +2,7 @@
 export const privatePreview = process.env.GENKS_PRIVATE_PREVIEW !== "false";
 
 export function stripeTestMode() {
-  return process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") === true;
+  return /^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY??"");
 }
 
 export function previewRecipientAllowed(email: string) {

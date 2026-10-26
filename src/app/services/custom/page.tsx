@@ -1,6 +1,4 @@
-import { CustomBeatContact } from "@/components/services/custom-beat-contact";
-import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Richiedi un beat su misura", description: "Una produzione GENKS costruita intorno al tuo brano. Contatta GENKS per un preventivo dedicato al lavoro che cerchi.", alternates: { canonical: "/services/custom" } };
-export default function CustomBeatPage() {
-  return <div className="portal-shell narrow-shell service-portal"><CustomBeatContact /></div>;
-}
+import {getPublicDiscounts} from "@/lib/public-discounts-server";
+import {OrderBuilderV8} from "@/components/services/order-builder-v8";
+export const metadata={title:"Beat su misura GENKS"};
+export default async function Page(){return <div className="portal-shell service-portal"><OrderBuilderV8 discounts={await getPublicDiscounts()} kind="custom"/></div>;}

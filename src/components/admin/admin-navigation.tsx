@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Disc3, FileCheck2, ShoppingBag, Users, CalendarDays, SlidersHorizontal, KeyRound, Tag, ChartNoAxesCombined, Settings, Mail } from "lucide-react";
 const links = [
+  {title:"Pagamento personalizzato / incassi",href:"/admin/payments",icon:ShoppingBag},
   {title:"Cerca prenotazione / pagamento",href:"/admin/search",icon:ShoppingBag},
   {title:"Panoramica",href:"/admin",icon:LayoutDashboard}, {title:"Beat",href:"/admin/beats",icon:Disc3},
   {title:"Licenze",href:"/admin/licenses",icon:FileCheck2}, {title:"Ordini",href:"/admin/orders",icon:ShoppingBag},

@@ -1,5 +1,7 @@
 "use client";
 
+import type {PublicDiscount} from "@/lib/public-discounts";
+import {ServiceCartRailV8} from "@/components/services/service-cart-rail-v8";
 import Image from "next/image";
 import { BEATS_ENABLED } from "@/config/features";
 import { studioCashOnly } from "@/lib/studio-payment-mode";
@@ -10,7 +12,7 @@ import { ArrowUpRight, ShoppingBag, Trash2, X } from "lucide-react";
 import { useCart } from "@/features/cart/cart-provider";
 import { Modal } from "@/components/ui/modal";
 
-export function CartRail() {
+export function CartRail({discounts=[]}:{discounts?:PublicDiscount[]}) {
   const pathname = usePathname();
   const { items, count, remove, clear } = useCart();
   const [open, setOpen] = useState(false);
@@ -53,6 +55,7 @@ export function CartRail() {
     return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
   }, [visible]);
   if (!visible) return null;
+  if(!BEATS_ENABLED)return <ServiceCartRailV8 discounts={discounts}/>;
   return <>
     <button ref={toggleRef} type="button" data-cart-target className={`cart-rail-toggle ${collapsed ? "is-collapsed" : ""}`} aria-expanded={open} aria-controls={id} aria-label={open ? "Chiudi il carrello" : `Apri il carrello (${count})`} onClick={() => setOpen(value => !value)}>
       <ShoppingBag size={19} /><span>Carrello</span><strong aria-live="polite">{count}</strong>

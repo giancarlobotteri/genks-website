@@ -4,6 +4,7 @@ import { InterestMemory } from "@/components/commerce/interest-memory";
 import type { Metadata, Viewport } from "next";
 import { connection } from "next/server";
 import { Navigation } from "@/components/layout/navigation";
+import {getPublicDiscounts} from "@/lib/public-discounts-server";
 import { CartRail } from "@/components/commerce/cart-rail";
 import { Footer } from "@/components/layout/footer";
 import { PersistentPlayer } from "@/components/player/persistent-player";
@@ -17,6 +18,7 @@ import { beatRepository, getLicenses } from "@/lib/repositories/beats";
 import { getSiteOrigin, site } from "@/config/site";
 import { privatePreview } from "@/lib/preview-mode";
 import "./globals.css";
+import "./service-commerce.css";
 import "./storefront-motion.css";
 import "./responsive-layout.css";
 import "@fontsource/manrope/latin-400.css";
@@ -66,7 +68,7 @@ export default async function RootLayout({
           <LicenseProvider licenses={licenses}>
             <CartProvider catalog={beats}>
               <Navigation />
-              {CART_ENABLED && <CartRail />}
+              {CART_ENABLED && <CartRail discounts={await getPublicDiscounts()} />}
               <main id="main-content" tabIndex={-1}>
                 {children}
               </main>

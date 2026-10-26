@@ -32,10 +32,10 @@ export async function getBusinessSales(live = true, includeArchive = false) {
       const project=Array.isArray(row.service_projects)?row.service_projects[0]:row.service_projects;
       sales.push({id:row.id,reference:order?.order_number??booking?.reference??project?.reference??row.provider_payment_id,
         customer:order?.customer_name??booking?.name??project?.name??"Cliente",email:order?.customer_email??booking?.email??project?.email??"",
-        kind:row.order_id?"beat":row.booking_id?"recording":(project?.service??"mix_master") as SaleKind,
+        kind:row.order_id?"beat":row.booking_id?"recording":(project?.service==="studio_package"?"services":project?.service??"mix_master") as SaleKind,
         amount:row.amount_cents,refunded:row.refunded_cents,fee:row.fee_cents,currency:row.currency,paidAt:row.paid_at??row.created_at,live:row.livemode,
         review:row.review_reason,disputed:row.disputed,providerId:row.provider_payment_id,
-        targetUrl:row.order_id?"/admin/orders":row.booking_id?"/admin/bookings":"/admin/projects",
+        targetUrl:row.order_id?"/admin/orders":row.booking_id?"/admin/bookings":project?.service==="studio_package"?"/admin/payments":"/admin/projects",
         items:order?.order_items?.map(i=>`${i.beat_title_snapshot} · ${i.license_name_snapshot}`)??(project?[project.track_title]:["Sessione di registrazione"]),
       });
     }
