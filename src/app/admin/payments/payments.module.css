@@ -1,0 +1,15 @@
+.page{display:grid;gap:26px;min-width:0;color:#e8f3ff}
+.page>h1{font-size:clamp(1.8rem,3vw,2.7rem);line-height:1.15;font-weight:750;letter-spacing:-.035em;margin:0 0 4px;max-width:100%;overflow-wrap:anywhere;color:#fff}
+.page h2{font-size:1.3rem;line-height:1.4;font-weight:700;color:#fff}
+.page h3{font-size:1.1rem;font-weight:700;color:#e4f2ff}
+.customForm{padding:clamp(20px,3vw,32px);border:1px solid #397cb7;border-radius:22px;background:linear-gradient(140deg,#102b50,#07182d);gap:20px}
+.customForm label,.search label{color:#e4f1ff;font-weight:600;min-width:0}
+.customForm input,.search input{color:#fff;border-color:#4b7fae;background:#081b33;min-height:48px;width:100%;min-width:0}
+.customForm input::placeholder,.search input::placeholder{color:#b5d6f5;opacity:1}
+.customForm p{color:#c9e4ff;line-height:1.7;margin:0}
+.search{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;padding:22px;border:1px solid #285888;border-radius:18px;background:#091e39}
+.search label{display:grid;gap:8px;flex:1 1 260px}.search button{min-height:48px;flex:0 0 auto}
+.empty{display:block!important;padding:22px!important;border:1px dashed #4b7fae;border-radius:18px;background:#0d2748!important;color:#d1e9ff!important;line-height:1.7}
+.page :global(.data-list){min-width:0}.page :global(.data-list) article{overflow-wrap:anywhere}
+.page :global(.notice){line-height:1.7}
+@media(max-width:650px){.page{gap:20px}.customForm{padding:20px;gap:18px}.search{padding:18px}.search button{width:100%}.page>h1{font-size:1.9rem}.page h2{font-size:1.2rem}}
