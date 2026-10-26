@@ -46,11 +46,11 @@ export async function deliverNotification(id: string) {
     }
     let calendar: { actionUrl?: string; actionLabel?: string; calendarFile?: string; calendarFilename?: string; body?: string } = {};
     if (/^payment-[a-f0-9-]{36}$/.test(message.dedupe_key)) {
-      const payment = await db.from("payments").select("booking_id,project_id,amount_cents,currency,paid_at,review_reason,status").eq("id", message.dedupe_key.slice(8)).maybeSingle();
+      const payment = await db.from("payments").select("booking_id,project_id,quote_id,amount_cents,currency,paid_at,review_reason,status").eq("id", message.dedupe_key.slice(8)).maybeSingle();
       if (payment.error) throw new Error("Verifica calendario del pagamento da ripetere.");
       if(payment.data?.status==="succeeded")body+=`\nTotale: ${new Intl.NumberFormat("it-IT",{style:"currency",currency:payment.data.currency}).format(payment.data.amount_cents/100)}\nData del pagamento: ${date(payment.data.paid_at)}\nMetodo: Pagamento online verificato da Stripe`;
-      if(payment.data?.project_id&&payment.data.status==="succeeded"){
-        const detail=await db.from("service_quotes").select("scope").eq("project_id",payment.data.project_id).eq("status","paid").maybeSingle();
+      if(payment.data?.project_id&&payment.data.quote_id&&payment.data.status==="succeeded"){
+        const detail=await db.from("service_quotes").select("scope").eq("id",payment.data.quote_id).eq("project_id",payment.data.project_id).eq("status","paid").maybeSingle();
         if(detail.error)throw new Error("Riepilogo del progetto non disponibile.");
         if(detail.data)body+="\n\nRIEPILOGO DEL TUO PROGETTO\n"+detail.data.scope;
       }
