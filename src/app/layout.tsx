@@ -72,7 +72,7 @@ export default async function RootLayout({
               <main id="main-content" tabIndex={-1}>
                 {children}
               </main>
-              <UtilityDock><ChatWidget enabled={process.env.GENKS_GEMINI_ENABLED==='true'&&Boolean(process.env.GEMINI_API_KEY)}/>{CART_ENABLED && <CartRail discounts={await getPublicDiscounts()} />}</UtilityDock>
+              <UtilityDock><ChatWidget enabled={Boolean(process.env.CLOUDFLARE_ACCOUNT_ID&&process.env.CLOUDFLARE_API_TOKEN)&&(process.env.AI_PROVIDER||'cloudflare')==='cloudflare'}/>{CART_ENABLED && <CartRail discounts={await getPublicDiscounts()} />}</UtilityDock>
               <Footer />
               {BEATS_ENABLED && <PersistentPlayer />}
               <MotionObserver />

@@ -1,12 +1,15 @@
 # Integrazione chatbot GENKS v2 — 27 ottobre 2026
 
-## Stato
+## Versione superata
+Questo documento registra il collaudo precedente; il collegamento Gemini è stato sostituito da Cloudflare nella versione 3. Vedi GENKS-CHATBOT-V3.md.
+
+## Stato precedente
 Codice predisposto per gemini-3.5-flash-lite, nessuna fatturazione attivata. Le chiamate pubbliche a Gemini sono disattivate. Inserire una chiave non attiva automaticamente il provider. La restrizione EEA delle condizioni Google va risolta prima dell’attivazione pubblica; non cambiare piano o modello senza istruzioni.
 
 ## Implementazione
-- Widget blu/bianco una sola volta nel layout; nascosto in amministrazione; dialog accessibile, collegamenti filtrati, nessuna cronologia persistente e nessun dato cliente recuperato dalla chat.
+- Widget blu/bianco una sola volta nel layout; nascosto in amministrazione e finché il provider non è attivo; dialog accessibile, collegamenti filtrati, nessuna cronologia persistente e nessun dato cliente recuperato dalla chat.
 - pricing.ts è identico al file nello ZIP. pricing-breakdown.ts aggiunge solo le annotazioni necessarie a ricondurre i componenti al flusso esistente; prezzi e proporzioni sono importati dall’originale e ogni risultato è confrontato sul server con verificaPreventivo prima di essere usato.
-- Checkout ?preventivo= con validazione stretta, ricalcolo server, Stripe/contanti, acconti e saldo; le sessioni richiedono data e ora. File facoltativi per brano, contatti una sola volta, termini e garanzie esistenti.
+- Checkout ?preventivo= con navigazione brano per brano, validazione stretta, ricalcolo server, Stripe/contanti, acconti e saldo; le sessioni richiedono data e ora. File facoltativi per brano, contatti una sola volta, termini e garanzie esistenti.
 - Preventivo, righe e importi salvati nello snapshot ordine; dettagli in amministrazione e nelle conferme cliente. Email titolare mantiene i quattro campi richiesti.
 - Calendario API e strumento bot condividono readBookingAvailability. Link recording precompilati date/hours/start. Nessun accesso del bot a dati clienti o pagamenti.
 - Privacy aggiornata, comprese condizioni di utilizzo e stato inattivo.
