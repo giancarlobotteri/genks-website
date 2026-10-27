@@ -10,3 +10,5 @@
 @media(max-width:720px){.launcher[data-inline=true]{font-size:10px;min-height:38px;padding:7px 10px;gap:6px}.launcher[data-inline=true] svg{width:23px;height:23px}}
 
 @media(max-width:1199px){.launcher{bottom:calc(80px + env(safe-area-inset-bottom))}}
+
+@media(orientation:portrait) and (max-width:700px){.launcher[data-inline=true]{width:min(300px,100%);box-sizing:border-box;justify-content:center;min-height:44px;font-size:11px;padding:9px 10px;gap:7px}.launcher[data-inline=true] svg{width:24px;height:24px}.attention{right:4px;top:-7px}}

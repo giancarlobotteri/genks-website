@@ -148,3 +148,12 @@
 .assistantSlot{display:flex;justify-content:center;margin-top:20px;width:100%;pointer-events:auto}
 @media(max-width:700px){.assistantSlot{margin-top:16px}.serviceLanding .content{top:calc(50svh - 74px + min(38vw,150px,calc((100svh - 330px)/2)) + 16px)}}
 @media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.serviceLanding .content{top:auto;bottom:20px}.assistantSlot{margin-top:12px}}
+
+/* Portrait: one centered composition with consistent controls and room for the cart. */
+@media(orientation:portrait) and (max-width:700px){
+ .serviceLanding .content{left:24px;right:24px;top:calc(50svh - 90px + min(38vw,150px,calc((100svh - 330px)/2)) + 16px);bottom:auto}
+ .serviceLanding .poster{top:calc(50% - 82px)}
+ .serviceLanding .actions{gap:10px}
+ .serviceLanding .primary,.serviceLanding .secondary{width:min(300px,100%);min-height:46px}
+ .assistantSlot{margin-top:14px}
+}

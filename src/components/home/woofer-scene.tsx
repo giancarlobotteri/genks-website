@@ -391,7 +391,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       const modelHeight = wideLayout
         ? landscapePhone ? Math.max(100,Math.min(190,height-220)) : Math.min(compact ? Math.min(width * .9, 300) : 520, Math.max(compact ? 150 : 220, height - (compact ? 330 : 300)))
         : Math.max(250, height - 340 * uiSpace);
-      const offset = (wideLayout ? (landscapePhone ? 14 : compact ? 24 : -16) : 80) * uiSpace;
+      const offset = (wideLayout ? (landscapePhone ? 14 : compact ? 48 : -16) : 80) * uiSpace;
       const fitHeight = wideLayout ? THREE.MathUtils.lerp(modelHeight, height, 1 - uiSpace) : modelHeight;
       const distance = mode === "hero" ? Math.max(6.3 * height / fitHeight, 6.3 / camera.aspect) : Math.max(5.95, 5.95 / camera.aspect) + .5;
       if (mode === "hero" && (!camera.view || camera.view.offsetY !== offset || camera.view.fullWidth !== width || camera.view.fullHeight !== height)) {
