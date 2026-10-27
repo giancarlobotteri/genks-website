@@ -7,7 +7,7 @@ export function parseAssistantPrefill(value:unknown,packageCode=""):AssistantPre
  try{
   const x=JSON.parse(value);
   if(!x||!["mix","master","mix_master"].includes(x.service)||!Array.isArray(x.tracks)||x.tracks.length<1||x.tracks.length>20)return null;
-  if(x.tracks.some((n:unknown)=>!Number.isInteger(n)||Number(n)<1||Number(n)>(x.service==="master"?1:48)))return null;
+  if(x.tracks.some((n:unknown)=>!Number.isInteger(n)||Number(n)<1||Number(n)>(x.service==="master"?1:1000)))return null;
   if(typeof x.versions!=="boolean"||typeof x.extraRevision!=="boolean"||!Number.isInteger(x.vocalTracks)||x.vocalTracks<0||x.vocalTracks>Math.min(...x.tracks))return null;
   if(!["remote","studio"].includes(x.mode))return null;
   const pack=packageByCode(packageCode);

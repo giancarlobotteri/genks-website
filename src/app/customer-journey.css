@@ -140,3 +140,13 @@ html{scroll-padding-top:104px}
 .utility-anchor[data-home=true][data-docked=true]{height:72px!important}
 .utility-anchor[data-home=true][data-docked=true] .utility-tools{display:flex;position:static;translate:none;justify-content:flex-end;max-width:none;width:100%;height:72px;padding:8px 28px}
 .utility-anchor[data-home=true][data-docked=true] .utility-tools [data-genks-cart-launcher]{position:static!important;transform:none!important;translate:none!important}
+
+.artist-stepper{min-width:0;display:grid;gap:10px;padding:16px;border:1px solid #3d76a8;border-radius:16px;background:#0d2b48}
+.artist-stepper legend{font-size:13px;font-weight:600;color:#e5f3ff;padding-inline:6px}
+.artist-stepper>div{display:grid;grid-template-columns:44px minmax(64px,100px) 44px;gap:10px;align-items:center;justify-content:start}
+.artist-stepper button{width:44px;height:44px;border:1px solid #77b6ed;border-radius:12px;background:#1b568d;color:#fff;font-size:24px;cursor:pointer}
+.artist-stepper button:disabled{opacity:.4;cursor:default}
+.artist-stepper input{width:100%;min-height:44px;text-align:center;font-size:19px!important;font-weight:700;appearance:textfield;padding:7px!important}
+.artist-stepper input::-webkit-inner-spin-button,.artist-stepper input::-webkit-outer-spin-button{appearance:none;margin:0}
+.artist-stepper small{color:#beddff;font-size:11px}
+.artist-stepper :focus-visible{outline:3px solid #b6e0ff;outline-offset:3px}

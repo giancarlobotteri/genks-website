@@ -1,3 +1,4 @@
+import {expandProductionBookings} from '@/lib/production-order';
 import {quotePreventivo} from '@/lib/chatbot/checkout';
 import {getPublicDiscounts} from '@/lib/public-discounts-server';
 import {randomUUID} from 'node:crypto';
@@ -25,7 +26,8 @@ export async function POST(request:Request){
   const data=z.object({name:z.string().trim().min(2).max(120),artistName:z.string().trim().max(120),email:z.email(),phone:z.string().trim().min(6).max(40),accepted:z.literal('on'),earlyStart:z.boolean(),withdrawalAcknowledged:z.boolean(),contactOwner:z.string().max(100),saveContact:z.boolean(),requestId:z.uuid(),direct:z.boolean().default(false),items:z.unknown().optional(),preventivoCode:z.string().max(16000).optional(),quoteDetails:z.unknown().optional(),quotePayment:z.enum(['card','cash']).default('card'),expectedTotal:z.number().int().min(50),website:z.literal('')}).parse(raw);
   if(data.earlyStart&&!data.withdrawalAcknowledged)throw Error('Conferma di aver letto le condizioni dell’avvio anticipato.');
   if(!previewRecipientAllowed(data.email))throw Error('Destinatario non autorizzato in questa anteprima.');
-  const quote=data.preventivoCode?quotePreventivo(data.preventivoCode,data.quoteDetails,data.quotePayment,data.earlyStart,new Date(),true):quoteOrder(data.items,data.earlyStart,new Date(),await getPublicDiscounts(),{requireFiles:true});
+  const initialQuote=data.preventivoCode?quotePreventivo(data.preventivoCode,data.quoteDetails,data.quotePayment,data.earlyStart,new Date(),true):quoteOrder(data.items,data.earlyStart,new Date(),await getPublicDiscounts(),{requireFiles:true});
+  const quote=expandProductionBookings(initialQuote,data.earlyStart,new Date());
   if(quote.total!==data.expectedTotal)throw Error('Il listino è cambiato. Ricarica il riepilogo prima di pagare.');
   if(quote.cardNow&&!await remoteProjectPaymentsReady())throw Error('Pagamento con carta temporaneamente non disponibile. Riprova tra poco.');
   for(const part of quote.parts){const sel=part.selection;if(part.hours&&sel.date){

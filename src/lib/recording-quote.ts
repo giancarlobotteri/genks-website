@@ -8,5 +8,5 @@ export function buildRecordingQuote(date:string,time:string,hours:number,discoun
  const base=Math.round(hours*hourly),total=recordingSessionCents(date,time,hours,hourly),night=Math.max(0,recordingSessionCents(date,time,hours,recordingHourlyCents)-Math.round(hours*recordingHourlyCents));
  if(!Number.isSafeInteger(total))throw new Error("invalid_recording_quote");
  const minimum=Math.max(0,total-base-night);
- return {hourly,base,night,minimum,total,lines:[{name:`Registrazione · ${durationLabel(hours)} × ${serviceAmount(hourly)}/ora`,quantity:1,unitAmount:base},...(night?[{name:"Supplemento dopo mezzanotte · 9,99 € ogni 30 minuti",quantity:1,unitAmount:night}]:[]),...(minimum?[{name:"Adeguamento al minimo di pagamento 0,50 €",quantity:1,unitAmount:minimum}]:[])]};
+ return {hourly,base,night,minimum,total,lines:[{name:`Registrazione · ${durationLabel(hours)} × ${serviceAmount(hourly)}/ora`,quantity:1,unitAmount:base},...(night?[{name:"Supplemento dopo mezzanotte · +10,00 €/ora; tariffa totale 29,99 €/ora",quantity:1,unitAmount:night}]:[]),...(minimum?[{name:"Adeguamento al minimo di pagamento 0,50 €",quantity:1,unitAmount:minimum}]:[])]};
 }

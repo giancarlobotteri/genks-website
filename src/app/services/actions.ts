@@ -47,7 +47,7 @@ export async function createBooking(formData: FormData) {
   try{await saveContactChoice(formData,user);}catch{redirect("/services/recording?error=contact");}
   if(parsed.data.payment==="card"){
     let url:string;
-    try{url=await reserveRecordingPayment({...parsed.data,startsAt:start.toISOString(),customerId:user?.email?.toLowerCase()===parsed.data.email.toLowerCase()?user.id:null},`Registrazione in studio · ${parsed.data.duration} ore · ${parsed.data.date} ${parsed.data.time} (Europe/Rome). Tariffa base 24,99 €/ora; supplemento notturno 9,99 € ogni 30 minuti, già incluso nel totale.`);}
+    try{url=await reserveRecordingPayment({...parsed.data,startsAt:start.toISOString(),customerId:user?.email?.toLowerCase()===parsed.data.email.toLowerCase()?user.id:null},`Registrazione in studio · ${parsed.data.duration} ore · ${parsed.data.date} ${parsed.data.time} (Europe/Rome). Tariffa base 19,99 €/ora; supplemento notturno 10,00 € ogni ora, già incluso nel totale.`);}
     catch{redirect("/services/recording?error=payment");}
     revalidatePath("/admin/bookings");redirect(url);
   }
