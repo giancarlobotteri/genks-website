@@ -194,3 +194,12 @@ html{scroll-padding-top:104px}
  .utility-anchor:not([data-home=true]) .utility-tools [data-genks-cart-launcher]>svg,.utility-anchor:not([data-home=true]) .utility-tools [data-genks-chat-launcher]>svg{width:24px;height:24px;display:block;flex:none;margin:0}
  .utility-anchor:not([data-home=true]) .utility-tools [data-genks-cart-launcher]>strong,.utility-anchor:not([data-home=true]) .utility-tools [data-genks-chat-launcher]>span:first-child{position:absolute;inset:-5px -4px auto auto;translate:none;display:grid;place-items:center;width:18px;min-width:18px;height:18px;min-height:18px;padding:0;margin:0;border-radius:50%;border:1px solid #bce2ff;background:#246fce;color:#fff;font-size:10px;font-weight:700;line-height:1;box-sizing:border-box}
 }
+
+/* Keep the invitation outside the animated avatar: translated ancestors must not shrink it. */
+.utility-anchor[data-home=true] [data-genks-assistant-invite]{position:fixed;right:188px;left:auto;top:83px;width:196px;z-index:58;font-family:inherit;cursor:pointer}
+body[data-cinematic-ui-hidden] [data-genks-assistant-invite]{visibility:hidden;pointer-events:none}
+@media(min-width:1500px){.utility-anchor[data-home=true] [data-genks-assistant-invite]{right:244px;top:28px;translate:none;width:204px;min-height:44px}}
+@media(orientation:portrait) and (max-width:720px){.utility-anchor[data-home=true] [data-genks-assistant-invite]{top:78px;left:16px;right:16px;width:auto;min-height:38px;translate:none}}
+@media(orientation:portrait) and (max-width:360px){.utility-anchor[data-home=true] [data-genks-assistant-invite]{left:12px;right:12px}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.utility-anchor[data-home=true] [data-genks-assistant-invite]{top:62px;right:164px;left:auto;width:180px;translate:none}}
+.utility-anchor[data-home=true][data-docked=true] [data-genks-assistant-invite],body:has(#home-service-results) [data-genks-assistant-invite]{display:none}
