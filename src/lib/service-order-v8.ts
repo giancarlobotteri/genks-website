@@ -54,7 +54,7 @@ export function quoteOrder(input:unknown,early=false,now=new Date(),discounts:Pu
   let night=0;
   if(studio){
    if(typeof r.date!=='string'||typeof r.time!=='string')throw Error('Scegli giorno e ora.');
-   if((r.packageCode!=='hours'||r.date||options.requireFiles)&&(!/^\d{4}-\d{2}-\d{2}$/.test(r.date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time)))throw Error('Scegli giorno e ora.');
+   if((options.requireFiles||r.date&&r.time)&&(!/^\d{4}-\d{2}-\d{2}$/.test(r.date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time)))throw Error('Scegli giorno e ora.');
    const recording=buildRecordingQuote(r.date,r.time,hours,pack?[]:discounts);
    night=recording.night;
    if(r.kind==='recording'){base=recording.total;listBase=base;lines.push(...recording.lines.map(l=>({name:l.name,amount:l.quantity*l.unitAmount})));}

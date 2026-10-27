@@ -52,6 +52,9 @@ test('unsupported track counts, duplicated services and prices supplied by a bro
  const s={...productionSelection(project()),total:1,customAmount:0};assert.equal(quoteOrder([s]).total,63993);
 });
 test('bot cannot invent project count, recording or paid extras; biography and owner contacts use social links',()=>{
+ assert.throws(()=>normalizeQuoteRequest({brani:[{servizio:'mix_master',quantita:2}],beat_su_misura:1,ore_registrazione:2},'EP di 2 brani, un beat GENKS, niente registrazione'));
+ const noStudio=project(2);noStudio.brani[1].produzione='external';
+ const fixed=normalizeQuoteRequest({progetto:noStudio},'EP di 2 brani, un beat GENKS, niente registrazione');assert.equal(fixed.progetto!.registrazione,false);assert.equal(calcolaPreventivo(fixed).importi_centesimi.totale,23997);
  assert.throws(()=>normalizeQuoteRequest({progetto:project(6)},'EP di 4 brani con beat e registrazione'));
  assert.throws(()=>normalizeQuoteRequest({progetto:project(4)},'EP di 4 brani con beat'));
  const p=project();p.registrazione=false;p.brani.forEach(s=>{s.revisioni_extra=2;s.consegna_veloce=true;});
@@ -61,4 +64,10 @@ test('bot cannot invent project count, recording or paid extras; biography and o
 test('order snapshot explains each chosen production and recording must have a date at final checkout',()=>{
  const selected=productionSelection(project());assert.throws(()=>quoteOrder([selected],true,new Date(),[],{requireFiles:true}));
  const summary=orderSummary(quoteOrder([selected],true));assert.match(summary,/Brano 1: Produzione GENKS 79,99/);
+});
+test('studio previews do not invent a nighttime surcharge before the customer chooses a time',()=>{
+ const selection={kind:'package' as const,packageCode:'hours',songs:[],hours:5,extraHours:0,date:'',time:'',payment:'card' as const,notes:'',rights:'own' as const};
+ const p=quoteOrder([selection],true).parts[0];assert.equal(p.total,8999);assert.equal(p.dueNow,4500);
+ assert.throws(()=>quoteOrder([selection],true,new Date(),[],{requireFiles:true}));
+ const night=quoteOrder([{...selection,date:'2026-11-07',time:'22:00',hours:3}],true).parts[0];assert.equal(night.total,10997);
 });

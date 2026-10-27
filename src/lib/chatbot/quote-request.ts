@@ -3,6 +3,7 @@ const words:Record<string,number>={un:1,uno:1,una:1,due:2,tre:3,quattro:4,cinque
 const count=(s:string)=>words[s.toLowerCase()]??Number(s);
 /** Resolve explicit customer quantities before pricing; never alter the calculator or its prices. */
 export function normalizeQuoteRequest(input:PreventivoInput,text:string,authorizationText=text):PreventivoInput{
+ if(!input.progetto&&/\bep\b|album/i.test(authorizationText)&&((input.beat_su_misura??0)>0||/produzion|\bbeat\b|bas[ei]/i.test(authorizationText)))throw Error('Per un EP o album con scelta delle basi devi usare progetto, una voce per ciascun brano: produzione genks o external e servizio audio scelto. Non usare beat_su_misura o ore_registrazione del singolo. Se il cliente esclude la registrazione, progetto.registrazione=false e ore_extra=0.');
  if(input.progetto){
   const requested=text.match(/\b(\d+|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)\s+(?:brani|pezzi|canzoni)\b/i);
   if(requested&&input.progetto.brani.length!==count(requested[1]))throw Error('Il numero di brani deve corrispondere alla richiesta del cliente.');
@@ -11,9 +12,10 @@ export function normalizeQuoteRequest(input:PreventivoInput,text:string,authoriz
   if(requestedBeats&&input.progetto.brani.filter(s=>s.produzione==='genks').length!==count(requestedBeats[1]))throw Error('Il numero di produzioni GENKS deve corrispondere alla richiesta.');
   if(input.progetto.registrazione&&!/registr|studio|rec\b|incidere/i.test(authorizationText))throw Error('Non aggiungere lo studio senza una richiesta del cliente.');
   const brani=input.progetto.brani.map(s=>({...s,revisioni_extra:/revision|modifiche aggiuntive/i.test(authorizationText)?s.revisioni_extra:0,consegna_veloce:/veloc|urgent|rush|express|fast|48\s*(?:ore|h)|consegna.*domani/i.test(authorizationText)?s.consegna_veloce:false}));
-  return {...input,progetto:{...input.progetto,brani}};
+  const noStudio=/(?:niente|senza|no|non (?:voglio|mi serve))\s+(?:la\s+)?(?:registrazione|studio|rec\b)/i.test(authorizationText);
+  return {...input,progetto:{...input.progetto,brani,...noStudio?{registrazione:false,ore_extra:0}:{}}};
  }
- const auth=authorizationText.toLowerCase();const t=text.toLowerCase();let next:PreventivoInput={...input,brani:input.brani?.map(b=>({...b,artisti_correzione_voce:/correz|intonaz|pulizia.*voc|tuning|editing|artisti.*voc/.test(auth)?b.artisti_correzione_voce:0,revisioni_extra:/revision|modifiche aggiuntive/.test(auth)?b.revisioni_extra:0,consegna_veloce:/veloc|urgent|rush|express|fast|48\s*(?:ore|h)|consegna.*domani/.test(auth)?b.consegna_veloce:false}))};
+ const auth=authorizationText.toLowerCase();const t=text.toLowerCase();let next:PreventivoInput={...input,.../(?:niente|senza|no|nessuna|nessuno|non (?:voglio|mi serve))\s+(?:la\s+)?(?:registrazione|studio|rec\b)/i.test(auth)?{ore_registrazione:0}:{},brani:input.brani?.map(b=>({...b,artisti_correzione_voce:/correz|intonaz|pulizia.*voc|tuning|editing|artisti.*voc/.test(auth)?b.artisti_correzione_voce:0,revisioni_extra:/revision|modifiche aggiuntive/.test(auth)?b.revisioni_extra:0,consegna_veloce:/veloc|urgent|rush|express|fast|48\s*(?:ore|h)|consegna.*domani/.test(auth)?b.consegna_veloce:false}))};
  const distribution=[...t.matchAll(/\b(un[oa]?|due|tre|quattro|cinque|sei|\d+)\s+da\s+(\d+)\b/g)].map(m=>({quantita:count(m[1]),file:Number(m[2])}));
  const explicit=t.match(/\b(\d+|un[oa]?|due|tre|quattro|cinque|sei|sette|otto)\s+(?:brani|brano|pezzi|pezzo|canzoni)\b/);
  const expected=explicit?count(explicit[1]):null;
