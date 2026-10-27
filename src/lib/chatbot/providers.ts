@@ -1,8 +1,10 @@
+import {quotePreventivo} from './checkout';
+import {serviceAmount} from '../service-rates';
 import {BOOKING_TOOL,availableBookingLinks} from './booking';
 import {quoteInputSchema} from './checkout';
 import {allowPublicRequest} from '@/lib/security/request-limit';
 import { SYSTEM_PROMPT } from "./prompt";
-import { calcolaPreventivo, PREVENTIVO_TOOL } from "./pricing";
+import { calcolaPreventivo, codificaPreventivo, PREVENTIVO_TOOL } from "./pricing";
 
 /**
  * FORNITORI DEL MODELLO AI
@@ -22,7 +24,7 @@ const MAX_STEPS = 3; // il modello può chiamare la calcolatrice e poi risponder
 
 /** Esegue lo strumento richiesto dal modello. */
 async function eseguiStrumento(name:string,args:unknown):Promise<unknown>{
- try{if(name===PREVENTIVO_TOOL.name)return calcolaPreventivo(quoteInputSchema.parse(args));if(name===BOOKING_TOOL.name)return await availableBookingLinks(args);return {errore:'Strumento sconosciuto'};}catch{return {errore:'Richiesta non valida o calendario non verificabile. Non inventare disponibilità o prezzi: rimanda alla pagina Servizi.'};}
+ try{if(name===PREVENTIVO_TOOL.name){const input=quoteInputSchema.parse(args),result=calcolaPreventivo(input);if(result.errore)return result;const guarantees=quotePreventivo(codificaPreventivo(input)).parts.flatMap(p=>p.guarantees);return {...result,...guarantees.length?{garanzia_per_brano:guarantees.map(g=>({brano:g.title,rimborso:serviceAmount(g.amount)}))}:{}};}if(name===BOOKING_TOOL.name)return await availableBookingLinks(args);return {errore:'Strumento sconosciuto'};}catch{return {errore:'Richiesta non valida o calendario non verificabile. Non inventare disponibilità o prezzi: rimanda alla pagina Servizi.'};}
 }
 
 /** Converte lo schema dello strumento (formato Gemini, tipi MAIUSCOLI) in JSON Schema standard. */
@@ -64,7 +66,15 @@ export async function rispondiConCloudflare(messages: ChatMessage[]): Promise<st
 
   const conv: OAIMessage[] = [
     // "/no_think" disattiva il ragionamento esteso di Qwen3: risposte più rapide e meno neuroni consumati.
-    { role: "system", content: `${SYSTEM_PROMPT}\nData e ora italiane: ${new Date().toLocaleString("it-IT",{timeZone:"Europe/Rome"})}\n\n/no_think` },
+    { role: "system", content: `${SYSTEM_PROMPT}
+REGOLE OPERATIVE DI COLLAUDO:
+- Se il cliente chiede un EP senza precisare il servizio, proponi mix + master e indica l’ipotesi fino a 8 file per brano. Usa sempre la calcolatrice per i prezzi.
+- Beat + registrazione + mix di un pezzo: valuta il Singolo chiavi in mano, con beat GENKS, 2 ore e mix + master. Non inventare un nuovo pacchetto.
+- DISPONIBILITÀ: analizza direttamente la richiesta con orari_disponibili. Se manca la durata chiedi prima quante ore; non rimandare alla pagina per controllare. Se il cliente indica un orario, passa anche ora allo strumento. Rispondi solo con gli esiti verificati, proponi alternative se occupato. Non creare riserve e non dire che l’appuntamento è confermato: il cliente deve comunque scegliere e pagare da solo.
+- Usa data e ora italiane qui indicate per interpretare sabato, domani e altri giorni relativi. Per una richiesta con ora finale notturna determina l’inizio dalla durata, verifica il giorno con lo strumento e chiedi alla calcolatrice il supplemento delle mezzore dopo mezzanotte.
+- Per la garanzia usa solo garanzia_per_brano restituita dal server: una revisione inclusa, domanda entro 14 giorni dalla sua consegna, 30% della quota scontata, extra esclusi. Non calcolare percentuali a mente.
+- Riporta sempre i suggerimenti della calcolatrice pertinenti (quarto brano, blocco 5 ore), senza aggiungere sconti.
+Data e ora italiane: ${new Date().toLocaleString("it-IT",{timeZone:"Europe/Rome"})}\n\n/no_think` },
     ...messages.map((m) => ({ role: m.role, content: m.content }) as OAIMessage),
   ];
   const tools=[PREVENTIVO_TOOL,BOOKING_TOOL].map(tool=>({type:'function',function:{name:tool.name,description:tool.description,parameters:toJsonSchema(tool.parameters)}}));
