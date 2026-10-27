@@ -136,7 +136,7 @@ Data e ora italiane: ${new Date().toLocaleString("it-IT",{timeZone:"Europe/Rome"
     }
     if(rendered.length)return rendered.join("\n\n");
   }
-  return toolFailed?'Non ho ancora un totale verificato per questa combinazione. Puoi completare le scelte nel [configuratore EP e album](https://www.prodbygenks.com/services/album): il prezzo si aggiorna per ogni brano. Nessun ordine è stato creato.':null;
+  return toolFailed?'Non ho ancora un totale verificato per questa combinazione. Puoi completare le scelte dal [listino servizi](https://www.prodbygenks.com/services): il prezzo si aggiorna sulle quantità selezionate. Nessun ordine è stato creato.':null;
 }
 
 // ---------------------------------------------------------------------------

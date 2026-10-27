@@ -1,3 +1,4 @@
+import {simpleAudioRequest} from './audio-request.ts';
 import {catalogAnswer} from './catalog.ts';
 import {quotePreventivo} from './checkout.ts';
 import {codificaPreventivo,calcolaPreventivo} from './pricing.ts';
@@ -27,5 +28,6 @@ export function knownAnswer(text:string):string|null{
   return `Hai **una revisione inclusa per brano e lavorazione**. Dopo la versione revisionata, se il mix/master non ti convince, puoi chiedere il **rimborso del 30% entro 14 giorni**, una volta per brano. Esempio: mix + master da ${serviceAmount(q.total)} → **${serviceAmount(q.parts[0].guarantees[0].amount)} di rimborso**. La percentuale si applica alla quota effettiva scontata; extra, registrazione e beat su misura sono esclusi. [Condizioni della garanzia](https://www.prodbygenks.com/legal/refunds).`;
  }
  if(/come funziona.*prenot|come.*prenotare/.test(t))return 'Dimmi **giorno, durata e orario**: controllo direttamente le disponibilità. Poi scegli l’appuntamento e versi **20 € di acconto**, oppure **10 € per una sessione da 19,99 €**, senza superare il totale, con carta/Apple Pay oppure in contanti in studio. La sessione è confermata solo dopo l’incasso.\n\nLun–gio dalle 19:30 a mezzanotte; venerdì dalle 19:30 e sabato dalle 10:00, anche oltre mezzanotte secondo disponibilità; domenica 10:00–00:00.\n\nPer i contanti presenta il codice ordine e paga entro la scadenza indicata: a metà del tempo tra richiesta e appuntamento, altrimenti la riserva si annulla.';
+ const audio=simpleAudioRequest(text);if(audio){const q=calcolaPreventivo(audio);return q.errore?`Controlla i dettagli del brano: ${q.errore}`:formatQuote(audio,q,text);}
  return null;
 }
