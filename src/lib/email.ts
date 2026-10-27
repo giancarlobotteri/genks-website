@@ -17,7 +17,7 @@ export async function sendTransactionalEmail(input:{
   const {data,error}=await resend.emails.send({
     from:process.env.RESEND_FROM_EMAIL,replyTo:process.env.GENKS_SUPPORT_EMAIL||process.env.GENKS_ADMIN_EMAIL,
     to:input.to,subject:input.subject,html:renderGenksStudioEmail(input),
-    text:`${input.heading}\n\n${input.body}${input.actionUrl?`\n\n${input.actionLabel??"Apri"}: ${input.actionUrl}`:""}${input.receiptFooter?"\n\nPresenta questo codice in studio per i pagamenti in contanti. La prenotazione si conferma dopo l’incasso dell’anticipo.\nStudio: Via Quintina\nAssistenza: assistenza@prodbygenks.com":input.compact?"":"\n\nGENKS · prodbygenks.com\nPer assistenza rispondi a questa email."}`,
+    text:`${input.heading}\n\n${input.body}${input.actionUrl?`\n\n${input.actionLabel??"Apri"}: ${input.actionUrl}`:""}${input.receiptFooter?"\n\nPresenta questo codice in studio per i pagamenti in contanti. La prenotazione si conferma dopo l’incasso dell’anticipo.\nStudio: Via Quintina, Ponte San Giovanni, 06135 Perugia (PG), Italia\nAssistenza: assistenza@prodbygenks.com":input.compact?"":"\n\nGENKS · prodbygenks.com\nPer assistenza rispondi a questa email."}`,
     attachments:[...(input.calendarFile?[{filename:input.calendarFilename??"GENKS-appuntamento.ics",content:Buffer.from(input.calendarFile).toString("base64"),contentType:"text/calendar"}]:[]),...(input.documents??[]).map(file=>({filename:file.filename,content:Buffer.from(file.content).toString("base64"),contentType:"text/plain; charset=utf-8"}))],
   },input.idempotencyKey?{idempotencyKey:input.idempotencyKey}:undefined);
   if(error)throw new Error(`Transactional email failed: ${error.message}`);
