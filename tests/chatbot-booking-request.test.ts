@@ -8,3 +8,5 @@ test('a release day alone is not mistaken for a studio appointment',()=>{assert.
 test('commercial policy replies retain the 50/50 split and guaranteed server example',()=>{assert.match(knownAnswer('Il beat è tutto mio?')!,/50\/50/);const q=knownAnswer('Se il mix non mi piace?')!;assert.match(q,/30%/);assert.match(q,/17,99/);assert.match(q,/14 giorni/);assert.equal(knownAnswer('Ho un progetto da 60 tracce'),null);});
 
 test('a duration-only quote never invents today as the appointment date',()=>{assert.equal(recordingHoursOnly('Voglio registrare 4 ore'),4);assert.equal(recordingHoursOnly('Mi servono 8 ore di studio'),8);assert.equal(hasRequestedDay('Voglio registrare 4 ore'),false);assert.equal(recordingHoursOnly('Sabato 3 ore fino all’una di notte'),null);});
+
+test('producer collaborations keep written rights agreements without offering external-base packages',()=>{const q=knownAnswer('Possiamo collaborare con altri producer?')!;assert.match(q,/Sì/);assert.match(q,/per iscritto/);assert.match(q,/produzioni GENKS/);});
