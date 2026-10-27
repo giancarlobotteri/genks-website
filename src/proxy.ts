@@ -15,7 +15,7 @@ export async function proxy(request: NextRequest) {
     result.headers.set("Content-Security-Policy", csp);
     return result;
   };
-  if (path.startsWith("/api/") && !["/api/stripe/webhook", "/api/internal/booking-reminders"].includes(path) && !["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+  if (path.startsWith("/api/") && !["/api/stripe/webhook", "/api/internal/booking-reminders", "/api/email/receiving"].includes(path) && !["GET", "HEAD", "OPTIONS"].includes(request.method)) {
     const origin = request.headers.get("origin");
     if (request.headers.get("sec-fetch-site") === "cross-site" || !origin || origin !== request.nextUrl.origin) {
       return protect(NextResponse.json({ error: "Origine della richiesta non autorizzata." }, { status: 403 }));
