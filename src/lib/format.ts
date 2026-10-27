@@ -5,10 +5,6 @@ export function formatTime(seconds: number): string {
     .padStart(2, "0")}`;
 }
 
-export function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("it-IT", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: cents % 100 ? 2 : 0,
-  }).format(cents / 100);
-}
+const euroWhole=new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+const euroCents=new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR",maximumFractionDigits:2});
+export function formatPrice(cents:number):string{return (cents%100?euroCents:euroWhole).format(cents/100);}
