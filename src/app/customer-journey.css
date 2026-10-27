@@ -101,3 +101,4 @@
 @media(max-width:720px){.quote-part-navigation{gap:8px;padding:10px;font-size:11px}.quote-part-navigation button{font-size:11px;padding:7px}.project-song-navigation>.button{flex:1}.service-side-stack{gap:18px}}
 
 .service-portal .cart-remove{min-height:42px;padding:10px 16px;border:1px solid #ff8c99;border-radius:12px;background:linear-gradient(125deg,#a92f45,#7e2139);color:#fff;font-weight:700;cursor:pointer}.service-portal .cart-remove:hover{background:#b9314a}
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.service-portal{padding-right:calc(96px + env(safe-area-inset-right))!important}}
