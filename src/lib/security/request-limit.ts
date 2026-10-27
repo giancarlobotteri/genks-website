@@ -4,9 +4,9 @@ import { isIP } from "node:net";
 import { headers } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-type Scope = "service" | "checkout" | "login" | "magic-link" | "availability";
+type Scope = "service" | "checkout" | "login" | "magic-link" | "availability" | "chat" | "chat-provider" | "quote";
 const budgets: Record<Scope, [number, number, number]> = {
-  service: [8, 3600, 200], checkout: [15, 600, 300], login: [12, 600, 300],
+  chat:[20,600,200],"chat-provider":[450,86400,450],quote:[60,600,1000],service: [8, 3600, 200], checkout: [15, 600, 300], login: [12, 600, 300],
   "magic-link": [4, 600, 60], availability: [120, 600, 2000],
 };
 // Shared database counters work across server instances. No raw IP or email is stored.

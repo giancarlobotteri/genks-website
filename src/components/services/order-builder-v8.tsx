@@ -12,9 +12,9 @@ import {serviceAmount} from '@/lib/service-rates';
 import {storeService} from '@/lib/service-cart-storage';
 import {recordingStartAllowed} from '@/lib/recording-selection';
 const blank=():OrderSong=>({trackTitle:'',trackCount:1,artists:0,revisions:0,rush:false,fileUrl:''});
-export function OrderBuilderV8({kind='mix_master',packageCode='',tracks=1,hours=1,discounts=[],extraHours=0,initialSongs}:{kind?:OrderSelection['kind'];packageCode?:string;tracks?:number;hours?:number;discounts?:PublicDiscount[];extraHours?:number;initialSongs?:OrderSong[]}){
+export function OrderBuilderV8({kind='mix_master',packageCode='',tracks=1,hours=1,discounts=[],extraHours=0,initialSongs,initialDate='',initialTime=''}:{kind?:OrderSelection['kind'];packageCode?:string;tracks?:number;hours?:number;discounts?:PublicDiscount[];extraHours?:number;initialSongs?:OrderSong[];initialDate?:string;initialTime?:string}){
  const pack=packageByCode(packageCode);const router=useRouter();
- const [item,setItem]=useState<OrderSelection>(()=>({kind:pack?'package':kind,packageCode:pack?packageCode:undefined,songs:initialSongs??Array.from({length:pack?.songs??(kind==='recording'?0:1)},()=>({...blank(),trackCount:tracks})),hours:kind==='recording'?hours:0,extraHours,date:'',time:'',payment:'card',notes:'',rights:kind==='custom'||packageCode==='turnkey'?'split50':'own'}));
+ const [item,setItem]=useState<OrderSelection>(()=>({kind:pack?'package':kind,packageCode:pack?packageCode:undefined,songs:initialSongs??Array.from({length:pack?.songs??(kind==='recording'?0:1)},()=>({...blank(),trackCount:tracks})),hours:kind==='recording'?hours:0,extraHours,date:initialDate,time:initialTime,payment:'card',notes:'',rights:kind==='custom'||packageCode==='turnkey'?'split50':'own'}));
  const [step,setStep]=useState(0),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
  const studio=item.kind==='recording'||Boolean(pack?.studio),credit=packageCode==='hours';
  const [studioValid,setStudioValid]=useState(false);

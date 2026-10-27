@@ -1,0 +1,23 @@
+"use client";
+import {useEffect,useRef,useState,type FormEvent} from 'react';
+import Link from 'next/link';
+import {usePathname} from 'next/navigation';
+import {QUICK_REPLIES,WELCOME_MESSAGE} from '@/lib/chatbot/prompt';
+import styles from './ChatWidget.module.css';
+type Msg={role:'user'|'assistant';content:string};
+function rich(text:string){return text.split(/(\[[^\]]+\]\(https:\/\/[^\s)]+\)|\*\*[^*]+\*\*)/g).map((part,i)=>{const link=part.match(/^\[([^\]]+)\]\((https:\/\/[^\s)]+)\)$/);if(link){try{const u=new URL(link[2]);if(['www.prodbygenks.com','prodbygenks.com','wa.me'].includes(u.hostname)&&!u.username&&!u.password)return <a key={i} href={u.href} target={u.hostname==='wa.me'?'_blank':undefined} rel="noopener noreferrer">{link[1]}</a>;}catch{}return <span key={i}>{link[1]}</span>;}return part.startsWith('**')?<strong key={i}>{part.slice(2,-2)}</strong>:part;});}
+export default function ChatWidget({enabled=false}:{enabled?:boolean}){
+ const pathname=usePathname(),[open,setOpen]=useState(false),[messages,setMessages]=useState<Msg[]>([]),[input,setInput]=useState(''),[loading,setLoading]=useState(false);
+ const dialog=useRef<HTMLDialogElement>(null),launcher=useRef<HTMLButtonElement>(null),list=useRef<HTMLDivElement>(null),busy=useRef(false),abort=useRef<AbortController|null>(null);
+ useEffect(()=>{const el=dialog.current;if(!el||!open)return;el.showModal();return()=>el.close();},[open]);
+ useEffect(()=>{list.current?.scrollTo({top:list.current.scrollHeight,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});},[messages,loading]);
+ useEffect(()=>()=>abort.current?.abort(),[]);
+ const close=()=>{setOpen(false);launcher.current?.focus();};
+ async function send(value:string){const content=value.trim();if(!content||busy.current||!enabled)return;busy.current=true;setLoading(true);setInput('');const next:Msg[]=[...messages,{role:'user',content}];setMessages(next);abort.current=new AbortController();try{const history=next.slice(-11);while(history.length&&history[0].role!=='user')history.shift();const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history}),signal:abort.current.signal});const b=await r.json();setMessages([...next,{role:'assistant',content:b.reply??'Riprova tra qualche minuto.'}]);}catch{setMessages([...next,{role:'assistant',content:'Connessione non disponibile. Riprova oppure apri la pagina Servizi.'}]);}finally{busy.current=false;setLoading(false);}}
+ function submit(e:FormEvent){e.preventDefault();void send(input);}
+ if(pathname.startsWith('/admin'))return null;
+ return <div className={styles.root}>
+ <dialog className={styles.panel} ref={dialog} aria-labelledby="genks-chat-title" onCancel={close}><header className={styles.header}><div><strong id="genks-chat-title">Assistente GENKS</strong><span>{enabled?'Servizi · preventivi · disponibilità':'In preparazione'}</span></div><button type="button" aria-label="Chiudi chat" onClick={close}>×</button></header><div className={styles.messages} ref={list} role="log" aria-live="polite"><div className={styles.bot}><p>{enabled?WELCOME_MESSAGE:'Il nuovo assistente è in preparazione. Puoi già scegliere e configurare i servizi dalla pagina dedicata.'}</p>{!enabled&&<Link href="/services">Scegli il servizio →</Link>}</div>{enabled&&!messages.length&&<div className={styles.quick}>{QUICK_REPLIES.map(q=><button type="button" key={q} onClick={()=>void send(q)}>{q}</button>)}</div>}{messages.map((m,i)=><div className={m.role==='user'?styles.user:styles.bot} key={i}><p>{m.role==='user'?m.content:rich(m.content)}</p></div>)}{loading&&<p role="status">Verifico la richiesta…</p>}</div>{enabled&&<form className={styles.form} onSubmit={submit}><label className={styles.inputLabel}>La tua domanda<textarea rows={2} maxLength={1000} value={input} onChange={e=>setInput(e.target.value)} placeholder="Es. quanto costa un EP da 6 brani?"/></label><button disabled={loading||!input.trim()} aria-label="Invia messaggio">↑</button></form>}<p className={styles.disclaimer}>Assistente automatico. Non inserire dati personali, ordini o file. <Link href="/legal/privacy">Privacy</Link></p></dialog>
+ <button ref={launcher} data-genks-chat-launcher className={styles.launcher} type="button" aria-haspopup="dialog" aria-expanded={open} aria-label="Apri assistente GENKS" onClick={()=>setOpen(true)}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h16v12H9l-5 4V5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg><span>Chiedi a GENKS</span></button>
+ </div>;
+}

@@ -1,3 +1,4 @@
+import {quotePreventivo} from '@/lib/chatbot/checkout';
 import {getPublicDiscounts} from '@/lib/public-discounts-server';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
@@ -21,10 +22,10 @@ export async function POST(request:Request){
  try{
   const text=await request.text();if(text.length>150000)throw Error('Ordine troppo grande.');
   const raw=JSON.parse(text);
-  const data=z.object({name:z.string().trim().min(2).max(120),artistName:z.string().trim().max(120),email:z.email(),phone:z.string().trim().min(6).max(40),accepted:z.literal('on'),earlyStart:z.boolean(),withdrawalAcknowledged:z.boolean(),contactOwner:z.string().max(100),saveContact:z.boolean(),requestId:z.uuid(),direct:z.boolean().default(false),items:z.unknown(),expectedTotal:z.number().int().min(50),website:z.literal('')}).parse(raw);
+  const data=z.object({name:z.string().trim().min(2).max(120),artistName:z.string().trim().max(120),email:z.email(),phone:z.string().trim().min(6).max(40),accepted:z.literal('on'),earlyStart:z.boolean(),withdrawalAcknowledged:z.boolean(),contactOwner:z.string().max(100),saveContact:z.boolean(),requestId:z.uuid(),direct:z.boolean().default(false),items:z.unknown().optional(),preventivoCode:z.string().max(16000).optional(),quoteDetails:z.unknown().optional(),quotePayment:z.enum(['card','cash']).default('card'),expectedTotal:z.number().int().min(50),website:z.literal('')}).parse(raw);
   if(data.earlyStart&&!data.withdrawalAcknowledged)throw Error('Conferma di aver letto le condizioni dell’avvio anticipato.');
   if(!previewRecipientAllowed(data.email))throw Error('Destinatario non autorizzato in questa anteprima.');
-  const quote=quoteOrder(data.items,data.earlyStart,new Date(),await getPublicDiscounts());
+  const quote=data.preventivoCode?quotePreventivo(data.preventivoCode,data.quoteDetails,data.quotePayment,data.earlyStart,new Date(),true):quoteOrder(data.items,data.earlyStart,new Date(),await getPublicDiscounts());
   if(quote.total!==data.expectedTotal)throw Error('Il listino è cambiato. Ricarica il riepilogo prima di pagare.');
   if(quote.cardNow&&!await remoteProjectPaymentsReady())throw Error('Pagamento con carta temporaneamente non disponibile. Riprova tra poco.');
   for(const part of quote.parts){const sel=part.selection;if(part.hours&&sel.date){
@@ -44,7 +45,7 @@ export async function POST(request:Request){
   if(previous.data?.checkout_url&&previous.data.status==='open')return Response.json({url:previous.data.checkout_url});
   const session=await getStripe().checkout.sessions.create({mode:'payment',locale:'it',payment_method_types:['card'],customer_email:data.email,expires_at:Math.floor(new Date(prepared.expires_at).getTime()/1000),
    line_items:cardOrderLines(quote).map(l=>({quantity:1,price_data:{currency:"eur",unit_amount:l.amount,product_data:{name:("GENKS · "+l.name).slice(0,250),description:"Le condizioni ricevute distinguono totale ordine, importo iniziale e saldo successivo."}}})),
-   success_url:`${origin}/services/ordine?session={CHECKOUT_SESSION_ID}`,cancel_url:`${origin}/services/checkout?${data.direct?"direct=1&":""}cancelled=1`,metadata:{payment_type:'service_cart_v8',quote_id:prepared.quote_id!,project_id:prepared.project_id}},
+   success_url:`${origin}/services/ordine?session={CHECKOUT_SESSION_ID}`,cancel_url:`${origin}/services/checkout?${data.preventivoCode?"preventivo="+encodeURIComponent(data.preventivoCode)+"&":""}${data.direct?"direct=1&":""}cancelled=1`,metadata:{payment_type:'service_cart_v8',quote_id:prepared.quote_id!,project_id:prepared.project_id}},
    {idempotencyKey:`genks-v8-${prepared.quote_id}`});
   const saved=await db.from('service_quotes').update({stripe_session_id:session.id,checkout_url:session.url,status:'open'}).eq('id',prepared.quote_id).in('status',['creating','open']).select('id').single();
   if(saved.error||!session.url){if(session.status==='open')await getStripe().checkout.sessions.expire(session.id);throw Error('Pagamento non preparato. Nessun addebito effettuato.');}

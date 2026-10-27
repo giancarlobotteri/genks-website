@@ -1,3 +1,4 @@
+import ChatWidget from '@/components/ChatWidget';
 import {UtilityDock} from "@/components/layout/utility-dock";
 import { BEATS_ENABLED, CART_ENABLED } from "@/config/features";
 import { InterestMemory } from "@/components/commerce/interest-memory";
@@ -71,7 +72,7 @@ export default async function RootLayout({
               <main id="main-content" tabIndex={-1}>
                 {children}
               </main>
-              <UtilityDock>{CART_ENABLED && <CartRail discounts={await getPublicDiscounts()} />}</UtilityDock>
+              <UtilityDock><ChatWidget enabled={process.env.GENKS_GEMINI_ENABLED==='true'&&Boolean(process.env.GEMINI_API_KEY)}/>{CART_ENABLED && <CartRail discounts={await getPublicDiscounts()} />}</UtilityDock>
               <Footer />
               {BEATS_ENABLED && <PersistentPlayer />}
               <MotionObserver />

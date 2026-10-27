@@ -75,7 +75,7 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
     const uiTargets = [
       [".genks-header", 0, 0, true], [".genks-menu-toggle", -180, 0, false],
       [".genks-header-logo", 0, -110, false], [".cart-rail", 380, 0, true],
-      ["[data-genks-cart-launcher]", 110, 0, true], [".cart-rail-toggle", 110, 0, true], [".offers-rail", -380, 0, true], [".offers-toggle", -110, 0, true], [".cart-rail-backdrop", 0, 0, true],
+      ["[data-genks-chat-launcher]", 110, 0, true], ["[data-genks-cart-launcher]", 110, 0, true], [".cart-rail-toggle", 110, 0, true], [".offers-rail", -380, 0, true], [".offers-toggle", -110, 0, true], [".cart-rail-backdrop", 0, 0, true],
       [".persistent-player", 0, 140, true], [".site-footer", 0, 140, true],
     ].flatMap(([selector, x, y, fade]) => {
       const element = document.querySelector<HTMLElement>(String(selector));
