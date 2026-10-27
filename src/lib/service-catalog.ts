@@ -1,8 +1,8 @@
 import { projectPrice, recordingHourlyCents } from "./service-rates.ts";
 export const extraRates = { rush:1999, vocal:0, versions:0, revision:999 } as const;
-export const customBeat = {total:3499,deposit:1750,balance:1749,businessDays:10,revisions:1} as const;
+export const customBeat = {total:3499,deposit:3499,balance:0,businessDays:10,revisions:1} as const;
 export const packages = {
- ep:{name:"EP Pack",price:37988,separate:53980,songs:4,service:"mix_master",studio:false,description:"4 produzioni GENKS, mix, master e 2 ore di studio per brano; una revisione inclusa"},
+ ep:{name:"EP Pack",price:35996,separate:53980,songs:4,service:"mix_master",studio:false,description:"4 produzioni GENKS, mix, master e 2 ore di studio per brano; una revisione inclusa"},
  masters:{name:"Master Pack",price:6999,separate:8997,songs:3,service:"master",studio:false,description:"3 master stereo, una revisione per brano"},
  voice:{name:"Registrazione + mix/master",price:6997,separate:7997,songs:1,service:"mix_master",studio:true,description:"Ore di studio scelte + mix della fascia + master, con 10 € di risparmio"},
  hours:{name:"Blocco 5 ore di registrazione",price:7999,separate:9995,songs:0,service:"recording",studio:true,description:"5 ore entro 90 giorni, massimo 2 appuntamenti"},

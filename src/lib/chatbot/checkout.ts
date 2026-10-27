@@ -24,7 +24,7 @@ function drafts(rows:Riga[]):Draft[]{
   for(let i=0;i<count;i++){
    const hours=m.tipo==='credits'?5:m.tipo==='recording'?Math.min(8,(m.ore??0)-i*8):m.ore??0;
    const amount=m.tipo==='credits'?PREZZI.pacchetti.blocco5Ore:m.tipo==='custom'?PREZZI.beat:m.tipo==='recording'?hours*recordingHourlyCents:row.centesimi;
-   const balance=m.tipo==='credits'?0:m.tipo==='custom'?amount/2:m.tipo==='recording'?amount-recordingDepositCents(amount):m.saldo??0;
+   const balance=m.tipo==='credits'?0:m.tipo==='custom'?0:m.tipo==='recording'?amount-recordingDepositCents(amount):m.saldo??0;
    const rawStudio=m.studioAmount??(m.tipo==='turnkey'?2*recordingHourlyCents*PREZZI.pacchetti.singoloChiaviInMano/(PREZZI.beat+2*recordingHourlyCents+PREZZI.mixMaster[0]):m.tipo==='voice'?2*recordingHourlyCents*PREZZI.pacchetti.registrazioneMixMaster/(2*recordingHourlyCents+PREZZI.mixMaster[0]):hours?amount:0);
    const rawCustom=m.customAmount??(m.tipo==='turnkey'?PREZZI.beat*PREZZI.pacchetti.singoloChiaviInMano/(PREZZI.beat+2*recordingHourlyCents+PREZZI.mixMaster[0]):m.tipo==='custom'?amount:0);
    result.push({tipo:m.tipo,title:m.tipo==='custom'?`Beat su misura ${i+1} di ${count}`:row.personalizzato?'Offerta su misura · '+row.descrizione:row.descrizione,lines:[{name:count>1?`${row.descrizione} · quota ${i+1} di ${count}`:row.descrizione,amount}],total:amount,rawBalance:balance,hours,credit:m.tipo==='credits',beat:m.tipo==='turnkey'||m.tipo==='custom'?1:0,songs:m.brani??[],personalizzato:!!row.personalizzato,studioAmount:Math.round(rawStudio),customAmount:Math.round(rawCustom)});

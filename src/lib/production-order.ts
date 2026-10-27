@@ -1,3 +1,4 @@
+import {ratesV10} from './service-pricing-v10.ts';
 import {calculateProduction,type ProductionInput} from './production-calculator.ts';
 import {buildRecordingQuote} from './recording-quote.ts';
 import {firstVersionEstimate} from './service-delivery.ts';
@@ -29,7 +30,7 @@ export function expandProductionBookings(quote:OrderQuote,early:boolean,now:Date
    const a=r.appointments![i],audio=p.lines.filter(l=>l.name.startsWith(`Brano ${i+1} ·`)),night=buildRecordingQuote(a.date,a.time,2+a.extraHours).night,studio=a.extraHours*1999+night;
    const total=audio.reduce((n,l)=>n+l.amount,0)+studio,balance=0,dueNow=total;
    const lines=[...audio,...(studio?[{name:`Registrazione · 2 ore incluse + ${a.extraHours} aggiuntive; supplemento notturno ${night/100} €`,amount:studio,payNow:studio}]:[])];
-   return {...p,title:`${p.title} · ${r.songs[i].trackTitle}`,selection:{...r,production:undefined,songs:[r.songs[i]],appointments:undefined,date:a.date,time:a.time,hours:2+a.extraHours,extraHours:a.extraHours},total,listTotal:total+3998,saving:3998,deposit:total,dueNow,cardNow:r.payment==='card'?dueNow:0,cashNow:r.payment==='cash'?dueNow:0,balance,studioAmount:studio,customAmount:3499,hours:2+a.extraHours,bookingAmount:studio,bookingDeposit:studio,guarantees:[p.guarantees[i]],lines,firstVersion:firstVersionEstimate(now,false,early,10)};
+   return {...p,title:`${p.title} · ${r.songs[i].trackTitle}`,selection:{...r,production:undefined,songs:[r.songs[i]],appointments:undefined,date:a.date,time:a.time,hours:2+a.extraHours,extraHours:a.extraHours},total,listTotal:total+3998+ratesV10.projectSongSaving,saving:3998+ratesV10.projectSongSaving,deposit:total,dueNow,cardNow:r.payment==='card'?dueNow:0,cashNow:r.payment==='cash'?dueNow:0,balance,studioAmount:studio,customAmount:ratesV10.beat-ratesV10.projectSongSaving,hours:2+a.extraHours,bookingAmount:studio,bookingDeposit:studio,guarantees:[p.guarantees[i]],lines,firstVersion:firstVersionEstimate(now,false,early,10)};
   });
  });
  if(parts.length>20)throw Error('Puoi acquistare al massimo 20 servizi o sessioni nello stesso ordine.');

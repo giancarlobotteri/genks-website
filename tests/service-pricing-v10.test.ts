@@ -29,12 +29,12 @@ test('starting package fees and selected studio time are charged once; no false 
 });
 test('EP is GENKS only with two included recording hours for each song',()=>{
   const q=projectPackageV10('ep',Array.from({length:6},()=>({source:'genks',tracks:8})));
-  assert.equal(q.total,56982);assert.equal(q.includedMinutes,720);assert.equal(q.saving,23988);
+  assert.equal(q.total,53994);assert.equal(q.includedMinutes,720);assert.equal(q.saving,26976);
   assert.throws(()=>projectPackageV10('ep',[{source:'external',tracks:8},{source:'genks',tracks:8}]));
 });
 test('album uses GENKS productions and includes every audio service',()=>{
   const q=projectPackageV10('album',[{source:'genks',tracks:8},{source:'genks',tracks:18}]);
-  assert.equal(q.rows[0].total,9497);assert.equal(q.rows[1].total,13497);
+  assert.equal(q.rows[0].total,8999);assert.equal(q.rows[1].total,12999);
   assert.equal(q.includedMinutes,240);
   assert.throws(()=>projectPackageV10('album',[{source:'external',tracks:8},{source:'genks',tracks:8}]));
 });

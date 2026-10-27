@@ -4,7 +4,7 @@ export const pricingVersion = '2026-10-27-v11';
 export const ratesV10 = {
   master: 2999, beat: 3499, recordingHour: 1999, nightHour: 2999,
   masterPack: 6999, fiveHours: 7999, 
-  includedHoursPerSong: 2, extraTrack: 200,
+  includedHoursPerSong: 2, extraTrack: 200, projectSongSaving:498,
 } as const;
 export const mixTiersV10 = [
   {min:1,max:8,price:2999}, {min:9,max:16,price:4999},
@@ -49,7 +49,7 @@ export function projectPackageV10(format:'ep'|'album',songs:ProjectSongV10[]){
   if(!['ep','album'].includes(format)||!Array.isArray(songs)||songs.length<2||songs.length>20)throw Error('Progetto non valido.');
   const rows=songs.map(s=>{
     if(!s||s.source!=='genks')throw Error('EP e album comprendono solo produzioni GENKS, anche in collaborazione con altri producer.');
-    const base=ratesV10.beat;
+    const base=ratesV10.beat-ratesV10.projectSongSaving;
     const mix=mixPriceV10(s.tracks),master=ratesV10.master;
     const total=cents(base+mix+master);
     const recordingMinutes=ratesV10.includedHoursPerSong*60;
