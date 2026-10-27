@@ -12,6 +12,8 @@ import {fromRomeWallTime} from '@/lib/rome-time';
 import {getGoogleBusyRanges,hasGoogleBusyCalendar} from '@/lib/google-calendar';
 async function assertNoPaymentReview(partId:string){
  const db=createSupabaseAdminClient();const part=await db.from('service_order_parts_v8').select('project_id').eq('id',partId).single();if(part.error)redirect('/admin/payments?error=invalid');
+ const project=await db.from('service_projects').select('archived_at,status').eq('id',part.data.project_id).single();
+ if(project.error||project.data.archived_at||project.data.status==='cancelled')redirect('/admin/payments?error=archived');
  const payments=await db.from('payments').select('id').eq('project_id',part.data.project_id).or('disputed.eq.true,refunded_cents.gt.0,review_reason.not.is.null').limit(1);
  if(payments.error||payments.data?.length)redirect('/admin/payments?error=review');
 }
