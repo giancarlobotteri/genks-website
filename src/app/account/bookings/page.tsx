@@ -11,9 +11,9 @@ import { CustomerQuote, type CustomerServiceQuote } from "@/components/services/
 export default async function BookingsPage({ searchParams }: { searchParams: Promise<AccountListQuery> }) {
   const q=await searchParams; const sort=accountSort(q.sort); const states=["confirmed", "completed", "pending", "approved_awaiting_payment", "cancelled", "rejected", "no_show"]; const status=states.includes(q.status??"")?q.status!:""; const start=await operationsStart();
   const user=await claimGuestPurchases();const db=await createSupabaseServerClient();
-  let query=db.from("bookings").select("price_cents,id,reference,starts_at,ends_at,status",{count:"exact"}).eq("customer_id",user.id).gte("created_at",start);
+  let query=db.from("bookings").select("price_cents,id,reference,starts_at,ends_at,status",{count:"exact"}).eq("customer_id",user.id).is("archived_at",null).gte("created_at",start);
   if(status)query=query.eq("status",status);
-  let countQuery=db.from("bookings").select("id",{count:"exact",head:true}).eq("customer_id",user.id).gte("created_at",start);
+  let countQuery=db.from("bookings").select("id",{count:"exact",head:true}).eq("customer_id",user.id).is("archived_at",null).gte("created_at",start);
   if(status)countQuery=countQuery.eq("status",status); const counter=await countQuery;
   if(counter.error)throw new Error("Impossibile leggere il numero di risultati.");
   const total=counter.count??0; const page=Math.min(accountPage(q.page),Math.max(1,Math.ceil(total/5)));

@@ -1,4 +1,9 @@
 const messages: Record<string,string> = {
+ booking_removed:"Prenotazione eliminata: orario liberato. Puoi ritrovarla in Eliminate. Nessun pagamento modificato.",
+ booking_restored:"Prenotazione ripristinata nella lista come annullata. Nessun orario riservato.",
+ remove_error:"Prenotazione non eliminata: ricarica e riprova.",
+ remove_payment_pending:"Prenotazione non eliminata: esiste un pagamento in preparazione o da verificare. Controlla prima gli incassi dell’ordine.",
+ remove_calendar_error:"Prenotazione non eliminata: impossibile rimuovere il relativo evento dal calendario. Riprova.",
  package_saved: "Ore del pacchetto aggiornate.", package_error: "Aggiornamento non eseguito: verifica pagamento, ore residue e scadenza.",
   extra_time_saved:"Tempo extra e totale da incassare aggiornati. Nessun pagamento automatico registrato.",
   extra_time_error:"Tempo extra non aggiornato: ricarica la pagina e verifica che la sessione sia terminata e il pagamento non sia già stato registrato.",

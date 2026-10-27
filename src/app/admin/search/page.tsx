@@ -17,7 +17,7 @@ export default async function AdminSearch({searchParams}:{searchParams:Promise<{
   const rows:Array<{id:string;type:string;reference:string;customer:string;email:string;status:string;amount:number|null;fields:{label:string;value:string}[];notes?:string;target:string}>=[];
   if(safe.length>=3){
     const [bookings,projects,orders,live,test]=await Promise.all([
-      db.from("bookings").select("id,reference,name,email,status,starts_at,ends_at,price_cents,phone,notes").ilike("reference",`%${safe}%`).limit(25),
+      db.from("bookings").select("id,reference,name,email,status,starts_at,ends_at,price_cents,phone,notes").is("archived_at",null).ilike("reference",`%${safe}%`).limit(25),
       db.from("service_projects").select("id,reference,name,email,status,price_cents,track_title,service,description,commerce_snapshot").ilike("reference",`%${safe}%`).limit(25),
       db.from("orders").select("id,order_number,customer_name,customer_email,status,total_cents,created_at").ilike("order_number",`%${safe}%`).limit(25),
       getBusinessSales(true,true),getBusinessSales(false,true),
