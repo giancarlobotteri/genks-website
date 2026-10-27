@@ -27,3 +27,16 @@ Vercel → team zenvy → genks-website → Settings → Environment Variables �
 - CF_MODEL facoltativa: @cf/qwen/qwen3-30b-a3b-fp8. Non serve inserirla perché è già il default.
 - AI_PROVIDER facoltativa: cloudflare. Nessun passaggio automatico a Gemini.
 Dopo il salvataggio serve una pubblicazione che carichi le nuove variabili. Mantieni Workers Free; a quota gratuita esaurita Cloudflare ferma le richieste, e il widget propone assistenza o pagina Servizi.
+
+## Collaudo finale dal sito pubblicato
+29 richieste reali verificate nel browser con screenshot individuale, comprese tutte quelle indicate dal proprietario e una verifica aggiuntiva di risposta No fuori orario. Prezzi confrontati con il totale, non con la semplice presenza della cifra nel testo. Corrette durante il collaudo: quantità EP duplicate, componenti/extra non richiesti e date inventate per domande sul solo prezzo delle ore.
+
+Le risposte economiche sono ora composte dal server direttamente dalla calcolatrice. La normalizzazione verifica quantità esplicitamente richieste ed esclude extra non richiesti; non cambia il listino né le formule. Le risposte sulle regole commerciali derivano dalle regole del sito. Disponibilità sì/no verificata per la durata richiesta; in assenza di durata per un orario preciso si verifica un’ora, dichiarandolo.
+
+Verificato realmente: link EP6 → checkout 419,99 €; link studio → sabato 31 ottobre, 15:00, 3 ore, totale 59,97 €; preventivo manomesso rifiutato. Precompilazione contatti confermata nel checkout, senza inviare il modulo. Widget controllato a 1280x720, 390x844 e 844x390: nessuna larghezza eccedente, strumenti separati, carrello al centro-destra in orizzontale. Prove senza pagamenti reali.
+
+141 test automatici superati, inclusi protezione dei dati nella cronologia, modello/provider bloccati alle scelte autorizzate, calcolo e ordinazione, garanzie, anticipo, extra e date. Le schermate sono in qa/chatbot-live/; il rapporto illustrato finale viene consegnato separatamente al proprietario.
+
+Configurazione Cloudflare salvata direttamente dall’utente su Vercel e collaudata. Non resta alcun inserimento di chiavi da fare per questa attivazione. Workers Free mantenuto; nessun acquisto, upgrade o chiamata Gemini.
+
+SHA-256 pricing.ts originale v3: 163b9fa205f6d4123e105413027d8180b2320aada844da5f9191b92c3ab1040a

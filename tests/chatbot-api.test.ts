@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import {z} from 'zod';
-function route({enabled=true,allowed=true,answer=async()=> 'Risposta GENKS'}:{enabled?:boolean;allowed?:boolean;answer?:()=>Promise<string|null>}={}){
+function route({enabled=true,allowed=true,answer=async()=> 'Risposta GENKS'}:{enabled?:boolean;allowed?:boolean;answer?:(messages:unknown)=>Promise<string|null>}={}){
  const code=ts.transpileModule(fs.readFileSync(new URL('../src/app/api/chat/route.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
  const exports:Record<string,unknown>={};
  const modules:Record<string,unknown>={'zod':{z},'@/lib/chatbot/booking-request':{recordingHoursOnly:()=>null},'@/lib/chatbot/pricing':{},'@/lib/chatbot/quote-request':{},'@/lib/chatbot/booking':{answerBookingRequest:async()=>null},'@/lib/chatbot/answers':{knownAnswer:()=>null},'@/lib/chatbot/providers':{rispondi:answer},'@/lib/security/request-limit':{allowPublicRequest:async()=>allowed}};
@@ -16,3 +16,5 @@ test('chat provider stays off without credentials; no token is returned',async()
 test('foreign origins and quota fail closed without provider requests',async()=>{assert.equal((await route()(request([{role:'user',content:'Ciao'}],'https://evil.invalid'))).status,403);assert.equal((await route({allowed:false})(request([{role:'user',content:'Ciao'}]))).status,429);});
 test('personal contacts and file URLs never reach the provider',async()=>{let calls=0;const run=route({answer:async()=>{calls++;return 'test';}});for(const content of ['scrivi a me@example.com','il telefono +39 345 1234567','file https://example.com/audio'])assert.match((await (await run(request([{role:'user',content}]))).json()).reply,/Non inserire/);assert.equal(calls,0);});
 test('a provider quota error returns the safe fallback',async()=>{const run=route({answer:async()=>null});const body=await (await run(request([{role:'user',content:'Ciao'}]))).text();assert.ok(!body.includes('TEST-NOT-A-TOKEN'));assert.match(body,/scegliere un servizio/);});
+
+test('previous private text is omitted without permanently blocking the conversation',async()=>{let received='';const run=route({answer:async messages=>{received=JSON.stringify(messages);return 'Risposta GENKS';}});const r=await run(request([{role:'user',content:'me@example.com'},{role:'assistant',content:'Non inserire dati personali.'},{role:'user',content:'Quanto costa?'}]));assert.equal(r.status,200);assert.ok(!received.includes('me@example.com'));assert.match(received,/omesso/);});

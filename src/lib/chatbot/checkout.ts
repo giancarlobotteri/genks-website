@@ -6,7 +6,7 @@ import {projectPrice,recordingHourlyCents} from '../service-rates.ts';
 import {firstVersionEstimate} from '../service-delivery.ts';
 import {buildRecordingQuote} from '../recording-quote.ts';
 
-const song=z.object({servizio:z.enum(['mix','master','mix_master']),quantita:z.number().int().min(1).max(40).optional(),file:z.number().int().min(1).max(48).optional(),artisti_correzione_voce:z.number().int().min(0).max(10).optional(),revisioni_extra:z.number().int().min(0).max(2).optional(),consegna_veloce:z.boolean().optional()}).strict();
+const song=z.object({servizio:z.enum(['mix','master','mix_master']),quantita:z.number().int().min(1).max(40).optional(),file:z.number().int().min(1).max(48).optional(),artisti_correzione_voce:z.number().int().min(0).max(20).optional(),revisioni_extra:z.number().int().min(0).max(2).optional(),consegna_veloce:z.boolean().optional()}).strict();
 export const quoteInputSchema=z.object({brani:z.array(song).max(40).optional(),ore_registrazione:z.number().int().min(0).max(200).optional(),mezzore_dopo_mezzanotte:z.number().int().min(0).max(20).optional(),beat_su_misura:z.number().int().min(0).max(20).optional(),usa_pacchetti:z.boolean().optional()}).strict().refine(x=>(x.brani??[]).reduce((n,b)=>n+(b.quantita??1),0)<=40,'Massimo 40 brani per preventivo.');
 const infoSchema=z.object({date:z.union([z.iso.date(),z.literal('')]).default(''),time:z.union([z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/),z.literal('')]).default(''),titles:z.array(z.string().trim().min(1).max(160)).max(40).default([]),files:z.array(z.string().max(2000)).max(40).default([])}).strict();
 export const quoteDetailsSchema=z.array(infoSchema).max(20);

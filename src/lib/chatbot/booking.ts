@@ -20,5 +20,5 @@ export async function answerBookingRequest(text:string){
  const options=selected?.disponibile?r.orari.filter(x=>x.inizio===selected.inizio):r.orari.filter(x=>x.inizio.endsWith(':00')||x.inizio.endsWith(':30')).slice(0,6);
  let quote='';
  if(selected?.disponibile){const night=buildRecordingQuote(r.data,selected.inizio,r.ore).night/999;const q=calcolaPreventivo({ore_registrazione:r.ore,mezzore_dopo_mezzanotte:night,usa_pacchetti:false});quote=`Totale della sessione: **${q.totale}**. Anticipo: **${q.da_pagare_subito}**; saldo ${q.saldo_successivo}.`+(night?' Il supplemento dopo mezzanotte è già incluso.':'');}
- return [response,quote,...options.map(x=>`[${x.inizio} · scegli e conferma](${x.link})`),r.ore===1?'Ho verificato un’ora: per una sessione più lunga dimmi la durata.':'Disponibilità verificata per tutta la durata indicata.','La sessione non è ancora prenotata: si conferma dopo il pagamento dell’anticipo.'].filter(Boolean).join('\n\n');
+ return [response,quote,options.map(x=>`[${x.inizio} · scegli e conferma](${x.link})`).join('\n'),r.ore===1?'Ho verificato un’ora: per una sessione più lunga dimmi la durata.':'Disponibilità verificata per tutta la durata indicata.','La sessione non è ancora prenotata: si conferma dopo il pagamento dell’anticipo.'].filter(Boolean).join('\n\n');
 }
