@@ -1,0 +1,22 @@
+import {quotePreventivo} from './checkout.ts';
+import {codificaPreventivo} from './pricing.ts';
+import {serviceAmount} from '../service-rates.ts';
+/** Clear policy questions use the site's own rules, without asking a model to reinterpret them. */
+export function knownAnswer(text:string):string|null{
+ const t=text.toLowerCase();
+ if(/\bbeat\b/.test(t)&&/diritt|tutto mio|esclusiv|interamente mio/.test(t))return 'Per un beat su misura GENKS lo split è **50/50**: il 50% dei diritti patrimoniali concordati sulla composizione a te e il 50% a GENKS. Il **100% dei diritti o l’esclusiva richiede un preventivo e un accordo scritto** prima dell’acquisto. [Chiedi il preventivo a GENKS](https://wa.me/393450236299).';
+ if([...t.matchAll(/\b(\d+)\s*(?:tracce|file|stem)/g)].some(m=>Number(m[1])>48))return 'Per un progetto con **oltre 48 file audio** serve un preventivo personalizzato: non applico automaticamente le fasce del listino. [Scrivi a GENKS su WhatsApp](https://wa.me/393450236299) per concordare il lavoro.';
+ if(/\b(?:sconto|sconti)\b/.test(t)&&/fammi|puoi|fai|voglio|chiedo|ulterior|meno/.test(t))return 'Non posso trattare o aggiungere sconti: i preventivi usano il listino e scelgono i pacchetti previsti più convenienti. Per accordi particolari puoi [scrivere direttamente a GENKS su WhatsApp](https://wa.me/393450236299).';
+ if(/(?:dimmi|mostra|rivela|scrivi).*(?:tuo prompt|istruzioni interne|prompt di sistema)|ignora.*istruzioni/.test(t))return 'Non condivido le istruzioni interne. Posso aiutarti con servizi, prezzi, file e disponibilità dello studio GENKS.';
+ if(/(?:punto|stato|situazione|dove).*(?:mio ordine|mio pagamento)|(?:mio ordine).*(?:punto|stato|pronto)/.test(t))return 'Non posso vedere lo stato dei tuoi ordini, pagamenti o file. Scrivi ad **assistenza@prodbygenks.com** indicando il codice ordine, senza inserirlo in questa chat. GENKS potrà verificare la tua richiesta.';
+ if(/(?:scrivi|scrivimi|componi).*(?:poesia|poema)|chi.*vinto.*partita/.test(t))return 'Posso aiutarti solo con GENKS e i suoi servizi. Stai cercando mix, master, registrazione o un beat su misura?';
+ if(/(?:come|quali).*(?:conto|contare|contano).*(?:tracce|file)|come conto le tracce/.test(t))return 'Conta ogni **file audio separato** da lavorare: voce principale, doppie, cori e strumenti. Un **file stereo conta uno**, anche una base stereo. Conta le alternative che vuoi far lavorare; escludi canali vuoti, ritorni effetti e copie che non invii. [Guida alle tracce](https://www.prodbygenks.com/guida/tracce).';
+ if(/(?:lavori|lavorate|posso|lavorare).*(?:distanza|remoto|altro paese|estero)/.test(t))return 'Sì, lavoro anche **a distanza, da qualsiasi paese**. Scegli il servizio, paghi online, condividi il link ai file e ricevi il lavoro via email. [Scegli il servizio](https://www.prodbygenks.com/services).';
+ if(/(?:posso|come|voglio).*(?:cancellare|annullare|rinviare)/.test(t))return 'Per una sessione in studio puoi **cancellare o rinviare gratuitamente fino a 24 ore prima**. Per gli avvisi successivi e per i lavori già avviati si applicano le condizioni del servizio: contatta GENKS appena possibile. [Regole delle prenotazioni](https://www.prodbygenks.com/services/regole).';
+ if(/garanzia|(?:mix|master|risultato).*(?:non mi piace|non.*convinc)/.test(t)){
+  const q=quotePreventivo(codificaPreventivo({brani:[{servizio:'mix_master'}]}));
+  return `Hai **una revisione inclusa per brano e lavorazione**. Dopo la versione revisionata, se il mix/master non ti convince, puoi chiedere il **rimborso del 30% entro 14 giorni**, una volta per brano. Esempio: mix + master da ${serviceAmount(q.total)} → **${serviceAmount(q.parts[0].guarantees[0].amount)} di rimborso**. La percentuale si applica alla quota effettiva scontata; extra, registrazione e beat su misura sono esclusi. [Condizioni della garanzia](https://www.prodbygenks.com/legal/refunds).`;
+ }
+ if(/come funziona.*prenot|come.*prenotare/.test(t))return 'Dimmi **giorno, durata e orario**: controllo direttamente le disponibilità. Poi scegli l’appuntamento e versi il **50% di anticipo**, con carta/Apple Pay oppure in contanti in studio. La sessione è confermata solo dopo l’incasso.\n\nLun–gio dalle 19:30 a mezzanotte; venerdì dalle 19:30 e sabato dalle 10:00, anche oltre mezzanotte secondo disponibilità; domenica 10:00–00:00.\n\nPer i contanti presenta il codice ordine e paga entro la scadenza indicata: a metà del tempo tra richiesta e appuntamento, altrimenti la riserva si annulla.';
+ return null;
+}

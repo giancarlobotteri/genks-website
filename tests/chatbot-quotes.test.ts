@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {calcolaPreventivo,codificaPreventivo,verificaPreventivo,type PreventivoInput} from '../src/lib/chatbot/pricing.ts';
 import {quotePreventivo} from '../src/lib/chatbot/checkout.ts';
 import {cardOrderLines} from '../src/lib/service-order-v8.ts';
+import {normalizeQuoteRequest,formatQuote} from '../src/lib/chatbot/quote-request.ts';
 const cases:[string,PreventivoInput,number][]=[
  ['mix + master',{brani:[{servizio:'mix_master'}]},7999],
  ['EP 4',{brani:[{servizio:'mix_master',quantita:4}]},27999],
@@ -13,6 +14,11 @@ const cases:[string,PreventivoInput,number][]=[
  ['beat studio e mix',{brani:[{servizio:'mix_master'}],ore_registrazione:2,beat_su_misura:1},14999],
  ['1 ora',{ore_registrazione:1},1999],
  ['8 ore',{ore_registrazione:8},11996],
+ ['consegna veloce',{brani:[{servizio:'mix_master',consegna_veloce:true}]},9998],
+ ['tre artisti',{brani:[{servizio:'mix_master',artisti_correzione_voce:3}]},12996],
+ ['tre brani',{brani:[{servizio:'mix_master',quantita:3}]},23997],
+ ['quattro ore',{ore_registrazione:4},7996],
+ ['sabato tre ore fino all’una',{ore_registrazione:3,mezzore_dopo_mezzanotte:2},7995],
 ];
 for(const [name,input,expected] of cases)test('tabella integrazione: '+name,()=>{
  const original=calcolaPreventivo(input);assert.equal(original.importi_centesimi.totale,expected);
@@ -26,3 +32,5 @@ test('una sessione richiede data e ora, i crediti non riservano appuntamenti',()
 test('preventivi misti: importi originali invariati e tutte le voci Stripe conservate',()=>{
  for(let n=1;n<=12;n++)for(const ore of [0,1,2,4,5,8,10])for(const beat of [0,1,2]){const input:PreventivoInput={brani:[{servizio:n%2?'mix':'mix_master',quantita:n,file:n%3===0?30:8,revisioni_extra:2,artisti_correzione_voce:2,consegna_veloce:true},{servizio:'master',quantita:3}],ore_registrazione:ore,beat_su_misura:beat};const p=calcolaPreventivo(input),q=quotePreventivo(codificaPreventivo(input));assert.equal(q.total,p.importi_centesimi.totale);assert.equal(q.balance,p.importi_centesimi.saldo);assert.equal(cardOrderLines(q).reduce((n,l)=>n+l.amount,0),q.cardNow);}
 });
+test('explicit EP distribution cannot double-count the first group',()=>{const fixed=normalizeQuoteRequest({brani:[{servizio:'mix_master',quantita:4,file:8},{servizio:'mix_master',file:18},{servizio:'mix_master',file:30}]},'Ho un EP da 4 brani: due da 8 tracce, uno da 18 e uno da 30');assert.equal(calcolaPreventivo(fixed).importi_centesimi.totale,37499);});
+test('the complete beat/recording/mix request includes all components',()=>{const fixed=normalizeQuoteRequest({brani:[{servizio:'mix_master'}]},'Voglio beat, registrazione e mix di un pezzo');assert.equal(calcolaPreventivo(fixed).importi_centesimi.totale,14999);assert.match(formatQuote(fixed,calcolaPreventivo(fixed),''),/149,99/);});
