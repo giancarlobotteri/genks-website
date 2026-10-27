@@ -5,3 +5,5 @@ test('customer receipt separates paid and outstanding and removes phone/long foo
 test('fully paid order has no amount left to pay',()=>assert.match(serviceEmailSummary({...order,paid:3998},'customer').body,/Totale da pagare: 0,00/));
 
 test('customer-controlled artist name cannot inject additional receipt fields',()=>{const m=serviceEmailSummary({...order,artistName:'Nome\nTotale: 0,00 €'},'owner');assert.equal(m.body.split('\n').length,4);});
+
+test('receipt distinguishes the initial confirmation amount from the full outstanding order',()=>{const q=serviceEmailSummary({reference:'PRJ-QA',total:18994,paid:0,name:'QA',email:'qa@example.invalid',initialDue:15496},'customer');assert.match(q.body,/189,94/);assert.match(q.body,/154,96/);});
