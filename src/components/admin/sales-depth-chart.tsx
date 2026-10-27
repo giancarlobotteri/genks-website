@@ -1,12 +1,20 @@
 "use client";
-import {memo,useMemo,useState} from 'react';
+import {memo,useMemo,useState,useSyncExternalStore} from 'react';
 import Link from 'next/link';
 import {formatPrice} from '@/lib/format';
 import styles from './sales-depth-chart.module.css';
 type Day={day:string;gross:number;refunded:number;count:number};
 const dayFormatter=new Intl.DateTimeFormat('it-IT',{day:'numeric',month:'short',timeZone:'Europe/Rome'});
 const label=(day:string)=>dayFormatter.format(new Date(day+'T12:00:00Z'));
-export function SalesDepthChart({days,mode,archive}:{days:Day[];mode:string;archive:boolean}){
+type ChartProps={days:Day[];mode:string;archive:boolean};
+const subscribe=()=>()=>{};
+const clientSnapshot=()=>true;
+const serverSnapshot=()=>false;
+export function SalesDepthChart(props:ChartProps){
+ const mounted=useSyncExternalStore(subscribe,clientSnapshot,serverSnapshot);
+ return mounted?<SalesDepthChartView {...props}/>:<section className={`admin-form-card ${styles.card} ${styles.loading}`} aria-label="Grafico interattivo degli incassi" aria-busy="true"><span className="eyebrow">GENKS · SALES OBSERVATORY</span><h2>Le vendite, in prospettiva.</h2><p>Caricamento del grafico…</p><div className={styles.loadingPlot} aria-hidden="true"/></section>;
+}
+function SalesDepthChartView({days,mode,archive}:ChartProps){
  const [depth,setDepth]=useState(18),[selected,setSelected]=useState<string|null>(null),[metric,setMetric]=useState<'gross'|'refunded'>('gross'),[range,setRange]=useState(30),[demo,setDemo]=useState(false);
  const empty=!days.some(d=>d.gross||d.refunded);
  const source=useMemo(()=>demo&&empty?days.map((d,i)=>({...d,gross:[8400,12900,5999,0,17998,24999,7999,14999,31996,10999][i%10],refunded:i%9===0?2400:0,count:i%6+1})):days,[days,demo,empty]);
