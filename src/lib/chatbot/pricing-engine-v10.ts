@@ -28,7 +28,7 @@ export function calcolaPreventivo(input:PreventivoInput):Preventivo{
    const q=calculateProduction(input.progetto,brani=>calcolaPreventivo({brani,usa_pacchetti:false}));
    total=q.total;listino=q.listTotal;balance=q.balance;
    righe.push(...q.lines.map(l=>({descrizione:l.name,prezzo:euro(l.amount),centesimi:l.amount})));
-   note.push('EP e album: produzioni GENKS, mix, master, una revisione e due ore di studio per brano. Il progetto configurato si paga interamente subito; ore ulteriori non previste si conteggiano successivamente. Collaborazioni con altri producer possibili, con accordo sui diritti.');
+   note.push('EP e album: produzioni GENKS, mix, master, una revisione e due ore di studio per brano. Il progetto configurato si paga interamente subito; non si possono aggiungere ore al pacchetto. Eventuali ore ulteriori richiedono una nuova prenotazione separata e il relativo pagamento, secondo disponibilità. Collaborazioni con altri producer possibili, con accordo sui diritti.');
    const out=result();const link=`${site}/services/album?preventivo=${codificaPreventivo(input)}`;return {...out,link_acquisto:link,link:[link]};
   }
   const songs:Brano[]=[];
@@ -48,7 +48,7 @@ export function calcolaPreventivo(input:PreventivoInput):Preventivo{
    const bundled=discountedStudioBundle(audio,hours*ratesV10.recordingHour,beat);
    const studioBest=Math.floor(hours/5)*ratesV10.fiveHours+(hours%5)*ratesV10.recordingHour;
    if(bundled.total<audio+studioBest+beat){
-    add(`${beat?'Singolo chiavi in mano':'Registrazione + mix/master'} · ${hours} ore · ${s.file} tracce audio separate · risparmi 10,00 €`,bundled.total,{tipo:beat?'turnkey':'voice',brani:[s],ore:hours,beat:beat?1:0,saldo:0,studioAmount:bundled.studio,customAmount:bundled.beat},bundled.separate);
+    add(`${beat?'Singolo chiavi in mano':'Registrazione + mix/master'} · ${hours} ore · ${s.file} tracce audio separate · risparmi ${euro(bundled.saving)}`,bundled.total,{tipo:beat?'turnkey':'voice',brani:[s],ore:hours,beat:beat?1:0,saldo:0,studioAmount:bundled.studio,customAmount:bundled.beat},bundled.separate);
     others.splice(others.indexOf(s),1);hours=0;if(beat)beats--;
    }
   }

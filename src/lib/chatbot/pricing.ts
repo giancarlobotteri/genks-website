@@ -1,5 +1,5 @@
 export * from './pricing-engine-v10.ts';
-export const PREZZI={mix:[2999,4999,6999,8999,11999],mixMaster:[5998,7998,9998,11998,14998],master:2999,maggiorazionePacchetto:[0,2000,4000,6000,9000],oraRegistrazione:1999,oraAggiuntivaPacchetto:1999,mezzoraNotturna:500,beat:3499,consegnaVeloce:1999,revisioneExtraBase:999,correzioneVoceBase:0,pacchetti:{singoloChiaviInMano:10496,registrazioneMixMaster:6997,epPack:37988,masterPack:6999,blocco5Ore:7999}} as const;
+export const PREZZI={mix:[2999,4999,6999,8999,11999],mixMaster:[5998,7998,9998,11998,14998],master:2999,maggiorazionePacchetto:[0,2000,4000,6000,9000],oraRegistrazione:1999,oraAggiuntivaPacchetto:1999,mezzoraNotturna:500,beat:3499,consegnaVeloce:1999,revisioneExtraBase:999,correzioneVoceBase:0,pacchetti:{singoloChiaviInMano:9999,registrazioneMixMaster:6997,epPack:37988,masterPack:6999,blocco5Ore:7999}} as const;
 export const PROPORZIONI={ep:{soglia:4,rapporto:1},master:{soglia:3,rapporto:6999/(3*2999)}} as const;
 export const ACQUISTO_PREVENTIVI_ATTIVO=true;
 export const PREVENTIVO_TOOL = {

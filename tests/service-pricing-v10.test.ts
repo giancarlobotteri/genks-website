@@ -24,8 +24,8 @@ test('fixed package savings are genuine euro differences',()=>{
 });
 test('starting package fees and selected studio time are charged once; no false saving',()=>{
   assert.equal(studioPackageV10('voice',8,60).total,6997);
-  assert.equal(studioPackageV10('turnkey',8,60).total,10496);
-  assert.equal(studioPackageV10('turnkey',8,60).saving,1000);
+  assert.equal(studioPackageV10('turnkey',8,60).total,9999);
+  assert.equal(studioPackageV10('turnkey',8,60).saving,1497);
 });
 test('EP is GENKS only with two included recording hours for each song',()=>{
   const q=projectPackageV10('ep',Array.from({length:6},()=>({source:'genks',tracks:8})));

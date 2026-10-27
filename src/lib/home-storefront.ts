@@ -12,7 +12,7 @@ export function homeStorefront(discounts:PublicDiscount[]=[]):StoreCard[]{
  });
  const project=productionSelection({brani:Array.from({length:4},()=>({servizio:"mix_master",produzione:"genks",tracce:8,artisti:1,revisioni_extra:0,consegna_veloce:false})),registrazione:true,ore_extra:0});
  const full=quoteOrder([project],true,new Date(),discounts).parts[0];
- bundleCards.push({id:"production",name:"EP / Album Pack · il più scelto",detail:"4 produzioni GENKS, mix, master e 2 ore di studio per brano. Una revisione inclusa. Cambia soltanto tracce audio separate e ore aggiuntive.",price:full.total,separate:full.listTotal,saving:full.saving,href:"/services/album",group:"bundle",tag:"CONFIGURA BRANO PER BRANO"});
+ bundleCards.push({id:"production",name:"EP / Album Pack · il più scelto",detail:"4 produzioni GENKS, mix, master e 2 ore di studio per brano. Una revisione inclusa. Scegli le tracce audio separate. Per ore ulteriori serve una nuova prenotazione con relativo pagamento, secondo disponibilità.",price:full.total,separate:full.listTotal,saving:full.saving,href:"/services/album",group:"bundle",tag:"CONFIGURA BRANO PER BRANO"});
  bundleCards.sort((a,b)=>a.price-b.price);
  const audio=(id:'mix'|'master'|'mix_master',name:string,detail:string):StoreCard=>{const price=discountPrice(projectRates[id],[id,'projects','services'],discounts);return {id,name,detail,price,separate:projectRates[id],saving:projectRates[id]-price,href:`/services/project?service=${id}`,group:'audio',tag:id==='master'?'MASTER STEREO':'FINO A 8 FILE AUDIO',unit:id==='master'?undefined:'da'};};
  const recording=discountPrice(recordingHourlyCents,['recording','services'],discounts);

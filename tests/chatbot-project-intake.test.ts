@@ -25,13 +25,15 @@ test('an invalid bare count is acknowledged instead of repeating the same count 
  const result=projectIntake([u('EP con produzioni GENKS'),{role:'assistant',content:'Quanti brani vuoi includere nel progetto?'},u('0')]);assert.ok(result&&'reply' in result);assert.match(result.reply,/da 2 a 20/);
 });
 
-test('mixed track distribution survives follow-up extra studio hours and matches the checkout',()=>{
+test('mixed track distribution survives a request for separately booked studio time',()=>{
  const initial=u('EP da 4 brani: due da 8, uno da 18 e uno da 30 tracce');
  const first=projectIntake([initial]);assert.ok(first&&'input' in first);assert.deepEqual(first.input.progetto!.brani.map(b=>b.tracce),[8,8,18,30]);
- const updated=projectIntake([initial,u('aggiungi 2 ore extra di registrazione')]);assert.ok(updated&&'input' in updated);assert.equal(updated.input.progetto!.ore_extra,2);assert.deepEqual(updated.input.progetto!.brani.map(b=>b.tracce),[8,8,18,30]);
- const normalized=normalizeQuoteRequest(updated.input,'aggiungi 2 ore extra di registrazione');assert.equal(normalized.progetto!.ore_extra,2);
- const p=calcolaPreventivo(normalized),q=quotePreventivo(codificaPreventivo(normalized));assert.equal(p.importi_centesimi.totale,51986);assert.equal(q.total,51986);assert.equal(q.balance,0);assert.equal(q.parts[0].selection.appointments!.reduce((n,a)=>n+a.extraHours,0),2);
+ const updated=projectIntake([initial,u('aggiungi 2 ore extra di registrazione')]);assert.ok(updated&&'input' in updated);assert.equal(updated.input.progetto!.ore_extra,0);assert.deepEqual(updated.input.progetto!.brani.map(b=>b.tracce),[8,8,18,30]);
+ const normalized=normalizeQuoteRequest(updated.input,'aggiungi 2 ore extra di registrazione');assert.equal(normalized.progetto!.ore_extra,0);
+ const p=calcolaPreventivo(normalized),q=quotePreventivo(codificaPreventivo(normalized));assert.equal(p.importi_centesimi.totale,47988);assert.equal(q.total,47988);assert.equal(q.balance,0);assert.equal(q.parts[0].selection.appointments!.reduce((n,a)=>n+a.extraHours,0),0);
 });
-test('a correction changes only the selected song and explicit removal clears extra hours',()=>{const history=[u('Album da 4 brani, tutti da 8 tracce, 1 ora extra per brano'),u('brano 2 con 50 tracce')];const q=projectIntake(history);assert.ok(q&&'input' in q);assert.deepEqual(q.input.progetto!.brani.map(b=>b.tracce),[8,50,8,8]);assert.equal(q.input.progetto!.ore_extra,4);const removed=projectIntake([...history,u('togli le ore extra')]);assert.ok(removed&&'input' in removed);assert.equal(removed.input.progetto!.ore_extra,0);});
+test('a correction changes only the selected song and explicit removal clears extra hours',()=>{const history=[u('Album da 4 brani, tutti da 8 tracce, 1 ora extra per brano'),u('brano 2 con 50 tracce')];const q=projectIntake(history);assert.ok(q&&'input' in q);assert.deepEqual(q.input.progetto!.brani.map(b=>b.tracce),[8,50,8,8]);assert.equal(q.input.progetto!.ore_extra,0);const removed=projectIntake([...history,u('togli le ore extra')]);assert.ok(removed&&'input' in removed);assert.equal(removed.input.progetto!.ore_extra,0);});
 test('external production choice is not forgotten on a later count answer',()=>{const q=projectIntake([u('Voglio un EP, ho già le basi esterne'),u('6 brani')]);assert.ok(q&&'reply' in q);assert.match(q.reply,/singolarmente/);});
 test('incomplete track distribution asks for clarification rather than inventing the remaining songs',()=>{const q=projectIntake([u('EP da 6 brani: due da 8 e uno da 18 tracce')]);assert.ok(q&&'reply' in q);assert.match(q.reply,/distribuzione/);});
+
+test('EP and album never quote additional studio hours, but explain a new booking',()=>{for(const format of ['EP','album']){const q=projectIntake([u(`${format} da 4 brani, aggiungi 3 ore extra`)]);assert.ok(q&&'input' in q);assert.equal(q.input.progetto!.ore_extra,0);assert.equal(calcolaPreventivo(q.input).importi_centesimi.totale,37988);}});

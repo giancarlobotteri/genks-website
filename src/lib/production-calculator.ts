@@ -6,8 +6,8 @@ type AudioInput={servizio:'mix'|'master'|'mix_master';file:number;artisti_correz
 type AudioQuote={righe:{descrizione:string;prezzo:string}[];importi_centesimi:{totale:number;listino:number};errore?:string};
 export function calculateProduction(input:ProductionInput,quoteAudio:(songs:AudioInput[])=>AudioQuote){
  void quoteAudio;
- if(!input||!Array.isArray(input.brani)||!Number.isInteger(input.ore_extra)||input.ore_extra<0||input.ore_extra>120||input.registrazione!==true)throw Error('EP e album includono due ore di registrazione per brano.');
- for(const s of input.brani){if(!s||s.produzione!=='genks'||s.servizio!=='mix_master'||!Number.isInteger(s.artisti)||s.artisti<1||s.artisti>20||s.revisioni_extra!==0||s.consegna_veloce!==false)throw Error('EP e album includono produzione GENKS, mix, master e una revisione. Puoi modificare tracce audio separate e ore.');}
+ if(!input||!Array.isArray(input.brani)||!Number.isInteger(input.ore_extra)||input.ore_extra!==0||input.registrazione!==true)throw Error('EP e album includono due ore di registrazione per brano. Eventuali ore ulteriori richiedono una nuova prenotazione e il relativo pagamento, non si aggiungono al pacchetto.');
+ for(const s of input.brani){if(!s||s.produzione!=='genks'||s.servizio!=='mix_master'||!Number.isInteger(s.artisti)||s.artisti<1||s.artisti>20||s.revisioni_extra!==0||s.consegna_veloce!==false)throw Error('EP e album includono produzione GENKS, mix, master e una revisione. Puoi modificare le tracce audio separate; le ore incluse restano fisse.');}
  const q=projectPackageV10(input.format??(input.brani.length>=8?'album':'ep'),input.brani.map(s=>({source:s.produzione,tracks:s.tracce})));
  const beats=input.brani.length,studio=input.ore_extra*ratesV10.recordingHour,custom=beats*ratesV10.beat;
  const total=q.total+studio,listTotal=q.separate+studio,balance=0,hours=beats*2+input.ore_extra;
