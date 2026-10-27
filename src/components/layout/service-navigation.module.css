@@ -50,3 +50,5 @@
 @media(max-width:720px){.headerSearch{top:10px;left:calc(50% - 24px);width:calc(100% - 210px)}.headerSearch :global(#home-service-results){transform:translateX(calc(-50% + 24px))}}
 @media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.headerSearch{top:5px;left:50%;width:calc(100% - 400px)}}
 @media(orientation:landscape) and (max-height:500px) and (max-width:720px){.headerSearch{left:calc(50% - 36px);width:calc(100% - 330px)}.headerSearch :global(#home-service-results){transform:translateX(calc(-50% + 36px))}}
+
+@media(orientation:portrait) and (max-width:720px){.header .toggle{top:50%!important;transform:translateY(-50%);margin:0!important;right:8px!important;height:44px;min-height:44px;box-sizing:border-box}}
