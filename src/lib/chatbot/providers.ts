@@ -48,7 +48,7 @@ const pulisci = (s: string) => s.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, "")
 type OAIToolCall = { id: string; type: "function"; function: { name: string; arguments: string | object } };
 type OAIMessage =
   | { role: "system" | "user"; content: string }
-  | { role: "assistant"; content: string | null; tool_calls?: OAIToolCall[] }
+  | { role: "assistant"; content: string; tool_calls?: OAIToolCall[] }
   | { role: "tool"; tool_call_id: string; content: string };
 
 export async function rispondiConCloudflare(messages: ChatMessage[]): Promise<string | null> {
@@ -79,7 +79,11 @@ export async function rispondiConCloudflare(messages: ChatMessage[]): Promise<st
       signal: deadline,
     });
     if (!res.ok) {
-      console.error("[chat] Cloudflare status", res.status);
+      const diagnostic=await res.json().catch(()=>({}));
+      const codes=Array.isArray(diagnostic.errors)?diagnostic.errors.map((e:{code?:unknown})=>e.code).filter((c:unknown)=>typeof c==='number'):[];
+      const errorText=JSON.stringify(diagnostic).toLowerCase();
+      const hints=['tools','tool_calls','content','schema','model','token','permission','messages','context','max_tokens','temperature','authentication','validation'].filter(h=>errorText.includes(h));
+      console.error("[chat] Cloudflare status",res.status,JSON.stringify({step,codes,hints}));
       return null;
     }
     const data = await res.json();
@@ -92,7 +96,7 @@ export async function rispondiConCloudflare(messages: ChatMessage[]): Promise<st
       return testo || null;
     }
 
-    conv.push({ role: "assistant", content: msg?.content ?? null, tool_calls: calls });
+    conv.push({ role: "assistant", content: typeof msg?.content === "string" ? msg.content : "", tool_calls: calls });
     for (const call of calls) {
       if(!call.id||call.id.length>200||!call.function)return null;
       let args: unknown = call.function?.arguments;
