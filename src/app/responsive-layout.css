@@ -100,3 +100,16 @@ body[data-cinematic-ui-hidden] [data-genks-cart-launcher]{pointer-events:none;vi
 @supports(interpolate-size:allow-keywords){details{interpolate-size:allow-keywords}details::details-content{block-size:0;overflow:clip;transition:block-size .35s ease,content-visibility .35s ease;transition-behavior:allow-discrete}details[open]::details-content{block-size:auto}}
 @media(prefers-reduced-motion:reduce){details::details-content{transition:none}}
 @media(min-width:851px){.service-v8-layout>.service-v8-summary{padding-top:clamp(20px,3vw,44px)}}
+
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){
+ .genks-header{inset:10px 14px auto;height:50px;border-radius:16px}
+ .genks-header-logo{height:50px}
+ [data-genks-cart-launcher]{left:14px;right:auto;bottom:12px;min-height:40px;padding:8px 12px;font-size:12px}
+ [data-genks-assistant-launcher]{right:14px;bottom:12px;min-height:40px;padding:8px 14px;font-size:12px}
+}
+
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){
+ .service-v8-summary{position:static!important;top:auto;max-height:none}
+ .modal{max-height:calc(100dvh - 20px);margin:10px auto;overflow-y:auto}
+ .service-portal .service-page-heading .genks-emblem{width:74px;height:74px;flex-basis:74px}
+}

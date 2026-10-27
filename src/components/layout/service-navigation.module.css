@@ -10,3 +10,10 @@
 .header .menu,.header .menu[data-open=true]{position:absolute!important;top:76px!important;right:0!important;left:auto!important;width:min(350px,calc(100vw - 32px))!important;padding:16px!important;border:1px solid #3979ba!important;border-radius:18px;background:#071a34fa!important;display:grid!important;gap:2px!important;box-shadow:0 20px 60px #0008}
 .header .menu[hidden]{display:none!important}.header .menu a{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:13px 12px;min-height:44px;color:#e6f4ff;border-radius:10px}.header .menu a:hover{background:#17416d}.homeHeader :global(.genks-header-logo){position:absolute!important;left:20px!important;top:0!important;transform:none!important;margin:0!important}.toggle span{display:inline!important}
 @media(max-width:600px){.homeHeader :global(.genks-header-logo){left:14px!important}.header .toggle{right:4px!important}.header .menu{top:72px!important}}
+
+.header .menu{max-height:calc(100dvh - 120px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){
+ .header .toggle{margin:3px 8px!important;min-height:40px}
+ .header .menu,.header .menu[data-open=true]{top:60px!important;max-height:calc(100dvh - 86px)}
+ .header .menu a{min-height:40px;padding:8px 12px}
+}

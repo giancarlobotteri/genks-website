@@ -135,3 +135,11 @@
 @media(max-width:1199px){.nextStep{display:none}}
 
 @media(min-width:1200px){.serviceDesk{left:clamp(20px,2.1vw,42px)}.nextStep{right:clamp(20px,2.1vw,42px);width:clamp(252px,21vw,310px)}.serviceLanding .primary,.serviceLanding .secondary{width:clamp(220px,21vw,280px)}}
+
+/* Landscape phones reserve separate bands for navigation, woofer, CTAs and tools. */
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){
+ .serviceLanding .content{top:auto;bottom:112px;left:20px;right:20px}
+ .serviceLanding .actions{flex-direction:row;gap:12px}
+ .serviceLanding .primary,.serviceLanding .secondary{width:min(260px,43vw);min-height:44px;padding:10px 16px;font-size:13px;border-radius:14px}
+ .serviceLanding .poster{top:calc(50% - 30px);width:clamp(100px,calc(100svh - 220px),190px)}
+}
