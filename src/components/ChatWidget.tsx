@@ -4,6 +4,7 @@ import Link from 'next/link';
 import {serviceCartKey} from '@/lib/service-cart-storage';
 import {usePathname} from 'next/navigation';
 import {shouldSendChatMessage} from '../lib/chatbot/keyboard';
+import {chatRequestHistory} from '@/lib/chatbot/history';
 import {WELCOME_MESSAGE} from '@/lib/chatbot/prompt';
 import styles from './ChatWidget.module.css';
 type Msg={role:'user'|'assistant';content:string};
@@ -23,7 +24,7 @@ export default function ChatWidget({enabled=false}:{enabled?:boolean}){
  useEffect(()=>()=>abort.current?.abort(),[]);
  useEffect(()=>{const show=()=>setOpen(true);window.addEventListener('genks:open-chat',show);return()=>window.removeEventListener('genks:open-chat',show);},[]);
  const close=()=>{setOpen(false);document.querySelector<HTMLButtonElement>('[data-genks-chat-launcher]')?.focus();};
- async function send(value:string){const content=value.trim();if(!content||busy.current||!enabled||!storageKey)return;const owner=identity.current,sequence=++epoch.current;busy.current=true;setLoading(true);setInput('');const next:Msg[]=[...messages,{role:'user',content}];setMessages(next);abort.current=new AbortController();try{const history=next.slice(-11);while(history.length&&history[0].role!=='user')history.shift();const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history.map(m=>({...m,content:m.content.slice(0,1000)}))}),signal:abort.current.signal});const b=await r.json();if(owner!==identity.current||sequence!==epoch.current)return;setMessages([...next,{role:'assistant',content:b.reply??'Riprova tra qualche minuto.'}]);}catch{if(owner!==identity.current||sequence!==epoch.current)return;setMessages([...next,{role:'assistant',content:'Connessione non disponibile. Riprova oppure apri la pagina Servizi.'}]);}finally{if(owner===identity.current&&sequence===epoch.current){busy.current=false;setLoading(false);}}}
+ async function send(value:string){const content=value.trim();if(!content||busy.current||!enabled||!storageKey)return;const owner=identity.current,sequence=++epoch.current;busy.current=true;setLoading(true);setInput('');const next:Msg[]=[...messages,{role:'user',content}];setMessages(next);abort.current=new AbortController();try{const history=chatRequestHistory(next);const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history.map(m=>({...m,content:m.content.slice(0,1000)}))}),signal:abort.current.signal});const b=await r.json();if(owner!==identity.current||sequence!==epoch.current)return;setMessages([...next,{role:'assistant',content:b.reply??'Riprova tra qualche minuto.'}]);}catch{if(owner!==identity.current||sequence!==epoch.current)return;setMessages([...next,{role:'assistant',content:'Connessione non disponibile. Riprova oppure apri la pagina Servizi.'}]);}finally{if(owner===identity.current&&sequence===epoch.current){busy.current=false;setLoading(false);}}}
  function submit(e:FormEvent){e.preventDefault();void send(input);}
  if(pathname.startsWith('/admin')||!enabled)return null;
  return <div className={styles.root}>
