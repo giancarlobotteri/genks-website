@@ -1,6 +1,12 @@
 import {codificaPreventivo,type PreventivoInput,type Preventivo} from './pricing.ts';
 const words:Record<string,number>={un:1,uno:1,una:1,due:2,tre:3,quattro:4,cinque:5,sei:6,sette:7,otto:8,nove:9,dieci:10};
 const count=(s:string)=>words[s.toLowerCase()]??Number(s);
+/** Tool transport defaults only: price calculation and checkout validation stay authoritative. */
+export function prepareQuoteArguments(raw:unknown):unknown{
+ if(!raw||typeof raw!=='object'||!('progetto' in raw))return raw;
+ const project=raw.progetto;if(!project||typeof project!=='object'||!('brani' in project)||!Array.isArray(project.brani))return raw;
+ return {...raw,progetto:{registrazione:false,ore_extra:0,...project,brani:project.brani.map(song=>song&&typeof song==='object'?{tracce:8,artisti:1,revisioni_extra:0,consegna_veloce:false,...song}:song)}};
+}
 /** Resolve explicit customer quantities before pricing; never alter the calculator or its prices. */
 export function normalizeQuoteRequest(input:PreventivoInput,text:string,authorizationText=text):PreventivoInput{
  if(!input.progetto&&/\bep\b|album/i.test(authorizationText)&&((input.beat_su_misura??0)>0||/produzion|\bbeat\b|bas[ei]/i.test(authorizationText)))throw Error('Per un EP o album con scelta delle basi devi usare progetto, una voce per ciascun brano: produzione genks o external e servizio audio scelto. Non usare beat_su_misura o ore_registrazione del singolo. Se il cliente esclude la registrazione, progetto.registrazione=false e ore_extra=0.');

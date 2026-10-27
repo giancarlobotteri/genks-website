@@ -1,4 +1,5 @@
 import {recordingHoursOnly} from '@/lib/chatbot/booking-request';
+import {projectIntake} from '@/lib/chatbot/project-intake';
 import {calcolaPreventivo} from '@/lib/chatbot/pricing';
 import {formatQuote} from '@/lib/chatbot/quote-request';
 import {answerBookingRequest} from '@/lib/chatbot/booking';
@@ -24,6 +25,8 @@ export async function POST(request:Request){
   const hours=recordingHoursOnly(messages.at(-1)!.content);if(hours){const input={ore_registrazione:hours};return Response.json({reply:formatQuote(input,calcolaPreventivo(input),messages.at(-1)!.content),active:true});}
   const booking=await answerBookingRequest(messages.at(-1)!.content);if(booking)return Response.json({reply:booking,active:true});
   if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)return Response.json({reply:fallback,active:false});
+  const intake=projectIntake(safeMessages);
+  if(intake){if('reply' in intake)return Response.json({reply:intake.reply,active:true});const quote=calcolaPreventivo(intake.input);if(!quote.errore)return Response.json({reply:formatQuote(intake.input,quote,messages.at(-1)!.content)+'\n\nLe produzioni sono ancora da creare: il numero di tracce verrà definito durante il lavoro. Il preventivo include la fascia fino a 8 tracce per brano; una fascia superiore cambia il prezzo. Non ho aggiunto ore di registrazione.',active:true});}
   const reply=await rispondi(safeMessages);
   return Response.json({reply:reply||fallback,active:Boolean(reply)});
  }catch{return Response.json({reply:'Non riesco a elaborare questa richiesta. Riprova con un messaggio breve sui servizi GENKS.'},{status:400});}
