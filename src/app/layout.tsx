@@ -74,7 +74,7 @@ export default async function RootLayout({
               <main id="main-content" tabIndex={-1}>
                 {children}
               </main>
-              <UtilityDock><ChatWidget enabled={Boolean(process.env.CLOUDFLARE_ACCOUNT_ID&&process.env.CLOUDFLARE_API_TOKEN)&&(process.env.AI_PROVIDER||'cloudflare')==='cloudflare'}/>{CART_ENABLED && <CartRail discounts={await getPublicDiscounts()} />}</UtilityDock>
+              <UtilityDock>{CART_ENABLED && <CartRail discounts={await getPublicDiscounts()} />}<ChatWidget enabled={Boolean(process.env.CLOUDFLARE_ACCOUNT_ID&&process.env.CLOUDFLARE_API_TOKEN)&&(process.env.AI_PROVIDER||'cloudflare')==='cloudflare'}/></UtilityDock>
               <Footer />
               {BEATS_ENABLED && <PersistentPlayer />}
               <MotionObserver />

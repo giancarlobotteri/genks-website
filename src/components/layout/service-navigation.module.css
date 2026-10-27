@@ -43,3 +43,10 @@
 @media(max-width:720px){.header :global(.genks-header-logo){left:14px!important;width:64px}.headerSearch{top:86px;left:50%;width:min(420px,calc(100% - 40px))}.headerSearch :global(#home-service-results){transform:translateX(-50%)}}
 @media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.headerSearch{top:68px;left:50%;width:min(360px,calc(100% - 48px))}.headerSearch :global(#home-service-results){transform:translateX(-50%)}}
 @media(max-width:360px){.header :global(.genks-header-logo){width:56px!important}}
+
+/* Restore the search to the original home header slot. */
+.headerSearch{top:7px;left:50%;width:min(540px,calc(100% - 280px))}
+@media(min-width:721px) and (max-width:1199px){.headerSearch{width:calc(100% - 430px)}}
+@media(max-width:720px){.headerSearch{top:10px;left:calc(50% - 24px);width:calc(100% - 210px)}.headerSearch :global(#home-service-results){transform:translateX(calc(-50% + 24px))}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.headerSearch{top:5px;left:50%;width:calc(100% - 400px)}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:720px){.headerSearch{left:calc(50% - 36px);width:calc(100% - 330px)}.headerSearch :global(#home-service-results){transform:translateX(calc(-50% + 36px))}}

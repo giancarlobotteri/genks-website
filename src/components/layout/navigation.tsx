@@ -38,6 +38,7 @@ export function Navigation({cards=[]}:{cards?:StoreCard[]}) {
     <a className="genks-header-logo" href="/#home" aria-label="Pagina iniziale GENKS" onClick={() => setOpen(false)}>
       <Image src="/brand/genks-header.svg" width={104} height={64} alt="GENKS" priority />
     </a>
+    {pathname==="/"&&<div className={styles.headerSearch}><HomeServiceSearch cards={cards}/></div>}
     <nav ref={menuRef} id={navId} hidden={!open} data-open={open} className={`genks-corner-menu ${!BEATS_ENABLED ? styles.menu : ""}`} aria-label="Collegamenti GENKS">
       {BEATS_ENABLED ? <>
       <a href="/#home" onClick={() => setOpen(false)}>Home <ArrowUpRight size={17} /></a>
@@ -49,5 +50,5 @@ export function Navigation({cards=[]}:{cards?:StoreCard[]}) {
       </> : <>{[{label:"Home",href:"/"},{label:"Servizi e pacchetti",href:"/services"},{label:"I miei acquisti e prenotazioni",href:"/account/library"},{label:"Lavori",href:"/lavori"},{label:"Guida all’acquisto",href:"/guida"},{label:"Accesso amministratore",href:"/admin-access"}].map(item => <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>{item.label}<ArrowUpRight size={17}/></Link>)}</>}
     </nav>
 
-  </header>{pathname==="/"&&<div className={styles.headerSearch}><HomeServiceSearch cards={cards}/></div>}</>;
+  </header></>;
 }

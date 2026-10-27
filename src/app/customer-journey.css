@@ -116,3 +116,27 @@
 @media(max-width:720px){.utility-tools{top:20px;gap:10px;max-width:calc(100vw - 170px)}.utility-tools [data-genks-cart-launcher],.utility-tools [data-genks-chat-launcher]{height:44px;min-height:44px}.utility-tools [data-genks-cart-launcher]{padding:7px 10px}}
 @media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.utility-tools{top:13px;gap:12px}.utility-tools [data-genks-cart-launcher],.utility-tools [data-genks-chat-launcher]{height:40px;min-height:40px}.service-portal{padding-right:clamp(24px,4vw,64px)!important}body:has([data-genks-cart-launcher][data-summary-cart=true]) #main-content>.portal-shell:not(.service-portal){padding-right:clamp(24px,4vw,64px)!important}}
 .utility-tools dialog{pointer-events:auto}
+
+/* Keep hash navigation and keyboard focus clear of the fixed header. */
+html{scroll-padding-top:104px}
+.utility-tools:not(:has([data-genks-cart-launcher],[data-genks-chat-launcher])){display:none}
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){
+ html{scroll-padding-top:76px}
+ .portal-shell,.portal-shell.service-portal,.portal-shell.narrow-shell.service-portal{padding-top:80px;padding-bottom:56px}
+ .service-portal .premium-form,.service-v8-layout .premium-form{padding:20px;gap:18px}
+ .service-form-heading{gap:8px;padding-bottom:16px}
+ .service-form-heading h1,.portal-shell>h1{font-size:clamp(25px,4vw,34px);line-height:1.16;letter-spacing:-.03em}
+ .service-form-heading p{font-size:12px;line-height:1.65}
+ .service-portal h2[tabindex="-1"]{scroll-margin-top:84px}
+}
+
+/* Home keeps its previous layout; the centred pair belongs to internal pages. */
+.utility-anchor[data-home=true] .utility-tools{position:static;display:contents;translate:none;max-width:none;width:auto}
+.utility-anchor[data-home=true] .utility-tools [data-genks-chat-launcher]{position:fixed!important;top:28px!important;right:188px!important;left:auto!important;bottom:auto!important;translate:none!important;transform:none!important;width:44px;height:44px;min-height:44px;padding:8px}
+.utility-anchor[data-home=true] .utility-tools [data-genks-cart-launcher]{position:fixed!important;top:auto!important;left:auto!important;right:28px!important;bottom:calc(92px + env(safe-area-inset-bottom))!important;transform:none!important;translate:none!important}
+@media(min-width:1200px){.utility-anchor[data-home=true] [data-genks-cart-launcher][data-home-hero=true]{display:none!important}}
+@media(max-width:720px){.utility-anchor[data-home=true] .utility-tools [data-genks-chat-launcher]{top:24px!important;right:80px!important}.utility-anchor[data-home=true] .utility-tools [data-genks-cart-launcher]{left:50%!important;right:auto!important;bottom:calc(16px + env(safe-area-inset-bottom))!important;transform:translateX(-50%)!important}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.utility-anchor[data-home=true] .utility-tools [data-genks-chat-launcher]{top:13px!important;right:164px!important}.utility-anchor[data-home=true] .utility-tools [data-genks-cart-launcher]{top:50%!important;right:16px!important;left:auto!important;bottom:auto!important;transform:translateY(-50%)!important}}
+.utility-anchor[data-home=true][data-docked=true]{height:72px!important}
+.utility-anchor[data-home=true][data-docked=true] .utility-tools{display:flex;position:static;translate:none;justify-content:flex-end;max-width:none;width:100%;height:72px;padding:8px 28px}
+.utility-anchor[data-home=true][data-docked=true] .utility-tools [data-genks-cart-launcher]{position:static!important;transform:none!important;translate:none!important}

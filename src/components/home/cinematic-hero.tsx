@@ -1,6 +1,7 @@
 "use client";
 
 import type {PublicDiscount} from "@/lib/public-discounts";
+import {HomeCartPreview} from "@/components/services/service-cart-rail-v8";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,7 +13,7 @@ import styles from "./cinematic-hero.module.css";
 
 const WooferScene = dynamic(() => import("./woofer-scene"), { ssr: false });
 
-export function CinematicHero({ serviceLanding = false, sideContent }: { serviceLanding?: boolean; sideContent?: ReactNode;discounts?:PublicDiscount[] }) {
+export function CinematicHero({ serviceLanding = false, sideContent, discounts=[] }: { serviceLanding?: boolean; sideContent?: ReactNode;discounts?:PublicDiscount[] }) {
   const router = useRouter();
   const active = useHomeSceneActive();
   const sectionRef = useRef<HTMLElement>(null);
@@ -186,6 +187,7 @@ export function CinematicHero({ serviceLanding = false, sideContent }: { service
             onUnavailable={() => { setReady(false); window.dispatchEvent(new Event("genks:hero-settled")); }} /> : null}
         </div>
 
+        {serviceLanding&&<div className={styles.nextStep}><HomeCartPreview discounts={discounts}/></div>}
         {sideContent && <div className={styles.serviceDesk}>{sideContent}</div>}
         <div className={styles.content}>
           <div className={styles.actions}>

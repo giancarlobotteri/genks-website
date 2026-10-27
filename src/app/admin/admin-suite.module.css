@@ -31,3 +31,5 @@
 @media(max-width:380px){.shell :global(.admin-field-grid){grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.shell :global(.admin-cards article),.shell :global(.admin-form-card){animation:none}}
 .shell :global(.promotion-actions){display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}.shell :global(.promotion-actions form){display:contents}.shell :global(.promotion-actions .admin-delete-confirm){display:flex;flex-basis:100%}.shell :global(.promotion-card){grid-template-columns:minmax(0,1fr) auto;align-items:center}.shell :global(.promotion-card h2){margin-bottom:12px}@media(max-width:700px){.shell :global(.promotion-card){grid-template-columns:1fr}.shell :global(.promotion-actions){justify-content:start}}
+
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.shell :global(.admin-content){padding-top:80px}}
