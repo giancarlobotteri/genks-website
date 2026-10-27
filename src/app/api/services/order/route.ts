@@ -30,7 +30,7 @@ export async function POST(request:Request){
   for(const part of quote.parts){const sel=part.selection;if(part.hours&&sel.date){
    const start=fromRomeWallTime(sel.date,sel.time),end=new Date(start.getTime()+part.hours*3600000);
    if(start.getTime()<Date.now()+14*86400000&&!data.earlyStart)throw Error('Per questa data entro 14 giorni richiedi espressamente l’avvio anticipato e leggi le condizioni, oppure scegli una data successiva.');
-   if(start.getTime()<=Date.now()+(sel.payment==='cash'?24*3600000:35*60000))throw Error('Orario troppo vicino per la modalità di anticipo scelta.');
+   if(start.getTime()<=Date.now()+35*60000)throw Error('Orario troppo vicino per la modalità di anticipo scelta.');
    if(hasGoogleBusyCalendar){const rules=await createSupabaseAdminClient().from('availability_rules').select('buffer_minutes').eq('active',true).eq('weekday',new Date(sel.date+'T12:00:00Z').getUTCDay());if(rules.error||!rules.data?.length)throw Error('Disponibilità del calendario non verificabile.');const protectedEnd=new Date(end.getTime()+Math.max(0,...rules.data.map(r=>Number(r.buffer_minutes)||0))*60000);const busy=await getGoogleBusyRanges(start,protectedEnd);if(busy.some(r=>new Date(r.starts_at)<protectedEnd&&new Date(r.ends_at)>start))throw Error('L’orario è già occupato. Scegli un altro intervallo.');}
   }}
   const user=await getCurrentUser();const form=new FormData();for(const [k,v] of Object.entries(data)){if(typeof v==='string')form.set(k,v);}if(data.saveContact)form.set('saveContact','on');

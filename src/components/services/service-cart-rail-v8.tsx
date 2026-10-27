@@ -18,7 +18,6 @@ export function ServiceCartRailV8({discounts=[]}:{discounts?:PublicDiscount[]}) 
  const [confirmClear,setConfirmClear]=useState(false);
  const [status,setStatus]=useState<"loading"|"ready"|"error">("loading");
  const [message,setMessage]=useState("");
- const [atTop,setAtTop]=useState(true);
  const titleId=useId();
  const visible=!pathname.startsWith("/admin");
  useEffect(()=>{
@@ -39,12 +38,6 @@ export function ServiceCartRailV8({discounts=[]}:{discounts?:PublicDiscount[]}) 
   window.addEventListener("focus",update);
   return()=>{active=false;window.removeEventListener("genks-services-cart",update);window.removeEventListener("pageshow",update);window.removeEventListener("focus",update);};
  },[pathname,visible]);
- useEffect(()=>{
-  if(pathname!=="/")return;
-  const update=()=>setAtTop(window.scrollY<window.innerHeight*.12);
-  update();window.addEventListener("scroll",update,{passive:true});
-  return()=>window.removeEventListener("scroll",update);
- },[pathname]);
  let quote:ReturnType<typeof quoteOrder>|undefined;
  try{if(items.length)quote=quoteOrder(items,true,new Date(),discounts);}catch{}
  const change=async(next:OrderSelection[])=>{
@@ -56,17 +49,9 @@ export function ServiceCartRailV8({discounts=[]}:{discounts?:PublicDiscount[]}) 
  if(!visible)return null;
  const empty=status==="ready"&&!items.length;
  return <>
-  <button className={styles.launcher} type="button" aria-haspopup="dialog" aria-expanded={open} aria-label={`Apri carrello servizi (${items.length})`} onClick={()=>{setOpen(true);setConfirmClear(false);}}>
+  <button data-genks-cart-launcher className={styles.launcher} type="button" aria-haspopup="dialog" aria-expanded={open} aria-label={`Apri carrello servizi (${items.length})`} onClick={()=>{setOpen(true);setConfirmClear(false);}}>
    <ShoppingBag size={19} aria-hidden="true"/><span>Carrello</span><strong aria-live="polite">{items.length}</strong>{quote&&<span className={styles.launcherTotal}>{serviceAmount(quote.total)}</span>}
   </button>
-  {pathname==="/"&&atTop&&<aside className={styles.homeDock} aria-label="Anteprima del carrello">
-   <div className={styles.eyebrow}><ShoppingBag size={16} aria-hidden="true"/>LA TUA SELEZIONE</div>
-   <h2>{empty?"Spazio al tuo prossimo brano.":"Il tuo progetto prende forma."}</h2>
-   <p>{status==="loading"?"Caricamento della selezione…":status==="error"?"Apri il carrello per riprovare.":empty?"Combina i servizi e controlla il totale prima di acquistare.":`${items.length} ${items.length===1?"servizio selezionato":"servizi selezionati"}`}</p>
-   {quote&&<strong className={styles.dockTotal}>{serviceAmount(quote.total)}</strong>}
-   {empty?<Link href="/services" className={styles.dockAction}>Esplora i servizi <ArrowUpRight size={17}/></Link>:<button type="button" className={styles.dockAction} onClick={()=>setOpen(true)}>Controlla il carrello <ArrowUpRight size={17}/></button>}
-   <small>Puoi anche acquistare subito un solo servizio.</small>
-  </aside>}
   <Modal open={open} onClose={()=>setOpen(false)} titleId={titleId}>
    <div className={styles.panel} data-service-cart-panel>
     <div className={styles.eyebrow}><ShoppingBag size={18} aria-hidden="true"/>GENKS · CARRELLO</div>

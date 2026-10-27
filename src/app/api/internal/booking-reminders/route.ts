@@ -14,6 +14,7 @@ export async function POST(request: Request) {
   const consumed = await createSupabaseAdminClient().rpc("consume_reminder_dispatch", { p_ticket: ticket });
   if (consumed.error || consumed.data !== true) return new Response("Non autorizzato", { status: 401 });
   try {
+    const expired=await createSupabaseAdminClient().rpc('expire_booking_holds');if(expired.error)throw Error('Scadenze da verificare.');
     const result = await sendDueBookingReminders();
     await new Promise(resolve => setTimeout(resolve, 600));
     const alerts = await flushNotifications({ prefix: "reservation-", limit: 10 });

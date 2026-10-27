@@ -22,6 +22,7 @@ export function GuidedAssistant({discounts}:{discounts:PublicDiscount[]|null}){
  const pathname=usePathname(),[open,setOpen]=useState(false),[step,setStep]=useState(0),[goal,setGoal]=useState(""),[input,setInput]=useState<AdvisorInput>(initial),[plan,setPlan]=useState<AdvisorPlan|null>(null),[error,setError]=useState("");
  const panel=useRef<HTMLDivElement>(null),launcher=useRef<HTMLButtonElement>(null),body=useRef<HTMLDivElement>(null);
  const whatsapp=(text:string)=>`https://wa.me/${site.whatsapp.replace(/\D/g,"")}?text=${encodeURIComponent(text)}`;
+ useEffect(()=>{const show=()=>setOpen(true);window.addEventListener('genks:assistant-open',show);return()=>window.removeEventListener('genks:assistant-open',show);},[]);
  useEffect(()=>{
   if(!open)return;
   const previous=document.activeElement as HTMLElement|null,overflow=document.body.style.overflow,launchButton=launcher.current;

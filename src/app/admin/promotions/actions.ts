@@ -14,3 +14,11 @@ export async function savePublicDiscount(form:FormData){
  await db.from("admin_audit_log").insert({admin_id:user.id,action:"set_public_discount",entity_type:"pricing",entity_id:data.target,payload:data});
  revalidatePath("/","layout");redirect("/admin/promotions?notice=saved");
 }
+
+export async function deletePublicDiscount(form:FormData){
+ const user=await requireAdmin();const target=z.string().min(1).max(100).parse(form.get('target'));
+ const db=createSupabaseAdminClient();const result=await db.rpc('delete_public_discount',{p_target:target});
+ if(result.error)throw Error('Sconto non eliminato. Riprova.');
+ await db.from('admin_audit_log').insert({admin_id:user.id,action:'delete_public_discount',entity_type:'pricing',entity_id:target,payload:{target}});
+ revalidatePath('/','layout');redirect('/admin/promotions?notice=deleted');
+}

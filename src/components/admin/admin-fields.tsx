@@ -1,0 +1,7 @@
+import type {ReactNode} from 'react';
+export function AdminFields({fields}:{fields:{label:string;value:ReactNode}[]}){return <dl className="admin-field-grid">{fields.map(f=><div key={f.label}><dt>{f.label}</dt><dd>{f.value||'—'}</dd></div>)}</dl>;}
+export function AdminOrderBreakdown({snapshot}:{snapshot:unknown}){
+ const parts=(snapshot as {parts?:unknown})?.parts;
+ if(!Array.isArray(parts))return null;
+ return <section className="admin-order-breakdown"><h3>Servizi e brani dell’ordine</h3>{parts.map((raw,i)=>{const p=raw as {title?:string;total?:number;lines?:{name:string;amount:number}[];selection?:{songs?:{trackTitle:string;trackCount:number;fileUrl?:string}[];notes?:string}};return <details key={i}><summary>{i+1}. {p.title??'Servizio'} <strong>{typeof p.total==='number'?new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(p.total/100):''}</strong></summary><div className="admin-detail-body">{p.selection?.songs?.map((s,n)=><div className="admin-song" key={n}><strong>{s.trackTitle}</strong><span>{s.trackCount} file audio</span>{s.fileUrl&&/^https:\/\//i.test(s.fileUrl)&&<a href={s.fileUrl} target="_blank" rel="noreferrer">Apri i file del brano ↗</a>}</div>)}{p.lines?.map((l,n)=><div className="admin-money-row" key={n}><span>{l.name}</span><strong>{new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(l.amount/100)}</strong></div>)}{p.selection?.notes&&<p className="admin-note">{p.selection.notes}</p>}</div></details>;})}</section>;
+}

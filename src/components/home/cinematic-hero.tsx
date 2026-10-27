@@ -1,5 +1,6 @@
 "use client";
 
+import {HomeNextStep} from "./home-next-step";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -73,7 +74,7 @@ export function CinematicHero({ serviceLanding = false, sideContent }: { service
     const uiTargets = [
       [".genks-header", 0, 0, true], [".genks-menu-toggle", -180, 0, false],
       [".genks-header-logo", 0, -110, false], [".cart-rail", 380, 0, true],
-      [".cart-rail-toggle", 110, 0, true], [".offers-rail", -380, 0, true], [".offers-toggle", -110, 0, true], [".cart-rail-backdrop", 0, 0, true],
+      ["[data-genks-cart-launcher]", 110, 0, true], [".cart-rail-toggle", 110, 0, true], [".offers-rail", -380, 0, true], [".offers-toggle", -110, 0, true], [".cart-rail-backdrop", 0, 0, true],
       [".persistent-player", 0, 140, true], [".site-footer", 0, 140, true],
       ["[data-genks-assistant-launcher]", 0, 140, true],
     ].flatMap(([selector, x, y, fade]) => {
@@ -185,6 +186,7 @@ export function CinematicHero({ serviceLanding = false, sideContent }: { service
             onUnavailable={() => { setReady(false); window.dispatchEvent(new Event("genks:hero-settled")); }} /> : null}
         </div>
 
+        {serviceLanding&&<div className={styles.nextStep}><HomeNextStep/></div>}
         {sideContent && <div className={styles.serviceDesk}>{sideContent}</div>}
         <div className={styles.content}>
           <div className={styles.actions}>

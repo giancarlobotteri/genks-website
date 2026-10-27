@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {recordingStartAllowed,recordingAppointmentLabel} from "../src/lib/recording-selection.ts";
 import {availableSlots} from "../src/lib/booking-slots.ts";
 
-test("card lead time is enforced before selecting a slot and cash requires a full day to pay in studio",()=>{
+test("card lead time is enforced before selecting a slot and cash follows the same minimum booking lead time",()=>{
   const now=Date.parse("2026-10-23T17:00:00Z");
   assert.equal(recordingStartAllowed("2026-10-23","19:30","card",now),false);
   assert.equal(recordingStartAllowed("2026-10-23","19:30","cash",now),false);

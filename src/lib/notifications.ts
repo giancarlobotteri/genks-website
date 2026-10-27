@@ -108,7 +108,8 @@ export async function deliverNotification(id: string) {
       if(owner||p.data.email.toLowerCase()===message.recipient.toLowerCase()){
         const movements=await db.from('payments').select('amount_cents,refunded_cents').eq('project_id',p.data.id).eq('status','succeeded');if(movements.error)throw Error('Incassi da verificare.');
         const paid=(movements.data??[]).reduce((n,m)=>n+m.amount_cents-m.refunded_cents,0);
-        concise=serviceEmailSummary({reference:p.data.reference,total:p.data.price_cents??0,paid,name:p.data.name,artistName:p.data.artist_name,email:p.data.email},owner?'owner':'customer');
+        const deadlines=await db.from('service_order_parts_v8').select('hold_until,paid_cents,initial_cents').eq('project_id',p.data.id).eq('method','cash').not('booking_id','is',null);if(deadlines.error)throw Error('Scadenze da verificare.');
+        concise=serviceEmailSummary({cashDeadlines:(deadlines.data??[]).filter(x=>x.hold_until&&x.paid_cents<x.initial_cents).map(x=>x.hold_until!),reference:p.data.reference,total:p.data.price_cents??0,paid,name:p.data.name,artistName:p.data.artist_name,email:p.data.email},owner?'owner':'customer');
         if(!owner){const contract=await db.from('project_contracts').select('terms_body').eq('project_id',p.data.id).limit(1).maybeSingle();if(contract.error)throw Error('Condizioni da verificare.');if(contract.data)documents=[{filename:`Condizioni-${p.data.reference}.txt`,content:contract.data.terms_body}];}
       }
     }

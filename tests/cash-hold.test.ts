@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {cashHoldUntil} from '../src/lib/cash-hold.ts';
+test('cash deposit deadline is exactly halfway for two days, six days and same-day appointments',()=>{const now=Date.parse('2030-01-01T10:00:00Z');for(const hours of [48,144,4])assert.equal(cashHoldUntil(now,now+hours*3600000).getTime(),now+hours*1800000);assert.throws(()=>cashHoldUntil(now,now));assert.throws(()=>cashHoldUntil(NaN,now));});

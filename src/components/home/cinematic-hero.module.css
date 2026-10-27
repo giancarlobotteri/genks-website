@@ -128,7 +128,8 @@
 
 /* A balanced studio desk around the central scene. */
 .serviceDesk{position:absolute;left:28px;top:50%;transform:translateY(-50%);z-index:4;opacity:var(--hero-ui-opacity,1);visibility:var(--hero-ui-visibility,visible)}
-.serviceLanding .halo::after{content:"";position:absolute;inset:18%;border:1px solid #478edd20;border-radius:50%;box-shadow:0 0 0 36px #3b88e908,0 0 0 72px #3b88e906;pointer-events:none}
 @media(max-width:1199px){.serviceDesk{display:none}}
 @media(max-width:700px){.serviceLanding .primary,.serviceLanding .secondary{width:min(300px,100%);min-height:46px;padding:11px 16px;font-size:13px;border-radius:15px}.serviceLanding .actions{gap:9px}.serviceLanding .content{top:calc(50svh - 58px + min(38vw,150px,calc((100svh - 330px)/2)) + 16px)}}
 @media(max-height:560px) and (max-width:700px){.serviceLanding .content{top:auto;bottom:74px}}
+.nextStep{position:absolute;right:28px;top:50%;transform:translateY(-50%);z-index:4;opacity:var(--hero-ui-opacity,1);visibility:var(--hero-ui-visibility,visible)}
+@media(max-width:1199px){.nextStep{display:none}}

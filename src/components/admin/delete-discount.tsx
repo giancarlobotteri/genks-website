@@ -1,0 +1,3 @@
+"use client";
+import {useState} from 'react';
+export function DeleteDiscount({target,action}:{target:string;action:(form:FormData)=>void|Promise<void>}){const [confirm,setConfirm]=useState(false);return confirm?<form action={action} className="admin-delete-confirm"><input type="hidden" name="target" value={target}/><p>Eliminare questo sconto? I prezzi degli ordini già creati non cambiano.</p><button type="submit" className="button button-secondary">Sì, elimina</button><button type="button" className="button button-secondary" onClick={()=>setConfirm(false)}>Annulla</button></form>:<button type="button" className="button button-secondary" onClick={()=>setConfirm(true)}>Elimina sconto</button>;}
