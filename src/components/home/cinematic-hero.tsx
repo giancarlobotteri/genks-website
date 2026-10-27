@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ArrowDown, ArrowUpRight, Pause, Play } from "lucide-react";
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { useHomeSceneActive } from "./cinematic-home";
 import styles from "./cinematic-hero.module.css";
 
 const WooferScene = dynamic(() => import("./woofer-scene"), { ssr: false });
 
-export function CinematicHero({ serviceLanding = false }: { serviceLanding?: boolean }) {
+export function CinematicHero({ serviceLanding = false, sideContent }: { serviceLanding?: boolean; sideContent?: ReactNode }) {
   const router = useRouter();
   const active = useHomeSceneActive();
   const sectionRef = useRef<HTMLElement>(null);
@@ -185,6 +185,7 @@ export function CinematicHero({ serviceLanding = false }: { serviceLanding?: boo
             onUnavailable={() => { setReady(false); window.dispatchEvent(new Event("genks:hero-settled")); }} /> : null}
         </div>
 
+        {sideContent && <div className={styles.serviceDesk}>{sideContent}</div>}
         <div className={styles.content}>
           <div className={styles.actions}>
             {serviceLanding ? <>
@@ -208,4 +209,3 @@ export function CinematicHero({ serviceLanding = false }: { serviceLanding?: boo
     </section>
   );
 }
-

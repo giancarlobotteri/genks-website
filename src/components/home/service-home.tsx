@@ -1,7 +1,6 @@
 import {discountPrice} from "@/lib/public-discounts";
 import Link from "next/link";
-import {OffersRail} from "./offers-rail";
-import {sortedPackages} from "@/lib/service-catalog";
+import { HomeServiceDesk } from "./home-service-desk";
 import {projectRates,recordingHourlyCents,serviceAmount} from "@/lib/service-rates";
 import {getPublicDiscounts} from "@/lib/public-discounts-server";
 import Image from "next/image";
@@ -12,10 +11,12 @@ import { HomeProof } from "./home-proof";
 import styles from "./service-home.module.css";
 export async function ServiceHome() {
  const discounts=await getPublicDiscounts();
- const offerServices=[...Object.entries(projectRates).map(([code,base])=>({code,base,label:code.replaceAll("_"," + "),href:`/services/project?service=${code}`})),{code:"recording",base:recordingHourlyCents,label:"Registrazione",href:"/services/recording"}].flatMap(s=>{const p=discountPrice(s.base,[s.code,s.code==="recording"?"services":"projects","services"],discounts);return p<s.base?[{name:`${s.label} in offerta`,price:serviceAmount(p),description:`Listino ${serviceAmount(s.base)}${s.code==="recording"?"/ora":" · fascia iniziale"}`,href:s.href}]:[];});
  return <div className={`${styles.home} ${styles.cinematicHome}`}>
-  <OffersRail offers={[...offerServices,...sortedPackages().map(([code,p])=>({name:p.name,price:serviceAmount(p.price),description:p.description+" · Risparmi "+serviceAmount(p.separate-p.price),href:`/services/project?package=${code}`}))]}/>
-  <CinematicHero serviceLanding />
+  <CinematicHero serviceLanding sideContent={<HomeServiceDesk services={[
+   {name:"Mix + master",price:`da ${serviceAmount(discountPrice(projectRates.mix_master,["mix_master","projects","services"],discounts))}`,detail:"Un brano pronto a uscire",href:"/services/project?service=mix_master"},
+   {name:"Master",price:serviceAmount(discountPrice(projectRates.master,["master","projects","services"],discounts)),detail:"Il tocco finale al tuo mix",href:"/services/project?service=master"},
+   {name:"Registrazione",price:`${serviceAmount(discountPrice(recordingHourlyCents,["recording","services"],discounts))}/ora`,detail:"Il tuo spazio in studio",href:"/services/recording"}
+  ]}/>} />
   <div id="collection">
   <section className={styles.section}><h2>COME FUNZIONA</h2><div className={styles.steps}>
    <article><span>01</span><h3>Scegli e paga</h3><p>Scegli il servizio e paga online in 2 minuti.</p></article>

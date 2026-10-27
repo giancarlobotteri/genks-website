@@ -34,3 +34,59 @@ body:has(.cart-rail):has(#home) #main-content{padding-inline:0;background:transp
 @media(max-width:720px){.package-table table,.package-table tbody{display:block}.package-table thead{display:none}.package-table tr{display:grid;padding:18px;border-bottom:1px solid #4b87bc;gap:12px;background:linear-gradient(145deg,#12335b,#0a2343)}.package-table td,.package-table th{display:block;padding:0!important;border:0!important;min-width:0!important}.package-table th{font-size:20px}.package-table td[data-label]::before{content:attr(data-label) ": ";color:#c3e6ff;font-size:12px}.package-table .button{width:100%;justify-content:center}.package-table td small{margin-top:8px}}
 
 .service-portal h2[tabindex="-1"]{scroll-margin-top:220px}.service-portal [aria-label="Riepilogo dei brani"]>article:only-of-type{grid-column:1/-1}
+/* Mobile density: smaller decoration and spacing, readable inputs and touch targets. */
+@media(max-width:720px){
+ .genks-header{inset:10px 12px auto;height:56px;border-radius:16px}
+ .genks-header-logo{height:56px;width:86px}
+ .genks-menu-toggle{min-height:40px}
+ .portal-shell,.portal-shell.service-portal,.portal-shell.narrow-shell.service-portal{width:calc(100% - 24px);padding-top:88px;padding-bottom:110px}
+ .portal-shell>h1{font-size:clamp(1.65rem,7vw,2.25rem);line-height:1.16;letter-spacing:-.035em}
+ .portal-shell p{line-height:1.65}
+ .service-portal .service-page-heading{margin-bottom:22px;gap:10px}
+ .service-portal .service-page-heading h1,.service-v8-layout h1{font-size:clamp(1.55rem,6.6vw,2rem);line-height:1.2}
+ .service-portal .service-page-heading .genks-emblem{width:54px;height:62px;flex-basis:54px}
+ .service-portal .service-page-heading p{font-size:13px;line-height:1.6}
+ .service-portal .premium-form,.service-v8-layout .premium-form{padding:16px 13px;gap:16px;border-radius:18px}
+ .service-v8-layout{gap:16px}
+ .service-v8-layout h2{font-size:1.1rem;line-height:1.4}
+ .service-v8-layout label{font-size:13px;gap:7px}
+ .service-v8-layout :is(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:16px;min-height:44px;padding:10px}
+ .service-v8-layout fieldset{padding:13px;gap:12px;border-radius:14px}
+ .service-v8-layout small{font-size:11px;line-height:1.6}
+ .service-v8-layout form{gap:14px}
+ .service-v8-summary{padding:16px;gap:13px;border-radius:18px}
+ .service-v8-summary h3{font-size:1.35rem}
+ .service-v8-tabs{gap:7px}.service-v8-tabs button{padding:9px 12px;min-height:44px;font-size:12px}
+ .service-v8-mobile-total{padding:10px 13px;gap:4px;top:76px}
+ .service-portal .button{min-height:44px;padding:11px 15px;font-size:13px;border-radius:13px}
+ .service-v8-actions{gap:9px}
+ .service-v8-layout .service-rate-list p{padding:9px 10px;gap:10px;font-size:12px}
+ .service-v8-layout .service-rate-list p strong{font-size:14px;white-space:nowrap}
+ .service-portal .file-transfer,.service-portal .payment-choice,.service-portal .rush-option,.service-portal .quote-delivery{padding:14px;gap:12px;border-radius:14px;font-size:13px}
+ .quote-running{top:76px;padding:10px 13px}
+ .quote-line{padding:12px;gap:10px;font-size:13px}
+ .service-v8-layout .data-list article{padding:14px;margin-bottom:13px;border-radius:14px}
+ .service-v8-layout .data-list article>div{gap:10px}
+ .studio-scheduler{gap:16px}.studio-scheduler>section{padding:13px;gap:12px;border-radius:16px}
+ .studio-step-title{gap:9px}.studio-step-title h3{font-size:1rem}.studio-step-title>span{height:28px;flex-basis:28px;font-size:12px}
+ .studio-duration-control{padding:10px}.studio-duration-control button{width:44px;height:44px}
+ .studio-duration-options{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+ .studio-duration-options button{padding:10px 4px;gap:5px;min-height:54px;font-size:12px}.studio-duration-options small{font-size:10px}
+ .service-v8-layout .studio-scheduler .booking-days{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+ .studio-scheduler .booking-days button{min-height:64px;padding:7px 4px;gap:3px;grid-template-rows:20px 20px;border-radius:11px}
+ .studio-scheduler .booking-days button>span{font-size:11px}.studio-scheduler .booking-days button>small{font-size:10px}
+ .studio-scheduler .slot-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+ .service-v8-layout .studio-scheduler .slot-grid button{padding:9px 5px;min-height:60px;border-radius:11px}.studio-scheduler .slot-grid strong{font-size:14px}
+ .studio-selection,.studio-night-note{padding:14px;font-size:13px;border-radius:13px}
+ .booking-calendar-nav{gap:7px}.booking-calendar-nav button{padding:9px 10px;min-height:44px;font-size:11px}.booking-calendar-nav strong{font-size:11px}
+ .account-space .portal-header,.account-space .portal-panel{padding:16px;border-radius:18px}
+ .account-space .portal-header h1{font-size:1.7rem;margin:6px 0 10px}
+ .account-space .portal-tabs{gap:7px;margin-block:16px}.account-space .portal-tabs a{padding:10px 8px;border-radius:12px;font-size:12px;min-height:44px;flex:1 1 40%}
+ .account-space .data-list>article{padding:14px;gap:12px;border-radius:14px}.account-space .data-list>article>div{gap:8px}.account-space .data-list strong{font-size:1rem}
+ .account-list-tools{padding:13px;gap:12px;margin:16px 0}.account-list-tools label{font-size:12px}
+ .package-table tr{padding:14px;gap:9px}.package-table th{font-size:17px}
+ .site-footer{padding-bottom:130px}
+ .modal:has([data-service-cart-panel]){width:min(560px,calc(100% - 24px));max-height:calc(100svh - 32px);padding:24px 16px;border-radius:22px;background:linear-gradient(145deg,#0e2847,#06162c);border:1px solid #4a8fca}
+}
+.modal:has([data-service-cart-panel]){width:min(580px,calc(100% - 24px));max-height:calc(100svh - 32px);background:linear-gradient(145deg,#0e2847,#06162c);border-color:#4a8fca}
+@media(max-width:350px){.studio-scheduler .slot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-duration-options{grid-template-columns:repeat(2,minmax(0,1fr))}}

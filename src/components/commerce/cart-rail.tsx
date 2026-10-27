@@ -23,12 +23,12 @@ export function CartRail({discounts=[]}:{discounts?:PublicDiscount[]}) {
   const toggleRef = useRef<HTMLButtonElement>(null);
   const visible = pathname === "/" || pathname.startsWith("/beats");
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !BEATS_ENABLED) return;
     document.body.classList.add("has-cart-rail");
     return () => document.body.classList.remove("has-cart-rail");
   }, [visible]);
   useEffect(() => {
-    if (!open || !visible) return;
+    if (!open || !visible || !BEATS_ENABLED) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const close = (event: KeyboardEvent) => {
@@ -45,7 +45,7 @@ export function CartRail({discounts=[]}:{discounts?:PublicDiscount[]}) {
     return () => { window.removeEventListener("keydown", close); document.body.style.overflow = previousOverflow; };
   }, [open, visible]);
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !BEATS_ENABLED) return;
     const collection = document.getElementById("collection");
     if (!collection) return;
     const update = () => setCollapsed(collection.getBoundingClientRect().top < window.innerHeight * .85);
@@ -54,8 +54,8 @@ export function CartRail({discounts=[]}:{discounts?:PublicDiscount[]}) {
     update();
     return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
   }, [visible]);
-  if (!visible) return null;
   if(!BEATS_ENABLED)return <ServiceCartRailV8 discounts={discounts}/>;
+  if (!visible) return null;
   return <>
     <button ref={toggleRef} type="button" data-cart-target className={`cart-rail-toggle ${collapsed ? "is-collapsed" : ""}`} aria-expanded={open} aria-controls={id} aria-label={open ? "Chiudi il carrello" : `Apri il carrello (${count})`} onClick={() => setOpen(value => !value)}>
       <ShoppingBag size={19} /><span>Carrello</span><strong aria-live="polite">{count}</strong>

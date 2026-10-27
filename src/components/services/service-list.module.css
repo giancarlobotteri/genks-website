@@ -2,3 +2,4 @@
 
 @media(min-width:1150px){.cards{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .tableWrap del{display:block;color:#a6cfff}.tableWrap strong{display:block;color:#fff;font-size:1.25rem}
+@media(max-width:720px){.page{gap:24px}.page h1{font-size:1.8rem;line-height:1.2}.cards{gap:12px}.cards article{display:grid;grid-template-columns:1fr auto;padding:18px 16px;gap:12px;border-radius:18px;align-items:start}.cards h2{font-size:19px;margin:0;align-self:center}.cards .price{font-size:22px;white-space:nowrap}.cards p{grid-column:1/-1;font-size:13px;line-height:1.65}.cards .badge{grid-column:1/-1;justify-self:start;font-size:10px;padding:5px 10px}.cards a{grid-column:1/-1;min-height:44px;font-size:13px;padding:11px 15px}.guarantee{padding:20px;border-radius:18px;font-size:1rem}.tableWrap td,.tableWrap th{font-size:13px}.tableWrap strong{font-size:1.1rem}}
