@@ -36,3 +36,5 @@
 @media(prefers-reduced-motion:reduce){.previewItems button{transition:none}.previewItems button:hover{transform:none}}
 .cartArt svg{width:54px;height:54px;transform:perspective(300px) rotateY(-18deg) rotateX(8deg);filter:drop-shadow(7px 10px 0 #17456c) drop-shadow(0 12px 12px #020b2180)}
 @media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.launcher[data-genks-cart-launcher]{padding:8px 10px;gap:7px}.launcher[data-genks-cart-launcher]>span{display:none}}
+
+@media(orientation:portrait) and (max-width:720px){.panel{width:calc(100% - 24px);max-width:420px;box-sizing:border-box;margin-inline:12px}.panel .items article{grid-template-columns:minmax(0,1fr) auto;align-items:start}.panel .items h3{overflow-wrap:break-word;line-height:1.4}.panel .itemSide strong{font-size:14px}.panel .totals>div{align-items:start;gap:12px}.panel .totals>div>span{min-width:0;overflow-wrap:break-word}.panel .totals strong{font-size:22px}.panel .actions{gap:12px}.panel .actions a{flex:1 1 100%}.panel .confirm>div{flex-wrap:wrap}.panel .confirm button{flex:1 1 100px}}
