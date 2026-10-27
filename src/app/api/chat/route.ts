@@ -1,3 +1,4 @@
+import {answerBookingRequest} from '@/lib/chatbot/booking';
 import {knownAnswer} from '@/lib/chatbot/answers';
 import {z} from 'zod';
 import {rispondi} from '@/lib/chatbot/providers';
@@ -15,6 +16,7 @@ export async function POST(request:Request){
   if(/\b(?:il mio|mio)\s+(?:numero|telefono)\b/i.test(messages.at(-1)?.content??''))return Response.json({reply:'Non inserire dati personali in chat. Per parlare con GENKS usa [WhatsApp](https://wa.me/393450236299) o assistenza@prodbygenks.com.'});
   if(messages.some(m=>/[\w.+-]+@[\w.-]+\.[a-z]{2,}|(?:\+?\d[\s().-]*){8,}|https?:\/\//i.test(m.role==='user'?m.content:'')))return Response.json({reply:'Non inserire email, telefoni, collegamenti ai file o dati personali in chat. Per il tuo ordine usa [l’assistenza](https://www.prodbygenks.com/account) oppure [WhatsApp](https://wa.me/393450236299).'});
   const known=knownAnswer(messages.at(-1)!.content);if(known)return Response.json({reply:known,active:true});
+  const booking=await answerBookingRequest(messages.at(-1)!.content);if(booking)return Response.json({reply:booking,active:true});
   if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)return Response.json({reply:fallback,active:false});
   const reply=await rispondi(messages);
   return Response.json({reply:reply||fallback,active:Boolean(reply)});

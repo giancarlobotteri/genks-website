@@ -2,8 +2,8 @@ import {codificaPreventivo,type PreventivoInput,type Preventivo} from './pricing
 const words:Record<string,number>={un:1,uno:1,una:1,due:2,tre:3,quattro:4,cinque:5,sei:6,sette:7,otto:8,nove:9,dieci:10};
 const count=(s:string)=>words[s.toLowerCase()]??Number(s);
 /** Resolve explicit customer quantities before pricing; never alter the calculator or its prices. */
-export function normalizeQuoteRequest(input:PreventivoInput,text:string):PreventivoInput{
- const t=text.toLowerCase();let next:PreventivoInput={...input,brani:input.brani?.map(b=>({...b}))};
+export function normalizeQuoteRequest(input:PreventivoInput,text:string,authorizationText=text):PreventivoInput{
+ const auth=authorizationText.toLowerCase();const t=text.toLowerCase();let next:PreventivoInput={...input,brani:input.brani?.map(b=>({...b,artisti_correzione_voce:/correz|intonaz|pulizia.*voc|tuning|editing|artisti.*voc/.test(auth)?b.artisti_correzione_voce:0,revisioni_extra:/revision|modifiche aggiuntive/.test(auth)?b.revisioni_extra:0,consegna_veloce:/veloc|urgent|48\s*(?:ore|h)|consegna.*domani/.test(auth)?b.consegna_veloce:false}))};
  const distribution=[...t.matchAll(/\b(un[oa]?|due|tre|quattro|cinque|sei|\d+)\s+da\s+(\d+)\b/g)].map(m=>({quantita:count(m[1]),file:Number(m[2])}));
  const explicit=t.match(/\b(\d+|un[oa]?|due|tre|quattro|cinque|sei|sette|otto)\s+(?:brani|brano|pezzi|pezzo|canzoni)\b/);
  const expected=explicit?count(explicit[1]):null;
@@ -11,7 +11,7 @@ export function normalizeQuoteRequest(input:PreventivoInput,text:string):Prevent
   const first=next.brani[0];if(next.brani.every(b=>b.servizio===first.servizio&&(b.artisti_correzione_voce??0)===(first.artisti_correzione_voce??0)&&(b.revisioni_extra??0)===(first.revisioni_extra??0)&&!!b.consegna_veloce===!!first.consegna_veloce))next.brani=distribution.map(b=>({...first,...b}));
  }
  if(expected&&next.brani?.length&&next.brani.reduce((n,b)=>n+(b.quantita??1),0)!==expected)throw Error(`Il cliente ha richiesto ${expected} brani totali: correggi le quantità, senza aggiungere brani.`);
- if(/\bbeat\b/.test(t)&&/registr|studio/.test(t)&&/mix/.test(t)){
+ if(/\bbeat\b/.test(t)&&/registr|studio/.test(t)&&/mix/.test(t)&&!/senza.*beat|base (?:mia|fornita)|fornisco.*base|beat.*(?:non.*genks|un altro|già pronto)/.test(t)){
   next={...next,beat_su_misura:next.beat_su_misura||1,ore_registrazione:next.ore_registrazione||2,brani:next.brani?.length?next.brani.map(b=>({...b,servizio:'mix_master'})):[{servizio:'mix_master',file:8}]};
  }
  return next;
