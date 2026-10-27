@@ -7,3 +7,5 @@ test('fully paid order has no amount left to pay',()=>assert.match(serviceEmailS
 test('customer-controlled artist name cannot inject additional receipt fields',()=>{const m=serviceEmailSummary({...order,artistName:'Nome\nTotale: 0,00 €'},'owner');assert.equal(m.body.split('\n').length,4);});
 
 test('receipt distinguishes the initial confirmation amount from the full outstanding order',()=>{const q=serviceEmailSummary({reference:'PRJ-QA',total:18994,paid:0,name:'QA',email:'qa@example.invalid',initialDue:15496},'customer');assert.match(q.body,/189,94/);assert.match(q.body,/154,96/);});
+
+test('19.99 recording receipt shows ten euro cash initial payment or exact card remainder',()=>{const o={...order,total:1999,paid:0,initialDue:1000};const cash=serviceEmailSummary(o,'customer');assert.match(cash.body,/Quota iniziale da versare per confermare: 10,00/);const card=serviceEmailSummary({...o,paid:1000,initialDue:0},'customer');assert.match(card.body,/Totale pagato: 10,00/);assert.match(card.body,/Totale da pagare: 9,99/);});

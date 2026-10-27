@@ -1,9 +1,10 @@
 /** New agreements only. Activate only with the matching checkout and booking integration. */
-export const pricingVersion = '2026-10-27-v10';
+import {discountedStudioBundle} from './service-payment-policy.ts';
+export const pricingVersion = '2026-10-27-v11';
 export const ratesV10 = {
   master: 2999, beat: 3499, recordingHour: 1999, nightHour: 2999,
-  masterPack: 6999, fiveHours: 7999, voiceBase: 1999, turnkeyBase: 4999,
-  includedHoursPerSong: 2, extraTrack: 250,
+  masterPack: 6999, fiveHours: 7999, 
+  includedHoursPerSong: 2, extraTrack: 200,
 } as const;
 export const mixTiersV10 = [
   {min:1,max:8,price:2999}, {min:9,max:16,price:4999},
@@ -26,7 +27,7 @@ export function audioPriceV10(service:'mix'|'master'|'mix_master',tracks:number)
 }
 export function recordingPriceV10(dayMinutes:number,nightMinutes:number){
   integer(dayMinutes,0);integer(nightMinutes,0);
-  return cents(Math.round(dayMinutes*ratesV10.recordingHour/60)+Math.round(nightMinutes*ratesV10.nightHour/60));
+  return cents(Math.round((dayMinutes+nightMinutes)*ratesV10.recordingHour/60)+Math.round(nightMinutes*(ratesV10.nightHour-ratesV10.recordingHour)/60));
 }
 export function realSavingV10(separate:number,total:number){return Math.max(0,cents(separate)-cents(total));}
 export function fixedPackageV10(kind:'masters'|'hours'){
@@ -40,10 +41,8 @@ export function studioPackageV10(kind:'voice'|'turnkey',tracks:number,minutes:nu
   integer(minutes,15);integer(nightMinutes,0,minutes);
   const audio=audioPriceV10('mix_master',tracks);
   const recording=recordingPriceV10(minutes-nightMinutes,nightMinutes);
-  const base=kind==='voice'?ratesV10.voiceBase:ratesV10.turnkeyBase;
-  const total=cents(base+audio+recording);
-  const separate=audio+recording+(kind==='turnkey'?ratesV10.beat:0);
-  return {base,audio,recording,total,separate,saving:realSavingV10(separate,total)};
+  const q=discountedStudioBundle(audio,recording,kind==='turnkey'?ratesV10.beat:0);
+  return {base:0,audio:q.audio,recording:q.studio,total:q.total,separate:q.separate,saving:q.saving};
 }
 export type ProjectSongV10={tracks:number;source:'genks'|'external'};
 export function projectPackageV10(format:'ep'|'album',songs:ProjectSongV10[]){

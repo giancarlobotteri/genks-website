@@ -4,9 +4,9 @@ export const customBeat = {total:3499,deposit:1750,balance:1749,businessDays:10,
 export const packages = {
  ep:{name:"EP Pack",price:37988,separate:53980,songs:4,service:"mix_master",studio:false,description:"4 produzioni GENKS, mix, master e 2 ore di studio per brano; una revisione inclusa"},
  masters:{name:"Master Pack",price:6999,separate:8997,songs:3,service:"master",studio:false,description:"3 master stereo, una revisione per brano"},
- voice:{name:"Registrazione + mix/master",price:1999,separate:0,songs:1,service:"mix_master",studio:true,description:"Quota iniziale 19,99 € + ore scelte + mix della fascia + master 29,99 €"},
+ voice:{name:"Registrazione + mix/master",price:6997,separate:7997,songs:1,service:"mix_master",studio:true,description:"Ore di studio scelte + mix della fascia + master, con 10 € di risparmio"},
  hours:{name:"Blocco 5 ore di registrazione",price:7999,separate:9995,songs:0,service:"recording",studio:true,description:"5 ore entro 90 giorni, massimo 2 appuntamenti"},
- turnkey:{name:"Singolo chiavi in mano",price:4999,separate:0,songs:1,service:"mix_master",studio:true,description:"Quota iniziale 49,99 € con beat GENKS, più ore scelte, mix della fascia e master 29,99 €"},
+ turnkey:{name:"Singolo chiavi in mano",price:10496,separate:11496,songs:1,service:"mix_master",studio:true,description:"Beat GENKS + ore scelte + mix della fascia + master, con 10 € di risparmio"},
 } as const;
 export type PackageCode=keyof typeof packages;
 export function packageByCode(code:unknown){return typeof code==="string"&&Object.hasOwn(packages,code)?packages[code as PackageCode]:null;}

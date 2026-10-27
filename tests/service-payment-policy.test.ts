@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {recordingDepositCents,discountedStudioBundle} from '../src/lib/service-payment-policy.ts';
+import {quoteOrder,cardOrderLines,type OrderSelection} from '../src/lib/service-order-v8.ts';
+import {quotePreventivo} from '../src/lib/chatbot/checkout.ts';
+import {codificaPreventivo} from '../src/lib/chatbot/pricing.ts';
+const rec=(hours:number,payment:'card'|'cash',time='19:30'):OrderSelection=>({kind:'recording',songs:[],hours,extraHours:0,date:'2030-01-04',time,payment,notes:'',rights:'own'});
+test('fixed studio deposit has an exact 19.99 exception and never exceeds total',()=>{for(const [total,due] of [[1999,1000],[3998,2000],[5997,2000],[2499,2000],[1500,1500],[0,0]])assert.equal(recordingDepositCents(total),due);for(const total of [-1,1.1,NaN,Infinity])assert.throws(()=>recordingDepositCents(total));});
+test('card and cash snapshots, Stripe lines and bot agree on initial payment and remaining balance',()=>{for(const payment of ['card','cash'] as const)for(const [hours,total,due] of [[1,1999,1000],[2,3998,2000],[3,5997,2000]]){const q=quoteOrder([rec(hours,payment)],true);const b=quotePreventivo(codificaPreventivo({ore_registrazione:hours}),[],payment);for(const actual of [q,b]){assert.equal(actual.total,total);assert.equal(actual.cardNow+actual.cashNow,due);assert.equal(actual.balance,total-due);assert.equal(actual.parts[0].bookingDeposit,due);assert.equal(cardOrderLines(actual).reduce((n,l)=>n+l.amount,0),actual.cardNow);}}});
+test('night premium changes total before the fixed deposit is computed',()=>{const q=quoteOrder([rec(1,'card','23:30')],true);assert.equal(q.total,2499);assert.equal(q.cardNow,2000);assert.equal(q.balance,499);});
+test('ten euro bundle saving and allocation hold across every tier and selected duration',()=>{for(const audio of [5998,7998,9998,11998,14998,15198])for(const hours of [1,2,5,8])for(const beat of [0,3499]){const q=discountedStudioBundle(audio,hours*1999,beat);assert.equal(q.separate-q.total,1000);assert.equal(q.audio+q.studio+q.beat,q.total);assert.ok(q.audio>=0&&q.studio>=0&&q.beat>=0);}});
+test('client-supplied deposit cannot override trusted server calculation',()=>{const q=quoteOrder([{...rec(1,'card'),bookingDeposit:1,deposit:1,dueNow:1}],true);assert.equal(q.parts[0].bookingDeposit,1000);assert.equal(q.cardNow,1000);});
+
+test('studio bundles require a chosen date and time before reservation',()=>{for(const packageCode of ['voice','turnkey']){const p={...rec(1,'card'),kind:'package',packageCode,date:'',time:'',rights:packageCode==='turnkey'?'split50':'own',songs:[{trackTitle:'QA',trackCount:8,artists:1,revisions:0,rush:false,fileUrl:''}]};assert.throws(()=>quoteOrder([p],true,new Date(),[],{requireFiles:true}),/giorno e ora/);}});

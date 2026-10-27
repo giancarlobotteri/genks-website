@@ -1,3 +1,4 @@
+import {recordingDepositCents} from '../service-payment-policy.ts';
 import {productionSelection,quoteProductionPart} from '../production-order.ts';
 import {validateTransfer} from '../swiss-transfer.ts';
 import {z} from 'zod';
@@ -23,16 +24,16 @@ function drafts(rows:Riga[]):Draft[]{
   for(let i=0;i<count;i++){
    const hours=m.tipo==='credits'?5:m.tipo==='recording'?Math.min(8,(m.ore??0)-i*8):m.ore??0;
    const amount=m.tipo==='credits'?PREZZI.pacchetti.blocco5Ore:m.tipo==='custom'?PREZZI.beat:m.tipo==='recording'?hours*recordingHourlyCents:row.centesimi;
-   const balance=m.tipo==='credits'||m.tipo==='custom'||m.tipo==='recording'?amount/2:m.saldo??0;
-   const rawStudio=m.tipo==='turnkey'?2*recordingHourlyCents*PREZZI.pacchetti.singoloChiaviInMano/(PREZZI.beat+2*recordingHourlyCents+PREZZI.mixMaster[0]):m.tipo==='voice'?2*recordingHourlyCents*PREZZI.pacchetti.registrazioneMixMaster/(2*recordingHourlyCents+PREZZI.mixMaster[0]):hours?amount:0;
-   const rawCustom=m.tipo==='turnkey'?PREZZI.beat*PREZZI.pacchetti.singoloChiaviInMano/(PREZZI.beat+2*recordingHourlyCents+PREZZI.mixMaster[0]):m.tipo==='custom'?amount:0;
+   const balance=m.tipo==='credits'?0:m.tipo==='custom'?amount/2:m.tipo==='recording'?amount-recordingDepositCents(amount):m.saldo??0;
+   const rawStudio=m.studioAmount??(m.tipo==='turnkey'?2*recordingHourlyCents*PREZZI.pacchetti.singoloChiaviInMano/(PREZZI.beat+2*recordingHourlyCents+PREZZI.mixMaster[0]):m.tipo==='voice'?2*recordingHourlyCents*PREZZI.pacchetti.registrazioneMixMaster/(2*recordingHourlyCents+PREZZI.mixMaster[0]):hours?amount:0);
+   const rawCustom=m.customAmount??(m.tipo==='turnkey'?PREZZI.beat*PREZZI.pacchetti.singoloChiaviInMano/(PREZZI.beat+2*recordingHourlyCents+PREZZI.mixMaster[0]):m.tipo==='custom'?amount:0);
    result.push({tipo:m.tipo,title:m.tipo==='custom'?`Beat su misura ${i+1} di ${count}`:row.personalizzato?'Offerta su misura · '+row.descrizione:row.descrizione,lines:[{name:count>1?`${row.descrizione} · quota ${i+1} di ${count}`:row.descrizione,amount}],total:amount,rawBalance:balance,hours,credit:m.tipo==='credits',beat:m.tipo==='turnkey'||m.tipo==='custom'?1:0,songs:m.brani??[],personalizzato:!!row.personalizzato,studioAmount:Math.round(rawStudio),customAmount:Math.round(rawCustom)});
   }
  }
  for(const row of deferred){const m=row.componente!;
   const eligible=result.filter(d=>m.tipo==='night'?d.hours>0:m.aggancio==='blocchi'?d.credit:!d.credit&&['turnkey','voice'].includes(d.tipo));
   let left=m.tipo==='night'?row.centesimi:(m.ore??0);
-  for(const d of eligible){if(!left)break;const units=m.tipo==='night'?left:Math.min(left,d.credit?5:2);const amount=m.tipo==='night'?units:units*PREZZI.oraAggiuntivaPacchetto;d.lines.push({name:row.descrizione,amount});d.total+=amount;d.rawBalance+=amount/2;d.studioAmount+=amount;if(m.tipo!=='night')d.hours+=units;left-=units;}
+  for(const d of eligible){if(!left)break;const units=m.tipo==='night'?left:Math.min(left,d.credit?5:2);const amount=m.tipo==='night'?units:units*PREZZI.oraAggiuntivaPacchetto;d.lines.push({name:row.descrizione,amount});d.total+=amount;d.rawBalance=d.tipo==='recording'?d.total-recordingDepositCents(d.total):0;d.studioAmount+=amount;if(m.tipo!=='night')d.hours+=units;left-=units;}
   if(left)throw Error('Le ore aggiuntive richiedono una sessione compatibile.');
  }
  return result;
@@ -68,11 +69,11 @@ export function quotePreventivo(code:string,rawDetails:unknown=[],payment:'card'
   const info=details[i]??{date:'',time:'',titles:[],files:[],sources:[],fileConfirmations:[]};const balance=balances[i];const due=d.total-balance;
   const songs=d.songs.map((s,n)=>{songNumber++;const fileUrl=info.files[n]??'';const source=info.sources[n]??(d.tipo==='turnkey'?'genks':'external');if(requireDates&&source==='external')validateTransfer(fileUrl,info.fileConfirmations[n]);if(fileUrl){const u=new URL(fileUrl);if(u.protocol!=='https:'||u.username||u.password)throw Error('Usa collegamenti HTTPS ai file.');}return {trackTitle:info.titles[n]??`Brano ${songNumber}`,trackCount:s.file,artists:s.artisti,revisions:s.revisioni,rush:s.veloce,fileUrl,production:source,filesThirtyDays:info.fileConfirmations[n]??false,service:s.servizio};});
   const nightCents=d.lines.filter(l=>/mezzanotte|notturn/i.test(l.name)).reduce((n,l)=>n+l.amount,0);
-  const upgrades=d.songs.reduce((n,s)=>n+(s.servizio==='master'?0:PREZZI.maggiorazionePacchetto[s.fascia]),0);
+  const upgrades=['voice','turnkey'].includes(d.tipo)?0:d.songs.reduce((n,s)=>n+(s.servizio==='master'?0:PREZZI.maggiorazionePacchetto[s.fascia]),0);
   const audioPaid=Math.max(0,d.total-d.studioAmount-d.customAmount-d.lines.slice(1).reduce((n,l)=>n+l.amount,0)-upgrades);
   const audioList=d.songs.reduce((n,s)=>n+(s.servizio==='master'?PREZZI.master:s.servizio==='mix'?PREZZI.mix[0]:PREZZI.mixMaster[0]),0);
-  const guarantees=d.songs.map((s,n)=>({title:songs[n].trackTitle,amount:Math.round((d.tipo==='audio'?projectPrice(s.servizio,s.file)!:audioPaid*(s.servizio==='master'?PREZZI.master:s.servizio==='mix'?PREZZI.mix[0]:PREZZI.mixMaster[0])/audioList+(s.servizio==='master'?0:PREZZI.maggiorazionePacchetto[s.fascia]))*.3)}));
-  return {selection:{kind:'package',packageCode:d.credit?'hours':'preventivo',songs,hours:d.hours,extraHours:0,date:info.date,time:info.time,payment,notes:checked.note.join('\n'),rights:d.beat?'split50':'own'},title:d.title,total:d.total,listTotal:d.total,saving:0,deposit:d.studioAmount+d.customAmount-balance,dueNow:due,cardNow:payment==='card'?due:0,cashNow:payment==='cash'?due:0,balance,studioAmount:d.studioAmount,customAmount:d.customAmount,hours:d.credit?(info.sessionHours??Math.min(d.hours,8)):d.hours,guarantees,lines:d.lines,firstVersion:songs.length?firstVersionEstimate(now,songs.every(s=>s.rush),early):d.beat?firstVersionEstimate(now,false,early,10):null,preventivoCode:code,...d.credit?{creditMinutes:d.hours*60,bookingAmount:Math.round((d.studioAmount-nightCents)*(info.sessionHours??Math.min(d.hours,8))/d.hours)+nightCents}:{},personalizzato:d.personalizzato};
+  const guarantees=d.songs.map((s,n)=>({title:songs[n].trackTitle,amount:Math.round((d.tipo==='audio'?projectPrice(s.servizio,s.file)!:['voice','turnkey'].includes(d.tipo)?audioPaid:audioPaid*(s.servizio==='master'?PREZZI.master:s.servizio==='mix'?PREZZI.mix[0]:PREZZI.mixMaster[0])/audioList+(s.servizio==='master'?0:PREZZI.maggiorazionePacchetto[s.fascia]))*.3)}));
+  return {selection:{kind:'package',packageCode:d.credit?'hours':'preventivo',songs,hours:d.hours,extraHours:0,date:info.date,time:info.time,payment,notes:checked.note.join('\n'),rights:d.beat?'split50':'own'},title:d.title,total:d.total,listTotal:d.total,saving:0,deposit:d.studioAmount+d.customAmount-balance,dueNow:due,cardNow:payment==='card'?due:0,cashNow:payment==='cash'?due:0,balance,studioAmount:d.studioAmount,customAmount:d.customAmount,hours:d.credit?(info.sessionHours??Math.min(d.hours,8)):d.hours,...d.hours?{bookingDeposit:d.tipo==='recording'?due:d.credit?Math.round((d.studioAmount-nightCents)*(info.sessionHours??Math.min(d.hours,8))/d.hours)+nightCents:d.studioAmount}:{},guarantees,lines:d.lines,firstVersion:songs.length?firstVersionEstimate(now,songs.every(s=>s.rush),early):d.beat?firstVersionEstimate(now,false,early,10):null,preventivoCode:code,...d.credit?{creditMinutes:d.hours*60,bookingAmount:Math.round((d.studioAmount-nightCents)*(info.sessionHours??Math.min(d.hours,8))/d.hours)+nightCents}:{},personalizzato:d.personalizzato};
  });
  const sum=(key:'total'|'cardNow'|'cashNow'|'balance')=>parts.reduce((n,p)=>n+p[key],0);
  const quote={version:orderVersion,parts,total:sum('total'),cardNow:sum('cardNow'),cashNow:sum('cashNow'),balance:sum('balance'),saving:Math.max(0,checked.importi_centesimi.listino-checked.importi_centesimi.totale),preventivoCode:code,preventivo:checked} satisfies OrderQuote&{preventivoCode:string;preventivo:typeof checked};

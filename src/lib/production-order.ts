@@ -14,9 +14,9 @@ export function quoteProductionPart(raw:OrderSelection,early:boolean,now:Date,re
  if(appointments.reduce((n,a)=>n+a.extraHours,0)!==project.ore_extra)throw Error('Le ore aggiuntive non corrispondono agli appuntamenti.');
  const night=appointments.reduce((n,a)=>n+(a.date&&a.time?buildRecordingQuote(a.date,a.time,2+a.extraHours).night:0),0);
  const total=q.total+night,balance=q.balance,dueNow=total-balance;
- const lines=q.lines.map(l=>({...l,payNow:l.name.includes('produzione GENKS')?1750:l.amount}));
+ const lines=q.lines.map(l=>({...l,payNow:l.amount}));
  if(night)lines.push({name:'Supplemento notturno · +10,00 €/ora',amount:night,payNow:night});
- return {selection:{...raw,songs,date:'',time:'',hours:q.hours},title:`${project.format==='album'?'Album':'EP'} Pack · ${songs.length} brani`,total,listTotal:q.listTotal+night,saving:q.listTotal-q.total,deposit:q.beats*1750,dueNow,cardNow:raw.payment==='card'?dueNow:0,cashNow:raw.payment==='cash'?dueNow:0,balance,studioAmount:q.studio+night,customAmount:q.custom,hours:q.hours,guarantees:q.shares.map((amount,i)=>({title:songs[i].trackTitle,amount:Math.round(amount*.3)})),lines,firstVersion:firstVersionEstimate(now,false,early,10)};
+ return {selection:{...raw,songs,date:'',time:'',hours:q.hours},title:`${project.format==='album'?'Album':'EP'} Pack · ${songs.length} brani`,total,listTotal:q.listTotal+night,saving:q.listTotal-q.total,deposit:total,dueNow,cardNow:raw.payment==='card'?dueNow:0,cashNow:raw.payment==='cash'?dueNow:0,balance,studioAmount:q.studio+night,customAmount:q.custom,hours:q.hours,guarantees:q.shares.map((amount,i)=>({title:songs[i].trackTitle,amount:Math.round(amount*.3)})),lines,firstVersion:firstVersionEstimate(now,false,early,10)};
 }
 export function productionSelection(project:ProductionInput):OrderSelection{return {kind:'production',production:project,songs:project.brani.map((s,i)=>({trackTitle:`Brano ${i+1}`,trackCount:s.tracce,artists:s.artisti,revisions:0,rush:false,fileUrl:'',production:'genks'})),appointments:project.brani.map(()=>({date:'',time:'',extraHours:0})),hours:0,extraHours:0,date:'',time:'',payment:'card',notes:'',rights:'split50'};}
 /** Expand server-verified project snapshots into one atomic booking per song. */
@@ -27,9 +27,9 @@ export function expandProductionBookings(quote:OrderQuote,early:boolean,now:Date
   validateProjectAppointmentsV10(r.appointments??[],project.brani.length,now);
   return project.brani.map((song,i):OrderPart=>{
    const a=r.appointments![i],audio=p.lines.filter(l=>l.name.startsWith(`Brano ${i+1} ·`)),night=buildRecordingQuote(a.date,a.time,2+a.extraHours).night,studio=a.extraHours*1999+night;
-   const total=audio.reduce((n,l)=>n+l.amount,0)+studio,balance=1749,dueNow=total-balance;
+   const total=audio.reduce((n,l)=>n+l.amount,0)+studio,balance=0,dueNow=total;
    const lines=[...audio,...(studio?[{name:`Registrazione · 2 ore incluse + ${a.extraHours} aggiuntive; supplemento notturno ${night/100} €`,amount:studio,payNow:studio}]:[])];
-   return {...p,title:`${p.title} · ${r.songs[i].trackTitle}`,selection:{...r,production:undefined,songs:[r.songs[i]],appointments:undefined,date:a.date,time:a.time,hours:2+a.extraHours,extraHours:a.extraHours},total,listTotal:total+3998,saving:3998,deposit:1750,dueNow,cardNow:r.payment==='card'?dueNow:0,cashNow:r.payment==='cash'?dueNow:0,balance,studioAmount:studio,customAmount:3499,hours:2+a.extraHours,bookingAmount:studio,guarantees:[p.guarantees[i]],lines,firstVersion:firstVersionEstimate(now,false,early,10)};
+   return {...p,title:`${p.title} · ${r.songs[i].trackTitle}`,selection:{...r,production:undefined,songs:[r.songs[i]],appointments:undefined,date:a.date,time:a.time,hours:2+a.extraHours,extraHours:a.extraHours},total,listTotal:total+3998,saving:3998,deposit:total,dueNow,cardNow:r.payment==='card'?dueNow:0,cashNow:r.payment==='cash'?dueNow:0,balance,studioAmount:studio,customAmount:3499,hours:2+a.extraHours,bookingAmount:studio,bookingDeposit:studio,guarantees:[p.guarantees[i]],lines,firstVersion:firstVersionEstimate(now,false,early,10)};
   });
  });
  if(parts.length>20)throw Error('Puoi acquistare al massimo 20 servizi o sessioni nello stesso ordine.');
