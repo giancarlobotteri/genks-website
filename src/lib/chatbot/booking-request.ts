@@ -1,6 +1,13 @@
 import {shiftDay} from '../booking-slots.ts';
 const names=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
 const numbers:Record<string,number>={un:1,una:1,uno:1,due:2,tre:3,quattro:4,cinque:5,sei:6,sette:7,otto:8};
+export function hasRequestedDay(text:string){return /luned|marted|mercoled|gioved|venerd|sabato|domenica|\boggi\b|\bdomani\b|\b20\d{2}-\d{2}-\d{2}\b|\b\d{1,2}\s+(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)/i.test(text);}
+export function recordingHoursOnly(text:string):number|null{
+ if(hasRequestedDay(text)||/mix|master|beat|\bep\b|\d+[.,]\d+\s*(?:ore|ora|h)/i.test(text)||!/registr|studio/i.test(text))return null;
+ const match=text.toLowerCase().match(/\b(\d+|un[oa]?|due|tre|quattro|cinque|sei|sette|otto)\s*(?:ore|ora|h)\b/);
+ const hours=match?(numbers[match[1]]??Number(match[1])):0;
+ return hours>0&&hours<=200?hours:null;
+}
 export function parseBookingRequest(text:string,now=new Date()){
  const t=text.toLowerCase();const weekday=names.findIndex(n=>t.includes(n)||t.includes(n.replace('ì','i')));
  const iso=t.match(/\b(20\d{2}-\d{2}-\d{2})\b/)?.[1];
