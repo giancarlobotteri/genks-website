@@ -87,7 +87,7 @@ Data e ora italiane: ${new Date().toLocaleString("it-IT",{timeZone:"Europe/Rome"
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ model, messages: conv, tools, temperature: 0.3, max_tokens: 900 }),
+      body: JSON.stringify({ model, messages: conv, tools, temperature: 0.3, max_tokens: messages.some(m=>m.role==='user'&&/\bEP\b|album|produzioni/i.test(m.content))?4096:900 }),
       signal: deadline,
     });
     if (!res.ok) {

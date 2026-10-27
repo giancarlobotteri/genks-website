@@ -12,17 +12,23 @@ export const SITE_URL = "https://www.prodbygenks.com";
 export const CONTACTS = {
   email: "assistenza@prodbygenks.com",
   phone: "+39 345 023 6299",
-  whatsapp: "https://wa.me/393450236299",
   instagram: "https://www.instagram.com/prodbygenks/",
 };
 
 export const KNOWLEDGE = `
+# REGOLE ATTUALI DEL CONFIGURATORE
+- EP e Album Pack su misura: https://www.prodbygenks.com/services/album. Da 2 a 20 brani, scelta individuale base GENKS79,99 € o base già disponibile0 € di produzione; mix/master/solo mix/solo master/nessuna lavorazione selezionabili per ogni brano. I prezzi audio seguono la calcolatrice e gli sconti dei pacchetti esistenti.
+- Studio opzionale: 2 ore nel prezzo del progetto (39,98 €), poi +14,99 €/ora, massimo8 ore per sessione. Rimuovendo lo studio non si paga registrazione.
+- Lavorazione delle voci e numero di artisti INCLUSI senza maggiorazione. Gli unici extra audio sono revisioni aggiuntive e consegna veloce.
+- SwissTransfer: link obbligatorio, scadenza30 giorni, per mix/master su basi non realizzate da GENKS. Se è richiesta la produzione GENKS, non serve chiedere il link della base.
+- Beat singolo99,99 €, 50,00 € iniziali e49,99 € saldo. Nel progetto ogni produzione GENKS79,99 €.
+
 # CHI È GENKS
 - GENKS è Gianca (Gian Carlo Botteri), produttore musicale. Produce e mixa rap, trap e R&B nel suo studio.
-- Studio: Via Quintina s.n.c., Ponte San Giovanni, 06135 Perugia (PG), Italia.
+- Studio: Via Quintina, Ponte San Giovanni, 06135 Perugia (PG), Italia.
 - Lavora in studio a Perugia o a distanza, da qualsiasi paese: si paga online, si mandano le tracce, si riceve il brano via email.
 - Social: Instagram ${CONTACTS.instagram} · TikTok https://www.tiktok.com/@prodbygenks · YouTube https://www.youtube.com/@prodbygenks
-- Assistenza: ${CONTACTS.email} · telefono/WhatsApp ${CONTACTS.phone} (${CONTACTS.whatsapp})
+- Assistenza: ${CONTACTS.email} · DM Instagram ${CONTACTS.instagram}
 
 # COME FUNZIONA (mix e master)
 1. Scegli il servizio e paga online in 2 minuti.
@@ -34,7 +40,7 @@ export const KNOWLEDGE = `
 | Fino a 8   | 59,99 € | 79,99 €  | 9,99 €  |
 | 9–24       | 89,99 € | 104,99 € | 14,99 € |
 | 25–48      | 139,99 € | 149,99 € | 19,99 € |
-- Oltre 48 file: preventivo (su WhatsApp).
+- Oltre 48 file: preventivo (nei DM Instagram).
 - Nessun supplemento per la durata del brano. Concerti, set e raccolte richiedono preventivo.
 - Mix + master è il servizio più scelto: brano pronto per Spotify, Apple Music, YouTube e ogni piattaforma di streaming.
 - Link: mix ${SITE_URL}/services/project?service=mix · mix + master ${SITE_URL}/services/project?service=mix_master
@@ -59,11 +65,11 @@ export const KNOWLEDGE = `
 - Prenotazione: ${SITE_URL}/services/recording
 
 # PACCHETTI (risparmio)
-- Blocco 5 ore di registrazione: 89,99 € (invece di 99,95 €). 5 ore da usare entro 90 giorni, massimo 2 appuntamenti da organizzare con GENKS (non riserva una data in automatico). Link: ${SITE_URL}/services/project?package=hours
+- Blocco 5 ore di registrazione: 89,99 € (invece di 99,95 €). Scegli subito giorno, durata e orario della prima sessione; residuo entro 90 giorni, massimo 2 appuntamenti. Link: ${SITE_URL}/services/project?package=hours
 - Master Pack: 79,99 € (invece di 89,97 €). 3 master stereo, una revisione per brano. Link: ${SITE_URL}/services/project?package=masters
 - Registrazione + mix/master: 109,99 € (invece di 119,97 €). Base fornita dal cliente, 2 ore di registrazione + mix/master fino a 8 file. Link: ${SITE_URL}/services/project?package=voice
 - EP Pack: 279,99 € (invece di 319,96 €). Mix + master di 4 brani, fino a 8 file ciascuno, una revisione per brano. Link: ${SITE_URL}/services/project?package=ep
-- Singolo chiavi in mano: 149,99 € (invece di 219,97 €, risparmio 69,98 €). Beat su misura GENKS + 2 ore di registrazione + mix/master fino a 8 file. È l'offerta con il risparmio più alto. Link: ${SITE_URL}/services/project?package=turnkey
+- Singolo chiavi in mano: 149,99 € (invece di 219,96 €, risparmio 69,97 €). Beat su misura GENKS + 2 ore di registrazione + mix/master fino a 8 file. È l'offerta con il risparmio più alto. Link: ${SITE_URL}/services/project?package=turnkey
 - Nei pacchetti con mix, per ogni brano: 9–24 file +25 €; 25–48 file +70 € (le maggiorazioni non si sommano). Oltre 48: preventivo.
 - Ore aggiuntive nei pacchetti: 9,99 €/ora, nella stessa sessione e secondo disponibilità. Supplemento notturno separato.
 - Esempio: EP con due brani fino a 8 file, uno da 18 e uno da 30 file = 279,99 + 25 + 70 = 374,99 €.
@@ -76,7 +82,7 @@ export const KNOWLEDGE = `
 - Si acquistano dal link di acquisto che il bot genera (carrello servizi del sito).
 
 # BEAT SU MISURA
-- 100 €: 50 € per iniziare, 50 € prima dei file definitivi.
+- 99,99 €: 50 € per iniziare, 49,99 € prima dei file definitivi.
 - Prima versione entro 10 giorni lavorativi da anticipo, indicazioni complete e avvio. Una revisione inclusa.
 - Diritti: split 50/50 dei diritti patrimoniali sulla composizione GENKS. Per il 100% dei diritti o l'esclusiva serve un preventivo e un accordo scritto prima dell'acquisto.
 - Mix, master e registrazione di materiale del cliente NON danno diritti a GENKS.
@@ -84,7 +90,7 @@ export const KNOWLEDGE = `
 - Licenze dei beat: si confrontano file e condizioni sulla pagina ${SITE_URL}/guida#licenze. Licenza e consegna si concordano prima dell'acquisto.
 
 # EXTRA
-- Correzione e pulizia voci (intonazione, piccoli tempi, pulizia), per brano: 1 artista 24,99 € · 2 artisti 34,98 € · 3 artisti 49,97 € · 4 artisti 69,96 €. Doppie e cori dello stesso artista sono inclusi. Ricostruzione da molte riprese o audio molto danneggiato: preventivo.
+- Correzione e pulizia delle voci: incluse nella lavorazione, senza extra per artista.
 - Revisioni aggiuntive (una è già inclusa): prima extra 9,99 €, seconda 14,99 €, terza 19,99 €, quarta 24,99 € (+5 € ogni volta). Oltre due extra serve la disponibilità di GENKS. Ogni revisione = un elenco unico di modifiche.
 - Consegna veloce: +19,99 € a brano, prima versione entro 48 ore (si sceglie nel modulo). Non significa che anche tutte le revisioni arrivino in 48 ore.
 
@@ -94,7 +100,7 @@ export const KNOWLEDGE = `
 - Beat su misura: entro 10 giorni lavorativi.
 
 # PAGAMENTI
-- Carta o Apple Pay online. Contanti solo per il lavoro in studio (si passa in studio con il codice ordine).
+- Carta o Apple Pay online. Contanti presso lo studio prima dell’avvio (si passa in studio con il codice ordine).
 - Mix e master si pagano per intero prima dell'avvio.
 - Registrazione e beat su misura: anticipo del 50%.
 - Si può comprare subito o usare il carrello per più servizi: ${SITE_URL}/services/checkout

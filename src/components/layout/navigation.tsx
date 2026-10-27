@@ -47,7 +47,7 @@ export function Navigation({cards=[]}:{cards?:StoreCard[]}) {
       <Link href="/account/library" onClick={() => setOpen(false)}>La tua raccolta <ArrowUpRight size={17} /></Link>
       <Link href="/guida" onClick={() => setOpen(false)}>Guida all’acquisto <ArrowUpRight size={17} /></Link>
       <Link href="/admin-access" onClick={() => setOpen(false)}>Accesso amministratore <ArrowUpRight size={17} /></Link>
-      </> : <>{[{label:"Home",href:"/"},{label:"Servizi e pacchetti",href:"/services"},{label:"I miei acquisti e prenotazioni",href:"/account/library"},{label:"Lavori",href:"/lavori"},{label:"Chi sono",href:"/chi-sono"},{label:"Guida all’acquisto",href:"/guida"},{label:"Accesso amministratore",href:"/admin-access"}].map(item => <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>{item.label}<ArrowUpRight size={17}/></Link>)}</>}
+      </> : <>{[{label:"Home",href:"/"},{label:"Servizi e pacchetti",href:"/services"},{label:"I miei acquisti e prenotazioni",href:"/account/library"},{label:"Lavori",href:"/lavori"},{label:"Guida all’acquisto",href:"/guida"},{label:"Accesso amministratore",href:"/admin-access"}].map(item => <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>{item.label}<ArrowUpRight size={17}/></Link>)}</>}
     </nav>
 
   </header>;

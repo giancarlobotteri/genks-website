@@ -12,7 +12,7 @@ import {allowPublicRequest} from '@/lib/security/request-limit';
 import {previewRecipientAllowed} from '@/lib/preview-mode';
 import {getGoogleBusyRanges,hasGoogleBusyCalendar} from '@/lib/google-calendar';
 import {fromRomeWallTime} from '@/lib/rome-time';
-import {serviceTerms} from '@/data/legal';
+import {serviceTerms,serviceTermsVersion} from '@/data/legal';
 import {flushNotifications} from '@/lib/notifications';
 export const runtime='nodejs';
 export async function POST(request:Request){
@@ -25,7 +25,7 @@ export async function POST(request:Request){
   const data=z.object({name:z.string().trim().min(2).max(120),artistName:z.string().trim().max(120),email:z.email(),phone:z.string().trim().min(6).max(40),accepted:z.literal('on'),earlyStart:z.boolean(),withdrawalAcknowledged:z.boolean(),contactOwner:z.string().max(100),saveContact:z.boolean(),requestId:z.uuid(),direct:z.boolean().default(false),items:z.unknown().optional(),preventivoCode:z.string().max(16000).optional(),quoteDetails:z.unknown().optional(),quotePayment:z.enum(['card','cash']).default('card'),expectedTotal:z.number().int().min(50),website:z.literal('')}).parse(raw);
   if(data.earlyStart&&!data.withdrawalAcknowledged)throw Error('Conferma di aver letto le condizioni dell’avvio anticipato.');
   if(!previewRecipientAllowed(data.email))throw Error('Destinatario non autorizzato in questa anteprima.');
-  const quote=data.preventivoCode?quotePreventivo(data.preventivoCode,data.quoteDetails,data.quotePayment,data.earlyStart,new Date(),true):quoteOrder(data.items,data.earlyStart,new Date(),await getPublicDiscounts());
+  const quote=data.preventivoCode?quotePreventivo(data.preventivoCode,data.quoteDetails,data.quotePayment,data.earlyStart,new Date(),true):quoteOrder(data.items,data.earlyStart,new Date(),await getPublicDiscounts(),{requireFiles:true});
   if(quote.total!==data.expectedTotal)throw Error('Il listino è cambiato. Ricarica il riepilogo prima di pagare.');
   if(quote.cardNow&&!await remoteProjectPaymentsReady())throw Error('Pagamento con carta temporaneamente non disponibile. Riprova tra poco.');
   for(const part of quote.parts){const sel=part.selection;if(part.hours&&sel.date){
@@ -37,7 +37,7 @@ export async function POST(request:Request){
   const user=await getCurrentUser();const form=new FormData();for(const [k,v] of Object.entries(data)){if(typeof v==='string')form.set(k,v);}if(data.saveContact)form.set('saveContact','on');
   await saveContactChoice(form,user);
   const db=createSupabaseAdminClient();const summary=orderSummary(quote);
-  const result=await db.rpc('reserve_service_cart_v8',{p_data:{...data,customerId:user?.email?.toLowerCase()===data.email.toLowerCase()?user.id:null},p_quote:{...quote,requestId:data.requestId},p_terms:serviceTerms,p_summary:summary});
+  const result=await db.rpc('reserve_service_cart_v8',{p_data:{...data,customerId:user?.email?.toLowerCase()===data.email.toLowerCase()?user.id:null},p_quote:{...quote,termsVersion:serviceTermsVersion,requestId:data.requestId},p_terms:serviceTerms,p_summary:summary});
   if(result.error||!result.data){console.error('GENKS order reserve failed',result.error?.code);throw Error('Non è stato possibile riservare l’ordine: l’orario potrebbe essere appena stato occupato. Controlla la disponibilità e riprova.');}
   const prepared=result.data as {project_id:string;reference:string;quote_id:string|null;expires_at:string};
   if(!quote.cardNow){await flushNotifications({prefix:`v8-order-${prepared.project_id}`});await flushNotifications({prefix:`v8-owner-${prepared.project_id}`});return Response.json({cashOnly:true,url:'/services/ordine?code='+encodeURIComponent(prepared.reference)});}

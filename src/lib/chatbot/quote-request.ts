@@ -3,6 +3,16 @@ const words:Record<string,number>={un:1,uno:1,una:1,due:2,tre:3,quattro:4,cinque
 const count=(s:string)=>words[s.toLowerCase()]??Number(s);
 /** Resolve explicit customer quantities before pricing; never alter the calculator or its prices. */
 export function normalizeQuoteRequest(input:PreventivoInput,text:string,authorizationText=text):PreventivoInput{
+ if(input.progetto){
+  const requested=text.match(/\b(\d+|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)\s+(?:brani|pezzi|canzoni)\b/i);
+  if(requested&&input.progetto.brani.length!==count(requested[1]))throw Error('Il numero di brani deve corrispondere alla richiesta del cliente.');
+  if(input.progetto.brani.some(s=>s.produzione==='genks')&&!/beat|produzion|bas[ei]|strumental/i.test(authorizationText))throw Error('Chiedi se desidera produzioni GENKS prima di aggiungerle.');
+  const requestedBeats=text.match(/\b(\d+|un[oa]?|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)\s+(?:beat|basi|produzioni)\b/i);
+  if(requestedBeats&&input.progetto.brani.filter(s=>s.produzione==='genks').length!==count(requestedBeats[1]))throw Error('Il numero di produzioni GENKS deve corrispondere alla richiesta.');
+  if(input.progetto.registrazione&&!/registr|studio|rec\b|incidere/i.test(authorizationText))throw Error('Non aggiungere lo studio senza una richiesta del cliente.');
+  const brani=input.progetto.brani.map(s=>({...s,revisioni_extra:/revision|modifiche aggiuntive/i.test(authorizationText)?s.revisioni_extra:0,consegna_veloce:/veloc|urgent|rush|express|fast|48\s*(?:ore|h)|consegna.*domani/i.test(authorizationText)?s.consegna_veloce:false}));
+  return {...input,progetto:{...input.progetto,brani}};
+ }
  const auth=authorizationText.toLowerCase();const t=text.toLowerCase();let next:PreventivoInput={...input,brani:input.brani?.map(b=>({...b,artisti_correzione_voce:/correz|intonaz|pulizia.*voc|tuning|editing|artisti.*voc/.test(auth)?b.artisti_correzione_voce:0,revisioni_extra:/revision|modifiche aggiuntive/.test(auth)?b.revisioni_extra:0,consegna_veloce:/veloc|urgent|rush|express|fast|48\s*(?:ore|h)|consegna.*domani/.test(auth)?b.consegna_veloce:false}))};
  const distribution=[...t.matchAll(/\b(un[oa]?|due|tre|quattro|cinque|sei|\d+)\s+da\s+(\d+)\b/g)].map(m=>({quantita:count(m[1]),file:Number(m[2])}));
  const explicit=t.match(/\b(\d+|un[oa]?|due|tre|quattro|cinque|sei|sette|otto)\s+(?:brani|brano|pezzi|pezzo|canzoni)\b/);
@@ -17,8 +27,9 @@ export function normalizeQuoteRequest(input:PreventivoInput,text:string,authoriz
  return next;
 }
 export function formatQuote(input:PreventivoInput,result:Preventivo,text:string){
+ const songCount=input.progetto?.brani.length??(input.brani??[]).reduce((n,b)=>n+(b.quantita??1),0);
  const english=/\bhow much|\bcan i|\bi (?:want|need|have)\b/i.test(text);
- const link=`https://www.prodbygenks.com/services/checkout?preventivo=${codificaPreventivo(input)}`;
- if(english)return [`**Total: ${result.totale}**`,`${(input.brani??[]).reduce((n,b)=>n+(b.quantita??1),0)} ${(input.brani??[]).reduce((n,b)=>n+(b.quantita??1),0)===1?"song":"songs"}. One revision per song and service included. First version within 7 working days, or 48 hours if selected.`,...(result.importi_centesimi.listino>result.importi_centesimi.totale?[`You save ${result.risparmio}.`]:[]),...(result.importi_centesimi.saldo?[`Pay now: ${result.da_pagare_subito}. Remaining balance: ${result.saldo_successivo}.`]:[]),`[Buy this offer](${link})`].join('\n\n');
- return [`**Totale: ${result.totale}**`,...result.righe.slice(0,6).map(r=>`${r.descrizione}: **${r.prezzo}**`),...(result.importi_centesimi.listino>result.importi_centesimi.totale?[`Risparmi **${result.risparmio}** rispetto agli stessi servizi separati.`]:[]),...(result.importi_centesimi.saldo?[`Da versare ora: **${result.da_pagare_subito}**. Saldo successivo: ${result.saldo_successivo}.`]:[]),...result.note.filter(n=>n.startsWith('Suggerimento:')),...((input.brani?.length||input.beat_su_misura)?['Una revisione inclusa per brano e lavorazione.']:[]),...((input.brani??[]).some(b=>b.servizio!=='master'&&!b.file)?['Prezzo per brani fino a 8 file; oltre questa fascia il totale cambia.']:[]),`[Acquista questa offerta](${link})`].join('\n\n');
+ const link=`https://www.prodbygenks.com/services/${input.progetto?"album":"checkout"}?preventivo=${codificaPreventivo(input)}`;
+ if(english)return [`**Total: ${result.totale}**`,`${songCount} ${songCount===1?"song":"songs"}. One revision per song and service included. Audio first version within 7 working days, or 48 hours if selected, from payment, completed production/files and permitted start. Custom production: 10 working days.`,...(result.importi_centesimi.listino>result.importi_centesimi.totale?[`You save ${result.risparmio}.`]:[]),...(result.importi_centesimi.saldo?[`Pay now: ${result.da_pagare_subito}. Remaining balance: ${result.saldo_successivo}.`]:[]),`[Buy this offer](${link})`].join('\n\n');
+ return [`**Totale: ${result.totale}**`,...result.righe.slice(0,6).map(r=>`${r.descrizione}: **${r.prezzo}**`),...(result.importi_centesimi.listino>result.importi_centesimi.totale?[`Risparmi **${result.risparmio}** rispetto agli stessi servizi separati.`]:[]),...(result.importi_centesimi.saldo?[`Da versare ora: **${result.da_pagare_subito}**. Saldo successivo: ${result.saldo_successivo}.`]:[]),...result.note.filter(n=>n.startsWith('Suggerimento:')),...((input.progetto||input.brani?.length||input.beat_su_misura)?['Una revisione inclusa per brano e lavorazione.']:[]),...((input.brani??[]).some(b=>b.servizio!=='master'&&!b.file)?['Prezzo per brani fino a 8 file; oltre questa fascia il totale cambia.']:[]),`[Acquista questa offerta](${link})`].join('\n\n');
 }

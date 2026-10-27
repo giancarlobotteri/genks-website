@@ -1,3 +1,4 @@
+import {calculateProduction,type ProductionInput} from '../production-calculator.ts';
 /**
  * CALCOLATRICE PREZZI GENKS
  * -------------------------
@@ -28,7 +29,7 @@ import {PREZZI,PROPORZIONI} from './pricing.ts';
 export type Componente={tipo:string;brani?:Brano[];ore?:number;beat?:number;quantita?:number;saldo?:number;aggancio?:string};
 export type Servizio='mix'|'mix_master'|'master';
 export interface BranoInput{servizio:Servizio;quantita?:number;file?:number;artisti_correzione_voce?:number;revisioni_extra?:number;consegna_veloce?:boolean}
-export interface PreventivoInput{brani?:BranoInput[];ore_registrazione?:number;mezzore_dopo_mezzanotte?:number;beat_su_misura?:number;usa_pacchetti?:boolean}
+export interface PreventivoInput{progetto?:ProductionInput;brani?:BranoInput[];ore_registrazione?:number;mezzore_dopo_mezzanotte?:number;beat_su_misura?:number;usa_pacchetti?:boolean}
 export interface Riga{descrizione:string;prezzo:string;centesimi:number;componente?:Componente;personalizzato?:boolean}
 export interface Preventivo{righe:Riga[];totale:string;totale_servizi_separati:string;risparmio:string;da_pagare_subito:string;saldo_successivo:string;offerta_personalizzata:boolean;link_acquisto?:string;link:string[];note:string[];importi_centesimi:{totale:number;subito:number;saldo:number;listino:number};errore?:string}
 
@@ -55,12 +56,10 @@ export function costoRevisioni(k: number): number {
   return tot;
 }
 
-/** Costo correzione voci per n artisti: 24,99 · 34,98 · 49,97 · 69,96 · 94,95 ... */
+/** Numero di artisti incluso nella lavorazione, senza maggiorazioni. */
 export function costoCorrezioneVoci(n: number): number {
-  if (n <= 0) return 0;
-  let tot = PREZZI.correzioneVoceBase;
-  for (let k = 2; k <= n; k++) tot += 999 + 500 * (k - 2);
-  return tot;
+  if(!Number.isInteger(n)||n<0||n>20)throw new Error("invalid_artists");
+  return 0;
 }
 
 // ---------- modello interno ----------
@@ -224,7 +223,7 @@ function costruisciPiano(
 
   // Beat rimasti
   if (beat > 0) {
-    add(`Beat su misura × ${beat} a 100,00 €`, beat * PREZZI.beat,false,{tipo:"custom",beat,saldo:.5*beat*PREZZI.beat});
+    add(`Beat su misura × ${beat} a ${euro(PREZZI.beat)}`, beat * PREZZI.beat,false,{tipo:"custom",beat,saldo:.5*beat*PREZZI.beat});
     p.saldo += 0.5 * beat * PREZZI.beat;
     p.link.add(`${SITE}/services/custom`);
   }
@@ -248,6 +247,11 @@ function costruisciPiano(
 // ---------- calcolo pubblico ----------
 
 export function calcolaPreventivo(input: PreventivoInput): Preventivo {
+  if(input.progetto){
+   const q=calculateProduction(input.progetto,brani=>calcolaPreventivo({brani}));
+   const link=`${SITE}/services/album?preventivo=${codificaPreventivo(input)}`;
+   return {righe:q.lines.map(l=>({descrizione:l.name,prezzo:euro(l.amount),centesimi:l.amount})),totale:euro(q.total),totale_servizi_separati:euro(q.listTotal),risparmio:euro(Math.max(0,q.listTotal-q.total)),da_pagare_subito:euro(q.dueNow),saldo_successivo:euro(q.balance),offerta_personalizzata:true,link_acquisto:link,link:[link],note:['Una revisione inclusa per ogni lavorazione e brano.','Produzioni GENKS: split 50/50; il 100% richiede un preventivo.','Registrazione e produzioni si confermano con il 50%; le lavorazioni audio si pagano prima dell’avvio.'],importi_centesimi:{totale:q.total,subito:q.dueNow,saldo:q.balance,listino:q.listTotal}};
+  }
   const usaPacchetti = input?.usa_pacchetti !== false;
   const noteIniziali: string[] = [];
 
@@ -257,7 +261,7 @@ export function calcolaPreventivo(input: PreventivoInput): Preventivo {
     const q = Math.min(int(b.quantita, 1), 40);
     const file = b.servizio === "master" ? 1 : int(b.file, 8);
     if (file > 48) {
-      noteIniziali.push(`${plur(q, "brano", "brani")} con ${file} file: oltre 48 file serve un preventivo personalizzato su WhatsApp (https://wa.me/393450236299). Non incluso nel totale.`);
+      noteIniziali.push(`${plur(q, "brano", "brani")} con ${file} file: oltre 48 file serve un preventivo personalizzato nei DM Instagram (https://www.instagram.com/prodbygenks/). Non incluso nel totale.`);
       continue;
     }
     for (let i = 0; i < q; i++)
@@ -323,7 +327,7 @@ export function calcolaPreventivo(input: PreventivoInput): Preventivo {
   };
   const nVeloci = brani.filter((b) => b.veloce).length;
   if (nVeloci) add(`Consegna veloce (prima versione in 48 ore) × ${plur(nVeloci, "brano", "brani")}`, nVeloci * PREZZI.consegnaVeloce);
-  for (const [artisti, n] of raggruppa((b) => b.artisti))
+  for (const [artisti, n] of raggruppa((b) => b.artisti)) if(costoCorrezioneVoci(artisti)>0)
     add(`Correzione e pulizia voci (${plur(artisti, "artista", "artisti")}) × ${plur(n, "brano", "brani")}`, n * costoCorrezioneVoci(artisti));
   for (const [rev, n] of raggruppa((b) => b.revisioni)) {
     add(`${plur(rev, "revisione aggiuntiva", "revisioni aggiuntive")} × ${plur(n, "brano", "brani")}`, n * costoRevisioni(rev));
@@ -339,7 +343,7 @@ export function calcolaPreventivo(input: PreventivoInput): Preventivo {
   const note = [...noteIniziali, ...p.note];
   if (p.personalizzati) {
     note.push("Offerta personalizzata: non è nel listino del sito, è calcolata con la stessa percentuale di sconto del pacchetto originale. Valgono tutte le regole del sito per ogni servizio (revisioni, tempi, garanzia, anticipi).");
-    if (!ACQUISTO_PREVENTIVI_ATTIVO) note.push("Per acquistare questa offerta personalizzata scrivi a Gianca su WhatsApp: https://wa.me/393450236299");
+    if (!ACQUISTO_PREVENTIVI_ATTIVO) note.push("Per acquistare questa offerta personalizzata scrivi a Gianca nei DM Instagram: https://www.instagram.com/prodbygenks/");
   }
   if (beat > 0) note.push("Beat su misura: split 50/50 dei diritti sulla composizione; per il 100% o l'esclusiva serve un preventivo scritto.");
   if (p.saldo > 0) note.push("Registrazione e beat su misura si confermano con un anticipo del 50%.");
@@ -381,6 +385,7 @@ function fromB64Url(s: string): string {
 
 export function codificaPreventivo(input: PreventivoInput): string {
   const pulito: PreventivoInput = {
+    ...(input.progetto?{progetto:input.progetto}:{}),
     brani: (input?.brani ?? []).map((b) => ({
       servizio: b.servizio,
       ...(b.quantita ? { quantita: int(b.quantita, 1) } : {}),
