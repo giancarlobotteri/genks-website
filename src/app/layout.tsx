@@ -1,6 +1,5 @@
 import {UtilityDock} from "@/components/layout/utility-dock";
 import { BEATS_ENABLED, CART_ENABLED } from "@/config/features";
-import { WhatsAppLink } from "@/components/layout/whatsapp-link";
 import { InterestMemory } from "@/components/commerce/interest-memory";
 import type { Metadata, Viewport } from "next";
 import { connection } from "next/server";
@@ -72,7 +71,7 @@ export default async function RootLayout({
               <main id="main-content" tabIndex={-1}>
                 {children}
               </main>
-              <UtilityDock>{CART_ENABLED && <CartRail discounts={await getPublicDiscounts()} />}<WhatsAppLink /></UtilityDock>
+              <UtilityDock>{CART_ENABLED && <CartRail discounts={await getPublicDiscounts()} />}</UtilityDock>
               <Footer />
               {BEATS_ENABLED && <PersistentPlayer />}
               <MotionObserver />

@@ -138,7 +138,7 @@
 
 /* Landscape phones reserve separate bands for navigation, woofer, CTAs and tools. */
 @media(orientation:landscape) and (max-height:500px) and (max-width:1199px){
- .serviceLanding .content{top:auto;bottom:112px;left:20px;right:20px}
+ .serviceLanding .content{top:auto;bottom:80px;left:20px;right:20px}
  .serviceLanding .actions{flex-direction:row;gap:12px}
  .serviceLanding .primary,.serviceLanding .secondary{width:min(260px,43vw);min-height:44px;padding:10px 16px;font-size:13px;border-radius:14px}
  .serviceLanding .poster{top:calc(50% - 30px);width:clamp(100px,calc(100svh - 220px),190px)}
