@@ -99,3 +99,4 @@ body[data-cinematic-ui-hidden] [data-genks-cart-launcher]{pointer-events:none;vi
 .service-v8-layout>.premium-form{margin:0}.service-v8-layout>.service-v8-summary{margin:0}
 @supports(interpolate-size:allow-keywords){details{interpolate-size:allow-keywords}details::details-content{block-size:0;overflow:clip;transition:block-size .35s ease,content-visibility .35s ease;transition-behavior:allow-discrete}details[open]::details-content{block-size:auto}}
 @media(prefers-reduced-motion:reduce){details::details-content{transition:none}}
+@media(min-width:851px){.service-v8-layout>.service-v8-summary{padding-top:clamp(20px,3vw,44px)}}
