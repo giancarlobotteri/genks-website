@@ -1,6 +1,5 @@
 "use client";
 
-import {AssistantLauncher} from "@/components/ChatWidget";
 import {HomeCartPreview} from "@/components/services/service-cart-rail-v8";
 import type {PublicDiscount} from "@/lib/public-discounts";
 import Image from "next/image";
@@ -200,7 +199,6 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
             <a className={styles.secondary} href="#catalog" onClick={event => goToCatalog(event)}><span>Vai al catalogo<small>Ascolta i beat. Trova il tuo suono.</small></span><ArrowUpRight size={20} aria-hidden="true" /></a>
             </>}
           </div>
-          {serviceLanding&&<div className={styles.assistantSlot}><AssistantLauncher inline onClick={()=>window.dispatchEvent(new Event('genks:open-chat'))}/></div>}
         </div>
 
         {!serviceLanding && <div className={styles.bottomline}>
