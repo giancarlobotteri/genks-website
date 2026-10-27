@@ -1,9 +1,11 @@
 import {quotePreventivo} from './checkout.ts';
-import {codificaPreventivo} from './pricing.ts';
+import {codificaPreventivo,calcolaPreventivo} from './pricing.ts';
+import {formatQuote} from './quote-request.ts';
 import {serviceAmount} from '../service-rates.ts';
 /** Clear policy questions use the site's own rules, without asking a model to reinterpret them. */
 export function knownAnswer(text:string):string|null{
  const t=text.toLowerCase();
+ if(/quanto|prezzo|costa/.test(t)&&/beat su misura/.test(t)&&!/mix|master|\bore\b|registr|\bep\b|album|revision|veloc|48|diritt|esclusiv|100\s*%|(?:\d+|due|tre|quattro|cinque)\s*beat/.test(t))return formatQuote({beat_su_misura:1},calcolaPreventivo({beat_su_misura:1}),text);
  if(/chi (?:è|e|sei).*genks|chi sei|(?:informazioni|parlami|storia|biografia).*genks/.test(t))return 'per qualsiasi informazione su Genks visita i suoi profili social\n\n[Instagram](https://www.instagram.com/prodbygenks/) · [TikTok](https://www.tiktok.com/@prodbygenks)';
  if(/\bbeat\b/.test(t)&&/diritt|tutto mio|esclusiv|interamente mio/.test(t))return 'Per un beat su misura GENKS lo split è **50/50**: il 50% dei diritti patrimoniali concordati sulla composizione a te e il 50% a GENKS. Il **100% dei diritti o l’esclusiva richiede un preventivo e un accordo scritto** prima dell’acquisto. [Chiedi il preventivo a GENKS](https://www.instagram.com/prodbygenks/).';
  if([...t.matchAll(/\b(\d+)\s*(?:tracce|file|stem)/g)].some(m=>Number(m[1])>48))return 'Per un progetto con **oltre 48 file audio** serve un preventivo personalizzato: non applico automaticamente le fasce del listino. [Scrivi a GENKS nei DM Instagram](https://www.instagram.com/prodbygenks/) per concordare il lavoro.';

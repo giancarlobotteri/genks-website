@@ -52,6 +52,7 @@ test('unsupported track counts, duplicated services and prices supplied by a bro
  const s={...productionSelection(project()),total:1,customAmount:0};assert.equal(quoteOrder([s]).total,63993);
 });
 test('bot cannot invent project count, recording or paid extras; biography and owner contacts use social links',()=>{
+ const single=normalizeQuoteRequest({beat_su_misura:1,ore_registrazione:2,brani:[{servizio:'mix'}]},'Quanto costa un beat su misura?');assert.equal(calcolaPreventivo(single).importi_centesimi.totale,9999);assert.match(knownAnswer('Quanto costa un beat su misura?')!,/99,99/);assert.doesNotMatch(knownAnswer('Quanto costa un beat su misura?')!,/Mix singolo/);
  assert.throws(()=>normalizeQuoteRequest({brani:[{servizio:'mix_master',quantita:2}],beat_su_misura:1,ore_registrazione:2},'EP di 2 brani, un beat GENKS, niente registrazione'));
  const noStudio=project(2);noStudio.brani[1].produzione='external';
  const fixed=normalizeQuoteRequest({progetto:noStudio},'EP di 2 brani, un beat GENKS, niente registrazione');assert.equal(fixed.progetto!.registrazione,false);assert.equal(calcolaPreventivo(fixed).importi_centesimi.totale,23997);

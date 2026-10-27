@@ -19,7 +19,7 @@ export function calculateProduction(input:ProductionInput,quoteAudio:(songs:Audi
  const total=audio.importi_centesimi.totale+custom+studio;
  const listTotal=audio.importi_centesimi.listino+beats*customBeat.total+hours*recordingHourlyCents;
  const balance=studio+custom-Math.round(studio/2)-Math.round(custom/2);
- const lines=[...audio.righe.map(r=>({name:r.descrizione,amount:Math.round(Number(r.prezzo.replace(/[^0-9,]/g,'').replace(',','.'))*100)})),...(beats?[{name:`${beats} produzioni GENKS su misura · ${serviceAmount(productionRates.beat)} per brano · una revisione inclusa`,amount:custom}]:[]),...(hours?[{name:'Registrazione · 2 ore incluse nel pacchetto',amount:2*recordingHourlyCents},...(input.ore_extra?[{name:`Registrazione · ${input.ore_extra} ore aggiuntive a 14,99 €/ora`,amount:input.ore_extra*productionRates.extraHour}]:[])]:[])];
+ const lines=[...audio.righe.map(r=>({name:r.descrizione,amount:Math.round(Number(r.prezzo.replace(/[^0-9,]/g,'').replace(',','.'))*100)})),...(beats?[{name:`${beats} ${beats===1?'produzione':'produzioni'} GENKS su misura · ${serviceAmount(productionRates.beat)} per brano · una revisione inclusa`,amount:custom}]:[]),...(hours?[{name:'Registrazione · 2 ore incluse nel pacchetto',amount:2*recordingHourlyCents},...(input.ore_extra?[{name:`Registrazione · ${input.ore_extra} ${input.ore_extra===1?'ora aggiuntiva':'ore aggiuntive'} a 14,99 €/ora`,amount:input.ore_extra*productionRates.extraHour}]:[])]:[])];
  // Package upgrades are paid in full. Allocate only the discounted base price,
  // preserving the guarantee rule used by the standard EP/master packages.
  const shares=input.brani.map(()=>0);

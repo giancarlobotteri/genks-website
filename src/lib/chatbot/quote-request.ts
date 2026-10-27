@@ -16,6 +16,10 @@ export function normalizeQuoteRequest(input:PreventivoInput,text:string,authoriz
   return {...input,progetto:{...input.progetto,brani,...noStudio?{registrazione:false,ore_extra:0}:{}}};
  }
  const auth=authorizationText.toLowerCase();const t=text.toLowerCase();let next:PreventivoInput={...input,.../(?:niente|senza|no|nessuna|nessuno|non (?:voglio|mi serve))\s+(?:la\s+)?(?:registrazione|studio|rec\b)/i.test(auth)?{ore_registrazione:0}:{},brani:input.brani?.map(b=>({...b,artisti_correzione_voce:/correz|intonaz|pulizia.*voc|tuning|editing|artisti.*voc/.test(auth)?b.artisti_correzione_voce:0,revisioni_extra:/revision|modifiche aggiuntive/.test(auth)?b.revisioni_extra:0,consegna_veloce:/veloc|urgent|rush|express|fast|48\s*(?:ore|h)|consegna.*domani/.test(auth)?b.consegna_veloce:false}))};
+ // Optional services must come from the customer, never from model defaults.
+ if(!/mix|master|\bep\b|album/.test(auth))next.brani=[];
+ if(!/registr|studio|rec\b|\b(?:\d+|un[ao]?|due|tre|quattro|cinque|sei|sette|otto)\s+or[ae]\b/.test(auth))next.ore_registrazione=0;
+ if(!/beat|produzion|base.*(?:genks|nuov|crea)/.test(auth))next.beat_su_misura=0;
  const distribution=[...t.matchAll(/\b(un[oa]?|due|tre|quattro|cinque|sei|\d+)\s+da\s+(\d+)\b/g)].map(m=>({quantita:count(m[1]),file:Number(m[2])}));
  const explicit=t.match(/\b(\d+|un[oa]?|due|tre|quattro|cinque|sei|sette|otto)\s+(?:brani|brano|pezzi|pezzo|canzoni)\b/);
  const expected=explicit?count(explicit[1]):null;
