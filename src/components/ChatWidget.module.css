@@ -26,9 +26,9 @@
 }
 
 /* The assistant lives in navigation chrome, never over purchase content. */
-.launcher:not([data-inline=true]){top:28px;bottom:auto;left:auto;right:152px;translate:none;box-sizing:border-box;min-height:44px;max-width:calc(50vw - 200px);z-index:58}
+.launcher:not([data-inline=true]){top:28px;bottom:auto;left:auto;right:188px;translate:none;box-sizing:border-box;min-height:44px;max-width:calc(50vw - 200px);z-index:58}
 :global(body:has(#home)) .launcher:not([data-inline=true]){width:44px;height:44px;min-height:44px;padding:8px;max-width:none;justify-content:center}
 :global(body:has(#home)) .launcher:not([data-inline=true])>span:last-child{display:none}
-@media(max-width:1100px){.launcher:not([data-inline=true]){width:44px;height:44px;min-height:44px;padding:8px;max-width:none;justify-content:center}.launcher:not([data-inline=true])>span:last-child{display:none}}
+@media(max-width:1199px){.launcher:not([data-inline=true]){width:44px;height:44px;min-height:44px;padding:8px;max-width:none;justify-content:center}.launcher:not([data-inline=true])>span:last-child{display:none}}
 @media(max-width:720px){.launcher:not([data-inline=true]){top:24px;right:80px;bottom:auto}}
-@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.launcher:not([data-inline=true]){top:13px;right:142px;bottom:auto;width:40px;height:40px;min-height:40px;padding:7px}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.launcher:not([data-inline=true]){top:13px;right:164px;bottom:auto;width:40px;height:40px;min-height:40px;padding:7px}}

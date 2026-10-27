@@ -25,13 +25,14 @@
 @media(max-width:700px){.homeHeader :global(.genks-header-logo){width:64px!important}.homeHeader .toggle span{display:none!important}.homeHeader .toggle{min-width:40px;padding-left:9px;padding-right:9px}.headerSearch{width:calc(100% - 180px)}}
 
 /* Reserve a separate header slot for the always-available assistant. */
-@media(min-width:721px) and (max-width:1100px){.headerSearch{width:calc(100% - 370px)}}
+@media(min-width:721px) and (max-width:1199px){.headerSearch{width:calc(100% - 430px)}}
 @media(max-width:720px){
  .header .toggle{min-width:40px;padding-inline:9px}
  .header .toggle span{display:none!important}
  .centeredHeader :global(.genks-header-logo){width:64px}
- .headerSearch{width:calc(100% - 250px)}
  .homeHeader :global(.genks-header-logo){width:64px!important}
+ .headerSearch{left:calc(50% - 24px);width:calc(100% - 210px)}
+ .headerSearch :global(#home-service-results){transform:translateX(calc(-50% + 24px))}
 }
-@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.headerSearch{width:calc(100% - 350px)}}
-@media(max-width:720px){.headerSearch{left:calc(50% - 24px);width:calc(100% - 210px)}.headerSearch :global(#home-service-results){transform:translateX(calc(-50% + 24px))}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.headerSearch{left:50%;width:calc(100% - 400px)}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:720px){.headerSearch{left:calc(50% - 36px);width:calc(100% - 330px)}.headerSearch :global(#home-service-results){transform:translateX(calc(-50% + 36px))}}
