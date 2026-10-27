@@ -3,14 +3,15 @@ import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { mfaQrImage } from "@/lib/security/mfa-qr";
 
-export function AdminMfa() {
-  const [factorId, setFactorId] = useState("");
+export function AdminMfa({preview=false}:{preview?:boolean}) {
+  const [factorId, setFactorId] = useState(preview?"preview":"");
   const [qr, setQr] = useState("");
   const [code, setCode] = useState("");
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(preview);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
+    if(preview)return;
     let active = true;
     const client = createSupabaseBrowserClient();
     void Promise.all([client.auth.mfa.listFactors(), client.auth.mfa.getAuthenticatorAssuranceLevel()]).then(([factors, assurance]) => {
@@ -21,9 +22,10 @@ export function AdminMfa() {
       setReady(true);
     }).catch(() => { if (active) setError("Connessione non disponibile. Ricarica la pagina."); });
     return () => { active = false; };
-  }, []);
+  }, [preview]);
 
   async function enroll() {
+    if(preview)return;
     setBusy(true); setError("");
     try {
       const client = createSupabaseBrowserClient();
@@ -44,7 +46,7 @@ export function AdminMfa() {
     finally { setBusy(false); }
   }
   async function verify(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setError("");
+    event.preventDefault(); if(preview)return; setBusy(true); setError("");
     try {
       const result = await createSupabaseBrowserClient().auth.mfa.challengeAndVerify({ factorId, code });
       if (result.error) throw result.error;
@@ -61,8 +63,8 @@ export function AdminMfa() {
       {qr && <><p>Scansiona questo QR nella tua app. Non condividerlo.</p>{/* Local SVG from Supabase; never sent to an external image service. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={qr} width={240} height={240} alt="QR riservato per configurare l’autenticazione GENKS" /></>}
-      <label>Codice dell’app<input name="code" value={code} onChange={event => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} required /></label>
-      <button className="button button-primary" disabled={busy || code.length !== 6}>{busy ? "Verifica in corso…" : "Verifica e accedi"}</button>
+      <label>Codice dell’app<input name="code" value={code} onChange={event => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} readOnly={preview} placeholder={preview?"000000":undefined} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} required /></label>
+      <button className="button button-primary" disabled={preview || busy || code.length !== 6}>{busy ? "Verifica in corso…" : "Verifica e accedi"}</button>
     </form>}
   </section>;
 }

@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {dayHasAvailability,studioSlotAvailable,durationLabel} from '../src/lib/studio-scheduler.ts';
+const day={date:'2030-01-01',allSlots:['19:30','22:30'],durationsBySlot:{'19:30':[.25,.5,1],'22:30':[.25,.5,1,1.5]}};
+test('day selection does not disappear because a previously selected duration is too long',()=>{assert.equal(dayHasAvailability(day,'card',0),true);assert.equal(studioSlotAvailable(day,'19:30',3,'card',0),false);assert.equal(studioSlotAvailable(day,'22:30',1.5,'card',0),true);});
+test('duration labels are readable Italian and cash respects advance limit',()=>{assert.equal(durationLabel(1.5),'1 ora 30 min');assert.equal(durationLabel(.25),'15 min');assert.equal(durationLabel(2),'2 ore');assert.equal(dayHasAvailability(day,'cash',Date.parse('2030-01-01T12:00:00Z')),false);});

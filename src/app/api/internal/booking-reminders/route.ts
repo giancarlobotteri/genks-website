@@ -1,3 +1,4 @@
+import {syncSupportInbox} from "@/lib/support-inbox";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendDueBookingReminders } from "@/lib/booking-reminders";
 import { flushNotifications } from "@/lib/notifications";
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
     const contracts = await flushNotifications({prefix:"contract-",limit:5});
     await new Promise(resolve => setTimeout(resolve, 600));
     const withdrawals = await flushNotifications({prefix:"withdrawal-",limit:5});
-    return Response.json({ ...result, notificationFailures: alerts.failures + confirmations.failures + contracts.failures + withdrawals.failures }, { status: result.failures || alerts.failures || confirmations.failures || contracts.failures || withdrawals.failures ? 503 : 200, headers: { "Cache-Control": "private, no-store" } });
+    let supportStatus="unavailable";try{supportStatus=(await syncSupportInbox()).status??"unavailable";}catch{}
+    return Response.json({ ...result,supportStatus, notificationFailures: alerts.failures + confirmations.failures + contracts.failures + withdrawals.failures }, { status: result.failures || alerts.failures || confirmations.failures || contracts.failures || withdrawals.failures ? 503 : 200, headers: { "Cache-Control": "private, no-store" } });
   } catch { return Response.json({ error: "Promemoria da verificare." }, { status: 503, headers: { "Cache-Control": "private, no-store" } }); }
 }

@@ -25,3 +25,8 @@ export async function sendSupportMessage(_previous:SupportState,form:FormData):P
     return {sent:true,nonce:randomUUID()};
   }catch{return {...raw,error:"Invio non confermato. Il testo è conservato: controlla la posta inviata su Resend prima di riprovare. Non cambiare il testo durante un nuovo tentativo dello stesso invio."};}
 }
+
+export async function checkSupportInbox(){
+ await requireAdmin();await (await import('@/lib/support-inbox')).syncSupportInbox(true);
+ (await import('next/navigation')).redirect('/admin/support');
+}

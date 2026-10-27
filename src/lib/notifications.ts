@@ -3,6 +3,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTransactionalEmail } from "@/lib/email";
 import { bookingCalendarFile, bookingCalendarUrl, studioAddress } from "@/lib/booking-calendar";
 
+import {serviceEmailSummary} from "@/lib/service-email-summary";
+
 type Message = Parameters<typeof sendTransactionalEmail>[0];
 
 export async function queueNotification(key: string, input: Message) {
@@ -88,12 +90,35 @@ export async function deliverNotification(id: string) {
         }
       }
     }
-    await sendTransactionalEmail({
+    // Summaries use authoritative saved order/receipt data, never parsed customer notes.
+    let concise:ReturnType<typeof serviceEmailSummary>|undefined;
+    let documents:{filename:string;content:string}[]|undefined;
+    let summaryProject:string|undefined;
+    const orderMail=String(message.dedupe_key).match(/^v8-(order|owner)-([a-f0-9-]{36})$/);
+    if(orderMail)summaryProject=orderMail[2];
+    const paidOwner=String(message.dedupe_key).match(/^v8-paid-owner-([a-f0-9-]{36})$/);
+    const paymentReceipt=String(message.dedupe_key).match(/^payment-([a-f0-9-]{36})$/);
+    if(paidOwner||paymentReceipt){const r=await db.from('payments').select('project_id').eq('id',(paidOwner||paymentReceipt)![1]).maybeSingle();if(r.error)throw Error('Ordine da verificare.');summaryProject=r.data?.project_id??undefined;}
+    const cashReceipt=String(message.dedupe_key).match(/^cash-v8-([a-f0-9-]{36})-(initial|balance)$/);
+    if(cashReceipt){const r=await db.from('service_order_parts_v8').select('project_id').eq('id',cashReceipt[1]).single();if(r.error)throw Error('Incasso da verificare.');summaryProject=r.data.project_id;}
+    if(summaryProject){
+      const p=await db.from('service_projects').select('id,reference,name,artist_name,email,price_cents,commerce_snapshot').eq('id',summaryProject).single();
+      if(p.error)throw Error('Ordine da verificare.');
+      const owner=Boolean(orderMail?.[1]==='owner'||paidOwner);
+      if(owner||p.data.email.toLowerCase()===message.recipient.toLowerCase()){
+        const movements=await db.from('payments').select('amount_cents,refunded_cents').eq('project_id',p.data.id).eq('status','succeeded');if(movements.error)throw Error('Incassi da verificare.');
+        const paid=(movements.data??[]).reduce((n,m)=>n+m.amount_cents-m.refunded_cents,0);
+        concise=serviceEmailSummary({reference:p.data.reference,total:p.data.price_cents??0,paid,name:p.data.name,artistName:p.data.artist_name,email:p.data.email},owner?'owner':'customer');
+        if(!owner){const contract=await db.from('project_contracts').select('terms_body').eq('project_id',p.data.id).limit(1).maybeSingle();if(contract.error)throw Error('Condizioni da verificare.');if(contract.data)documents=[{filename:`Condizioni-${p.data.reference}.txt`,content:contract.data.terms_body}];}
+      }
+    }
+    const normalMessage:Message={
       to: message.recipient, subject: /^reservation-.*-admin$/.test(message.dedupe_key) ? `GENKS · Hai una nuova prenotazione · ${message.subject.match(/(?:BKG|PRJ)-[A-Z0-9-]+/)?.[0]??"Studio"}` : message.subject, heading: /^reservation-.*-admin$/.test(message.dedupe_key) ? "Hai una nuova prenotazione" : message.heading, body,
       actionUrl: message.action_url ?? undefined, actionLabel: message.action_label ?? undefined,
       idempotencyKey: `notification-${message.id}`, serviceRequest: true,
       ...calendar,
-    });
+    };
+    await sendTransactionalEmail(concise?{...normalMessage,...concise,actionUrl:undefined,actionLabel:undefined,documents}:normalMessage);
     const saved = await db.from("notification_outbox").update({ sent_at: new Date().toISOString(), locked_until: null, last_error: null }).eq("id", id);
     if (saved.error) throw new Error("Invio completato, salvataggio della conferma da ripetere.");
   } catch {

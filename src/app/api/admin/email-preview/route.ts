@@ -1,9 +1,11 @@
 import { requireAdmin } from "@/lib/auth";
 import { renderGenksStudioEmail } from "@/lib/email-design";
 export const dynamic="force-dynamic";
-export async function GET() {
+export async function GET(request:Request) {
   await requireAdmin();
-  const html=renderGenksStudioEmail({subject:"GENKS · ANTEPRIMA · BKG-ANTEPRIMA",heading:"Hai una nuova prenotazione",body:"Questa è un’anteprima grafica. Nessuna prenotazione reale è stata creata.\nCliente: Artista di esempio\nServizio: Registrazione in studio\nAppuntamento: Sabato 24 ottobre 2026 · 19:30 – 21:30\nDurata: 2 ore\nTotale: 40,00 €\nPagamento: Contanti presso lo studio\nEmail cliente: artista@example.invalid\nRiferimento: BKG-ANTEPRIMA\nNon serve approvare la prenotazione. Registra il pagamento dopo aver ricevuto i contanti.",actionUrl:"https://www.prodbygenks.com/admin/bookings",actionLabel:"Apri le prenotazioni"});
+  const audience=new URL(request.url).searchParams.get('audience')==='owner'?'owner':'customer';
+  const {serviceEmailSummary}=await import('@/lib/service-email-summary');
+  const html=renderGenksStudioEmail(serviceEmailSummary({reference:'PRJ-ANTEPRIMA',total:3998,paid:1999,name:'Artista di esempio',artistName:'Artista',email:'artista@example.invalid'},audience));
   return new Response(html,{headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"private, no-store","X-Robots-Tag":"noindex, nofollow, noarchive","X-Content-Type-Options":"nosniff"}});
 }
 
