@@ -8,3 +8,5 @@
 
 .launcher{top:auto;bottom:calc(20px + env(safe-area-inset-bottom))}.launcher[data-inline=true]{position:relative;inset:auto;translate:none;margin:0 auto;max-width:100%;min-height:42px;font-size:12px;padding:9px 14px}.attention{left:auto;right:-5px;top:-8px;translate:none;width:20px;height:20px;font-size:14px}
 @media(max-width:720px){.launcher[data-inline=true]{font-size:10px;min-height:38px;padding:7px 10px;gap:6px}.launcher[data-inline=true] svg{width:23px;height:23px}}
+
+@media(max-width:1199px){.launcher{bottom:calc(80px + env(safe-area-inset-bottom))}}
