@@ -36,3 +36,9 @@
 }
 @media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.headerSearch{left:50%;width:calc(100% - 400px)}}
 @media(orientation:landscape) and (max-height:500px) and (max-width:720px){.headerSearch{left:calc(50% - 36px);width:calc(100% - 330px)}.headerSearch :global(#home-service-results){transform:translateX(calc(-50% + 36px))}}
+
+/* Logo left; the shared utility group owns the exact centre. Search scrolls with the home. */
+.header :global(.genks-header-logo){position:absolute!important;left:20px!important;top:0;transform:none!important;margin:0!important}
+.headerSearch{position:absolute;top:100px;left:50%;transform:translateX(-50%);width:min(540px,calc(100% - 48px));z-index:42}
+@media(max-width:720px){.header :global(.genks-header-logo){left:14px!important;width:64px}.headerSearch{top:86px;left:50%;width:min(420px,calc(100% - 40px))}.headerSearch :global(#home-service-results){transform:translateX(-50%)}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.headerSearch{top:68px;left:50%;width:min(360px,calc(100% - 48px))}.headerSearch :global(#home-service-results){transform:translateX(-50%)}}

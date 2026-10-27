@@ -104,3 +104,14 @@
 @media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.service-portal{padding-right:calc(96px + env(safe-area-inset-right))!important}}
 
 @media(orientation:landscape) and (max-height:500px) and (max-width:1199px){body:has([data-genks-cart-launcher][data-summary-cart=true]) #main-content>.portal-shell:not(.service-portal){padding-right:calc(96px + env(safe-area-inset-right))!important}}
+
+/* One centred pair, independent of the changing cart count and total. */
+.utility-anchor{height:0!important}.utility-tools{position:fixed;top:28px;left:50%;translate:-50% 0;display:flex;align-items:center;justify-content:center;gap:12px;width:max-content;max-width:calc(100vw - 300px);z-index:58;pointer-events:none}
+.utility-tools>div:has(>[data-genks-chat-launcher]){display:contents}
+.utility-tools [data-genks-cart-launcher],.utility-tools [data-genks-chat-launcher]{position:static!important;inset:auto!important;transform:none!important;translate:none!important;display:flex!important;margin:0;pointer-events:auto;flex:none;height:46px;min-height:46px;box-sizing:border-box}
+.utility-tools [data-genks-cart-launcher]{order:1;padding:8px 13px;gap:8px}
+.utility-tools [data-genks-chat-launcher]{order:2;max-width:none}
+.utility-tools [data-genks-cart-launcher]>span:last-child:not(:nth-child(2)){display:none}
+@media(max-width:1199px){.utility-tools{max-width:calc(100vw - 220px)}.utility-tools [data-genks-cart-launcher]>span{display:none}}
+@media(max-width:720px){.utility-tools{top:20px;gap:10px;max-width:calc(100vw - 170px)}.utility-tools [data-genks-cart-launcher],.utility-tools [data-genks-chat-launcher]{height:44px;min-height:44px}.utility-tools [data-genks-cart-launcher]{padding:7px 10px}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.utility-tools{top:13px;gap:12px}.utility-tools [data-genks-cart-launcher],.utility-tools [data-genks-chat-launcher]{height:40px;min-height:40px}.service-portal{padding-right:clamp(24px,4vw,64px)!important}body:has([data-genks-cart-launcher][data-summary-cart=true]) #main-content>.portal-shell:not(.service-portal){padding-right:clamp(24px,4vw,64px)!important}}

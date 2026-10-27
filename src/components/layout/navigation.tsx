@@ -31,14 +31,13 @@ export function Navigation({cards=[]}:{cards?:StoreCard[]}) {
   }, [open]);
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin-access")) return <header className={`genks-header ${styles.adminHeader}`}><Link className="genks-header-logo" href="/" aria-label="Pagina iniziale GENKS"><Image src="/brand/genks-header.svg" width={104} height={64} alt="GENKS" priority /></Link></header>;
   const placement = pathname === "/" ? styles.homeHeader : styles.centeredHeader;
-  return <header className={`genks-header ${!BEATS_ENABLED ? styles.header : ""} ${placement}`}>
+  return <><header className={`genks-header ${!BEATS_ENABLED ? styles.header : ""} ${placement}`}>
     <button ref={toggleRef} type="button" className={`genks-menu-toggle ${!BEATS_ENABLED ? styles.toggle : ""}`} aria-expanded={open} aria-controls={navId} aria-label={open ? "Chiudi il menu" : "Apri il menu"} onClick={() => setOpen(value => !value)}>
       {open ? <X size={21} /> : <Menu size={21} />}<span>Menu</span>
     </button>
     <a className="genks-header-logo" href="/#home" aria-label="Pagina iniziale GENKS" onClick={() => setOpen(false)}>
       <Image src="/brand/genks-header.svg" width={104} height={64} alt="GENKS" priority />
     </a>
-    {pathname==="/"&&<div className={styles.headerSearch}><HomeServiceSearch cards={cards}/></div>}
     <nav ref={menuRef} id={navId} hidden={!open} data-open={open} className={`genks-corner-menu ${!BEATS_ENABLED ? styles.menu : ""}`} aria-label="Collegamenti GENKS">
       {BEATS_ENABLED ? <>
       <a href="/#home" onClick={() => setOpen(false)}>Home <ArrowUpRight size={17} /></a>
@@ -50,5 +49,5 @@ export function Navigation({cards=[]}:{cards?:StoreCard[]}) {
       </> : <>{[{label:"Home",href:"/"},{label:"Servizi e pacchetti",href:"/services"},{label:"I miei acquisti e prenotazioni",href:"/account/library"},{label:"Lavori",href:"/lavori"},{label:"Guida all’acquisto",href:"/guida"},{label:"Accesso amministratore",href:"/admin-access"}].map(item => <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>{item.label}<ArrowUpRight size={17}/></Link>)}</>}
     </nav>
 
-  </header>;
+  </header>{pathname==="/"&&<div className={styles.headerSearch}><HomeServiceSearch cards={cards}/></div>}</>;
 }
