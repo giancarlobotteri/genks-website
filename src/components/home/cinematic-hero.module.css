@@ -157,3 +157,11 @@
  .serviceLanding .primary,.serviceLanding .secondary{width:min(300px,100%);min-height:46px}
  .assistantSlot{margin-top:14px}
 }
+
+.modelFrame{display:none}
+@media(orientation:portrait) and (max-width:700px){
+ .serviceLanding .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:90px 24px 84px;box-sizing:border-box}
+ .serviceLanding .modelFrame{display:block;flex:none;width:100%;height:min(72vw,300px,calc(100svh - 380px));min-height:120px;pointer-events:none}
+ .serviceLanding .content{position:relative;inset:auto;top:auto;bottom:auto;left:auto;right:auto;width:100%;margin:0;flex:none}
+ .serviceLanding .poster{top:calc(50% - 80px);width:min(72vw,300px,calc(100svh - 380px))}
+}

@@ -1,0 +1,86 @@
+/* Public service journey: clear groups, calm blue surfaces and readable prices. */
+.service-portal{--journey-border:#396b9e;--journey-muted:#c2defb}
+.service-portal .premium-form{box-shadow:0 18px 60px #00112844,inset 0 1px #c6e5ff12}
+.service-form-heading{display:grid;gap:12px;padding-bottom:24px;border-bottom:1px solid var(--journey-border)}
+.service-form-heading .eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;color:#a9d7ff}
+.service-form-heading h1,.service-form-heading p{margin:0}
+.service-form-heading p{max-width:65ch;color:var(--journey-muted);line-height:1.75;font-size:14px}
+.service-config-card{display:grid;gap:20px;min-width:0;padding:24px;border:1px solid #356a9f;border-radius:21px;background:linear-gradient(145deg,#10355c,#0a2340)}
+.service-config-card>h2,.service-config-card>h3{margin:0;padding-bottom:14px;border-bottom:1px solid #3c6893}
+.service-config-card>div:has(>label){display:grid;gap:16px}
+.service-v8-layout .service-rate-list{display:grid;gap:7px;border:1px solid #335e8c;padding:14px;border-radius:16px;background:#081d37}
+.service-v8-layout .service-rate-list>.eyebrow{color:#a8d5ff;font-size:9px;letter-spacing:.12em;padding:3px 3px 7px}
+.service-v8-layout .service-rate-list p{margin:0;border:1px solid transparent;border-radius:11px;font-size:13px;color:#c2ddf9;align-items:center}
+.service-v8-layout .service-rate-list p[data-selected=true]{border-color:#78baff;background:linear-gradient(110deg,#1b528c,#143c68);color:white;box-shadow:inset 3px 0 #8fcdff}
+.service-v8-layout details{padding:18px;border:1px solid #396a9b;border-radius:16px;background:#0b2441}
+.service-v8-layout summary{cursor:pointer;font-weight:700;color:#e0f1ff;line-height:1.5;min-height:24px}
+.service-v8-layout details[open]>summary{margin-bottom:18px}
+.service-v8-layout details>label+label{margin-top:20px}
+.service-v8-layout .file-transfer{background:linear-gradient(125deg,#174578,#102d4e);padding:20px;gap:16px;box-shadow:none}
+.service-v8-layout .file-transfer>a{justify-self:start;border:1px solid #669ed6;background:#164c83;border-radius:10px;padding:10px 14px;min-height:44px;display:flex;align-items:center;font-size:13px;font-weight:700;color:#fff}
+.service-v8-layout label:has(>textarea){padding-top:10px}
+.service-v8-layout :is(input:not([type=checkbox]):not([type=radio]),select,textarea){border-color:#4b78a5;border-radius:12px;background:#081c35;color:#fff;box-shadow:inset 0 1px 4px #0002}
+.service-v8-layout :is(input,select,textarea):focus-visible{outline:2px solid #99d3ff;outline-offset:3px}
+.service-v8-layout .payment-choice{margin:8px 0 0;gap:12px;padding:20px;background:#0c2949;border-color:#4b84b8;min-width:0}
+.service-v8-layout .payment-choice legend{font-size:14px;font-weight:700;line-height:1.6;max-width:100%;padding:0 8px}
+.service-v8-layout .payment-choice label{padding:15px;border:1px solid #376492;border-radius:13px;background:#0d2340;font-size:13px;line-height:1.7;gap:12px;align-items:flex-start}
+.service-v8-layout .payment-choice label:has(input:checked){border-color:#94cfff;background:linear-gradient(120deg,#1c568e,#12375e);box-shadow:inset 3px 0 #93ccff}
+.service-v8-layout .service-v8-summary{background:radial-gradient(at 95% 0,#1e5b97,#0b2646 62%);border-color:#619cce;gap:18px;box-shadow:0 18px 55px #00122a55,inset 0 1px #c8eaff22}
+.service-v8-summary>h2{font-size:18px;margin:0;padding-bottom:18px;border-bottom:1px solid #48759f}
+.service-v8-summary>.quote-lines{background:#0b2340}
+.service-v8-summary .quote-line{align-items:flex-start;flex-wrap:nowrap;font-size:13px;line-height:1.65;padding:15px}
+.service-v8-summary .quote-line>span{min-width:0;overflow-wrap:anywhere}
+.service-summary-total{display:grid;gap:8px;padding:20px;border:1px solid #79b6f3;border-radius:17px;background:linear-gradient(115deg,#225e9b,#174575)}
+.service-summary-total>span{font-size:12px;color:#c9e7ff}
+.service-v8-summary .service-summary-total h3{margin:0;font-size:clamp(28px,3vw,38px);letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:#fff}
+.service-v8-summary>p{margin:0;font-size:13px;line-height:1.8;color:#cbe5ff}
+.service-v8-summary>p:has(>strong){display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 14px;padding:10px 0;border-bottom:1px solid #345a80}
+.service-v8-summary>p strong{font-size:16px;color:#fff;font-variant-numeric:tabular-nums}
+.service-v8-summary>a{display:flex;align-items:center;min-height:44px;color:#bde3ff;font-size:12px;text-decoration:underline;text-underline-offset:4px}
+.service-v8-layout .data-list{display:grid;gap:18px}
+.service-v8-layout .data-list article{margin:0;padding:24px;background:linear-gradient(140deg,#12395f,#0b2543);border-color:#5587b4;border-radius:20px}
+.service-v8-layout .data-list article h2{padding-bottom:12px;border-bottom:1px solid #416c94;line-height:1.5}
+.service-v8-layout .data-list article .checkout-price-line{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid #2e557c;font-size:13px}
+.checkout-price-line>span{min-width:0}.checkout-price-line>strong{white-space:nowrap;font-variant-numeric:tabular-nums}
+.service-v8-layout .data-list article button{justify-self:start;padding:8px 12px;min-height:40px;border:1px solid #4b7eab;border-radius:10px;background:#102e4d;color:#bedfff;font-size:12px;cursor:pointer}
+.service-v8-layout form:has(>.consent-label){border-top:1px solid #426c97;padding-top:28px;margin-top:6px}
+.service-v8-layout .consent-label{padding:14px;border:1px solid #335f8b;border-radius:12px;background:#0a2440;font-size:12px;line-height:1.85;color:#cfe8ff}
+.service-v8-layout .consent-label a{color:#b7e0ff;text-decoration:underline;text-underline-offset:3px}
+.service-v8-actions{padding-top:24px;border-top:1px solid #416a95;gap:12px}
+.service-v8-actions>.button{flex:1;justify-content:center;min-width:0}
+.service-v8-actions>a:not(.button){flex-basis:100%;font-size:12px;color:#bcdfff;min-height:36px}
+.service-portal .studio-hours{background:linear-gradient(125deg,#15436f,#0d2b4b);border-color:#4d89b9}
+.service-portal .studio-hours>div{padding:9px 0;border-bottom:1px solid #386389}
+.service-portal .studio-hours p{font-size:12px}
+.service-portal .booking-days button,.service-portal .slot-grid button{transition:background .2s,border-color .2s,box-shadow .2s}
+.service-portal .studio-scheduler button:not(:disabled):hover{border-color:#9cd2ff;background:#194a79}
+.service-portal .studio-scheduler button:disabled{opacity:.6;background:repeating-linear-gradient(135deg,#112438,#112438 7px,#0d2033 7px,#0d2033 14px);border-color:#3b5c7b;color:#a9c9ea}
+.service-portal .studio-night-note{border-left:3px solid #82c5ff}
+.journey-guide{display:grid;gap:24px;color:#e7f4ff}
+.journey-guide>h1,.legal-copy>h1{font-size:clamp(27px,3.5vw,44px);line-height:1.18;letter-spacing:-.035em;margin-bottom:12px;color:#fff}
+.journey-guide ol{list-style:none;counter-reset:guide;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;padding:0;margin:0}
+.journey-guide li{counter-increment:guide;display:grid;gap:16px;padding:25px;border:1px solid #3e73a3;border-radius:20px;background:linear-gradient(140deg,#143b64,#09213d);font-size:15px;line-height:1.8}
+.journey-guide li:before{content:counter(guide,decimal-leading-zero);font-size:26px;font-weight:700;color:#a6d7ff}
+.journey-guide>p{padding:20px;border-left:3px solid #82c9ff;border-radius:12px;background:#102e50;line-height:1.8}
+.journey-guide>.button{justify-self:start}
+.legal-copy .legal-sections,.booking-rules{display:grid;gap:16px}
+.legal-copy .legal-sections p,.booking-rules>p{margin:0;padding:24px;border:1px solid #315f8b;border-radius:18px;background:linear-gradient(135deg,#102e51,#091d36);color:#cce5ff;white-space:pre-wrap;font-size:14px;line-height:1.9}
+.legal-copy>a,.legal-copy>p{margin:18px 0}
+@media(min-width:1100px){.service-v8-layout{grid-template-columns:minmax(0,1.65fr) minmax(340px,1fr);gap:32px}.service-v8-summary{max-height:calc(100dvh - 130px);overflow:auto;scrollbar-width:thin;scrollbar-color:#5a96c8 #0d2848}.service-portal .premium-form>fieldset:not(.payment-choice){display:grid;gap:16px}}
+@media(max-width:720px){
+ .service-form-heading{gap:10px;padding-bottom:18px}.service-form-heading .eyebrow{font-size:9px}.service-form-heading p{font-size:12px;line-height:1.75}
+ .service-config-card{padding:16px 12px;gap:17px;border-radius:16px}
+ .service-v8-layout .premium-form{gap:20px;padding:18px 14px}
+ .service-v8-layout .service-rate-list{padding:10px;gap:5px}.service-v8-layout .service-rate-list p{padding:10px;font-size:12px}
+ .service-v8-layout details{padding:14px;border-radius:14px;font-size:12px}.service-v8-layout summary{font-size:12px}
+ .service-v8-layout .payment-choice{padding:13px}.service-v8-layout .payment-choice legend{font-size:12px}.service-v8-layout .payment-choice label{padding:12px;font-size:12px}
+ .service-v8-layout .service-v8-summary{gap:15px;padding:18px}.service-summary-total{padding:17px}
+ .service-v8-layout .data-list article{padding:16px 13px}.service-v8-layout .data-list article>div{gap:12px}
+ .service-v8-layout .data-list article .checkout-price-line{gap:10px;font-size:12px}
+ .service-v8-layout .consent-label{padding:12px;font-size:11px;line-height:1.85}
+ .service-v8-actions>.button{flex-basis:100%;min-height:46px}
+ .service-v8-mobile-total{top:76px;border-color:#8bc8ff;gap:5px}.service-v8-mobile-total strong{font-size:18px}.service-v8-mobile-total span{font-size:11px;color:#cee7ff}
+ .journey-guide{gap:18px}.journey-guide ol{grid-template-columns:1fr;gap:12px}.journey-guide li{grid-template-columns:28px 1fr;gap:14px;padding:17px;font-size:13px}.journey-guide li:before{font-size:21px}
+ .legal-copy .legal-sections p,.booking-rules>p{padding:17px;font-size:12px;line-height:1.85;border-radius:15px}
+}
+@media(prefers-reduced-motion:no-preference){.service-config-card,.service-form-heading{animation:journeyEnter .45s ease-out both}@keyframes journeyEnter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}}

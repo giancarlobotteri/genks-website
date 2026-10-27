@@ -178,6 +178,7 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
         </div>
 
         <h1 id="cinematic-title" className="sr-only">{serviceLanding ? "GENKS — Mix, master e registrazione" : "GENKS — Beat e servizi musicali"}</h1>
+        <div className={styles.modelFrame} data-hero-model-frame aria-hidden="true"/>
         <div className={styles.visual}>
           <div className={`${styles.poster} ${ready ? styles.posterHidden : ""}`}>
             <Image src={serviceLanding ? "/brand/genks-header.svg" : "/brand/genks-logo.jpeg"} alt="" fill preload sizes="(max-width: 700px) 85vw, 500px" />

@@ -22,3 +22,5 @@
  .launcherTotal{display:none}
  :global(.utility-anchor[data-docked=true]) .launcher{top:auto;transform:none}
 }
+
+@media(orientation:portrait) and (max-width:720px){.launcher[data-genks-cart-launcher]{left:50%;right:auto;translate:none;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom))}:global(.utility-anchor[data-docked=true]) .launcher[data-genks-cart-launcher]{translate:none;transform:none}}

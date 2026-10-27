@@ -273,10 +273,15 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     rim.position.set(2, -1, 1);
     scene.add(rim);
 
+    const modelFrame = section.querySelector<HTMLElement>('[data-hero-model-frame]');
+    let portraitFrame: {height:number;center:number}|null = null;
     const resize = () => {
       const width = mount.clientWidth;
       const height = mount.clientHeight;
       if (!width || !height) return;
+      const frameRect = modelFrame?.getBoundingClientRect();
+      const mountRect = mount.getBoundingClientRect();
+      portraitFrame = frameRect && frameRect.height>0 ? {height:frameRect.height,center:frameRect.top-mountRect.top+frameRect.height/2} : null;
       qualityRatio = window.devicePixelRatio;
       renderer.setSize(width, height);
       camera.aspect = width / height;
@@ -286,6 +291,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     };
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(mount);
+    if(modelFrame)resizeObserver.observe(modelFrame);
     resize();
     // Warm the complete model before revealing it, avoiding first-frame shader compilation stutter.
     void renderer.compileAsync(scene, camera).then(() => { if (!disposed) warmed = true; })
@@ -388,10 +394,10 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       // Fit the complete opening composition: model above its two actions, centered in the usable viewport.
       const compact = width <= 700;
       const landscapePhone = width > height && height <= 500 && width <= 1199;
-      const modelHeight = wideLayout
+      const modelHeight = portraitFrame ? Math.max(100,portraitFrame.height-16) : wideLayout
         ? landscapePhone ? Math.max(100,Math.min(190,height-220)) : Math.min(compact ? Math.min(width * .9, 300) : 520, Math.max(compact ? 150 : 220, height - (compact ? 330 : 300)))
         : Math.max(250, height - 340 * uiSpace);
-      const offset = (wideLayout ? (landscapePhone ? 14 : compact ? 48 : -16) : 80) * uiSpace;
+      const offset = (portraitFrame ? height/2-portraitFrame.center : wideLayout ? (landscapePhone ? 14 : compact ? 48 : -16) : 80) * uiSpace;
       const fitHeight = wideLayout ? THREE.MathUtils.lerp(modelHeight, height, 1 - uiSpace) : modelHeight;
       const distance = mode === "hero" ? Math.max(6.3 * height / fitHeight, 6.3 / camera.aspect) : Math.max(5.95, 5.95 / camera.aspect) + .5;
       if (mode === "hero" && (!camera.view || camera.view.offsetY !== offset || camera.view.fullWidth !== width || camera.view.fullHeight !== height)) {
@@ -405,7 +411,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
         camera.zoom = cameraZoom;
         camera.updateProjectionMatrix();
       }
-      assembly.position.y = mode === "hero" ? .2 * perspective : 0;
+      assembly.position.y = mode === "hero" && !portraitFrame ? .2 * perspective : 0;
       camera.position.set(mode === "exploded" ? travel * .25 : 0, mode === "exploded" ? travel * .12 : .08 * perspective*(1-entry), mode === "hero" ? THREE.MathUtils.lerp(distance,1.5,entry) : distance-travel*.35);
       if (mode === "hero") {
         logo.getWorldPosition(focus);
