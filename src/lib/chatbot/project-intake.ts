@@ -23,6 +23,9 @@ export function projectSongCount(messages:Message[]):number|undefined{
 export function projectIntake(messages:Message[]):{reply:string}|{input:PreventivoInput}|null{
  const user=messages.filter(m=>m.role==='user').map(m=>m.content.toLowerCase());
  const text=user.join('\n');if(!/\bep\b|\balbum\b/.test(text))return null;
+ const latest=user.at(-1)??'';
+ // A new standalone request is not a modification of an earlier EP quote.
+ if(!/\bep\b|\balbum\b|aggiung|nel progetto|al progetto|nel pacchetto|al pacchetto|brano\s+\d/.test(latest)&&/mix|master|registr/.test(latest)&&/quanto|preventivo|(?:un|1)\s+(?:brano|pezzo)|voglio registr|vorrei registr/.test(latest))return null;
  const format=user.reduce<'ep'|'album'>((f,t)=>/\balbum\b/.test(t)?'album':/\bep\b/.test(t)?'ep':f,'ep');
  let external=false;
  for(const t of user){if(/(?:ho già|ho gia|possiedo).{0,25}(?:basi|beat)|beat di altri|basi esterne/.test(t))external=true;else if(/(?:voglio|scelgo|facciamo|produzioni|beat).{0,20}genks/.test(t))external=false;}

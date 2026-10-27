@@ -37,3 +37,5 @@ test('external production choice is not forgotten on a later count answer',()=>{
 test('incomplete track distribution asks for clarification rather than inventing the remaining songs',()=>{const q=projectIntake([u('EP da 6 brani: due da 8 e uno da 18 tracce')]);assert.ok(q&&'reply' in q);assert.match(q.reply,/distribuzione/);});
 
 test('EP and album never quote additional studio hours, but explain a new booking',()=>{for(const format of ['EP','album']){const q=projectIntake([u(`${format} da 4 brani, aggiungi 3 ore extra`)]);assert.ok(q&&'input' in q);assert.equal(q.input.progetto!.ore_extra,0);assert.equal(calcolaPreventivo(q.input).importi_centesimi.totale,35996);}});
+
+test('a new standalone request is not trapped in previous EP configuration',()=>{const history=[u('Vorrei un EP da 4 brani')];for(const text of ['Quanto costa mix e master di un brano con 12 tracce?','Voglio registrare 4 ore'])assert.equal(projectIntake([...history,u(text)]),null);});
