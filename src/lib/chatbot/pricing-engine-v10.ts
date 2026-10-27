@@ -41,7 +41,7 @@ export function calcolaPreventivo(input:PreventivoInput):Preventivo{
   }
   const use=input.usa_pacchetti!==false,masters=songs.filter(s=>s.servizio==='master'),others=songs.filter(s=>s.servizio!=='master');
   let done=0;
-  if(use)for(;done+3<=masters.length;done+=3){const brani=masters.slice(done,done+3);const p=fixedPackageV10('masters');add('Master Pack · 3 master stereo · una revisione per brano',p.total,{tipo:'audio_pack',brani,saldo:0},p.separate);}
+  if(use&&masters.every(s=>s.revisioni===0&&!s.veloce))for(;done+3<=masters.length;done+=3){const brani=masters.slice(done,done+3);const p=fixedPackageV10('masters');add('Master Pack · 3 master stereo · una revisione per brano',p.total,{tipo:'audio_pack',brani,saldo:0},p.separate);}
   for(const s of [...others,...masters.slice(done)])add(`${s.servizio==='master'?'Master stereo':s.servizio==='mix'?'Mix':'Mix + master'} · ${s.file} tracce audio separate`,audioPriceV10(s.servizio,s.file),{tipo:'audio',brani:[s],saldo:0});
   const extras=songs.reduce((sum,s)=>sum+costoRevisioni(s.revisioni)+(s.veloce?1999:0),0);if(extras)add('Extra audio scelti · revisioni e/o prima versione entro 48 ore',extras,{tipo:'audio_extra',brani:[],saldo:0});
   let hours=int(input.ore_registrazione,0,200);

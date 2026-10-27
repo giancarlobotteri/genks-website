@@ -36,6 +36,7 @@ export function quoteOrder(input:unknown,early=false,now=new Date(),discounts:Pu
    if(s.fileUrl){const u=new URL(s.fileUrl);if(u.protocol!=='https:'||u.username||u.password)throw Error('Usa un collegamento HTTPS ai file.');}
    return {...s,trackTitle:s.trackTitle.trim()||`Brano ${i+1}`};
   });
+  if(pack&&songs.some(s=>s.revisions>0||s.rush))throw Error('Il pacchetto include una revisione e tempi standard: puoi modificare soltanto tracce audio separate e ore dove previste.');
   int(r.extraHours,0,6);
   if(r.packageCode==='hours'&&r.extraHours)throw Error('Il blocco contiene cinque ore; gli ampliamenti richiedono un nuovo accordo.');
   const studio=pack?.studio||r.kind==='recording';
