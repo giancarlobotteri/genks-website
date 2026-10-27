@@ -21,3 +21,5 @@
 .headerSearch{position:absolute;left:50%;top:7px;transform:translateX(-50%);width:min(540px,calc(100% - 280px));z-index:2;pointer-events:auto}
 @media(max-width:700px){.headerSearch{width:calc(100% - 180px);top:10px}.headerSearch input{font-size:11px}.headerSearch label{padding:0 8px;gap:5px}.headerSearch label>svg{width:15px;flex-shrink:0}.headerSearch button{width:22px}.header .toggle{padding-left:10px;padding-right:10px}}
 @media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.headerSearch{top:5px}}
+
+@media(max-width:700px){.homeHeader :global(.genks-header-logo){width:64px!important}.homeHeader .toggle span{display:none!important}.homeHeader .toggle{min-width:40px;padding-left:9px;padding-right:9px}.headerSearch{width:calc(100% - 180px)}}
