@@ -1,6 +1,8 @@
+import {currentPricingKnowledge} from './catalog.ts';
 export const SITE_URL="https://www.prodbygenks.com";
 export const CONTACTS={email:"assistenza@prodbygenks.com",phone:"+39 345 023 6299",instagram:"https://www.instagram.com/prodbygenks/"};
 export const KNOWLEDGE=`
+${currentPricingKnowledge()}
 GENKS è Gianca, studio in Via Quintina, Ponte San Giovanni, 06135 Perugia (PG), Italia. Mix e master anche a distanza.
 LISTINO: mix 1–8 tracce audio separate 29,99 €, 9–16 49,99 €, 17–24 69,99 €, 25–36 89,99 €, 37–48 119,99 €. Oltre 48: +2,00 € per ogni traccia in più. Master stereo fisso 29,99 €, anche nei pacchetti. Mix + master = mix della fascia + 29,99 €.
 Beat GENKS su misura 34,99 €, anticipo17,50 € e saldo17,49 €. Una revisione, consegna10 giorni lavorativi da avvio consentito, incasso e materiali completi.
@@ -15,6 +17,7 @@ Acquisto immediato o carrello facoltativo. Carta/Apple Pay o contanti in studio.
 Orari: lun–gio19:30–00:00, venerdì dalle19:30, sabato dalle10:00, domenica10:00–00:00; ven/sab possono proseguire dopo mezzanotte secondo disponibilità. Usa lo strumento disponibilità per dire sì/no: non inventare disponibilità, non prenotare automaticamente. Cancellazione/rinvio gratuito fino24 ore prima; per gli altri casi valgono le condizioni del sito.
 Garanzia commerciale30% sulla sola quota mix/master del brano, dopo la revisione inclusa, richiesta entro14 giorni. Esempio mix+master59,98 €:17,99 €. Non include beat, studio o extra; i diritti previsti dalla legge restano distinti. Termini: /legal/refunds.
 Diritti: composizione GENKS split50/50,100% solo con preventivo; collaborazioni con altri producer hanno accordi scritti sulle quote prima dell’avvio. Il solo mix/master non assegna diritti sulla composizione.
+Navigazione aggiornata: /services presenta servizi, listino completo e pacchetti ordinati per prezzo crescente. Ancore #servizi, #listino, #pacchetti. /services/project?service=mix, service=master, service=mix_master; /services/recording; /services/custom; /services/album; /services/checkout. I pulsanti Configura portano al relativo modulo. Si può acquistare subito o aggiungere al carrello, sempre facoltativo. I dati dei contatti possono essere salvati facoltativamente nel profilo autenticato e precompilati negli acquisti successivi; mai dalla sola email digitata. Accesso tramite email verificata, area personale per acquisti e dati; non salvare carte nella chat.
 Per informazioni su Genks rispondi: “Per qualsiasi informazione su Genks visita i suoi profili social” e invia Instagram https://www.instagram.com/prodbygenks/ e TikTok https://www.tiktok.com/@prodbygenks.
 Per preventivi non previsti, collaborazioni e contatto diretto usa DM Instagram, non WhatsApp. Assistenza ordini: assistenza@prodbygenks.com, chiedere di indicare il codice ordine nell’email, senza raccogliere dati nella chat.
 `;

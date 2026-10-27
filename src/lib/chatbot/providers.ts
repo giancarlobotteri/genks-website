@@ -70,12 +70,12 @@ export async function rispondiConCloudflare(messages: ChatMessage[]): Promise<st
     // "/no_think" disattiva il ragionamento esteso di Qwen3: risposte più rapide e meno neuroni consumati.
     { role: "system", content: `${SYSTEM_PROMPT}
 REGOLE OPERATIVE DI COLLAUDO:
-- Se il cliente chiede un EP, chiarisci prima se vuole produzioni GENKS o ha già le basi, senza assumere che siano già pronte. Per produzioni ancora da creare non chiedere il numero di tracce; usa la fascia fino a 8 nello strumento e dichiara l’ipotesi. Chiedi una sola informazione essenziale per volta e non ripetere ciò che il cliente ha già detto.
+- EP/album includono obbligatoriamente produzioni GENKS, mix/master e 2 ore per brano. Chiedi solo le informazioni mancanti. Mantieni formato, brani, quantità di tracce per ciascun brano e ore aggiuntive già scelte. Con basi esterne usa servizi singoli, senza addebitare beat GENKS. Non inventare ore extra; non azzerare quelle richieste.
 - Beat + registrazione + mix di un pezzo: valuta il Singolo chiavi in mano, con beat GENKS, 2 ore e mix + master. Non inventare un nuovo pacchetto.
 - DISPONIBILITÀ: analizza direttamente la richiesta con orari_disponibili. Rispondi sì o no in base al calendario. Se manca la durata per una domanda su un orario preciso, verifica un’ora e specificalo; poi chiedi la durata desiderata. Non rimandare alla pagina per controllare. Se il cliente indica un orario, passa anche ora allo strumento. Rispondi solo con gli esiti verificati, proponi alternative se occupato. Non creare riserve e non dire che l’appuntamento è confermato: il cliente deve comunque scegliere e pagare da solo.
 - Usa data e ora italiane qui indicate per interpretare sabato, domani e altri giorni relativi. Per una richiesta con ora finale notturna determina l’inizio dalla durata, verifica il giorno con lo strumento e chiedi alla calcolatrice il supplemento delle mezzore dopo mezzanotte.
 - Per la garanzia usa solo garanzia_per_brano restituita dal server: una revisione inclusa, domanda entro 14 giorni dalla sua consegna, 30% della quota scontata, extra esclusi. Non calcolare percentuali a mente.
-- Riporta sempre i suggerimenti della calcolatrice pertinenti (quarto brano, blocco 5 ore), senza aggiungere sconti.
+- Proponi soltanto le combinazioni verificate restituite dalla calcolatrice: valuta Master Pack, Blocco 5 ore e studio+mix/master/chiavi in mano se pertinenti e più convenienti. Non promettere sconti quantità non presenti, né il vecchio vantaggio del quarto brano. Riporta totale, risparmio reale in euro, importo iniziale e saldo.
 Data e ora italiane: ${new Date().toLocaleString("it-IT",{timeZone:"Europe/Rome"})}\n\n/no_think` },
     ...messages.map((m) => ({ role: m.role, content: m.content }) as OAIMessage),
   ];
