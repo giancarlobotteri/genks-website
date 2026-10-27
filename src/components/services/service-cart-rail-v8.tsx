@@ -11,17 +11,12 @@ import {serviceAmount} from "@/lib/service-rates";
 import {Modal} from "@/components/ui/modal";
 import styles from "./service-cart-rail.module.css";
 
-export function ServiceCartRailV8({discounts=[]}:{discounts?:PublicDiscount[]}) {
+function useCartSelection(enabled=true){
  const pathname=usePathname();
  const [items,setItems]=useState<OrderSelection[]>([]);
- const [open,setOpen]=useState(false);
- const [confirmClear,setConfirmClear]=useState(false);
  const [status,setStatus]=useState<"loading"|"ready"|"error">("loading");
- const [message,setMessage]=useState("");
- const titleId=useId();
- const visible=!pathname.startsWith("/admin");
  useEffect(()=>{
-  if(!visible)return;
+  if(!enabled)return;
   let active=true,version=0;
   const update=async()=>{
    const current=++version;
@@ -37,7 +32,24 @@ export function ServiceCartRailV8({discounts=[]}:{discounts?:PublicDiscount[]}) 
   window.addEventListener("pageshow",update);
   window.addEventListener("focus",update);
   return()=>{active=false;window.removeEventListener("genks-services-cart",update);window.removeEventListener("pageshow",update);window.removeEventListener("focus",update);};
- },[pathname,visible]);
+ },[pathname,enabled]);
+ return {items,setItems,status};
+}
+
+export function ServiceCartRailV8({discounts=[]}:{discounts?:PublicDiscount[]}) {
+ const pathname=usePathname();
+ const [heroActive,setHeroActive]=useState(pathname==="/");
+ const [open,setOpen]=useState(false);
+ const [confirmClear,setConfirmClear]=useState(false);
+ const [message,setMessage]=useState("");
+ const titleId=useId();
+ const visible=!pathname.startsWith("/admin");
+ const {items,setItems,status}=useCartSelection(visible);
+ useEffect(()=>{const openCart=()=>{setOpen(true);setConfirmClear(false);};addEventListener("genks:cart-open",openCart);return()=>removeEventListener("genks:cart-open",openCart);},[]);
+ useEffect(()=>{
+  const update=()=>{const collection=document.getElementById('collection');setHeroActive(pathname==='/'&&Boolean(collection&&collection.getBoundingClientRect().top>innerHeight*.1));};
+  update();addEventListener('resize',update);addEventListener('scroll',update,{passive:true});return()=>{removeEventListener('resize',update);removeEventListener('scroll',update);};
+ },[pathname]);
  let quote:ReturnType<typeof quoteOrder>|undefined;
  try{if(items.length)quote=quoteOrder(items,true,new Date(),discounts);}catch{}
  const change=async(next:OrderSelection[])=>{
@@ -49,7 +61,7 @@ export function ServiceCartRailV8({discounts=[]}:{discounts?:PublicDiscount[]}) 
  if(!visible)return null;
  const empty=status==="ready"&&!items.length;
  return <>
-  <button data-genks-cart-launcher className={styles.launcher} type="button" aria-haspopup="dialog" aria-expanded={open} aria-label={`Apri carrello servizi (${items.length})`} onClick={()=>{setOpen(true);setConfirmClear(false);}}>
+  <button data-genks-cart-launcher className={`${styles.launcher} ${heroActive?styles.homeHidden:""}`} type="button" aria-haspopup="dialog" aria-expanded={open} aria-label={`Apri carrello servizi (${items.length})`} onClick={()=>{setOpen(true);setConfirmClear(false);}}>
    <ShoppingBag size={19} aria-hidden="true"/><span>Carrello</span><strong aria-live="polite">{items.length}</strong>{quote&&<span className={styles.launcherTotal}>{serviceAmount(quote.total)}</span>}
   </button>
   <Modal open={open} onClose={()=>setOpen(false)} titleId={titleId}>
@@ -66,4 +78,12 @@ export function ServiceCartRailV8({discounts=[]}:{discounts?:PublicDiscount[]}) 
    </div>
   </Modal>
  </>;
+}
+
+export function HomeCartPreview({discounts=[]}:{discounts?:PublicDiscount[]}){
+ const {items,status}=useCartSelection();
+ let quote:ReturnType<typeof quoteOrder>|undefined;
+ try{if(items.length)quote=quoteOrder(items,true,new Date(),discounts);}catch{}
+ const openCart=()=>window.dispatchEvent(new Event('genks:cart-open'));
+ return <aside className={styles.homeCart} data-genks-home-cart aria-label="Il tuo carrello servizi"><header><span><ShoppingBag size={19}/>Il tuo carrello</span><strong>{items.length}</strong></header>{quote?<><div className={styles.previewItems}>{quote.parts.map((p,i)=><button key={i} type="button" onClick={openCart}><span>{p.title}</span><strong>{serviceAmount(p.total)}</strong></button>)}</div><div className={styles.previewTotal}><span>Totale servizi</span><strong>{serviceAmount(quote.total)}</strong></div>{quote.saving>0&&<p className={styles.previewSaving}>Risparmi {serviceAmount(quote.saving)}</p>}<Link className={styles.previewCheckout} href="/services/checkout">Vai al riepilogo <ArrowUpRight size={16}/></Link><button type="button" className={styles.previewEdit} onClick={openCart}>Modifica la selezione</button><small>Acconti e saldi separati, nessun costo nascosto.</small></>:<><div className={styles.cartArt} aria-hidden="true"><ShoppingBag size={38}/></div><h2>Il prossimo brano<br/>inizia da qui.</h2><p>{status==='loading'?'Caricamento della selezione…':status==='error'?'Apri il carrello per riprovare.':'Personalizza un servizio e aggiungilo al carrello. Ritrovi tutto insieme, pronto da confermare.'}</p><button type="button" className={styles.previewCheckout} onClick={openCart}>Apri il carrello <ArrowUpRight size={16}/></button><small>Puoi anche acquistare subito un singolo servizio.</small></>}</aside>;
 }

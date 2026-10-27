@@ -133,3 +133,5 @@
 @media(max-height:560px) and (max-width:700px){.serviceLanding .content{top:auto;bottom:74px}}
 .nextStep{position:absolute;right:28px;top:50%;transform:translateY(-50%);z-index:4;opacity:var(--hero-ui-opacity,1);visibility:var(--hero-ui-visibility,visible)}
 @media(max-width:1199px){.nextStep{display:none}}
+
+@media(min-width:1200px){.serviceDesk{left:clamp(20px,2.1vw,42px)}.nextStep{right:clamp(20px,2.1vw,42px);width:clamp(252px,21vw,310px)}.serviceLanding .primary,.serviceLanding .secondary{width:clamp(220px,21vw,280px)}}

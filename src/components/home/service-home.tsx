@@ -1,3 +1,5 @@
+import {homeStorefront} from "@/lib/home-storefront";
+import {HomeMarketplace} from "./home-marketplace";
 import {discountPrice} from "@/lib/public-discounts";
 import Link from "next/link";
 import { HomeServiceDesk } from "./home-service-desk";
@@ -10,14 +12,14 @@ import { CinematicHero } from "./cinematic-hero";
 import { HomeProof } from "./home-proof";
 import styles from "./service-home.module.css";
 export async function ServiceHome() {
- const discounts=await getPublicDiscounts();
+ const discounts=await getPublicDiscounts();const cards=homeStorefront(discounts);
  return <div className={`${styles.home} ${styles.cinematicHome}`}>
-  <CinematicHero serviceLanding sideContent={<HomeServiceDesk services={[
+  <CinematicHero serviceLanding discounts={discounts} sideContent={<HomeServiceDesk offers={cards.filter(c=>c.group==="bundle")} services={[
    {name:"Mix + master",price:`da ${serviceAmount(discountPrice(projectRates.mix_master,["mix_master","projects","services"],discounts))}`,detail:"Un brano pronto a uscire",href:"/services/project?service=mix_master"},
    {name:"Master",price:serviceAmount(discountPrice(projectRates.master,["master","projects","services"],discounts)),detail:"Il tocco finale al tuo mix",href:"/services/project?service=master"},
    {name:"Registrazione",price:`${serviceAmount(discountPrice(recordingHourlyCents,["recording","services"],discounts))}/ora`,detail:"Il tuo spazio in studio",href:"/services/recording"}
   ]}/>} />
-  <div id="collection">
+  <div id="collection"><HomeMarketplace cards={cards}/>
   <section className={styles.section}><h2>COME FUNZIONA</h2><div className={styles.steps}>
    <article><span>01</span><h3>Scegli e paga</h3><p>Scegli il servizio e paga online in 2 minuti.</p></article>
    <article><span>02</span><h3>Invia le tracce</h3><p>Mandami il link alle tracce seguendo la guida.</p></article>
