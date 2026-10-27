@@ -32,3 +32,6 @@
 @media(max-width:1199px){.launcher:not([data-inline=true]){width:44px;height:44px;min-height:44px;padding:8px;max-width:none;justify-content:center}.launcher:not([data-inline=true])>span:last-child{display:none}}
 @media(max-width:720px){.launcher:not([data-inline=true]){top:24px;right:80px;bottom:auto}}
 @media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.launcher:not([data-inline=true]){top:13px;right:164px;bottom:auto;width:40px;height:40px;min-height:40px;padding:7px}}
+
+/* Use the available page width, including desktop-style scrollbars on small screens. */
+.panel{box-sizing:border-box;max-width:calc(100% - 24px)}
