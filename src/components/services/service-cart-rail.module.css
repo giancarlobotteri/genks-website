@@ -15,3 +15,9 @@
 @media(min-width:1200px){.homeCart{height:min(620px,calc(100svh - 180px));box-sizing:border-box;display:flex;flex-direction:column}.homeCart>small{margin-top:auto}.previewItems{flex:1;min-height:0}.homeCart header,.previewCheckout{flex-shrink:0}}
 
 @media(min-width:1200px){.launcher.homeHidden{display:none}}
+
+/* Landscape phones: keep the cart clear of the bottom tools. */
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){
+ .launcher{left:auto;right:max(16px,env(safe-area-inset-right));top:50%;bottom:auto;transform:translateY(-50%);min-height:44px;padding:8px 11px;gap:8px;font-size:12px;border-radius:14px}
+ .launcherTotal{display:none}
+}
