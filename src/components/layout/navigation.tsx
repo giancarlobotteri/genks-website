@@ -2,6 +2,8 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- Native Home fragments must replace the existing catalog hash. */
 
 import Link from "next/link";
+import {HomeServiceSearch} from "@/components/home/home-service-search";
+import type {StoreCard} from "@/lib/home-storefront";
 import { BEATS_ENABLED } from "@/config/features";
 import styles from "./service-navigation.module.css";
 import { usePathname } from "next/navigation";
@@ -9,7 +11,7 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 
-export function Navigation() {
+export function Navigation({cards=[]}:{cards?:StoreCard[]}) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const navId = useId();
@@ -36,6 +38,7 @@ export function Navigation() {
     <a className="genks-header-logo" href="/#home" aria-label="Pagina iniziale GENKS" onClick={() => setOpen(false)}>
       <Image src="/brand/genks-header.svg" width={104} height={64} alt="GENKS" priority />
     </a>
+    {pathname==="/"&&<div className={styles.headerSearch}><HomeServiceSearch cards={cards}/></div>}
     <nav ref={menuRef} id={navId} hidden={!open} data-open={open} className={`genks-corner-menu ${!BEATS_ENABLED ? styles.menu : ""}`} aria-label="Collegamenti GENKS">
       {BEATS_ENABLED ? <>
       <a href="/#home" onClick={() => setOpen(false)}>Home <ArrowUpRight size={17} /></a>

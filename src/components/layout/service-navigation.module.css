@@ -17,3 +17,7 @@
  .header .menu,.header .menu[data-open=true]{top:60px!important;max-height:calc(100dvh - 86px)}
  .header .menu a{min-height:40px;padding:8px 12px}
 }
+
+.headerSearch{position:absolute;left:50%;top:7px;transform:translateX(-50%);width:min(540px,calc(100% - 280px));z-index:2;pointer-events:auto}
+@media(max-width:700px){.headerSearch{width:calc(100% - 180px);top:10px}.headerSearch input{font-size:11px}.headerSearch label{padding:0 8px;gap:5px}.headerSearch label>svg{width:15px;flex-shrink:0}.headerSearch button{width:22px}.header .toggle{padding-left:10px;padding-right:10px}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.headerSearch{top:5px}}

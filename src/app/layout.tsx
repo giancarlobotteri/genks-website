@@ -1,3 +1,4 @@
+import {homeStorefront} from '@/lib/home-storefront';
 import ChatWidget from '@/components/ChatWidget';
 import {UtilityDock} from "@/components/layout/utility-dock";
 import { BEATS_ENABLED, CART_ENABLED } from "@/config/features";
@@ -68,7 +69,7 @@ export default async function RootLayout({
         <PlayerProvider catalog={beats}>
           <LicenseProvider licenses={licenses}>
             <CartProvider catalog={beats}>
-              <Navigation />
+              <Navigation cards={homeStorefront(await getPublicDiscounts())} />
               <main id="main-content" tabIndex={-1}>
                 {children}
               </main>
