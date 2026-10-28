@@ -4,14 +4,14 @@ import { bookingCalendarUrl, bookingCalendarFile, bookingReminderMessage } from 
 import { renderGenksStudioEmail } from "../src/lib/email-design.ts";
 const booking = { id: "test-calendar", reference: "BKG-1234ABCD", starts_at: "2026-10-25T22:30:00Z", ends_at: "2026-10-26T00:30:00Z", updated_at: "2026-10-20T12:00:00Z" };
 test("the Google calendar button keeps UTC instants and Italy timezone for overnight sessions", () => {
-  const url = new URL(bookingCalendarUrl(booking));
+  const url = new URL(bookingCalendarUrl(booking,true));
   assert.equal(url.origin, "https://calendar.google.com");
   assert.equal(url.searchParams.get("dates"), "20261025T223000Z/20261026T003000Z");
   assert.equal(url.searchParams.get("ctz"), "Europe/Rome");
   assert.match(url.searchParams.get("location")!, /Quintina/);
 });
 test("personal calendar files contain one private event, stable UID and properly folded location", () => {
-  const ics = bookingCalendarFile(booking);
+  const ics = bookingCalendarFile(booking,true);
   assert.equal((ics.match(/BEGIN:VEVENT/g) ?? []).length, 1);
   assert.match(ics, /UID:booking-test-calendar@prodbygenks.com/);
   assert.match(ics, /CLASS:PRIVATE/);
@@ -34,3 +34,5 @@ test("both reminder types reuse the Gmail dark-mode frame with white text and es
     assert.match(html, /Aggiungi a Google Calendar/);
   }
 });
+
+test('website calendar links disclose only locality; email events retain directions',()=>{assert.equal(new URL(bookingCalendarUrl(booking)).searchParams.get('location'),'Ponte San Giovanni (PG)');assert.doesNotMatch(bookingCalendarFile(booking),/Quintina/);assert.match(bookingCalendarFile(booking,true),/Quintina/);});

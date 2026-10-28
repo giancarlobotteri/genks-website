@@ -12,6 +12,7 @@ export function projectSongCount(messages:Message[]):number|undefined{
   let found=false;
   for(const m of text.matchAll(explicit)){const value=m[1]??m[2]??m[3];count=numbers[value]??Number(value);found=true;}
   if(found)continue;
+  const correction=text.match(new RegExp(`^(?:anzi|facciamo|cambia a|invece)\\s+(${quantity})(?:\\s+(?:brani|pezzi|canzoni))?[.!\\s]*$`));if(correction){count=numbers[correction[1]]??Number(correction[1]);continue;}
   const previous=messages[i-1];
   if(previous?.role!=='assistant'||!/(?:quanti|quante|numero|quantità).{0,35}(?:brani|pezzi|canzoni)/i.test(previous.content))continue;
   const answer=text.match(new RegExp(`^(?:(?:sono|saranno|facciamo|ne (?:voglio|vorrei|faccio)|vorrei|voglio|in totale|totale)\\s+)?(${quantity})(?:\\s+(?:in tutto|in totale))?[.!\\s]*$`));
@@ -33,7 +34,8 @@ export function projectIntake(messages:Message[]):{reply:string}|{input:Preventi
  const count=projectSongCount(messages);
  if(count===undefined)return {reply:`L’${format==='ep'?'EP':'album'} include beat GENKS, mix, master, una revisione e 2 ore di studio per brano. Quanti brani vuoi includere?`};
  if(count<2||count>20)return {reply:'Puoi configurare da 2 a 20 brani. Per un progetto diverso [scrivi a GENKS nei DM Instagram](https://www.instagram.com/prodbygenks/).'};
- if(/(?:senza|solo).{0,12}(?:mix|master|beat)/.test(user.at(-1)??''))return {reply:'EP e album includono sempre produzione GENKS, mix, master e 2 ore di registrazione per brano. Puoi scegliere soltanto quantità di tracce audio separate e ore aggiuntive. Per lavorazioni diverse trovi i [servizi singoli](https://www.prodbygenks.com/services).'};
+ if(/(?:senza|solo).{0,12}(?:mix|master|beat)/.test(user.at(-1)??''))return {reply:'EP e album includono sempre produzione GENKS, mix, master e 2 ore di registrazione per brano. Puoi scegliere le quantità di tracce audio separate; le 2 ore per brano sono incluse e le ore ulteriori richiedono una nuova prenotazione separata. Per lavorazioni diverse trovi i [servizi singoli](https://www.prodbygenks.com/services).'};
+ if(/(?:\b[3-9]\b|tre|quattro|cinque)\s+revisioni?\s+(?:extra|aggiuntive)/.test(latest))return {reply:'Una revisione è inclusa per brano e lavorazione. Per più di due revisioni aggiuntive occorre concordare prima disponibilità e preventivo nei [DM Instagram](https://www.instagram.com/prodbygenks/).'};
  const tracks=Array.from({length:count},()=>8);let artists=1;
  const number=(s:string)=>numbers[s]??Number(s);
  for(const t of user){
@@ -45,10 +47,10 @@ export function projectIntake(messages:Message[]):{reply:string}|{input:Preventi
   }else{
    const specific=[...t.matchAll(/\bbrano\s+(\d+)\s*(?:(?:ha|con|da|a)\s+)?(\d+)\s+(?:tracce|stem|file)\b/g)];
    if(specific.length){for(const m of specific){const i=Number(m[1])-1;if(i<0||i>=count)return {reply:`Il progetto ha ${count} brani. Indica un numero di brano compreso tra 1 e ${count}.`};tracks[i]=Number(m[2]);}}
-   else {const m=t.match(/\b(\d+)\s+(?:tracce|stem|file)\b/);if(m)tracks.fill(Number(m[1]));}
+   else {const m=t.match(/\b(?:tutti|tutte)\s+da\s+(\d+)\b/)??t.match(/\b(\d+)\s+(?:tracce|stem|file)\b/);if(m)tracks.fill(Number(m[1]));}
   }
 
  }
- if(tracks.some(n=>n<1||n>1000)||artists<1||artists>20)return {reply:'Controlla tracce audio separate, artisti e ore aggiuntive (massimo 6 per brano nel configuratore). Per esigenze diverse scrivi nei DM Instagram.'};
+ if(tracks.some(n=>n<1||n>1000)||artists<1||artists>20)return {reply:'Controlla tracce audio separate (da 1 a 1000) e artisti (da 1 a 20). Per esigenze diverse scrivi nei DM Instagram.'};
  return {input:{progetto:{format,brani:tracks.map(tracce=>({produzione:'genks',servizio:'mix_master',tracce,artisti:artists,revisioni_extra:0,consegna_veloce:false})),registrazione:true,ore_extra:0}}};
 }

@@ -3,7 +3,7 @@ export const SITE_URL="https://www.prodbygenks.com";
 export const CONTACTS={email:"assistenza@prodbygenks.com",phone:"+39 345 023 6299",instagram:"https://www.instagram.com/prodbygenks/"};
 export const KNOWLEDGE=`
 ${currentPricingKnowledge()}
-GENKS è Gianca, studio in Via Quintina, Ponte San Giovanni, 06135 Perugia (PG), Italia. Mix e master anche a distanza.
+GENKS è Gianca, studio in Ponte San Giovanni (PG), Italia. Mix e master anche a distanza.
 LISTINO: mix 1–8 tracce audio separate 29,99 €, 9–16 49,99 €, 17–24 69,99 €, 25–36 89,99 €, 37–48 119,99 €. Oltre 48: +2,00 € per ogni traccia in più. Master stereo fisso 29,99 €, anche nei pacchetti. Mix + master = mix della fascia + 29,99 €.
 Beat GENKS su misura 34,99 €, pagamento completo34,99 € prima dell’avvio. Una revisione, consegna10 giorni lavorativi da avvio consentito, incasso e materiali completi.
 Registrazione19,99 €/ora. Venerdì e sabato dopo mezzanotte29,99 €/ora TOTALE:10,00 € in più ogni ora, non ogni mezz’ora. Blocco5 ore79,99 €, invece99,95 €, risparmio19,96 €; entro90 giorni, massimo2 appuntamenti.

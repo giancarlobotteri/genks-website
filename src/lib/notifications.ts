@@ -62,8 +62,8 @@ export async function deliverNotification(id: string) {
         const booking = result.data;
         if (booking && booking.email.toLowerCase() === message.recipient.toLowerCase()) {
           const date = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", dateStyle: "full", timeStyle: "short" }).format(new Date(booking.starts_at));
-          calendar = { actionUrl: bookingCalendarUrl(booking), actionLabel: "Aggiungi a Google Calendar",
-            calendarFile: bookingCalendarFile(booking), calendarFilename: `GENKS-${booking.reference}.ics`,
+          calendar = { actionUrl: bookingCalendarUrl(booking,true), actionLabel: "Aggiungi a Google Calendar",
+            calendarFile: bookingCalendarFile(booking,true), calendarFilename: `GENKS-${booking.reference}.ics`,
             body: `${body}\nSessione in studio: ${date} · ora italiana.\nIndirizzo: ${studioAddress}.\nSalva l’appuntamento su Google Calendar oppure apri il file .ics allegato con Apple Calendar o Outlook.` };
         }
       }
@@ -86,7 +86,7 @@ export async function deliverNotification(id: string) {
         if (result.error) throw new Error("Verifica calendario della sessione da ripetere.");
         if (result.data && result.data.email.toLowerCase() === message.recipient.toLowerCase()) {
           const booking = { ...result.data, updated_at: agreement.data.agreed_at };
-          calendar = { actionUrl: bookingCalendarUrl(booking), actionLabel: "Aggiungi a Google Calendar", calendarFile: bookingCalendarFile(booking), calendarFilename: `GENKS-${booking.reference}.ics`, body: `${body}\nStudio: ${studioAddress}.\nPer Apple Calendar o Outlook apri il file calendario allegato.` };
+          calendar = { actionUrl: bookingCalendarUrl(booking,true), actionLabel: "Aggiungi a Google Calendar", calendarFile: bookingCalendarFile(booking,true), calendarFilename: `GENKS-${booking.reference}.ics`, body: `${body}\nStudio: ${studioAddress}.\nPer Apple Calendar o Outlook apri il file calendario allegato.` };
         }
       }
     }

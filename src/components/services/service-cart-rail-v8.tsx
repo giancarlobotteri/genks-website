@@ -43,9 +43,10 @@ export function ServiceCartRailV8({discounts=[]}:{discounts?:PublicDiscount[]}) 
  const [confirmClear,setConfirmClear]=useState(false);
  const [message,setMessage]=useState("");
  const titleId=useId();
+ useEffect(()=>{const hide=()=>setOpen(false);window.addEventListener("genks:chat-opened",hide);return()=>window.removeEventListener("genks:chat-opened",hide);},[]);
  const visible=!pathname.startsWith("/admin");
  const {items,setItems,status}=useCartSelection(visible);
- useEffect(()=>{const openCart=()=>{setOpen(true);setConfirmClear(false);};const clearCart=()=>{setOpen(true);setConfirmClear(true);};addEventListener("genks:cart-open",openCart);addEventListener('genks:cart-clear',clearCart);return()=>{removeEventListener("genks:cart-open",openCart);removeEventListener('genks:cart-clear',clearCart);};},[]);
+ useEffect(()=>{const openCart=()=>{window.dispatchEvent(new Event("genks:cart-opened"));setOpen(true);setConfirmClear(false);};const clearCart=()=>{window.dispatchEvent(new Event("genks:cart-opened"));setOpen(true);setConfirmClear(true);};addEventListener("genks:cart-open",openCart);addEventListener('genks:cart-clear',clearCart);return()=>{removeEventListener("genks:cart-open",openCart);removeEventListener('genks:cart-clear',clearCart);};},[]);
  useEffect(()=>{
   const update=()=>{const collection=document.getElementById('collection');setHeroActive(pathname==='/'&&Boolean(collection&&collection.getBoundingClientRect().top>innerHeight*.1));};
   update();addEventListener('resize',update);addEventListener('scroll',update,{passive:true});return()=>{removeEventListener('resize',update);removeEventListener('scroll',update);};
@@ -61,7 +62,7 @@ export function ServiceCartRailV8({discounts=[]}:{discounts?:PublicDiscount[]}) 
  if(!visible)return null;
  const empty=status==="ready"&&!items.length;
  return <>
-  <button data-genks-cart-launcher data-home-hero={heroActive||undefined} data-summary-cart={pathname!=='/'||undefined} className={`${styles.launcher} ${heroActive?styles.homeHidden:""}`} type="button" aria-haspopup="dialog" aria-expanded={open} aria-label={`Apri carrello servizi (${items.length})`} onClick={()=>{setOpen(true);setConfirmClear(false);}}>
+  <button data-genks-cart-launcher data-home-hero={heroActive||undefined} data-summary-cart={pathname!=='/'||undefined} className={`${styles.launcher} ${heroActive?styles.homeHidden:""}`} type="button" aria-haspopup="dialog" aria-expanded={open} aria-label={`Apri carrello servizi (${items.length})`} onClick={()=>{window.dispatchEvent(new Event("genks:cart-opened"));setOpen(true);setConfirmClear(false);}}>
    <ShoppingBag size={19} aria-hidden="true"/><span>Carrello</span><strong aria-live="polite">{items.length}</strong>{quote&&<span className={styles.launcherTotal}>{serviceAmount(quote.total)}</span>}
   </button>
   <Modal open={open} onClose={()=>setOpen(false)} titleId={titleId}>

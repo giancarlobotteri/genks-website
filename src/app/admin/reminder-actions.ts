@@ -33,7 +33,7 @@ export async function sendReminderPreview() {
   try {
     await sendTransactionalEmail({ to: user.email, ...message, subject: "ANTEPRIMA · Promemoria studio GENKS",
       body: `Questa è un’anteprima grafica: non corrisponde a una prenotazione reale.\n${message.body}`,
-      calendarFile: bookingCalendarFile(sample), calendarFilename: "GENKS-ANTEPRIMA.ics",
+      calendarFile: bookingCalendarFile(sample,true), calendarFilename: "GENKS-ANTEPRIMA.ics",
       serviceRequest: true, idempotencyKey: `reminder-preview-${user.id}-${Math.floor(Date.now()/300000)}` });
   } catch { redirect("/admin/settings?notice=reminder_preview_error"); }
   redirect("/admin/settings?notice=reminder_preview_sent");

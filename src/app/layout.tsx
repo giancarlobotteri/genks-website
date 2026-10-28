@@ -61,6 +61,8 @@ export default async function RootLayout({
     beatRepository.listPublished(),
     getLicenses(),
   ]) : [[], []];
+  const discounts=await getPublicDiscounts();
+  const assistantEnabled=Boolean(process.env.CLOUDFLARE_ACCOUNT_ID&&process.env.CLOUDFLARE_API_TOKEN)&&(process.env.AI_PROVIDER||'cloudflare')==='cloudflare';
   return (
     <html lang="it">
       <body><SiteAtmosphere/>{BEATS_ENABLED && <InterestMemory/>}
@@ -70,11 +72,11 @@ export default async function RootLayout({
         <PlayerProvider catalog={beats}>
           <LicenseProvider licenses={licenses}>
             <CartProvider catalog={beats}>
-              <Navigation cards={homeStorefront(await getPublicDiscounts())} />
+              <Navigation cards={homeStorefront(discounts)} />
               <main id="main-content" tabIndex={-1}>
                 {children}
               </main>
-              <UtilityDock>{CART_ENABLED && <CartRail discounts={await getPublicDiscounts()} />}<ChatWidget enabled={Boolean(process.env.CLOUDFLARE_ACCOUNT_ID&&process.env.CLOUDFLARE_API_TOKEN)&&(process.env.AI_PROVIDER||'cloudflare')==='cloudflare'}/></UtilityDock>
+              <UtilityDock discounts={discounts} assistantEnabled={assistantEnabled}>{CART_ENABLED && <CartRail discounts={discounts} />}<ChatWidget enabled={assistantEnabled}/></UtilityDock>
               <Footer />
               {BEATS_ENABLED && <PersistentPlayer />}
               <MotionObserver />

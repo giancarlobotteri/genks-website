@@ -24,7 +24,7 @@ export async function sendDueBookingReminders() {
       const result = await sendTransactionalEmail({ to: reminder.recipient,
         ...bookingReminderMessage({ ...booking, hours_before: reminder.hours_before }),
         serviceRequest: true, idempotencyKey: `booking-reminder-${reminder.id}`,
-        calendarFile: bookingCalendarFile(booking), calendarFilename: `GENKS-${booking.reference}.ics`,
+        calendarFile: bookingCalendarFile(booking,true), calendarFilename: `GENKS-${booking.reference}.ics`,
       });
       const saved = await db.rpc("finish_booking_reminder", { p_id: reminder.id, p_result: "sent", p_email_id: result.emailId });
       if (saved.error) throw new Error("Conferma dell’invio da registrare.");

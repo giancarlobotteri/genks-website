@@ -170,3 +170,6 @@
  .serviceLanding .content{left:max(20px,env(safe-area-inset-left),env(safe-area-inset-right));right:max(20px,env(safe-area-inset-left),env(safe-area-inset-right));bottom:calc(20px + env(safe-area-inset-bottom))}
  .serviceLanding .primary,.serviceLanding .secondary{box-sizing:border-box;max-width:calc((100% - 12px)/2)}
 }
+
+@media(min-width:1280px) and (min-height:700px){.serviceLanding .nextStep{display:none}.serviceLanding .stage{width:100%}.serviceLanding .visual{max-width:100%}}
+@media(min-width:1280px) and (max-width:1559px) and (min-height:700px){.serviceLanding .serviceDesk{display:none}}

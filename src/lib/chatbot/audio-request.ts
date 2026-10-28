@@ -8,7 +8,7 @@ export function simpleAudioRequest(text:string):PreventivoInput|null{
  if(!/quanto|costa|prezzo|preventivo|vorrei|voglio|mi serve|how much|i need|i want/.test(t))return null;
  const mix=/mix/.test(t),master=/master/.test(t)&&!/senza (?:il )?master|solo (?:il )?mix/.test(t);
  const servizio=mix&&master?'mix_master':mix?'mix':'master';
- const raw=t.match(new RegExp(`\\b(${numeric})\\s+(?:brani|brano|pezzi|pezzo|canzoni|canzone|song|songs|tracks? to master)\\b`))?.[1];
+ const raw=t.match(new RegExp(`\\b(${numeric})\\s+(?:brani|brano|pezzi|pezzo|canzoni|canzone|song|songs|masters?|tracks? to master)\\b`))?.[1];
  const quantita=raw?words[raw]??Number(raw):1;
  const file=servizio==='master'?1:Number(t.match(/\b(\d+)\s+(?:tracce|file|stem|stems|tracks)\b/)?.[1]??8);
  // Mixed per-song distributions and revisions requiring confirmation stay with the guided flow.
