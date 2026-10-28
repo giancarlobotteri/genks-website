@@ -52,9 +52,11 @@ test('bot and purchase link calculate identical Beat & Voce offers and rounded t
  assert.equal(quotePreventivo(codificaPreventivo({beat_su_misura:1,ore_registrazione:2})).total,6499);
 });
 test('explicitly excluded mix/master never becomes an automatic complete package',()=>{
- const suggested={brani:[{servizio:'mix_master' as const}],beat_su_misura:1,ore_registrazione:2};
+ const suggested={brani:[{servizio:'mix_master' as const}],beat_su_misura:1,ore_registrazione:2,usa_pacchetti:false};
  const request=normalizeQuoteRequest(suggested,'Vorrei un beat GENKS su misura e due ore di registrazione, senza mix e senza master. Quanto spendo?');
  assert.deepEqual(request.brani,[]);assert.equal(calcolaPreventivo(request).importi_centesimi.totale,6499);
+ assert.equal(request.usa_pacchetti,true);
+ assert.equal(normalizeQuoteRequest(suggested,'Voglio acquistare i servizi separati, senza pacchetti.').usa_pacchetti,false);
  assert.equal(normalizeQuoteRequest(suggested,'Voglio beat, registrazione e mix, senza master').brani?.[0].servizio,'mix');
  assert.equal(normalizeQuoteRequest(suggested,'Voglio beat, registrazione e master, senza mix').brani?.[0].servizio,'master');
 });

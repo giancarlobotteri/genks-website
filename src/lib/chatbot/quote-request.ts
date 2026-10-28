@@ -21,6 +21,7 @@ export function normalizeQuoteRequest(input:PreventivoInput,text:string,authoriz
  const noMaster=denied(t,'master')||denied(auth,'master')&&!/aggiung.*master/.test(t);
  let next:PreventivoInput={...input,.../(?:niente|senza|no|nessuna|nessuno|non (?:voglio|mi serve))\s+(?:la\s+)?(?:registrazione|studio|rec\b)/i.test(auth)?{ore_registrazione:0}:{},brani:input.brani?.map(b=>({...b,artisti_correzione_voce:/correz|intonaz|pulizia.*voc|tuning|editing|artisti.*voc/.test(auth)?b.artisti_correzione_voce:0,revisioni_extra:/revision|modifiche aggiuntive/.test(auth)?b.revisioni_extra:0,consegna_veloce:/veloc|urgent|rush|express|fast|48\s*(?:ore|h)|consegna.*domani/.test(auth)?b.consegna_veloce:false}))};
  // Optional services must come from the customer, never from model defaults.
+ next.usa_pacchetti=!/(?:senza|non voglio|niente|no)\s+(?:i\s+)?pacchetti|servizi separati|singolarmente/.test(auth);
  if(!/mix|master|\bep\b|album/.test(auth))next.brani=[];
  if(noMix&&noMaster)next.brani=[];
  else next.brani=next.brani?.filter(b=>!(noMix&&b.servizio==='mix')&&!(noMaster&&b.servizio==='master')).map(b=>({...b,servizio:b.servizio==='mix_master'?(noMix?'master':noMaster?'mix':'mix_master'):b.servizio}));
