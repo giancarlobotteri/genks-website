@@ -17,9 +17,13 @@ export function normalizeQuoteRequest(input:PreventivoInput,text:string,authoriz
  const denied=(value:string,service:string)=>new RegExp(`(?:senza|non (?:voglio|mi serve|mi servono)|niente|nessun[ao]?|no)\\s+(?:(?:la|il|lo|le|i)\\s+)?(?:${service})\\b|(?:senza|non (?:voglio|mi serve|mi servono)|niente|no)\\s+[^.!;\\n]{0,45}\\b(?:né|ne|e)\\s+(?:(?:la|il|lo|le|i)\\s+)?(?:${service})\\b`).test(value);
  const noStudio=denied(t,'registrazione|studio|rec')||denied(auth,'registrazione|studio|rec')&&!/aggiung.*(?:registr|studio|rec\b)/.test(t);
  const noBeat=denied(t,'beat|produzioni?|basi?')||denied(auth,'beat|produzioni?|basi?')&&!/aggiung.*(?:beat|produzion)/.test(t);
+ const noMix=denied(t,'mix')||denied(auth,'mix')&&!/aggiung.*mix/.test(t);
+ const noMaster=denied(t,'master')||denied(auth,'master')&&!/aggiung.*master/.test(t);
  let next:PreventivoInput={...input,.../(?:niente|senza|no|nessuna|nessuno|non (?:voglio|mi serve))\s+(?:la\s+)?(?:registrazione|studio|rec\b)/i.test(auth)?{ore_registrazione:0}:{},brani:input.brani?.map(b=>({...b,artisti_correzione_voce:/correz|intonaz|pulizia.*voc|tuning|editing|artisti.*voc/.test(auth)?b.artisti_correzione_voce:0,revisioni_extra:/revision|modifiche aggiuntive/.test(auth)?b.revisioni_extra:0,consegna_veloce:/veloc|urgent|rush|express|fast|48\s*(?:ore|h)|consegna.*domani/.test(auth)?b.consegna_veloce:false}))};
  // Optional services must come from the customer, never from model defaults.
  if(!/mix|master|\bep\b|album/.test(auth))next.brani=[];
+ if(noMix&&noMaster)next.brani=[];
+ else next.brani=next.brani?.filter(b=>!(noMix&&b.servizio==='mix')&&!(noMaster&&b.servizio==='master')).map(b=>({...b,servizio:b.servizio==='mix_master'?(noMix?'master':noMaster?'mix':'mix_master'):b.servizio}));
  if(!/registr|studio|rec\b|\b(?:\d+|un[ao]?|due|tre|quattro|cinque|sei|sette|otto)\s+or[ae]\b/.test(auth))next.ore_registrazione=0;
  if(noStudio)next.ore_registrazione=0;
  if(noBeat||!/beat|produzion|base.*(?:genks|nuov|crea)/.test(auth))next.beat_su_misura=0;
@@ -30,7 +34,7 @@ export function normalizeQuoteRequest(input:PreventivoInput,text:string,authoriz
   const first=next.brani[0];if(next.brani.every(b=>b.servizio===first.servizio&&(b.artisti_correzione_voce??0)===(first.artisti_correzione_voce??0)&&(b.revisioni_extra??0)===(first.revisioni_extra??0)&&!!b.consegna_veloce===!!first.consegna_veloce))next.brani=distribution.map(b=>({...first,...b}));
  }
  if(expected&&next.brani?.length&&next.brani.reduce((n,b)=>n+(b.quantita??1),0)!==expected)throw Error(`Il cliente ha richiesto ${expected} brani totali: correggi le quantità, senza aggiungere brani.`);
- if(!noBeat&&!noStudio&&/\bbeat\b/.test(t)&&/registr|studio/.test(t)&&/mix/.test(t)&&!/senza.*beat|base (?:mia|fornita)|fornisco.*base|beat.*(?:non.*genks|un altro|già pronto)/.test(t)){
+ if(!noBeat&&!noStudio&&!noMix&&!noMaster&&/\bbeat\b/.test(t)&&/registr|studio/.test(t)&&/mix/.test(t)&&!/senza.*beat|base (?:mia|fornita)|fornisco.*base|beat.*(?:non.*genks|un altro|già pronto)/.test(t)){
   next={...next,beat_su_misura:next.beat_su_misura||1,ore_registrazione:next.ore_registrazione||2,brani:next.brani?.length?next.brani.map(b=>({...b,servizio:'mix_master'})):[{servizio:'mix_master',file:8}]};
  }
  return next;

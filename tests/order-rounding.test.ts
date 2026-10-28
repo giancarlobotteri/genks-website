@@ -4,6 +4,7 @@ import {totalEnding99,roundOrderQuote,roundingLineName} from '../src/lib/order-r
 import {quoteOrder,cardOrderLines,orderSummary,type OrderSelection} from '../src/lib/service-order-v8.ts';
 import {quotePreventivo} from '../src/lib/chatbot/checkout.ts';
 import {calcolaPreventivo,codificaPreventivo} from '../src/lib/chatbot/pricing.ts';
+import {normalizeQuoteRequest} from '../src/lib/chatbot/quote-request.ts';
 const base:OrderSelection={kind:'mix_master',songs:[{trackTitle:'QA',trackCount:8,artists:0,revisions:0,rush:false,fileUrl:''}],hours:0,extraHours:0,date:'',time:'',payment:'card',notes:'',rights:'own'};
 const beatVoice:OrderSelection={...base,kind:'package',packageCode:'beat_voice',songs:[{...base.songs[0],trackCount:1}],hours:2,date:'2026-12-04',time:'19:30',rights:'split50'};
 test('ending ,99: fractional amounts rise, integer euros fall one cent, zero stays zero',()=>{
@@ -49,4 +50,11 @@ test('bot and purchase link calculate identical Beat & Voce offers and rounded t
   assert.equal(q.total,q.cardNow+q.cashNow+q.balance);assert.equal(q.parts.flatMap(p=>p.lines).reduce((n,l)=>n+l.amount,0),q.total);
  }
  assert.equal(quotePreventivo(codificaPreventivo({beat_su_misura:1,ore_registrazione:2})).total,6499);
+});
+test('explicitly excluded mix/master never becomes an automatic complete package',()=>{
+ const suggested={brani:[{servizio:'mix_master' as const}],beat_su_misura:1,ore_registrazione:2};
+ const request=normalizeQuoteRequest(suggested,'Vorrei un beat GENKS su misura e due ore di registrazione, senza mix e senza master. Quanto spendo?');
+ assert.deepEqual(request.brani,[]);assert.equal(calcolaPreventivo(request).importi_centesimi.totale,6499);
+ assert.equal(normalizeQuoteRequest(suggested,'Voglio beat, registrazione e mix, senza master').brani?.[0].servizio,'mix');
+ assert.equal(normalizeQuoteRequest(suggested,'Voglio beat, registrazione e master, senza mix').brani?.[0].servizio,'master');
 });
