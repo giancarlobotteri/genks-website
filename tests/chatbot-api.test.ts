@@ -25,11 +25,11 @@ test('a provider quota error returns the safe fallback',async()=>{const run=rout
 
 test('previous private text is omitted without permanently blocking the conversation',async()=>{let received='';const run=route({answer:async messages=>{received=JSON.stringify(messages);return {reply:'Risposta GENKS'};}});const r=await run(request([{role:'user',content:'me@example.com'},{role:'assistant',content:'Non inserire dati personali.'},{role:'user',content:'Quanto costa?'}]));assert.equal(r.status,200);assert.ok(!received.includes('me@example.com'));assert.match(received,/omesso/);});
 
-test('verified project quotes work without invoking an unavailable AI provider',async()=>{let called=false;const run=route({enabled:false,answer:async()=>{called=true;return {reply:'test'};}});const r=await run(request([{role:'user',content:'EP da 6 brani con 2 ore extra'}]));const body=await r.json();assert.equal(r.status,200);assert.equal(called,false);assert.equal(body.active,true);assert.match(body.reply,/539,94/);assert.match(body.reply,/nuova prenotazione separata/);});
+test('verified project quotes work without invoking an unavailable AI provider',async()=>{let called=false;const run=route({enabled:false,answer:async()=>{called=true;return {reply:'test'};}});const r=await run(request([{role:'user',content:'EP da 6 brani con 2 ore extra'}]));const body=await r.json();assert.equal(r.status,200);assert.equal(called,false);assert.equal(body.active,true);assert.match(body.reply,/539,99/);assert.match(body.reply,/nuova prenotazione separata/);});
 
 test('custom offer always has a confirmation checkpoint and identical server checkout price',async()=>{
  const run=route({enabled:false});const messages=[{role:'user',content:'EP da 4 brani: due da 8, uno da 18 e uno da 30 tracce'}];
- let body=await (await run(request(messages))).json();assert.equal(body.review,true);assert.match(body.reply,/459,96/);assert.doesNotMatch(body.reply,/preventivo=/);assert.ok(body.draft);
+ let body=await (await run(request(messages))).json();assert.equal(body.review,true);assert.match(body.reply,/459,99/);assert.doesNotMatch(body.reply,/preventivo=/);assert.ok(body.draft);
  messages.push({role:'assistant',content:body.reply},{role:'user',content:'brano 2 con 50 tracce'});
  body=await (await run(request(messages,undefined,body.draft))).json();assert.equal(body.review,true);assert.deepEqual(body.draft.progetto.brani.map((b:{tracce:number})=>b.tracce),[8,50,18,30]);assert.doesNotMatch(body.reply,/preventivo=/);
  messages.push({role:'assistant',content:body.reply},{role:'user',content:'Confermo il riepilogo'});

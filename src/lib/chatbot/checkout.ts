@@ -1,3 +1,4 @@
+import {roundOrderQuote} from '../order-rounding.ts';
 import {recordingDepositCents} from '../service-payment-policy.ts';
 import {productionSelection,quoteProductionPart} from '../production-order.ts';
 import {validateTransfer} from '../swiss-transfer.ts';
@@ -19,6 +20,7 @@ type Draft={tipo:string;title:string;lines:OrderLine[];total:number;rawBalance:n
 function drafts(rows:Riga[]):Draft[]{
  const result:Draft[]=[];const deferred:Riga[]=[];
  for(const row of rows){const m=row.componente;if(!m)throw Error('Preventivo incompleto.');
+  if(m.tipo==='rounding')continue;
   if(['extra_studio','night'].includes(m.tipo)){deferred.push(row);continue;}
   const count=m.tipo==='credits'?m.quantita??1:m.tipo==='custom'?m.beat??1:m.tipo==='recording'?Math.ceil((m.ore??0)/8):1;
   for(let i=0;i<count;i++){
@@ -27,7 +29,7 @@ function drafts(rows:Riga[]):Draft[]{
    const balance=m.tipo==='credits'?0:m.tipo==='custom'?0:m.tipo==='recording'?amount-recordingDepositCents(amount):m.saldo??0;
    const rawStudio=m.studioAmount??(m.tipo==='turnkey'?2*recordingHourlyCents*PREZZI.pacchetti.singoloChiaviInMano/(PREZZI.beat+2*recordingHourlyCents+PREZZI.mixMaster[0]):m.tipo==='voice'?2*recordingHourlyCents*PREZZI.pacchetti.registrazioneMixMaster/(2*recordingHourlyCents+PREZZI.mixMaster[0]):hours?amount:0);
    const rawCustom=m.customAmount??(m.tipo==='turnkey'?PREZZI.beat*PREZZI.pacchetti.singoloChiaviInMano/(PREZZI.beat+2*recordingHourlyCents+PREZZI.mixMaster[0]):m.tipo==='custom'?amount:0);
-   result.push({tipo:m.tipo,title:m.tipo==='custom'?`Beat su misura ${i+1} di ${count}`:row.personalizzato?'Offerta su misura · '+row.descrizione:row.descrizione,lines:[{name:count>1?`${row.descrizione} · quota ${i+1} di ${count}`:row.descrizione,amount}],total:amount,rawBalance:balance,hours,credit:m.tipo==='credits',beat:m.tipo==='turnkey'||m.tipo==='custom'?1:0,songs:m.brani??[],personalizzato:!!row.personalizzato,studioAmount:Math.round(rawStudio),customAmount:Math.round(rawCustom)});
+   result.push({tipo:m.tipo,title:m.tipo==='custom'?`Beat su misura ${i+1} di ${count}`:row.personalizzato?'Offerta su misura · '+row.descrizione:row.descrizione,lines:[{name:count>1?`${row.descrizione} · quota ${i+1} di ${count}`:row.descrizione,amount}],total:amount,rawBalance:balance,hours,credit:m.tipo==='credits',beat:['turnkey','custom','beat_voice'].includes(m.tipo)?1:0,songs:m.brani??[],personalizzato:!!row.personalizzato,studioAmount:Math.round(rawStudio),customAmount:Math.round(rawCustom)});
   }
  }
  for(const row of deferred){const m=row.componente!;
@@ -53,14 +55,14 @@ function verifiedBreakdown(code:string){
 }
 export function quotePreventivo(code:string,rawDetails:unknown=[],payment:'card'|'cash'='card',early=false,now=new Date(),requireDates=false){
  const input=validateQuoteCode(code);
- if(input.progetto){const details=quoteDetailsSchema.parse(rawDetails);const info=details[0];const selection=productionSelection(input.progetto);selection.payment=payment;selection.date=info?.date??'';selection.time=info?.time??'';selection.songs=selection.songs.map((s,i)=>({...s,trackTitle:info?.titles[i]??s.trackTitle,fileUrl:info?.files[i]??'',filesThirtyDays:info?.fileConfirmations[i]??false}));const part=quoteProductionPart(selection,early,now,requireDates);return {version:orderVersion,parts:[{...part,preventivoCode:code,personalizzato:true,creditMinutes:undefined as number|undefined}],total:part.total,cardNow:part.cardNow,cashNow:part.cashNow,balance:part.balance,saving:part.saving,preventivoCode:code,preventivo:canonicalQuote(code)!};}
+ if(input.progetto){const details=quoteDetailsSchema.parse(rawDetails);const info=details[0];const selection=productionSelection(input.progetto);selection.payment=payment;selection.date=info?.date??'';selection.time=info?.time??'';selection.songs=selection.songs.map((s,i)=>({...s,trackTitle:info?.titles[i]??s.trackTitle,fileUrl:info?.files[i]??'',filesThirtyDays:info?.fileConfirmations[i]??false}));const part=quoteProductionPart(selection,early,now,requireDates);return roundOrderQuote({version:orderVersion,parts:[{...part,preventivoCode:code,personalizzato:true,creditMinutes:undefined as number|undefined}],total:part.total,cardNow:part.cardNow,cashNow:part.cashNow,balance:part.balance,saving:part.saving,preventivoCode:code,preventivo:canonicalQuote(code)!});}
  let checked=verifiedBreakdown(code);let ds=drafts(checked.righe);const details=quoteDetailsSchema.parse(rawDetails);
  if(payment!=='card'&&payment!=='cash')throw Error('Scegli come pagare.');
  let night=0;let hasDates=false;
  ds.forEach((d,i)=>{if(d.hours){const info=details[i];if(info?.date&&info.time){hasDates=true;if(d.credit&&(info.sessionHours??Math.min(d.hours,8))>d.hours)throw Error('Non puoi prenotare più ore del credito.');night+=buildRecordingQuote(info.date,info.time,d.credit?(info.sessionHours??Math.min(d.hours,8)):d.hours).night/500;}else if(requireDates)throw Error('Scegli giorno e orario per ogni sessione prima di confermare.');}});
  if(requireDates||hasDates){if((input.mezzore_dopo_mezzanotte??0)>0&&!hasDates)throw Error('Il supplemento notturno si determina dopo aver scelto l’appuntamento.');const updated={...input,mezzore_dopo_mezzanotte:night};code=codificaPreventivo(updated);checked=verifiedBreakdown(code);ds=drafts(checked.righe);}
  if(ds.length>20)throw Error('Per oltre 20 servizi separati contatta GENKS.');
- const balances=ds.map(d=>Math.floor(d.rawBalance));let rest=checked.importi_centesimi.saldo-balances.reduce((n,v)=>n+v,0);
+ const balances=ds.map(d=>Math.floor(d.rawBalance));let rest=(checked.unroundedBalance??checked.importi_centesimi.saldo)-balances.reduce((n,v)=>n+v,0);
  const order=ds.map((d,i)=>({i,f:d.rawBalance-Math.floor(d.rawBalance)})).sort((a,b)=>b.f-a.f);
  for(const x of order){if(rest<=0)break;balances[x.i]++;rest--;}
  if(rest!==0)throw Error('Ripartizione del preventivo non valida.');
@@ -73,10 +75,10 @@ export function quotePreventivo(code:string,rawDetails:unknown=[],payment:'card'
   const audioPaid=Math.max(0,d.total-d.studioAmount-d.customAmount-d.lines.slice(1).reduce((n,l)=>n+l.amount,0)-upgrades);
   const audioList=d.songs.reduce((n,s)=>n+(s.servizio==='master'?PREZZI.master:s.servizio==='mix'?PREZZI.mix[0]:PREZZI.mixMaster[0]),0);
   const guarantees=d.songs.map((s,n)=>({title:songs[n].trackTitle,amount:Math.round((d.tipo==='audio'?projectPrice(s.servizio,s.file)!:['voice','turnkey'].includes(d.tipo)?audioPaid:audioPaid*(s.servizio==='master'?PREZZI.master:s.servizio==='mix'?PREZZI.mix[0]:PREZZI.mixMaster[0])/audioList+(s.servizio==='master'?0:PREZZI.maggiorazionePacchetto[s.fascia]))*.3)}));
-  return {selection:{kind:'package',packageCode:d.credit?'hours':'preventivo',songs,hours:d.hours,extraHours:0,date:info.date,time:info.time,payment,notes:checked.note.join('\n'),rights:d.beat?'split50':'own'},title:d.title,total:d.total,listTotal:d.total,saving:0,deposit:d.studioAmount+d.customAmount-balance,dueNow:due,cardNow:payment==='card'?due:0,cashNow:payment==='cash'?due:0,balance,studioAmount:d.studioAmount,customAmount:d.customAmount,hours:d.credit?(info.sessionHours??Math.min(d.hours,8)):d.hours,...d.hours?{bookingDeposit:d.tipo==='recording'?due:d.credit?Math.round((d.studioAmount-nightCents)*(info.sessionHours??Math.min(d.hours,8))/d.hours)+nightCents:d.studioAmount}:{},guarantees,lines:d.lines,firstVersion:songs.length?firstVersionEstimate(now,songs.every(s=>s.rush),early):d.beat?firstVersionEstimate(now,false,early,10):null,preventivoCode:code,...d.credit?{creditMinutes:d.hours*60,bookingAmount:Math.round((d.studioAmount-nightCents)*(info.sessionHours??Math.min(d.hours,8))/d.hours)+nightCents}:{},personalizzato:d.personalizzato};
+  return {...d.tipo==='recording'?{standaloneRecording:true}:{},selection:{kind:'package',packageCode:d.credit?'hours':'preventivo',songs,hours:d.hours,extraHours:0,date:info.date,time:info.time,payment,notes:checked.note.join('\n'),rights:d.beat?'split50':'own'},title:d.title,total:d.total,listTotal:d.total,saving:0,deposit:d.studioAmount+d.customAmount-balance,dueNow:due,cardNow:payment==='card'?due:0,cashNow:payment==='cash'?due:0,balance,studioAmount:d.studioAmount,customAmount:d.customAmount,hours:d.credit?(info.sessionHours??Math.min(d.hours,8)):d.hours,...d.hours?{bookingDeposit:d.tipo==='recording'?due:d.credit?Math.round((d.studioAmount-nightCents)*(info.sessionHours??Math.min(d.hours,8))/d.hours)+nightCents:d.studioAmount}:{},guarantees,lines:d.lines,firstVersion:songs.length?firstVersionEstimate(now,songs.every(s=>s.rush),early):d.beat?firstVersionEstimate(now,false,early,10):null,preventivoCode:code,...d.credit?{creditMinutes:d.hours*60,bookingAmount:Math.round((d.studioAmount-nightCents)*(info.sessionHours??Math.min(d.hours,8))/d.hours)+nightCents}:{},personalizzato:d.personalizzato};
  });
  const sum=(key:'total'|'cardNow'|'cashNow'|'balance')=>parts.reduce((n,p)=>n+p[key],0);
- const quote={version:orderVersion,parts,total:sum('total'),cardNow:sum('cardNow'),cashNow:sum('cashNow'),balance:sum('balance'),saving:Math.max(0,checked.importi_centesimi.listino-checked.importi_centesimi.totale),preventivoCode:code,preventivo:checked} satisfies OrderQuote&{preventivoCode:string;preventivo:typeof checked};
+ const quote=roundOrderQuote({version:orderVersion,parts,total:sum('total'),cardNow:sum('cardNow'),cashNow:sum('cashNow'),balance:sum('balance'),saving:Math.max(0,checked.importi_centesimi.listino-(checked.unroundedTotal??checked.importi_centesimi.totale)),preventivoCode:code,preventivo:checked}) satisfies OrderQuote&{preventivoCode:string;preventivo:typeof checked};
  if(quote.total!==checked.importi_centesimi.totale||quote.balance!==checked.importi_centesimi.saldo)throw Error('Importi del preventivo non coerenti.');
  return quote;
 }

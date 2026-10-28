@@ -2,9 +2,10 @@ import { projectPrice, recordingHourlyCents } from "./service-rates.ts";
 export const extraRates = { rush:1999, vocal:0, versions:0, revision:999 } as const;
 export const customBeat = {total:3499,deposit:3499,balance:0,businessDays:10,revisions:1} as const;
 export const packages = {
+ beat_voice:{name:"Beat & Voce",price:6499,separate:7497,songs:1,service:"custom",studio:true,description:"Beat GENKS su misura + 2 ore di registrazione e una revisione del beat; mix e master esclusi"},
  ep:{name:"EP Pack",price:35996,separate:53980,songs:4,service:"mix_master",studio:false,description:"4 produzioni GENKS, mix, master e 2 ore di studio per brano; una revisione inclusa"},
  masters:{name:"Master Pack",price:6999,separate:8997,songs:3,service:"master",studio:false,description:"3 master stereo, una revisione per brano"},
- voice:{name:"Registrazione + mix/master",price:6997,separate:7997,songs:1,service:"mix_master",studio:true,description:"Ore di studio scelte + mix della fascia + master, con 10 € di risparmio"},
+ voice:{name:"Registrazione + mix/master",price:6997,separate:7997,songs:1,service:"mix_master",studio:true,description:"Ore di studio scelte + mix della fascia + master, con risparmio indicato nel riepilogo"},
  hours:{name:"Blocco 5 ore di registrazione",price:7999,separate:9995,songs:0,service:"recording",studio:true,description:"5 ore entro 90 giorni, massimo 2 appuntamenti"},
  turnkey:{name:"Singolo chiavi in mano",price:9999,separate:11496,songs:1,service:"mix_master",studio:true,description:"Beat GENKS + ore scelte + mix della fascia + master, da 99,99 € e 14,97 € di risparmio"},
 } as const;
@@ -18,5 +19,5 @@ export function guaranteeRefund(listPrice:number,packagePrice?:number,separate?:
 export function revisionPrice(additional:number){if(!Number.isInteger(additional)||additional<1||additional>100)throw new Error("invalid_revision");return 999+(additional-1)*500;}
 export function revisionTotal(count:number){if(!Number.isInteger(count)||count<0||count>100)throw new Error("invalid_revision");return count*999+250*count*(count-1);}
 export function vocalPrice(artists:number){if(!Number.isInteger(artists)||artists<0||artists>20)throw new Error('invalid_artists');return 0;}
-export function separatePackagePrices(){return {ep:4*(customBeat.total+projectPrice('mix_master',8)!+2*recordingHourlyCents),masters:3*projectPrice('master',1)!,voice:recordingHourlyCents+projectPrice('mix_master',8)!,hours:5*recordingHourlyCents,turnkey:customBeat.total+recordingHourlyCents+projectPrice('mix_master',8)!};}
+export function separatePackagePrices(){return {beat_voice:customBeat.total+2*recordingHourlyCents,ep:4*(customBeat.total+projectPrice('mix_master',8)!+2*recordingHourlyCents),masters:3*projectPrice('master',1)!,voice:recordingHourlyCents+projectPrice('mix_master',8)!,hours:5*recordingHourlyCents,turnkey:customBeat.total+recordingHourlyCents+projectPrice('mix_master',8)!};}
 export const sortedPackages=()=>Object.entries(packages).sort(([,a],[,b])=>(a.separate-a.price)-(b.separate-b.price));

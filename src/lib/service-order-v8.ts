@@ -1,5 +1,6 @@
+import {roundOrderQuote,roundingLineName} from './order-rounding.ts';
 import {recordingDepositCents} from './service-payment-policy.ts';
-import {quoteStudioBundle} from './studio-bundle-order.ts';
+import {quoteBeatVoice,quoteStudioBundle} from './studio-bundle-order.ts';
 import type {ProductionInput} from './production-calculator.ts';
 import {quoteProductionPart} from './production-order.ts';
 import {validateTransfer} from './swiss-transfer.ts';
@@ -12,9 +13,9 @@ export const orderVersion='2026-10-26-commerce-v8';
 export type OrderSong={trackTitle:string;trackCount:number;artists:number;revisions:number;rush:boolean;fileUrl:string;production?:'genks'|'external';filesThirtyDays?:boolean};
 export type OrderSelection={kind:'production'|'mix'|'master'|'mix_master'|'recording'|'custom'|'package';packageCode?:string;production?:ProductionInput;songs:OrderSong[];hours:number;extraHours:number;date:string;time:string;payment:'card'|'cash';notes:string;rights:'split50'|'own';appointments?:import('./project-appointments-v10.ts').ProjectAppointmentV10[];};
 export type OrderLine={name:string;amount:number;payNow?:number};
-export type OrderPart={selection:OrderSelection;title:string;total:number;listTotal:number;saving:number;deposit:number;dueNow:number;cardNow:number;cashNow:number;balance:number;studioAmount:number;customAmount:number;hours:number;guarantees:{title:string;amount:number}[];lines:OrderLine[];firstVersion:string|null;creditMinutes?:number;bookingDeposit?:number;bookingAmount?:number};
+export type OrderPart={selection:OrderSelection;title:string;total:number;listTotal:number;saving:number;deposit:number;dueNow:number;cardNow:number;cashNow:number;balance:number;studioAmount:number;customAmount:number;hours:number;guarantees:{title:string;amount:number}[];lines:OrderLine[];firstVersion:string|null;creditMinutes?:number;bookingDeposit?:number;bookingAmount?:number;standaloneRecording?:boolean};
 const int=(value:unknown,min:number,max:number)=>{if(!Number.isInteger(value)||Number(value)<min||Number(value)>max)throw Error('Valore numerico non valido.');return Number(value);};
-export function quoteOrder(input:unknown,early=false,now=new Date(),discounts:PublicDiscount[]=[],options:{requireFiles?:boolean}={}){
+export function quoteOrder(input:unknown,early=false,now=new Date(),discounts:PublicDiscount[]=[],options:{requireFiles?:boolean;roundTotal?:boolean}={}):OrderQuote{
  if(!Array.isArray(input)||input.length<1||input.length>20)throw Error('Scegli da 1 a 20 servizi.');
  const parts:OrderPart[]=input.map((raw):OrderPart=>{
   if(!raw||typeof raw!=='object')throw Error('Servizio non valido.');
@@ -23,7 +24,7 @@ export function quoteOrder(input:unknown,early=false,now=new Date(),discounts:Pu
   if(!['mix','master','mix_master','recording','custom','package'].includes(r.kind)||!['card','cash'].includes(r.payment)||!['own','split50'].includes(r.rights)||typeof r.notes!=='string'||r.notes.length>2000)throw Error('Controlla servizio e pagamento.');
   const pack=r.kind==='package'?packageByCode(r.packageCode):null;
   if(r.kind==='package'&&!pack)throw Error('Pacchetto non valido.');if(r.packageCode==='ep')throw Error('Configura il nuovo EP dalla pagina EP e album.');
-  const hasBeat=r.kind==='custom'||r.packageCode==='turnkey';
+  const hasBeat=r.kind==='custom'||['turnkey','beat_voice'].includes(r.packageCode??'');
   if(hasBeat&&r.rights!=='split50')throw Error('Per il 100% dei diritti serve un preventivo prima dell’acquisto.');
   const expected=pack?pack.songs:r.kind==='recording'?0:r.kind==='custom'?1:Array.isArray(r.songs)?r.songs.length:0;
   if(!pack&&r.kind!=='recording'&&(expected<1||expected>20))throw Error('Scegli da 1 a 20 brani.');
@@ -47,9 +48,9 @@ export function quoteOrder(input:unknown,early=false,now=new Date(),discounts:Pu
   if(r.packageCode==='hours'&&hours>5)throw Error('Il blocco contiene cinque ore.');
   if(studio&&(!Number.isFinite(hours)||hours<.25||hours>8||hours*4!==Math.round(hours*4)))throw Error('Durata non valida.');
   if(!studio&&r.hours!==0)throw Error('Durata non applicabile.');
-  if(r.packageCode==='voice'||r.packageCode==='turnkey'){
+  if(r.packageCode==='voice'||r.packageCode==='turnkey'||r.packageCode==='beat_voice'){
    if(typeof r.date!=='string'||typeof r.time!=='string'||((options.requireFiles||r.date&&r.time)&&(!/^\d{4}-\d{2}-\d{2}$/.test(r.date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time))))throw Error('Scegli giorno e ora.');
-   return quoteStudioBundle({...r,songs},hours,early,now,discounts);
+   return r.packageCode==='beat_voice'?quoteBeatVoice({...r,songs},hours,early,now,discounts):quoteStudioBundle({...r,songs},hours,early,now,discounts);
   }
   const lines:OrderLine[]=[];
   let listBase:number=pack?.separate??0,base:number=pack?.price??0,upgrades=0;
@@ -80,9 +81,10 @@ export function quoteOrder(input:unknown,early=false,now=new Date(),discounts:Pu
   return {selection:{...r,songs},title,total,listTotal:comparison,saving:Math.max(0,comparison-total),deposit,dueNow,cardNow:r.payment==='card'?dueNow:0,cashNow:r.payment==='cash'?dueNow:0,balance,studioAmount,customAmount,hours:studio?hours:0,...studio?{bookingDeposit:r.kind==='recording'?deposit:r.packageCode==='hours'?Math.round((studioAmount-night)*hours/5)+night:studioAmount}:{},...r.packageCode==='hours'?{creditMinutes:300,bookingAmount:Math.round((studioAmount-night)*hours/5)+night}:{},guarantees,lines,firstVersion:songs.length?firstVersionEstimate(now,audio!=='custom'&&songs.every(s=>s.rush),early,audio==='custom'?10:7):null};
  });
  const sum=(key:'total'|'cardNow'|'cashNow'|'balance'|'saving')=>parts.reduce((n,p)=>n+p[key],0);
- return {version:orderVersion,parts,total:sum('total'),cardNow:sum('cardNow'),cashNow:sum('cashNow'),balance:sum('balance'),saving:sum('saving')};
+ const quote={version:orderVersion,parts,total:sum('total'),cardNow:sum('cardNow'),cashNow:sum('cashNow'),balance:sum('balance'),saving:sum('saving')};
+ return options.roundTotal===false?quote:roundOrderQuote(quote);
 }
-export type OrderQuote=ReturnType<typeof quoteOrder>;
+export type OrderQuote={version:string;parts:OrderPart[];total:number;cardNow:number;cashNow:number;balance:number;saving:number};
 export function orderSummary(q:OrderQuote){return [
  ...q.parts.flatMap((p,i)=>[`SERVIZIO ${i+1} · ${p.title}`,...p.lines.map(l=>`${l.name}: ${serviceAmount(l.amount)}`),`Totale servizio: ${serviceAmount(p.total)} · Risparmi ${serviceAmount(p.saving)}`,`Da versare ora: ${serviceAmount(p.dueNow)} (${p.selection.payment==='card'?'carta':'contanti in studio'}) · Saldo ancora da pagare: ${serviceAmount(p.balance)}`,...(p.selection.production?p.selection.production.brani.map((s,i)=>`${p.selection.songs[i].trackTitle}: ${s.produzione==='genks'?'Produzione GENKS inclusa nel pacchetto':'Base del cliente, produzione 0 EUR'}; ${s.servizio==='none'?'nessuna lavorazione audio':s.servizio.replaceAll('_',' + ')}; ${s.tracce} tracce audio separate; ${s.artisti} artisti inclusi`):[]),...p.selection.songs.filter(s=>s.fileUrl).map(s=>`File · ${s.trackTitle}: ${s.fileUrl}`),p.selection.notes?`Note del cliente: ${p.selection.notes}`:"",...p.guarantees.map(g=>`Garanzia commerciale 30% · ${g.title}: ${serviceAmount(g.amount)}`),p.selection.date?`Appuntamento richiesto: ${p.selection.date} ${p.selection.time} · ${p.hours} ore · Europe/Rome`:'',p.selection.rights==='split50'?'Beat GENKS: split 50/50 dei diritti patrimoniali concordati sulla composizione. Il 100% richiede un preventivo.':'Materiale del cliente: nessuno split attribuito dal solo mix/master o registrazione.']),
  `TOTALE ORDINE: ${serviceAmount(q.total)}`,`CARTA ORA: ${serviceAmount(q.cardNow)}`,`CONTANTI DA VERSARE ORA IN STUDIO: ${serviceAmount(q.cashNow)}`,`SALDO ANCORA DA PAGARE: ${serviceAmount(q.balance)}`,
@@ -91,10 +93,14 @@ export function orderSummary(q:OrderQuote){return [
  ].filter(Boolean).join('\n\n');}
 
 /** Integer allocation: audio extras are paid in full; studio/beat advance is distributed across its lines. */
-export function cardOrderLines(q:OrderQuote):OrderLine[]{return q.parts.filter(p=>p.cardNow>0).flatMap(p=>{
- if(p.lines.every(l=>l.payNow!==undefined)){const lines=p.lines.filter(l=>(l.payNow??0)>0).map(l=>({name:l.name,amount:l.payNow!}));if(lines.reduce((n,l)=>n+l.amount,0)!==p.cardNow)throw Error('Ripartizione pagamento non valida.');return lines;}
+export function cardOrderLines(q:OrderQuote):OrderLine[]{const output=q.parts.filter(p=>p.cardNow>0).flatMap(p=>{
+ if(p.lines.every(l=>l.payNow!==undefined)){const lines=p.lines.filter(l=>(l.payNow??0)>0).map(l=>({name:l.name,amount:l.payNow!}));if(lines.reduce((n,l)=>n+l.amount,0)!==p.cardNow&&!p.lines.some(l=>l.name===roundingLineName&&l.amount<0))throw Error('Ripartizione pagamento non valida.');return lines;}
  const isExtra=(name:string)=>/Correzione e pulizia|Revisioni aggiuntive|Prima versione entro 48/.test(name);
  const extras=p.lines.filter(l=>isExtra(l.name));const bases=p.lines.filter(l=>!isExtra(l.name));
  const due=p.cardNow-extras.reduce((n,l)=>n+l.amount,0),baseTotal=bases.reduce((n,l)=>n+l.amount,0);let allocated=0;
  return [...bases.map((l,i)=>{const amount=i===bases.length-1?due-allocated:Math.floor(due*l.amount/baseTotal);allocated+=amount;return {name:(p.balance?"Quota iniziale · ":"")+l.name,amount};}),...extras].filter(l=>l.amount>0);
-});}
+});
+ const difference=q.cardNow-output.reduce((n,l)=>n+l.amount,0);
+ if(difference){if(difference>=0||!q.parts.some(p=>p.lines.some(l=>l.name===roundingLineName&&l.amount<0)))throw Error('Ripartizione pagamento non valida.');const last=output.at(-1);if(!last||last.amount+difference<=0)throw Error('Arrotondamento pagamento non valido.');last.amount+=difference;}
+ return output;
+}

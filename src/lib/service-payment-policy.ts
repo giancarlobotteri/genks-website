@@ -18,3 +18,10 @@ export function discountedStudioBundle(audio:number,studio:number,beat=0){
  for(const r of remainders){if(!remaining)break;paid[r.i]++;remaining--;}
  return {total,separate,saving,audio:paid[0],studio:paid[1],beat:paid[2]};
 }
+
+export function beatVoiceBundle(hours=2,night=0){
+ if(!Number.isFinite(hours)||hours<2||hours>8||hours*4!==Math.round(hours*4)||!Number.isSafeInteger(night)||night<0)throw Error('Beat & Voce include almeno due ore; massimo otto ore per appuntamento.');
+ const baseStudio=3998,baseBeat=3499,base=6499,separate=baseStudio+baseBeat;
+ const beat=Math.round(baseBeat*base/separate),studio=base-beat+Math.round((hours-2)*1999)+night,total=beat+studio;
+ return {total,separate:baseBeat+Math.round(hours*1999)+night,saving:998,studio,beat};
+}
