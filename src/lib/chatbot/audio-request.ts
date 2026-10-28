@@ -6,6 +6,7 @@ export function simpleAudioRequest(text:string):PreventivoInput|null{
  const t=text.toLowerCase();
  if(!/mix|master/.test(t)||/\bep\b|album|beat|produzion|registr|studio|garanzia|rimborso|sconto|diritt|ordine|cancell|file.*(?:invio|invian|mando)|come.*(?:file|prepar|cont)/.test(t))return null;
  if(!/quanto|costa|prezzo|preventivo|vorrei|voglio|mi serve|how much|i need|i want/.test(t))return null;
+ if(/\b(?:primo|prima|secondo|seconda|terzo|terza|altri|altre|alcuni|restanti|mentre)\b/.test(t))return null;
  const mix=/mix/.test(t),master=/master/.test(t)&&!/senza (?:il )?master|solo (?:il )?mix/.test(t);
  const servizio=mix&&master?'mix_master':mix?'mix':'master';
  const raw=t.match(new RegExp(`\\b(${numeric})\\s+(?:brani|brano|pezzi|pezzo|canzoni|canzone|song|songs|masters?|tracks? to master)\\b`))?.[1];

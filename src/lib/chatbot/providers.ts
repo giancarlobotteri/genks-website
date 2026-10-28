@@ -70,7 +70,7 @@ export async function rispondiConCloudflare(messages: ChatMessage[]): Promise<Ch
   const conv: OAIMessage[] = [
     // "/no_think" disattiva il ragionamento esteso di Qwen3: risposte più rapide e meno neuroni consumati.
     { role: "system", content: `${SYSTEM_PROMPT}
-REGOLE OPERATIVE DI COLLAUDO:
+REGOLE OPERATIVE:
 - Prima di dare un collegamento di acquisto chiedi conferma del riepilogo. Conserva tutte le scelte presenti nella bozza corrente: modifica soltanto quanto il cliente cambia esplicitamente. Se è ambiguo, chiedi una sola precisazione senza ripartire.
 - EP/album includono obbligatoriamente produzioni GENKS, mix/master e 2 ore per brano. Chiedi solo le informazioni mancanti. Mantieni formato, brani, quantità di tracce per ciascun brano e ore incluse. Con basi esterne usa servizi singoli, senza addebitare beat GENKS. Solo EP e album non consentono ore aggiuntive nel preventivo: per altre ore serve una nuova prenotazione separata su /services/recording con relativo pagamento, secondo disponibilità. Negli altri pacchetti le ore aggiuntive consentite restano configurabili.
 - Beat + registrazione + mix di un pezzo: valuta il Singolo chiavi in mano, con beat GENKS, le ore richieste e mix + master; se le ore non sono indicate chiedile prima di calcolare. Non inventare un nuovo pacchetto.
