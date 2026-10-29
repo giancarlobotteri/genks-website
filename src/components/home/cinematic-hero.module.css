@@ -184,3 +184,6 @@
  .serviceLanding .serviceDesk{display:block;left:24px;top:112px;transform:none;width:var(--workspace-width,288px);height:var(--workspace-height,calc(100dvh - 136px))}
  .serviceLanding .serviceDesk>*{width:100%;height:100%;max-height:100%}
 }
+
+/* Vivid GENKS functional colors; preserve the electric surfaces. */
+.primary{background:var(--color-cta-gradient);color:var(--color-on-cta);border-color:#8acfff}.primary:hover{background:var(--color-cta-hover-gradient)}.primary:active{background:var(--color-cta-active)}.secondary{background:linear-gradient(125deg,#164b82,#0d2b54);color:var(--color-text)}

@@ -93,3 +93,6 @@
 
 /* Non-modal desktop conversations must sit above the workspace preview. */
 .panel{z-index:65}
+
+/* Vivid GENKS functional colors; preserve the electric surfaces. */
+.form button,.reviewActions button{background:var(--color-cta-gradient);color:var(--color-on-cta);border-color:#8acfff}.form button:hover:not(:disabled),.reviewActions button:hover{background:var(--color-cta-hover-gradient)}

@@ -12,3 +12,6 @@
 }
 .notice strong { display: block; font-size: 18px; color: #ffffff; }
 .notice p { margin: 8px 0 0; color: #ffffff; font-size: inherit; line-height: inherit; }
+
+/* Vivid GENKS functional colors; preserve the electric surfaces. */
+.notice{background:var(--color-info-gradient);color:var(--color-info-text);border-color:#477da9;border-left:2px solid var(--color-info-border)}.notice p{color:var(--color-info-text)}

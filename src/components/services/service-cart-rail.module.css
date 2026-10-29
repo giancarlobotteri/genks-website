@@ -38,3 +38,6 @@
 @media(orientation:landscape) and (max-height:500px) and (max-width:1199px){.launcher[data-genks-cart-launcher]{padding:8px 10px;gap:7px}.launcher[data-genks-cart-launcher]>span{display:none}}
 
 @media(orientation:portrait) and (max-width:720px){.panel{width:calc(100% - 24px);max-width:420px;box-sizing:border-box;margin-inline:12px}.panel .items article{grid-template-columns:minmax(0,1fr) auto;align-items:start}.panel .items h3{overflow-wrap:break-word;line-height:1.4}.panel .itemSide strong{font-size:14px}.panel .totals>div{align-items:start;gap:12px}.panel .totals>div>span{min-width:0;overflow-wrap:break-word}.panel .totals strong{font-size:22px}.panel .actions{gap:12px}.panel .actions a{flex:1 1 100%}.panel .confirm>div{flex-wrap:wrap}.panel .confirm button{flex:1 1 100px}}
+
+/* Vivid GENKS functional colors; preserve the electric surfaces. */
+.previewCheckout{background:var(--color-cta-gradient);color:var(--color-on-cta)}.previewCheckout:hover{background:var(--color-cta-hover-gradient)}.clearPreview,.itemSide button,.actions button{background:linear-gradient(125deg,#a92f45,#7e2139);color:#fff;border-color:#ff8993}
