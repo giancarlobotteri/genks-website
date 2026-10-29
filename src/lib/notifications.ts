@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTransactionalEmail } from "@/lib/email";
 import { bookingCalendarFile, bookingCalendarUrl, studioAddress } from "@/lib/booking-calendar";
 
+import {notificationPaymentGuard} from "@/lib/notification-payment-guard";
 import {serviceEmailSummary} from "@/lib/service-email-summary";
 
 type Message = Parameters<typeof sendTransactionalEmail>[0];
@@ -23,6 +24,39 @@ export async function deliverNotification(id: string) {
   const message = data?.[0];
   if (!message) return;
   try {
+    const agreementState=async(field:'project_id'|'booking_id',target:string)=>{
+      const table=field==='project_id'?'service_projects':'bookings';
+      const current=await db.from(table).select('status').eq('id',target).maybeSingle();
+      const quotes=await db.from('service_quotes').select('status').eq(field,target);
+      const cash=await db.from('studio_cash_agreements').select('id').eq(field,target).limit(1);
+      if(current.error||quotes.error||cash.error)throw Error('Stato del pagamento da verificare.');
+      if(!current.data)return null;
+      return {terminal:['cancelled','rejected','no_show','refunded'].includes(current.data.status),cash:Boolean(cash.data?.length),paid:Boolean(quotes.data?.some(q=>q.status==='paid'))};
+    };
+    const decision=await notificationPaymentGuard(String(message.dedupe_key),{
+      order:async target=>{
+        const project=await db.from('service_projects').select('commerce_snapshot').eq('id',target).maybeSingle();
+        const parts=await db.from('service_order_parts_v8').select('method').eq('project_id',target);
+        if(project.error||parts.error)throw Error('Metodo di pagamento da verificare.');
+        if(!project.data||!parts.data?.length)throw Error('Voci ordine non disponibili.');
+        return {card:parts.data.some(part=>part.method==='card')};
+      },
+      payment:async target=>{const p=await db.from('payments').select('status').eq('id',target).maybeSingle();if(p.error)throw Error('Pagamento da verificare.');return p.data;},
+      contract:target=>agreementState('project_id',target),
+      reservation:async reference=>{
+        const table=reference.startsWith('BKG-')?'bookings':'service_projects';
+        const target=await db.from(table).select('id').eq('reference',reference).maybeSingle();
+        if(target.error)throw Error('Richiesta da verificare.');
+        return target.data?agreementState(table==='bookings'?'booking_id':'project_id',target.data.id):null;
+      },
+    });
+    if(decision!=='send'){
+      const saved=await db.from('notification_outbox').update(decision==='cancel'
+        ?{cancelled_at:new Date().toISOString(),locked_until:null,last_error:'Conferma iniziale sostituita dalla ricevuta del pagamento verificato, oppure richiesta annullata.'}
+        :{locked_until:new Date(Date.now()+15*60000).toISOString(),last_error:'In attesa del pagamento verificato.'}).eq('id',id);
+      if(saved.error)throw Error('Stato notifica da aggiornare.');
+      return;
+    }
     let body=message.body as string;
     const bookingAlert=message.dedupe_key.match(/^reservation-(BKG-[A-Z0-9-]+)-admin$/);
     const projectAlert=message.dedupe_key.match(/^reservation-(PRJ-[A-Z0-9-]+)-admin$/);
@@ -131,7 +165,7 @@ export async function deliverNotification(id: string) {
 
 export async function flushNotifications(options: { prefix?: string; limit?: number; throwOnFailure?: boolean } = {}) {
   const db = createSupabaseAdminClient();
-  const query = db.from("notification_outbox").select("id").is("sent_at", null).is("cancelled_at",null).order("created_at").limit(options.limit ?? 20);
+  const query = db.from("notification_outbox").select("id").is("sent_at", null).is("cancelled_at",null).or(`locked_until.is.null,locked_until.lt.${new Date().toISOString()}`).order("created_at").limit(options.limit ?? 20);
   if (options.prefix) query.like("dedupe_key", `${options.prefix}%`);
   const { data, error } = await query;
   if (error) throw new Error("Impossibile leggere la coda delle notifiche.");

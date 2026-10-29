@@ -103,6 +103,7 @@ async function fulfil(session: Stripe.Checkout.Session, event: Stripe.Event) {
   if (orderId && (payment.amount_cents===0 || payment.refunded_cents < payment.amount_cents) && !payment.disputed)
     await ensureOrderConfirmationEmail(orderId);
   if (quoteId) {
+    if(session.metadata?.project_id&&!payment.review_reason)await flushNotifications({prefix:`contract-${session.metadata.project_id}`,throwOnFailure:true});
     if (payment.refunded_cents >= payment.amount_cents || payment.disputed) {
       const result = await db.from("notification_outbox").update({ cancelled_at: new Date().toISOString(), last_error: "Superata dal rimborso o dalla contestazione." }).eq("dedupe_key", `payment-${paymentId}`).is("sent_at", null);
       if (result.error) throw new Error("Notifica da aggiornare.");

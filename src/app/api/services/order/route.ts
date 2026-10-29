@@ -51,7 +51,7 @@ export async function POST(request:Request){
    {idempotencyKey:`genks-v8-${prepared.quote_id}`});
   const saved=await db.from('service_quotes').update({stripe_session_id:session.id,checkout_url:session.url,status:'open'}).eq('id',prepared.quote_id).in('status',['creating','open']).select('id').single();
   if(saved.error||!session.url){if(session.status==='open')await getStripe().checkout.sessions.expire(session.id);throw Error('Pagamento non preparato. Nessun addebito effettuato.');}
-  await flushNotifications({prefix:`v8-order-${prepared.project_id}`});await flushNotifications({prefix:`v8-owner-${prepared.project_id}`});
+  // No order email before Stripe settles the card payment. Cash-only requests are handled above.
   return Response.json({url:session.url});
  }catch(e){const message=e instanceof z.ZodError?'Controlla contatti e condizioni.':e instanceof Error?e.message:'Impossibile completare l’ordine.';console.error('GENKS checkout requires retry',randomUUID());return Response.json({error:message.startsWith('contact_')?'L’account è cambiato. Ricarica la pagina e verifica i contatti.':message},{status:400});}
 }
