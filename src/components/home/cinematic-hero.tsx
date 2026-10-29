@@ -141,7 +141,8 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
       const catalog = document.getElementById("collection");
       const catalogStart = catalog ? catalog.getBoundingClientRect().top + window.scrollY - sectionTop : Infinity;
       // Finish the fade before the catalog, including short viewports where the stage has a minimum height.
-      travel = Math.max(1, Math.min(section.offsetHeight - stage.offsetHeight, catalogStart));
+      const interactiveLead = document.querySelector('[data-home-discovery]') ? window.innerHeight * .6 : 0;
+      travel = Math.max(1, Math.min(section.offsetHeight - stage.offsetHeight, catalogStart - interactiveLead));
       scroll();
     };
     const observer = new ResizeObserver(measure);
