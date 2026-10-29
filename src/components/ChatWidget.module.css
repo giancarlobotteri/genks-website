@@ -67,3 +67,29 @@
 .form{background:#081c38;border-top-color:#599bd155}
 .form button{background:linear-gradient(140deg,#338bff,#1e57c7);box-shadow:0 5px 15px #0e6eff33}
 .form textarea{background:#06152b;border-color:#518bc1}
+
+
+/* Home conversations get the same comfortable workspace as service pages. */
+@media(min-width:1280px) and (min-height:700px){
+ .panel[data-home=true]{height:var(--workspace-height);max-height:var(--workspace-height)}
+ .panel[data-home=true] .header{padding:16px}
+ .panel[data-home=true] .header strong{font-size:15px}
+ .panel[data-home=true] .messages{padding:16px;gap:14px}
+ .panel[data-home=true] .bot,.panel[data-home=true] .user{font-size:14px;line-height:1.7;padding:13px}
+ .panel[data-home=true] .form{padding:12px}
+ .panel[data-home=true] .form textarea{height:60px;min-height:60px;font-size:16px}
+ .panel[data-home=true] .form button{min-width:44px;min-height:44px}
+ .panel[data-home=true] .disclaimer{padding:0 12px 12px;font-size:10px}
+ .panel[data-home=true] .reviewActions{padding:10px 12px}
+ .panel[data-home=true] .reviewActions button{min-height:42px;font-size:13px}
+}
+@media(max-width:1279px),(max-height:699px){
+ .panel[data-home=true]{inset:max(8px,env(safe-area-inset-top)) 12px max(8px,env(safe-area-inset-bottom));width:calc(100% - 24px);height:calc(100dvh - max(8px,env(safe-area-inset-top)) - max(8px,env(safe-area-inset-bottom)));max-height:none;margin:0 auto;max-width:680px}
+}
+@media(prefers-reduced-motion:no-preference){
+ :global(.utility-anchor[data-home=true]) .launcher:not([data-inline=true])>svg{animation:assistantAvatarHello 4s ease-in-out infinite}
+ @keyframes assistantAvatarHello{0%,75%,100%{transform:translateY(0)}85%{transform:translateY(-3px)}92%{transform:translateY(0)}}
+}
+
+/* Non-modal desktop conversations must sit above the workspace preview. */
+.panel{z-index:65}
