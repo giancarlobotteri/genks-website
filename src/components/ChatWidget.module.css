@@ -57,3 +57,13 @@
 @media(max-width:1279px),(max-height:699px){
  .panel[data-services=true]{inset:max(8px,env(safe-area-inset-top)) 12px max(8px,env(safe-area-inset-bottom));width:calc(100% - 24px);height:calc(100dvh - max(8px,env(safe-area-inset-top)) - max(8px,env(safe-area-inset-bottom)));max-height:none;margin:0 auto;max-width:680px}
 }
+
+
+/* Match the electric GENKS surfaces without altering chat dimensions. */
+.panel{background:radial-gradient(ellipse at top right,#126ac12b,transparent 65%),linear-gradient(150deg,#102e55,#061630);border-color:#74c4ff;box-shadow:inset 0 1px #cff4ff33,0 24px 90px #000b}
+.header{background:linear-gradient(115deg,#174c86,#103360);border-bottom-color:#6aafe65c}
+.bot{background:linear-gradient(135deg,#153d66,#102e50);border-color:#528fc162}
+.user{background:linear-gradient(125deg,#2677d6,#1c519e);border-color:#85c5ff99}
+.form{background:#081c38;border-top-color:#599bd155}
+.form button{background:linear-gradient(140deg,#338bff,#1e57c7);box-shadow:0 5px 15px #0e6eff33}
+.form textarea{background:#06152b;border-color:#518bc1}

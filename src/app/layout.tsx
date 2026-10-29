@@ -24,6 +24,7 @@ import "./service-commerce.css";
 import "./storefront-motion.css";
 import "./responsive-layout.css";
 import "./customer-journey.css";
+import "./electric-interface.css";
 import "@fontsource/manrope/latin-400.css";
 import "@fontsource/manrope/latin-600.css";
 import "@fontsource/manrope/latin-700.css";
@@ -88,3 +89,4 @@ export default async function RootLayout({
     </html>
   );
 }
+

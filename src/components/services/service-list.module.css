@@ -32,3 +32,41 @@
 @media(prefers-reduced-motion:no-preference){.soundDisc{animation:studioDiscFloat 9s ease-in-out infinite!important}@keyframes studioDiscFloat{0%,100%{transform:perspective(800px) rotateY(-12deg) rotateX(6deg) translateY(0)}50%{transform:perspective(800px) rotateY(-8deg) rotateX(4deg) translateY(-5px)}}}
 
 .heroVisual .wave{opacity:.38;gap:7px;filter:none}.heroVisual .wave i{max-width:3px;border-radius:2px;background:linear-gradient(0deg,#345d9a,#9bdcff);box-shadow:none}.heroVisual .soundDisc:before,.heroVisual .soundDisc:after{box-shadow:none}
+
+
+/* Electric blue storefront: stronger hierarchy, brighter value and distinct surfaces. */
+.hero{border-color:#4b9ade;background:radial-gradient(ellipse at 85% 12%,#1978d987,transparent 58%),linear-gradient(125deg,#133970,#07182f);box-shadow:inset 0 1px #c2efff38,0 24px 70px #001b4e66}
+.hero h1 span{color:#9fe8ff}
+.kicker{color:#9bddff;letter-spacing:.12em}
+.heroFacts span{padding:8px 11px;border:1px solid #71b5ec42;border-radius:10px;background:#0b2a4b88}
+.sectionNav{background:#061a36c9;border-top-color:#62a8d855}
+.sectionNav a{border-color:#4b81b13a;background:#153b602b}
+.cards article,.offerCard{background:radial-gradient(ellipse at 95% 0,#1d80d542,transparent 62%),linear-gradient(150deg,#12345c,#081a35);border-color:#3b80ba;box-shadow:inset 0 1px #b5e9ff29,0 16px 40px #010a234d}
+.cards .featured{background:radial-gradient(ellipse at 100% 0,#2a97ed57,transparent 65%),linear-gradient(145deg,#194e8e,#0b2351);border-color:#88d9ff;box-shadow:inset 0 1px #d8f9ff50,0 0 32px #258aff26}
+.cardIcon{background:linear-gradient(140deg,#286fc9,#12366b);border-color:#81c8ff;color:#bcefff}
+.cards .price{color:#b8edff;font-size:clamp(23px,2.3vw,34px);letter-spacing:-.045em}
+.cards article p{color:#d0e5ff;line-height:1.65}
+.cards article .paymentNote{color:#b9d8f8;border-top-color:#67a9d73b}
+.sectionHeading h2{letter-spacing:-.045em}
+.tableWrap{border-color:#468dc4;background:#0a2344;box-shadow:inset 0 1px #c3edff22,0 15px 45px #00133155}
+.tableWrap thead{background:linear-gradient(110deg,#164c81,#123665)}
+.tableWrap tbody tr:nth-child(even){background:#2471bd10}
+.tableWrap tbody td,.tableWrap tbody th{border-bottom-color:#5696c62e}
+.tableWrap strong{color:#c0f1ff}
+.bestValue{background:#2674e51c}
+.bestValue a{background:linear-gradient(120deg,#2666cc,#184883);border-color:#6fbff5}
+.projectSpotlight{background:radial-gradient(ellipse at 85% 25%,#237ee660,transparent 55%),linear-gradient(115deg,#153c74,#091b3a);border-color:#6bc9ff;box-shadow:inset 0 1px #b1e6ff3b,0 24px 60px #00184566}
+.projectPrice{background:linear-gradient(145deg,#164b86,#0a2650);border-color:#7cbff0;box-shadow:inset 0 1px #d2f4ff3b,0 15px 35px #020e2944}
+.projectPrice>strong{color:#b6f0ff;text-shadow:0 0 32px #37adff30}
+.saving{background:linear-gradient(120deg,#095a8b,#123e75);color:#cefbff;border-color:#52c7e9;box-shadow:inset 0 1px #d2ffff20}
+.offerNumber{background:#2679e62b;border:1px solid #6cb4e45c;color:#b0e7ff}
+.offerPrice{color:#bcefff!important}
+.offerCard>p{color:#c6def9;line-height:1.65}
+.offerBottom{border-top:1px solid #5c9ed034;padding-top:18px}
+.extraGrid article,.featurePanel{background:radial-gradient(ellipse at top right,#1d73bf34,transparent 65%),linear-gradient(145deg,#10345b,#091a35);border-color:#478fc7;box-shadow:inset 0 1px #b9e9ff25}
+.beatPanel h2 span{color:#abe9ff}
+.guarantee{background:linear-gradient(120deg,#113d76,#0d2d53);border-color:#64bbeb;box-shadow:inset 0 1px #c3f3ff29}
+.explainer{background:#0b2344;border-color:#447dac}
+.pill{background:linear-gradient(120deg,#277bff,#2460cb);border-color:#a0dfff}
+@media(hover:hover) and (pointer:fine){.cards article:hover,.offerCard:hover{border-color:#91e0ff;box-shadow:inset 0 1px #d1f5ff3b,0 18px 44px #0872dd33}}
+@media(max-width:720px){.cards .price{font-size:22px}.heroFacts span{padding:7px 9px}.offerBottom{padding-top:14px}}

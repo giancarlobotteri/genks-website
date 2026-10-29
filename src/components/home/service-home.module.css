@@ -18,3 +18,13 @@
 }
 @media(max-width:720px){.cinematicHome > :global(#collection){width:calc(100% - 36px)}.steps article,.proofCard{padding:24px}.section h2{line-height:1.3}.biography{font-size:1rem;line-height:1.8}.closing a{width:100%;max-width:360px}}
 @media(max-width:720px){.section{padding:30px 0}.section h2{font-size:1.35rem;margin-bottom:18px}.cinematicHome>:global(#collection){width:calc(100% - 24px)}.steps{gap:10px}.steps article,.proofCard{padding:16px;border-radius:17px}.steps article{display:grid;grid-template-columns:30px 1fr;column-gap:12px;align-items:start}.steps span{font-size:1.05rem;margin:0;grid-row:1/3}.steps h3{font-size:14px;margin-bottom:6px}.steps p,.proofCard p{font-size:13px;line-height:1.65}.biography{font-size:14px;line-height:1.75}.faq details{padding:16px 0}.faq summary{font-size:14px;min-height:28px}.faq p{font-size:13px;padding-top:10px}.closing h2{font-size:1.7rem}.closing{padding-bottom:100px}}
+
+
+/* A visual rhythm beneath the cinematic home. */
+.steps article,.proofCard{background:radial-gradient(ellipse at top right,#2375cf38,transparent 65%),linear-gradient(140deg,#12355c,#091a35);border-color:#3e85bd;box-shadow:inset 0 1px #bcefff29,0 12px 32px #02102b44}
+.steps span{color:#9ce5ff}
+.faq details{padding:20px;border:1px solid #3979ad;border-radius:17px;background:linear-gradient(140deg,#103359aa,#081c36dd);margin-bottom:12px;transition:border-color .2s,background .2s}
+.faq details[open]{border-color:#7ccfff;background:#123b66}
+.faq summary{color:#effaff}
+.closing{border:1px solid #509fce;border-radius:26px;padding:clamp(24px,4vw,52px);margin-bottom:60px;background:radial-gradient(ellipse at right,#1c70c83b,transparent 65%),linear-gradient(130deg,#103265,#081a35)}
+@media(max-width:720px){.faq details{padding:16px}.closing{margin-bottom:90px;border-radius:20px}}
