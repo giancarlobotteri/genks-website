@@ -12,3 +12,14 @@
 @keyframes offer-arrive{from{opacity:.55;transform:translate3d(0,8px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
 @media(hover:hover) and (pointer:fine){.card>a:hover svg{transform:translate3d(3px,-2px,0)}}
 @media(hover:none){.card:hover{transform:none}}
+
+/* Match recommended bundles to the approved electric and cyan system. */
+.kicker{color:var(--color-info,#67e8f9)}
+.card{background:radial-gradient(ellipse at top right,#288cf045,transparent 62%),linear-gradient(155deg,#174776,#0a2345);border-color:#65a9df;box-shadow:inset 0 1px #c0eeff38,0 12px 32px #02102b44}
+.cardTop>span{color:#bae6fd}.cardTop strong{color:var(--color-info,#67e8f9);background:var(--color-info-gradient);border-color:var(--color-info-border,#22d3ee)}
+.art{color:#a5f3fc;background:radial-gradient(ellipse,#1289cb55,transparent 70%)}.art i{border-color:#22d3ee55}
+.card p{color:#d0e5ff}.price del{color:#b3cdeb}.price>strong{color:#e6faff}
+.card>a{background:var(--color-cta-gradient);color:#fff;border:1px solid #8acfff;border-radius:12px;padding:10px 12px;box-shadow:inset 0 1px #d7f5ff55,0 7px 20px #0766f02b}
+.card>a:hover{background:var(--color-cta-hover-gradient);color:#fff}
+.toolbar button[aria-pressed=true]{background:var(--color-cta-gradient);border-color:#8acfff}
+.market :focus-visible{outline-color:var(--color-focus,#bfdbfe)}
