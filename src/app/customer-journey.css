@@ -306,3 +306,13 @@ body[data-cinematic-ui-hidden] [data-genks-assistant-invite]{visibility:hidden;p
  @keyframes genks-assistant-breathe{0%,80%,100%{transform:translateY(0)}90%{transform:translateY(-4px)}}
  @keyframes genks-assistant-invite{0%,85%,100%{filter:brightness(1)}92%{filter:brightness(1.22)}}
 }
+
+@media(min-width:1280px) and (min-height:700px) and (max-height:800px){
+ .utility-anchor[data-home=true] .assistant-preview{padding:16px;gap:10px}
+ .utility-anchor[data-home=true] .assistant-preview header{padding-bottom:8px}
+ .utility-anchor[data-home=true] .assistant-preview-avatar>svg{width:32px;height:32px}
+ .utility-anchor[data-home=true] .assistant-preview-eyebrow,.utility-anchor[data-home=true] .assistant-preview-topics{display:none}
+ .utility-anchor[data-home=true] .assistant-preview h2{font-size:24px;margin-bottom:8px}
+ .utility-anchor[data-home=true] .assistant-preview p{font-size:12px;line-height:1.6}
+ .utility-anchor[data-home=true] .assistant-preview button{min-height:44px;font-size:13px}
+}
