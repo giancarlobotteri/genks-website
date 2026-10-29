@@ -21,7 +21,7 @@ export async function ServiceHome({discoveryPreview=false}:{discoveryPreview?:bo
    {name:"Master",price:serviceAmount(discountPrice(projectRates.master,["master","projects","services"],discounts)),detail:"Il tocco finale al tuo mix",href:"/services/project?service=master"},
    {name:"Registrazione",price:`${serviceAmount(discountPrice(recordingHourlyCents,["recording","services"],discounts))}/ora`,detail:"Il tuo spazio in studio",href:"/services/recording"}
   ]}/>} />
-  <div id="collection"><div id="home-discovery"><HomeDiscovery discounts={discounts} preview={discoveryPreview}/></div><HomeMarketplace cards={cards}/>
+  <div id="collection"><div id="home-discovery" style={{scrollMarginTop:140}}><HomeDiscovery discounts={discounts} preview={discoveryPreview}/></div><HomeMarketplace cards={cards}/>
   <section className={styles.section}><h2>COME FUNZIONA</h2><div className={styles.steps}>
    <article><span>01</span><h3>Scegli e paga</h3><p>Scegli il servizio e paga online in 2 minuti.</p></article>
    <article><span>02</span><h3>Invia le tracce</h3><p>Mandami il link alle tracce seguendo la guida.</p></article>

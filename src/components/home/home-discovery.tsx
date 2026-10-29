@@ -31,7 +31,7 @@ export function HomeDiscovery({discounts=[],preview=false}:{discounts?:PublicDis
  const matches=withinBudget(cards,cents,goal);
  const recommended=suggestions.ids.flatMap(id=>{const c=cards.find(x=>x.id===id);return c?[c]:[];});
  return <section className={styles.discovery} aria-label="Trova il tuo prossimo progetto" data-home-discovery>
-  <article className={styles.panel}>
+  <article className={styles.panel} id="home-budget">
    <div className={styles.eyebrow}><Wallet size={18}/> IL TUO BUDGET, IL TUO SUONO</div>
    <h2>Ho un budget di…</h2><p>Scopri cosa puoi fare con GENKS, senza superare la cifra che hai in mente.</p>
    <div className={styles.fields}><label>Il tuo budget in euro<div className={styles.money}><input inputMode="decimal" type="number" min="0" step="0.01" value={budget} onChange={e=>setBudget(e.target.value)}/><span>€</span></div></label><label>Cosa ti serve?<select value={goal} onChange={e=>setGoal(e.target.value)}><option value="all">Tutti i servizi</option><option value="audio">Mix e master</option><option value="studio">Registrare in studio</option><option value="production">Una produzione GENKS</option></select></label></div>
@@ -39,7 +39,7 @@ export function HomeDiscovery({discounts=[],preview=false}:{discounts?:PublicDis
    <div className={styles.results} aria-live="polite">{matches.map(c=><DiscoveryCard key={c.id} card={c} budget={cents}/>)}{!matches.length&&<p>Nessuna proposta con questi criteri. Puoi cambiare budget o servizio e consultare <Link href="/services">tutto il listino</Link>.</p>}</div>
    <small className={styles.note}>Confrontiamo il prezzo totale di partenza, non l’acconto. Tracce, ore ed extra possono modificare il totale: lo vedrai nel modulo prima di pagare.</small>
   </article>
-  <article className={`${styles.panel} ${styles.personal}`}>
+  <article className={`${styles.panel} ${styles.personal}`} id="home-suggestions">
    <div className={styles.eyebrow}><Sparkles size={18}/> SCELTO PER TE {preview&&<span className={styles.demo}>ESEMPIO DIMOSTRATIVO</span>}</div>
    <h2>Pensiamo che potrebbe interessarti</h2>
    <p>{recommended.length?'Riparti da un servizio che conosci o scopri un pacchetto collegato ai tuoi acquisti precedenti.':'Qui trovi proposte legate ai servizi che hai già acquistato da GENKS.'}</p>

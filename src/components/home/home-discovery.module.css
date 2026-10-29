@@ -2,3 +2,4 @@
 @media(max-width:950px){.discovery{grid-template-columns:1fr;width:calc(100% - 36px);gap:18px}.panel{padding:24px}}
 @media(max-width:600px){.discovery{width:calc(100% - 28px);margin:26px auto}.panel{padding:18px;border-radius:22px}.fields{grid-template-columns:1fr}.result{padding:13px;gap:10px}.price strong{font-size:18px}.price{max-width:130px}.result h3{font-size:15px}.result p{font-size:11px}.presets button{flex:1;padding:9px}.empty{padding:18px}}
 @media(prefers-reduced-motion:reduce){.result{transition:none}.result:hover{transform:none}}
+.panel{scroll-margin-top:140px}

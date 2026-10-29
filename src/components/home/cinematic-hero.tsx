@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ArrowDown, ArrowUpRight, Pause, Play } from "lucide-react";
+import { ArrowDown, ArrowUpRight, Pause, Play, Wallet, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { useHomeSceneActive } from "./cinematic-home";
 import styles from "./cinematic-hero.module.css";
@@ -201,6 +201,7 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
             <a className={styles.secondary} href="#catalog" onClick={event => goToCatalog(event)}><span>Vai al catalogo<small>Ascolta i beat. Trova il tuo suono.</small></span><ArrowUpRight size={20} aria-hidden="true" /></a>
             </>}
           </div>
+          {serviceLanding && <nav className={styles.discoveryLinks} aria-label="Budget e suggerimenti"><a className={styles.discoveryShortcut} href="#home-budget"><Wallet size={20} aria-hidden="true"/><span><strong>Trova per budget</strong><small>Le proposte per la tua cifra</small></span><ArrowDown size={16} aria-hidden="true"/></a><a className={styles.discoveryShortcut} href="#home-suggestions"><Sparkles size={20} aria-hidden="true"/><span><strong>Consigli per te</strong><small>Dai tuoi acquisti precedenti</small></span><ArrowDown size={16} aria-hidden="true"/></a></nav>}
         </div>
 
         {serviceLanding && <HomeConsole discounts={discounts}/>}
