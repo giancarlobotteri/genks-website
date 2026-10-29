@@ -27,11 +27,6 @@ import "./customer-journey.css";
 import "./electric-interface.css";
 import "./semantic-colors.css";
 import "./typography-layout.css";
-import "@fontsource/space-grotesk/latin-600.css";
-import "@fontsource/space-grotesk/latin-700.css";
-import "@fontsource/manrope/latin-400.css";
-import "@fontsource/manrope/latin-600.css";
-import "@fontsource/manrope/latin-700.css";
 
 export const metadata: Metadata = {
   metadataBase: getSiteOrigin(),
