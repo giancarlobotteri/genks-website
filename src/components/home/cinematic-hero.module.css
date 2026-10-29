@@ -218,3 +218,8 @@
 .serviceLanding .stage{background:#061329 url('/brand/genks-studio-realistic-v1.webp') center center/cover no-repeat}
 .serviceLanding .halo{background:radial-gradient(ellipse at 50% 35%,#1b70bf12,transparent 60%)}
 @media(max-width:600px){.serviceLanding .stage{background-size:auto 100%;background-position:center}}
+/* Larger woofer in its own flow slot: controls remain below, never overlaid. */
+.serviceLanding .modelFrame{height:clamp(280px,42svh,440px);width:min(620px,86vw)}
+@media(max-width:900px){.serviceLanding .modelFrame{height:340px}}
+@media(max-width:600px){.serviceLanding .modelFrame{height:280px;width:100%}.serviceLanding .stage{min-height:940px}}
+@media(orientation:landscape) and (max-height:500px){.serviceLanding .modelFrame{height:290px;width:390px}.serviceLanding .stage{min-height:820px}}
