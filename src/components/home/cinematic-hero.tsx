@@ -1,5 +1,6 @@
 "use client";
 
+import {HomeConsole} from "./home-console";
 import type {PublicDiscount} from "@/lib/public-discounts";
 import {HomeCartPreview} from "@/components/services/service-cart-rail-v8";
 import Image from "next/image";
@@ -76,7 +77,7 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
       [".genks-header", 0, 0, true], [".genks-menu-toggle", -180, 0, false],
       [".genks-header-logo", 0, -110, false], [".cart-rail", 380, 0, true], [".utility-workspace", 380, 0, true],
       ["[data-genks-chat-launcher]", 110, 0, true], ["[data-genks-assistant-invite]", 110, 0, true], ["[data-genks-cart-launcher]", 110, 0, true], [".cart-rail-toggle", 110, 0, true], [".offers-rail", -380, 0, true], [".offers-toggle", -110, 0, true], [".cart-rail-backdrop", 0, 0, true],
-      [".persistent-player", 0, 140, true], [".site-footer", 0, 140, true],
+      ["[data-home-console]", 0, 150, true], [".persistent-player", 0, 140, true], [".site-footer", 0, 140, true],
     ].flatMap(([selector, x, y, fade]) => {
       const element = document.querySelector<HTMLElement>(String(selector));
       return element ? [{ element, x: Number(x), y: Number(y), fade: Boolean(fade) }] : [];
@@ -201,6 +202,7 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
           </div>
         </div>
 
+        {serviceLanding && <HomeConsole discounts={discounts}/>}
         {!serviceLanding && <div className={styles.bottomline}>
           <a className={styles.scroll} href="#catalog" onClick={event => goToCatalog(event)}><ArrowDown size={14} aria-hidden="true" /> Scopri il tuo prossimo suono</a>
           <button type="button" className={styles.motion} disabled={!ready} aria-pressed={paused} onClick={() => setPaused(value => !value)}>
@@ -212,3 +214,5 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
     </section>
   );
 }
+
+

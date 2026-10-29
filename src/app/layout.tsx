@@ -27,6 +27,8 @@ import "./customer-journey.css";
 import "./electric-interface.css";
 import "./semantic-colors.css";
 import "./typography-layout.css";
+import "./material-preview.css";
+import "./glass-preview.css";
 
 export const metadata: Metadata = {
   metadataBase: getSiteOrigin(),
@@ -65,7 +67,7 @@ export default async function RootLayout({
   const assistantEnabled=Boolean(process.env.CLOUDFLARE_ACCOUNT_ID&&process.env.CLOUDFLARE_API_TOKEN)&&(process.env.AI_PROVIDER||'cloudflare')==='cloudflare';
   return (
     <html lang="it">
-      <body><SiteAtmosphere/>{BEATS_ENABLED && <InterestMemory/>}
+      <body data-material-preview><SiteAtmosphere/>{BEATS_ENABLED && <InterestMemory/>}
         <a className="skip-link" href="#main-content">
           Vai al contenuto
         </a>
@@ -88,4 +90,6 @@ export default async function RootLayout({
     </html>
   );
 }
+
+
 

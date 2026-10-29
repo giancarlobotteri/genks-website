@@ -1,0 +1,31 @@
+/* Reversible GENKS material study. Remove the layout import/attribute to restore. */
+body[data-material-preview]{
+ --material-panel:linear-gradient(115deg,#9edbff0c 0%,transparent 35%,#020b1a12 100%),linear-gradient(155deg,#19496f 0%,#103251 45%,#091c33 100%);
+ --material-edge:#729dbd88;
+ --material-shadow:inset 0 1px 0 #d5f1ff38,inset 0 -1px 0 #010b1c99,0 12px 25px #00091655,0 2px 5px #000b1e77;
+ --material-well:inset 0 2px 5px #00071399,inset 0 -1px 0 #b5dcf51c;
+}
+body[data-material-preview] .site-atmosphere{background:radial-gradient(ellipse at 50% 0,#183c5c 0%,#0b223d 45%,#040f20 100%)}
+body[data-material-preview] .site-atmosphere i{opacity:.18}
+body[data-material-preview] .genks-header{background:linear-gradient(180deg,#173550f5,#07182df5);border-color:#6a91b16b;box-shadow:inset 0 1px #e2f6ff35,inset 0 -1px #020917,0 8px 25px #000a1b70}
+body[data-material-preview] :is(.portal-panel,.premium-form,.admin-form-card,.service-v8-summary,.assistant-preview,[data-genks-embedded-cart],.admin-content .admin-cards>article,.metric-grid>article),
+body[data-material-preview] :is([class*="service-list_cards"]>article,[class*="service-list_offerCard"],[class*="service-list_extraGrid"]>article,[class*="service-list_projectPrice"],[class*="service-list_featurePanel"],[class*="home-marketplace_card"],[class*="home-console_console"],[class*="security_card"],[class*="payments_card"]){background:var(--material-panel);border-color:var(--material-edge);box-shadow:var(--material-shadow)}
+body[data-material-preview] [class*="service-list_hero"]:not([class*="heroCopy"]):not([class*="heroVisual"]):not([class*="heroFacts"]){background:radial-gradient(ellipse at 80% 10%,#4ba7e62b,transparent 60%),linear-gradient(145deg,#1b4b73,#0b203a);border-color:#729dbd88;box-shadow:var(--material-shadow)}
+body[data-material-preview] :is(.button-primary,[class*="cinematic-hero_primary"],[class*="home-console_assistant"],.assistant-preview>button){background:linear-gradient(180deg,#66afff44,transparent 38%),linear-gradient(115deg,#2d80fa,#2168c2 60%,#16538d);border-color:#95d3ffb3;box-shadow:inset 0 1px #e4f7ff9c,inset 0 -2px #00346688,0 6px 0 #03182b66,0 10px 22px #000e2944;color:#fff;text-shadow:0 1px 2px #00316399}
+body[data-material-preview] :is(.button-primary,[class*="cinematic-hero_primary"],[class*="home-console_assistant"]):active{box-shadow:inset 0 2px 5px #03285899,0 1px 2px #000b1b66;translate:0 1px}
+body[data-material-preview] :is(.button-secondary,[class*="cinematic-hero_secondary"],[class*="home-console_offer"]){background:linear-gradient(160deg,#285679bb,#0c2b49);border-color:#77a9c586;box-shadow:inset 0 1px #cceeff45,inset 0 -1px #000a20aa,0 5px 12px #020b1e50}
+body[data-material-preview] #main-content :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea),body[data-material-preview] dialog textarea{background:linear-gradient(180deg,#031123,#0b253f);border-color:#507fa6;box-shadow:var(--material-well);color:#f5fbff}
+body[data-material-preview] #main-content :is(input,select,textarea):focus-visible{outline:2px solid #9de8ff;outline-offset:3px}
+body[data-material-preview] #main-content fieldset{background:linear-gradient(160deg,#12345288,#061a2e55);border-color:#416c8c;box-shadow:inset 0 1px 3px #00102266,inset 0 -1px #abd9f018}
+body[data-material-preview] :is([class*="service-list_tableWrap"],.service-v8-summary .quote-line){border-color:#80b0cd33}
+body[data-material-preview] [class*="service-list_tableWrap"]{background:linear-gradient(160deg,#163c5e,#0b223b);box-shadow:var(--material-shadow)}
+body[data-material-preview] [class*="service-list_tableWrap"] thead{background:linear-gradient(#285675,#173951)}
+body[data-material-preview] [class*="service-list_tableWrap"] tbody tr:nth-child(even){background:#9dceef05}
+body[data-material-preview] :is([class*="service-cart-rail_preview__"],[class*="service-cart-rail_panel__"],[class*="ChatWidget_panel"]){background:var(--material-panel);border-color:#7eb9df99;box-shadow:var(--material-shadow),0 24px 70px #000a2055}
+body[data-material-preview] [class*="ChatWidget_header"]{background:linear-gradient(#285776,#113351);box-shadow:inset 0 1px #e0f8ff30,0 3px 10px #00102444;border-bottom-color:#779eb866}
+body[data-material-preview] [class*="ChatWidget_bot"]{background:linear-gradient(135deg,#214d6d,#133750);border-color:#75a2c061;box-shadow:inset 0 1px #d6f5ff20,0 3px 7px #00102233}
+body[data-material-preview] [class*="ChatWidget_user"]{background:linear-gradient(135deg,#286fb5,#174778);border-color:#90c8ef70;box-shadow:inset 0 1px #dbf3ff33,0 3px 7px #00102233}
+body[data-material-preview] :is([class*="service-cart-rail_dock__"],[data-genks-cart-launcher]){background:linear-gradient(160deg,#3575a8,#174267);border-color:#9bd1ee99;box-shadow:inset 0 1px #dff9ff55,inset 0 -1px #08203c,0 4px 10px #000b2255}
+body[data-material-preview] .site-footer{background:linear-gradient(180deg,#0b2238,#030e1c);border-top:1px solid #87b7d133;box-shadow:inset 0 1px #b3dcf010}
+@media(prefers-reduced-motion:reduce){body[data-material-preview] :is(.button-primary,[class*="cinematic-hero_primary"],[class*="home-console_assistant"]):active{translate:none}}
+

@@ -316,3 +316,14 @@ body[data-cinematic-ui-hidden] [data-genks-assistant-invite]{visibility:hidden;p
  .utility-anchor[data-home=true] .assistant-preview p{font-size:12px;line-height:1.6}
  .utility-anchor[data-home=true] .assistant-preview button{min-height:44px;font-size:13px}
 }
+/* Home console preview: the utilities remain accessible in the header. */
+body:has([data-home-console]) .utility-anchor[data-home=true] .utility-workspace{display:none!important}
+body:has([data-home-console]) .utility-anchor[data-home=true] .utility-tools{position:fixed!important;top:28px;left:50%;right:auto;bottom:auto;translate:-50% 0;display:flex!important;gap:12px;width:max-content;max-width:calc(100vw - 240px)}
+body:has([data-home-console]) .utility-anchor[data-home=true] .utility-tools [data-genks-cart-launcher],body:has([data-home-console]) .utility-anchor[data-home=true] .utility-tools [data-genks-chat-launcher]{position:static!important;inset:auto!important;translate:none!important;transform:none!important;display:flex!important;margin:0}
+body:has([data-home-console]) [data-genks-assistant-invite]{display:none!important}
+@media(max-width:720px){body:has([data-home-console]) .utility-anchor[data-home=true] .utility-tools{top:16px;gap:8px;max-width:calc(100vw - 160px)}}
+@media(orientation:landscape) and (max-height:500px){body:has([data-home-console]) .utility-anchor[data-home=true] .utility-tools{top:12px}}
+@media(min-width:1000px){body:has([data-home-console]) .utility-anchor[data-home=true] .utility-tools{left:auto!important;right:180px!important;translate:none!important;max-width:240px}body:has([data-home-console]) .utility-tools [data-genks-chat-launcher]{display:none!important}}
+@media(max-width:720px){body:has([data-home-console]) .genks-header [class*="home-service-search_search"]{position:fixed!important;left:18px!important;right:18px!important;top:78px!important;bottom:auto!important;width:calc(100vw - 36px)!important;max-width:none!important;transform:none!important;translate:none!important}}
+@media(max-width:720px){body:has([data-home-console]) .genks-header [class*="service-navigation_headerSearch"]{position:static!important;transform:none!important;translate:none!important}body:has([data-home-console]) .genks-header [class*="home-service-search_search"]{left:6px!important;right:6px!important;top:68px!important;width:calc(100% - 12px)!important}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:999px){body:has([data-home-console]) .genks-header [class*="service-navigation_headerSearch"]{position:static!important;transform:none!important;translate:none!important}body:has([data-home-console]) .genks-header [class*="home-service-search_search"]{position:fixed!important;left:18px!important;right:18px!important;top:58px!important;width:calc(100% - 36px)!important;max-width:none!important;transform:none!important;translate:none!important}}

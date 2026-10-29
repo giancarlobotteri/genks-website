@@ -187,3 +187,34 @@
 
 /* Vivid GENKS functional colors; preserve the electric surfaces. */
 .primary{background:var(--color-cta-gradient);color:var(--color-on-cta);border-color:#8acfff}.primary:hover{background:var(--color-cta-hover-gradient)}.primary:active{background:var(--color-cta-active)}.secondary{background:linear-gradient(125deg,#164b82,#0d2b54);color:var(--color-text)}
+/* GENKS console proposal: a single centred composition, no lateral boxes. */
+.serviceLanding .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:110px 6vw 28px;box-sizing:border-box;min-height:760px;background:radial-gradient(ellipse at 50% 35%,#17477b 0%,#081e3c 48%,#040e20 100%)}
+.serviceLanding .serviceDesk,.serviceLanding .nextStep{display:none!important}
+.serviceLanding .modelFrame{display:block;flex:none;width:min(540px,80vw);height:clamp(220px,34svh,370px);min-height:0}
+.serviceLanding .content{position:relative;inset:auto;width:min(650px,100%);margin:0;flex:none;z-index:5}
+.serviceLanding .actions{display:flex;justify-content:center;gap:16px}
+.serviceLanding .actions>a{width:260px;max-width:calc((100% - 16px)/2);min-width:0;box-sizing:border-box}
+.serviceLanding .halo{background:radial-gradient(ellipse at 50% 36%,#2d9dff4d,transparent 52%);opacity:.9}
+.serviceLanding .atmosphere:before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 15%,#24b5ff13 32%,transparent 43%,#2362e514 65%,transparent 80%);transform:translateX(-8%);animation:consoleLight 18s ease-in-out infinite alternate}
+.serviceLanding .atmosphere:after{content:"";position:absolute;left:-30%;right:-30%;top:53%;bottom:-70%;background-image:linear-gradient(#5798ff21 1px,transparent 1px),linear-gradient(90deg,#5798ff21 1px,transparent 1px);background-size:90px 90px;transform:perspective(600px) rotateX(65deg);transform-origin:center top;mask-image:linear-gradient(transparent,#0009 30%,transparent 90%);opacity:.6}
+@keyframes consoleLight{to{transform:translateX(8%);opacity:.5}}
+@media(max-width:900px){.serviceLanding .stage{padding:95px 5vw 28px;gap:18px;min-height:850px;height:auto}.serviceLanding .modelFrame{height:280px}.serviceLanding .content{width:min(620px,100%)}}
+@media(max-width:600px){.serviceLanding .stage{padding:90px 18px 26px;min-height:760px;gap:18px}.serviceLanding .modelFrame{height:245px;width:100%}.serviceLanding .actions{gap:10px}.serviceLanding .actions>a{width:100%;max-width:100%;min-height:49px;font-size:13px;padding:12px 15px}.serviceLanding .poster{top:245px}.serviceLanding .content{width:100%}}
+@media(max-height:500px) and (orientation:landscape){.serviceLanding .stage{padding:82px 5vw 24px;min-height:720px;height:auto}.serviceLanding .modelFrame{height:240px;width:340px}.serviceLanding .content{position:relative;inset:auto}.serviceLanding .actions>a{width:260px}}
+@media(prefers-reduced-motion:reduce){.serviceLanding .atmosphere:before{animation:none}}
+/* Original SVG soundscape: crisp at every resolution, no raster texture. */
+.serviceLanding .stage{background:#061831 url('/brand/genks-soundscape.svg') center center/cover no-repeat}
+.serviceLanding .atmosphere:after{display:none}
+.serviceLanding .atmosphere:before{background:linear-gradient(110deg,transparent 20%,#3ecaff0d 38%,transparent 50%,#238cff14 70%,transparent 90%)}
+@media(max-width:600px){.serviceLanding .stage{padding-top:140px;min-height:880px}.serviceLanding .modelFrame{height:220px}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:999px){.serviceLanding .stage{padding-top:115px;min-height:760px}}
+/* Future studio preview: original vector room, no raster assets. */
+.serviceLanding .stage{background:#061329 url('/brand/genks-future-studio.svg') center center/cover no-repeat}
+.serviceLanding .halo{background:radial-gradient(ellipse at 50% 35%,#2e8fe51c,transparent 60%)}
+.serviceLanding .atmosphere:before{background:linear-gradient(115deg,transparent 20%,#4bbdff0a 42%,transparent 62%);animation:consoleLight 22s ease-in-out infinite alternate}
+@media(max-width:600px){.serviceLanding .stage{background-size:auto 100%;background-position:center}}
+@media(max-width:600px){.serviceLanding .stage{background-size:100% 100%}}
+/* Photoreal architectural render trial; interactive woofer remains a separate 3D scene. */
+.serviceLanding .stage{background:#061329 url('/brand/genks-studio-realistic-v1.webp') center center/cover no-repeat}
+.serviceLanding .halo{background:radial-gradient(ellipse at 50% 35%,#1b70bf12,transparent 60%)}
+@media(max-width:600px){.serviceLanding .stage{background-size:auto 100%;background-position:center}}
