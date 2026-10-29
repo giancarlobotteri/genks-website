@@ -229,3 +229,14 @@
 @media(prefers-reduced-motion:reduce){.discoveryShortcut{transition:none}}
 .discoveryLinks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:536px;margin:14px auto 0}.discoveryLinks .discoveryShortcut{width:100%;margin:0;gap:9px;padding:10px 13px}.discoveryLinks .discoveryShortcut strong{font-size:13px}.discoveryLinks .discoveryShortcut small{font-size:10px}.discoveryLinks .discoveryShortcut>span{flex:1}.discoveryLinks .discoveryShortcut:last-child{background:linear-gradient(115deg,#174a79ee,#1a3c67ed)}
 @media(max-width:600px){.discoveryLinks{gap:8px;margin-top:12px}.discoveryLinks .discoveryShortcut{padding:10px 9px;gap:7px;min-height:58px}.discoveryLinks .discoveryShortcut strong{font-size:11px}.discoveryLinks .discoveryShortcut small{font-size:9px}.discoveryLinks .discoveryShortcut>svg:last-child{display:none}}
+/* Short landscape screens keep both discovery shortcuts in the initial viewport. */
+@media(orientation:landscape) and (max-height:500px) and (max-width:999px){
+ .serviceLanding .stage{justify-content:flex-start;padding:104px 5vw 24px;gap:10px}
+ .serviceLanding .modelFrame{height:110px;width:220px}
+ .serviceLanding .content{width:min(650px,100%)}
+ .serviceLanding .actions>a{min-height:42px;padding:9px 15px}
+ .discoveryLinks{margin-top:8px;gap:12px}
+ .discoveryLinks .discoveryShortcut{min-height:46px;padding:8px 12px}
+ .discoveryLinks .discoveryShortcut strong{font-size:12px}
+ .discoveryLinks .discoveryShortcut small{font-size:10px}
+}
