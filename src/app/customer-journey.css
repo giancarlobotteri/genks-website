@@ -258,3 +258,23 @@ body[data-cinematic-ui-hidden] [data-genks-assistant-invite]{visibility:hidden;p
 
 /* Center controls without a transformed ancestor that would offset the chat dialog. */
 .utility-anchor:not([data-home=true]) .utility-tools{left:0;right:0;translate:none;margin-inline:auto}
+
+/* Service pages: a full-height assistant; the cart belongs below the order summary. */
+@media(min-width:1280px) and (min-height:700px){
+ body:has(.utility-anchor[data-services=true]){--workspace-width:clamp(320px,24vw,380px);--workspace-height:calc(100dvh - var(--workspace-top) - 24px)}
+ .utility-anchor[data-services=true] .utility-workspace{grid-template-rows:minmax(0,1fr)}
+ body:has(.utility-anchor[data-services=true]) .service-side-stack [data-genks-embedded-cart]{display:grid!important;height:auto!important;max-height:none;position:relative}
+ .utility-anchor[data-services=true] .utility-tools [data-genks-cart-launcher]{display:flex!important}
+}
+
+/* The opening composition uses the viewport axis, with equal side gutters. */
+@media(min-width:1280px) and (min-height:700px){
+ body:has(#home) #main-content{margin-right:0}
+ body:has(#home){--workspace-height:calc(100dvh - var(--workspace-top) - 24px)}
+}
+
+@media(orientation:portrait) and (max-width:720px){.utility-anchor[data-home=true] .utility-tools [data-genks-chat-launcher]{top:16px!important}}
+
+@media(min-width:1280px) and (min-height:700px){body:has(.utility-anchor[data-services=true]) .service-v8-layout{grid-template-columns:minmax(0,1.45fr) minmax(270px,1fr);align-items:start}}
+
+.track-stepper>div{width:min(240px,100%);grid-template-columns:44px minmax(44px,1fr) 44px;gap:8px}

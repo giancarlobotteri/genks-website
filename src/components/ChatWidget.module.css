@@ -45,3 +45,15 @@
 .reviewActions{flex-shrink:0;display:grid;gap:7px;padding:10px 16px;background:#11365b;border-top:1px solid #4278a7}.reviewActions button{min-height:40px;padding:9px 12px;border:1px solid #a0d2ff;border-radius:10px;background:#2368ae;color:white;font:inherit;font-size:12px;font-weight:700;cursor:pointer}.reviewActions span{font-size:10px;color:#c5e5ff}
 @media(min-width:1280px) and (min-height:700px){.panel{inset:var(--workspace-top) 24px auto auto;width:var(--workspace-width);height:var(--workspace-half);max-height:var(--workspace-half);max-width:var(--workspace-width);border-radius:20px;box-shadow:0 10px 35px #020d2055}.panel .header{padding:10px 12px}.header strong{font-size:13px}.header span{font-size:10px}.header button{min-width:32px;min-height:32px;font-size:19px}.panel .messages{padding:10px;gap:9px}.panel .bot,.panel .user{font-size:11px;line-height:1.65;padding:10px;margin-inline:0}.panel .form{padding:8px 10px;gap:8px}.panel .form textarea{min-height:40px;height:40px;padding:8px;font-size:13px}.panel .form button{min-width:36px;min-height:38px;font-size:20px}.panel .inputLabel{gap:2px}.panel .disclaimer{padding:0 10px 7px;font-size:9px}.panel .reviewActions{padding:7px 10px;gap:3px}.panel .reviewActions span{display:none}.panel .reviewActions button{min-height:34px;font-size:11px}}
 @media(orientation:landscape) and (max-height:500px){.panel .reviewActions{padding:5px 12px}.panel .reviewActions span{display:none}.panel .reviewActions button{min-height:32px;padding:6px 10px}.panel .disclaimer{font-size:9px}.panel .form textarea{height:44px}}
+
+.header .title{display:flex;align-items:center;gap:8px;min-width:0}.header .title>svg{flex:none}.header .title>span{font:inherit;color:inherit}
+@media(min-width:1280px) and (min-height:700px){
+ .panel[data-services=true]{height:var(--workspace-height);max-height:var(--workspace-height)}
+ .panel[data-services=true] .messages{font-size:13px;padding:14px;gap:12px}
+ .panel[data-services=true] .bot,.panel[data-services=true] .user{font-size:13px;line-height:1.7;padding:12px}
+ .panel[data-services=true] .header{padding:14px}.panel[data-services=true] .header strong{font-size:14px}
+ .panel[data-services=true] .form textarea{min-height:48px;height:48px;font-size:16px}
+}
+@media(max-width:1279px),(max-height:699px){
+ .panel[data-services=true]{inset:max(8px,env(safe-area-inset-top)) 12px max(8px,env(safe-area-inset-bottom));width:calc(100% - 24px);height:calc(100dvh - max(8px,env(safe-area-inset-top)) - max(8px,env(safe-area-inset-bottom)));max-height:none;margin:0 auto;max-width:680px}
+}

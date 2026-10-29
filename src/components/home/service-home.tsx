@@ -1,3 +1,4 @@
+import {totalEnding99} from '@/lib/order-rounding';
 import {homeStorefront} from "@/lib/home-storefront";
 import {HomeMarketplace} from "./home-marketplace";
 import {discountPrice} from "@/lib/public-discounts";
@@ -15,7 +16,7 @@ export async function ServiceHome() {
  const discounts=await getPublicDiscounts();const cards=homeStorefront(discounts);
  return <div className={`${styles.home} ${styles.cinematicHome}`}>
   <CinematicHero serviceLanding discounts={discounts} sideContent={<HomeServiceDesk offers={cards.filter(c=>c.group==="bundle")} services={[
-   {name:"Mix + master",price:`da ${serviceAmount(discountPrice(projectRates.mix_master,["mix_master","projects","services"],discounts))}`,detail:"Un brano pronto a uscire",href:"/services/project?service=mix_master"},
+   {name:"Mix + master",price:`da ${serviceAmount(totalEnding99(discountPrice(projectRates.mix_master,["mix_master","projects","services"],discounts)))}`,detail:"Un brano pronto a uscire",href:"/services/project?service=mix_master"},
    {name:"Master",price:serviceAmount(discountPrice(projectRates.master,["master","projects","services"],discounts)),detail:"Il tocco finale al tuo mix",href:"/services/project?service=master"},
    {name:"Registrazione",price:`${serviceAmount(discountPrice(recordingHourlyCents,["recording","services"],discounts))}/ora`,detail:"Il tuo spazio in studio",href:"/services/recording"}
   ]}/>} />

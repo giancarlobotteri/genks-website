@@ -1,10 +1,11 @@
+import {totalEnding99} from '@/lib/order-rounding';
 import {discountPrice,type PublicDiscount} from "@/lib/public-discounts";
 import Link from "next/link";
 import {AudioLines,ArrowUpRight,Disc3,Mic2,SlidersHorizontal} from "lucide-react";
 import { serviceAmount, recordingHourlyCents, projectRates } from "@/lib/service-rates";
 import styles from "./service-list.module.css";
 export function ServiceCards({discounts=[]}:{discounts?:PublicDiscount[]}) {
- const price=(base:number,target:string)=>serviceAmount(discountPrice(base,[target,target==="recording"?"services":"projects","services"],discounts));
+ const price=(base:number,target:string)=>{const amount=discountPrice(base,[target,target==="recording"?"services":"projects","services"],discounts);return serviceAmount(target==="recording"?amount:totalEnding99(amount));};
  const cards=[{name:"Master",price:price(projectRates.master,"master"),text:"Hai già il mix? Lo rendo forte e pulito su ogni piattaforma.",href:"/services/project?service=master",button:"Scegli il master"},{name:"Mix + master",price:`${price(projectRates.mix_master,"mix_master")} +`,text:"Dalle tracce al brano finito, pronto per le piattaforme di streaming.",href:"/services/project?service=mix_master",button:"Scegli mix + master"},{name:"Registrazione",price:`${price(recordingHourlyCents,"recording")}/ora`,text:"Studio a Ponte San Giovanni, Perugia. Scegli l’orario. Conferma dopo pagamento dell’anticipo.",href:"/services/recording",button:"Prenota lo studio"}];
  cards.splice(0,0,{name:"Mix",price:`${price(projectRates.mix,"mix")} +`,text:"Voce e strumenti, equilibrati per il tuo suono.",href:"/services/project?service=mix",button:"Scegli il mix"});
  const icons=[SlidersHorizontal,Disc3,AudioLines,Mic2];
