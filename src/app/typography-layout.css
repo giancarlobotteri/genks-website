@@ -1,0 +1,12 @@
+/* GENKS: expressive technology in headings, comfortable reading everywhere else. */
+:root{--font-body:"Manrope";--font-heading:"Space Grotesk";--font-futuristic:"Space Grotesk"}
+body{font-family:var(--font-body),system-ui,sans-serif}
+button,input,select,textarea{font-family:var(--font-body),system-ui,sans-serif}
+body #main-content :is(h1,h2,h3,h4),body .assistant-preview h2{font-family:var(--font-heading),var(--font-body),sans-serif;font-weight:600}
+body #main-content :is(h1,h2){letter-spacing:-.035em}
+body #main-content :is(h3,h4){letter-spacing:-.02em}
+body #main-content :is(input,select,textarea){font-family:var(--font-body),system-ui,sans-serif}
+/* One shared starting line for the service content and its reserved assistant column. */
+@media(min-width:1280px) and (min-height:700px){
+ body:has(.utility-anchor[data-services=true]) .portal-shell.service-portal{padding-top:var(--workspace-top,112px)}
+}
