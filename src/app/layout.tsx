@@ -1,3 +1,4 @@
+import {FunnelMonitor} from '@/components/commerce/funnel-monitor';
 import {homeStorefront} from '@/lib/home-storefront';
 import ChatWidget from '@/components/ChatWidget';
 import {UtilityDock} from "@/components/layout/utility-dock";
@@ -79,7 +80,7 @@ export default async function RootLayout({
                 {children}
               </main>
               <UtilityDock discounts={discounts} assistantEnabled={assistantEnabled}>{CART_ENABLED && <CartRail discounts={discounts} />}<ChatWidget enabled={assistantEnabled}/></UtilityDock>
-              <Footer />
+              <FunnelMonitor /><Footer />
               {BEATS_ENABLED && <PersistentPlayer />}
               <MotionObserver />
               <AssetGuard />

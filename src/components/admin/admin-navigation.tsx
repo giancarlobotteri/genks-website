@@ -9,7 +9,7 @@ const links = [
   {title:"Licenze",href:"/admin/licenses",icon:FileCheck2}, {title:"Ordini",href:"/admin/orders",icon:ShoppingBag},
   {title:"Clienti",href:"/admin/customers",icon:Users}, {title:"Prenotazioni",href:"/admin/bookings",icon:CalendarDays},
   {title:"Mix & Master",href:"/admin/projects",icon:SlidersHorizontal}, {title:"Esclusiva",href:"/admin/exclusive",icon:KeyRound},
-  {title:"Promozioni",href:"/admin/promotions",icon:Tag}, {title:"Vendite",href:"/admin/analytics",icon:ChartNoAxesCombined},
+  {title:"Promozioni",href:"/admin/promotions",icon:Tag}, {title:"Vendite",href:"/admin/analytics",icon:ChartNoAxesCombined}, {title:"Percorso acquisti",href:"/admin/funnel",icon:ChartNoAxesCombined},
   {title:"Assistenza",href:"/admin/support",icon:Mail}, {title:"Recessi e rimborsi",href:"/admin/withdrawals",icon:FileCheck2}, {title:"Impostazioni",href:"/admin/settings",icon:Settings},
 ];
 export function AdminNavigation() {
