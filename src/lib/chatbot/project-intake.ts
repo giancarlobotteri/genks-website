@@ -23,7 +23,7 @@ export function projectSongCount(messages:Message[]):number|undefined{
 /** Resolve production before audio-file questions. Only customer statements authorize services. */
 export function projectIntake(messages:Message[]):{reply:string}|{input:PreventivoInput}|null{
  const user=messages.filter(m=>m.role==='user').map(m=>m.content.toLowerCase());
- const text=user.join('\n');if(!/\bep\b|\balbum\b/.test(text))return null;
+ const text=user.join('\n');const completeProduction=/beat.{0,15}genks|produzion.{0,20}genks/.test(text)&&/mix/.test(text)&&/master/.test(text)&&/registr|\brec\b|studio/.test(text);if(!/\bep\b|\balbum\b/.test(text)&&!completeProduction)return null;
  const latest=user.at(-1)??'';
  // A new standalone request is not a modification of an earlier EP quote.
  if(!/\bep\b|\balbum\b|aggiung|nel progetto|al progetto|nel pacchetto|al pacchetto|brano\s+\d/.test(latest)&&/mix|master|registr/.test(latest)&&/quanto|preventivo|(?:un|1)\s+(?:brano|pezzo)|voglio registr|vorrei registr/.test(latest))return null;
@@ -31,14 +31,15 @@ export function projectIntake(messages:Message[]):{reply:string}|{input:Preventi
  let external=false;
  for(const t of user){if(/(?:ho già|ho gia|possiedo).{0,25}(?:basi|beat)|beat di altri|basi esterne/.test(t))external=true;else if(/(?:voglio|scelgo|facciamo|produzioni|beat).{0,20}genks/.test(t))external=false;}
  if(external)return {reply:'EP e album comprendono produzioni GENKS, anche in collaborazione con altri producer, mix, master e 2 ore di registrazione per brano. Se vuoi lavorare esclusivamente su basi esterne puoi acquistare [mix e master singolarmente](https://www.prodbygenks.com/services/project).'};
- const count=projectSongCount(messages);
+ const songWording=messages.map(m=>m.role==='user'&&/beat.{0,15}genks|produzion.{0,20}genks/i.test(m.content)?{...m,content:m.content.replace(/(\b(?:\d+|due|tre|quattro|cinque|sei))\s+tracce(?!\s+audio|\s+separate)/gi,'$1 brani')}:m);
+ const count=projectSongCount(songWording);
  if(count===undefined)return {reply:`L’${format==='ep'?'EP':'album'} include beat GENKS, mix, master, una revisione e 2 ore di studio per brano. Quanti brani vuoi includere?`};
  if(count<2||count>20)return {reply:'Puoi configurare da 2 a 20 brani. Per un progetto diverso [scrivi a GENKS nei DM Instagram](https://www.instagram.com/prodbygenks/).'};
- if(/(?:senza|solo).{0,12}(?:mix|master|beat)/.test(user.at(-1)??''))return {reply:'EP e album includono sempre produzione GENKS, mix, master e 2 ore di registrazione per brano. Puoi scegliere le quantità di tracce audio separate; le 2 ore per brano sono incluse e le ore ulteriori richiedono una nuova prenotazione separata. Per lavorazioni diverse trovi i [servizi singoli](https://www.prodbygenks.com/services).'};
+ if(/(?:senza|solo).{0,12}(?:mix|master|beat)/.test(user.at(-1)??''))return {reply:'EP e album includono sempre produzione GENKS, mix, master e 2 ore di registrazione per brano. La gestione tecnica della produzione è a cura di GENKS; le 2 ore per brano sono incluse e le ore ulteriori richiedono una nuova prenotazione separata. Per lavorazioni diverse trovi i [servizi singoli](https://www.prodbygenks.com/services).'};
  if(/(?:\b[3-9]\b|tre|quattro|cinque)\s+revisioni?\s+(?:extra|aggiuntive)/.test(latest))return {reply:'Una revisione è inclusa per brano e lavorazione. Per più di due revisioni aggiuntive occorre concordare prima disponibilità e preventivo nei [DM Instagram](https://www.instagram.com/prodbygenks/).'};
  const tracks=Array.from({length:count},()=>8);let artists=1;
  const number=(s:string)=>numbers[s]??Number(s);
- for(const t of user){
+ for(const t of songWording.filter(m=>m.role==='user').map(m=>m.content.toLowerCase())){
   const n=t.match(/\b(\d+)\s+artisti\b/);if(n)artists=Number(n[1]);
   const groups=[...t.matchAll(new RegExp(`\\b(${quantity})\\s+(?:brani\\s+)?da\\s+(\\d+)\\b`,'g'))].map(m=>({count:number(m[1]),tracks:Number(m[2])}));
   if(groups.length>1){

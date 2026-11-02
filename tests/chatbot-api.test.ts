@@ -1,3 +1,5 @@
+import {splitChatRequests,combineChatReplies} from '../src/lib/chatbot/multiple-requests.ts';
+import {containsPrivateChatData,safeModelHistory,minimalModelDraft} from '../src/lib/chatbot/privacy.ts';
 import {audioIntake,reviewQuote,confirmedQuote,isQuoteConfirmation,reviseQuote} from '../src/lib/chatbot/review.ts';
 import {simpleAudioRequest} from '../src/lib/chatbot/audio-request.ts';
 import {quoteInputSchema} from '../src/lib/chatbot/checkout.ts';
@@ -13,7 +15,7 @@ import {z} from 'zod';
 function route({enabled=true,allowed=true,answer=async()=> ({reply:'Risposta GENKS'})}:{enabled?:boolean;allowed?:boolean;answer?:(messages:unknown)=>Promise<{reply:string}|null>}={}){
  const code=ts.transpileModule(fs.readFileSync(new URL('../src/app/api/chat/route.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
  const exports:Record<string,unknown>={};
- const modules:Record<string,unknown>={'zod':{z},'@/lib/chatbot/review':{audioIntake,reviewQuote,confirmedQuote,isQuoteConfirmation,reviseQuote},'@/lib/chatbot/audio-request':{simpleAudioRequest},'@/lib/chatbot/checkout':{quoteInputSchema},'@/lib/chatbot/project-intake':{projectIntake},'@/lib/chatbot/booking-request':{recordingHoursOnly:()=>null},'@/lib/chatbot/pricing':{calcolaPreventivo},'@/lib/chatbot/quote-request':{formatQuote},'@/lib/chatbot/booking':{answerBookingRequest:async()=>null},'@/lib/chatbot/answers':{knownAnswer:()=>null},'@/lib/chatbot/providers':{rispondi:answer},'@/lib/security/request-limit':{allowPublicRequest:async()=>allowed}};
+ const modules:Record<string,unknown>={'zod':{z},'@/lib/chatbot/multiple-requests':{splitChatRequests,combineChatReplies},'@/lib/chatbot/privacy':{containsPrivateChatData,safeModelHistory,minimalModelDraft},'@/lib/chatbot/review':{audioIntake,reviewQuote,confirmedQuote,isQuoteConfirmation,reviseQuote},'@/lib/chatbot/audio-request':{simpleAudioRequest},'@/lib/chatbot/checkout':{quoteInputSchema},'@/lib/chatbot/project-intake':{projectIntake},'@/lib/chatbot/booking-request':{recordingHoursOnly:()=>null},'@/lib/chatbot/pricing':{calcolaPreventivo},'@/lib/chatbot/quote-request':{formatQuote},'@/lib/chatbot/booking':{answerBookingRequest:async()=>null},'@/lib/chatbot/answers':{knownAnswer:()=>null},'@/lib/chatbot/providers':{rispondi:answer},'@/lib/security/request-limit':{allowPublicRequest:async()=>allowed}};
  vm.runInNewContext(code,{exports,require:(name:string)=>{assert.ok(name in modules);return modules[name];},Response,Request,URL,console,process:{env:enabled?{CLOUDFLARE_ACCOUNT_ID:'a'.repeat(32),CLOUDFLARE_API_TOKEN:'TEST-NOT-A-TOKEN'}:{}}});
  return exports.POST as (r:Request)=>Promise<Response>;
 }
@@ -44,3 +46,13 @@ test('a bare yes without a draft never creates an offer, and injected price fiel
 });
 
 test('audio quote clarifies actual track count instead of guessing and accepts a short reply',async()=>{const run=route({enabled:false});const m=[{role:'user',content:'Vorrei mix e master di 3 brani'}];const a=await(await run(request(m))).json();assert.match(a.reply,/Quante tracce audio separate/);assert.equal(a.draft,undefined);m.push({role:'assistant',content:a.reply},{role:'user',content:'12'});const b=await(await run(request(m))).json();assert.equal(b.review,true);assert.equal(b.draft.brani[0].quantita,3);assert.equal(b.draft.brani[0].file,12);});
+
+test('one message answers both a production quote and an independent question',async()=>{
+ let calls=0;const run=route({answer:async()=>{calls++;return {reply:'Puoi lavorare a distanza.'};}});
+ const body=await(await run(request([{role:'user',content:'Vorrei 2 tracce con beat GENKS, mix e master e 2 ore di rec per brano. E come lavoro a distanza?'}]))).json();
+ assert.equal(body.review,true);assert.equal(body.draft.progetto.brani.length,2);assert.match(body.reply,/179,99/);assert.match(body.reply,/distanza/);assert.equal(calls,1);assert.doesNotMatch(body.reply,/Quante tracce audio separate/);
+});
+test('separate quotes cannot be accidentally confirmed together',async()=>{
+ const body=await(await route({enabled:false})(request([{role:'user',content:'Vorrei EP da 2 brani? Vorrei beat su misura?'}]))).json();
+ assert.equal(body.draft,undefined);assert.match(body.reply,/più offerte distinte/);
+});

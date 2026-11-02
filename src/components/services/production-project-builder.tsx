@@ -2,7 +2,6 @@
 import {useState,useEffect} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {TrackStepper} from './track-stepper';
 import {ArtistStepper} from './artist-stepper';
 import {type ProductionInput,type ProductionSong} from '@/lib/production-calculator';
 import {productionSelection} from '@/lib/production-order';
@@ -30,8 +29,8 @@ export function ProductionProjectBuilder({initial,discounts=[]}:{initial?:Produc
  <div className="studio-duration-control" aria-label="Numero di brani"><button type="button" aria-label="Riduci numero di brani" disabled={project.brani.length<=2} onClick={()=>changeCount(project.brani.length-1)}>−</button><strong>{project.brani.length} brani</strong><button type="button" aria-label="Aumenta numero di brani" disabled={project.brani.length>=20} onClick={()=>changeCount(project.brani.length+1)}>+</button></div>
  {part&&<div className="service-v8-mobile-total" aria-live="polite"><strong>Totale {serviceAmount(part.total)}</strong><span>Risparmi {serviceAmount(part.saving)} · Ora {serviceAmount(part.dueNow)}</span></div>}
  <nav className="service-v8-tabs" aria-label="Brani del progetto">{project.brani.map((_,i)=><button type="button" aria-pressed={i===step} key={i} onClick={()=>setStep(i)}>Brano {i+1}{item.appointments?.[i]?.time?' ✓':''}</button>)}</nav>
- <section className="service-config-card"><h2>Brano {step+1}</h2><TrackStepper value={song.tracce} onChange={tracce=>update({tracce})}>Fino a 8: mix 29,99 €. Oltre 48: 119,99 € + 2,00 € per traccia aggiuntiva. Per una produzione da realizzare, il totale usa la quantità indicata.</TrackStepper>
- <ArtistStepper value={song.artisti} onChange={artisti=>update({artisti})}/><button type="button" className="button button-secondary" onClick={()=>update({tracce:song.tracce,artisti:song.artisti},true)}>Usa queste quantità per tutti i brani</button>
+ <section className="service-config-card"><h2>Brano {step+1}</h2><p className="notice">Il beat sarà creato da GENKS: non devi indicare quante tracce audio separate avrà. Il prezzo usa la fascia tecnica del preventivo, visibile nel riepilogo. Eventuali variazioni si concordano prima del lavoro, senza addebiti automatici.</p>
+ <ArtistStepper value={song.artisti} onChange={artisti=>update({artisti})}/><button type="button" className="button button-secondary" onClick={()=>update({artisti:song.artisti},true)}>Usa questo numero di artisti per tutti i brani</button>
  <h3>Le tue 2 ore incluse</h3><p>Scegli il giorno e l’orario per questo brano. Le sessioni degli altri brani possono essere in giorni diversi.</p>
  <p className="notice">Il pacchetto permette di prenotare solo le 2 ore incluse per brano. Eventuali ore ulteriori richiedono una nuova prenotazione, secondo disponibilità, e si pagano tramite quella: non si aggiungono al pacchetto. <Link href="/services/recording">Prenota altre ore di studio →</Link></p>
  <StudioScheduler key={step} value={{...item,date:appointment.date,time:appointment.time,hours:2}} bundle={false} fixedHours={2} clock={clock} onChange={schedule} onValidityChange={()=>{}}/>
