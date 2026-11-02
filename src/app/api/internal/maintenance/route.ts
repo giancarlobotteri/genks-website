@@ -13,8 +13,6 @@ export async function GET(request:Request) {
   const provided=request.headers.get("authorization")?.replace(/^Bearer /,"")??"";
   if(!expected||Buffer.byteLength(expected)!==Buffer.byteLength(provided)||!timingSafeEqual(Buffer.from(expected),Buffer.from(provided)))return new Response("Non autorizzato",{status:401});
   const db=createSupabaseAdminClient();
-  try{await db.from('genks_funnel_events').delete().lt('created_at',new Date(Date.now()-90*86400000).toISOString()).abortSignal(AbortSignal.timeout(1500));
-  await db.rpc('genks_funnel_reconcile').abortSignal(AbortSignal.timeout(1500));}catch{}
   const {data:events,error:eventError}=await db.from("stripe_event_log").select("id").not("last_error","is",null).order("created_at").limit(10);
   if(eventError)return Response.json({error:"Eventi da verificare"},{status:503});
   let eventFailures=0;

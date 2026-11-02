@@ -1,4 +1,3 @@
-import {completeFunnelPayment} from '@/lib/funnel-server';
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -74,7 +73,6 @@ async function fulfil(session: Stripe.Checkout.Session, event: Stripe.Event) {
   });
   if (error || !paymentId) throw new Error("Pagamento non abbinato o registrazione incompleta. Verifica ordine e preventivo.");
 
-  if(isV8&&quoteId)await completeFunnelPayment(quoteId,session.livemode);
   if (intentId) {
     const intent = await getStripe().paymentIntents.retrieve(intentId, { expand: ["latest_charge.balance_transaction"] });
     const charge = typeof intent.latest_charge === "object" ? intent.latest_charge : null;

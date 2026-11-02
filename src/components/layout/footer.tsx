@@ -1,4 +1,3 @@
-import {FunnelPreferences} from '@/components/commerce/funnel-monitor';
 import { BEATS_ENABLED } from "@/config/features";
 import Link from "next/link";
 import Image from "next/image";
@@ -24,7 +23,7 @@ export function Footer() {
           <a href={site.youtube} target="_blank" rel="noreferrer">YouTube <ArrowUpRight size={14} /></a>
         </div>
         <div className="footer-socials"><Link href="/guida">Guida all’acquisto</Link>{support&&<a href={`mailto:${support}`}>Assistenza</a>}<Link href="/legal/privacy">Riservatezza</Link><Link href="/legal/cookies">Cookie</Link><Link href="/legal/terms">Condizioni</Link><Link href="/legal/refunds">Rimborsi</Link><Link href="/recesso">Recedere dal contratto qui</Link>{BEATS_ENABLED && <Link href="/legal/licensing">Licenze</Link>}</div>
-        <FunnelPreferences /><span className="copyright">© {new Date().getFullYear()} GENKS</span>
+        <span className="copyright">© {new Date().getFullYear()} GENKS</span>
       </div>
     </footer>
   );
