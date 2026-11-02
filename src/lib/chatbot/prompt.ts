@@ -11,4 +11,4 @@ Beat & Voce: beat GENKS su misura +2 ore di registrazione, una revisione del bea
 BASE DI CONOSCENZA:
 ${KNOWLEDGE}`;
 
-export const WELCOME_MESSAGE="Ciao! Sono l’assistente virtuale di GENKS 🎧 Puoi chiedermi tutto sul sito, sui servizi, sui prezzi e sulle prenotazioni. Ti aiuto a trovare e configurare la soluzione per il tuo progetto.";
+export const WELCOME_MESSAGE="Ciao! Sono l’assistente di intelligenza artificiale di GENKS 🎧 Le risposte sono automatiche e possono contenere errori: verifica sempre il riepilogo nel modulo. Per assistenza umana: assistenza@prodbygenks.com. Puoi chiedermi tutto sul sito, sui servizi, sui prezzi e sulle prenotazioni. Ti aiuto a trovare e configurare la soluzione per il tuo progetto.";

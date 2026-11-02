@@ -26,11 +26,13 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
   const goToCatalog = (event: MouseEvent<HTMLAnchorElement>, destination = "#catalog") => {
     if (destination.startsWith("/")) router.prefetch(destination);
     const catalog = document.getElementById("catalog") ?? document.getElementById("collection");
-    if (!catalog || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if ((!catalog&&!destination.startsWith('/')) || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     event.preventDefault();
     catalogScroll.current?.cancel();
+    sectionRef.current?.setAttribute("data-hero-transition", "true");
+    window.dispatchEvent(new Event("genks:hero-layout"));
     const from = window.scrollY;
-    const to = Math.max(0, catalog.getBoundingClientRect().top + from);
+    const to = Math.max(0, (catalog?.getBoundingClientRect().top??0) + from);
     const started = performance.now();
     const controller = { frame: 0, progress: 0, cancel: () => {} };
     const cancel = () => {
@@ -39,6 +41,8 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
       window.removeEventListener("touchstart", cancel);
       window.removeEventListener("keydown", cancel);
       if (catalogScroll.current === controller) catalogScroll.current = null;
+      sectionRef.current?.removeAttribute("data-hero-transition");
+      window.dispatchEvent(new Event("genks:hero-layout"));
     };
     controller.cancel = cancel;
     catalogScroll.current = controller;
@@ -59,8 +63,7 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
           else {
             window.scrollTo({ top: to, behavior: "instant" });
             history.replaceState(history.state, "", destination);
-            catalog.tabIndex = -1;
-            catalog.focus({ preventScroll: true });
+            if(catalog){catalog.tabIndex = -1;catalog.focus({ preventScroll: true });}
           }
         });
       }
@@ -133,7 +136,7 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
       frame = current === target && interfaceProgress === desiredInterface ? 0 : requestAnimationFrame(paint);
     };
     const scroll = () => {
-      target = reduced.matches || paused ? 0 : (catalogScroll.current?.progress ?? Math.min(1, Math.max(0, (window.scrollY - sectionTop) / travel)));
+      target = reduced.matches || paused || (serviceLanding&&!catalogScroll.current) ? 0 : (catalogScroll.current?.progress ?? Math.min(1, Math.max(0, (window.scrollY - sectionTop) / travel)));
       if (!frame) { lastTime = 0; frame = requestAnimationFrame(paint); }
     };
     const measure = () => {
@@ -166,7 +169,7 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
       window.removeEventListener("resize", measure);
       reduced.removeEventListener("change", measure);
     };
-  }, [paused]);
+  }, [paused,serviceLanding]);
 
   return (
     <section id="home" ref={sectionRef} className={`${styles.sequence} ${paused ? styles.motionPaused : ""} ${serviceLanding ? styles.serviceLanding : ""}`} aria-labelledby="cinematic-title">
@@ -201,7 +204,7 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
             <a className={styles.secondary} href="#catalog" onClick={event => goToCatalog(event)}><span>Vai al catalogo<small>Ascolta i beat. Trova il tuo suono.</small></span><ArrowUpRight size={20} aria-hidden="true" /></a>
             </>}
           </div>
-          {serviceLanding && <nav className={styles.discoveryLinks} aria-label="Budget e suggerimenti"><a className={styles.discoveryShortcut} href="#home-budget"><Wallet size={20} aria-hidden="true"/><span><strong>Trova per budget</strong><small>Le proposte per la tua cifra</small></span><ArrowDown size={16} aria-hidden="true"/></a><a className={styles.discoveryShortcut} href="#home-suggestions"><Sparkles size={20} aria-hidden="true"/><span><strong>Consigli per te</strong><small>Dai tuoi acquisti precedenti</small></span><ArrowDown size={16} aria-hidden="true"/></a></nav>}
+          {serviceLanding && <nav className={styles.discoveryLinks} aria-label="Budget e suggerimenti"><a className={styles.discoveryShortcut} href="/services/budget" onClick={event=>goToCatalog(event,"/services/budget")}><Wallet size={20} aria-hidden="true"/><span><strong>Trova per budget</strong><small>Le proposte per la tua cifra</small></span><ArrowDown size={16} aria-hidden="true"/></a><a className={styles.discoveryShortcut} href="/services/consigli" onClick={event=>goToCatalog(event,"/services/consigli")}><Sparkles size={20} aria-hidden="true"/><span><strong>Consigli per te</strong><small>Dai tuoi acquisti precedenti</small></span><ArrowDown size={16} aria-hidden="true"/></a></nav>}
         </div>
 
         {serviceLanding && <HomeConsole discounts={discounts}/>}

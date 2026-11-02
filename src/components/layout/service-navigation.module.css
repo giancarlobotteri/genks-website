@@ -54,3 +54,15 @@
 @media(orientation:portrait) and (max-width:720px){.header .toggle{top:50%!important;transform:translateY(-50%);margin:0!important;right:8px!important;height:44px;min-height:44px;box-sizing:border-box}}
 
 @media(orientation:portrait) and (max-width:720px){.homeHeader .headerSearch{top:6px}}
+/* Search has its own second row, never the cart/assistant slot. */
+@media(orientation:landscape) and (max-height:500px) and (max-width:1199px){
+ .homeHeader .headerSearch{position:fixed!important;left:18px!important;right:18px!important;top:64px!important;width:calc(100vw - 36px)!important;max-width:none!important;transform:none!important;translate:none!important}
+ .homeHeader .headerSearch>div{position:relative!important;inset:auto!important;width:100%!important;transform:none!important}
+ .homeHeader .headerSearch :global(#home-service-results){left:0;right:0;width:100%;transform:none!important}
+}
+
+@media(orientation:portrait) and (max-width:720px){
+ .homeHeader .headerSearch{position:fixed!important;left:16px!important;right:16px!important;top:76px!important;width:calc(100% - 32px)!important;max-width:none!important;transform:none!important;translate:none!important}
+ .homeHeader .headerSearch>div{position:relative!important;inset:auto!important;width:100%!important;transform:none!important}
+ .homeHeader .headerSearch :global(#home-service-results){left:0;right:0;width:100%;transform:none!important}
+}

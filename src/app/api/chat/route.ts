@@ -1,4 +1,5 @@
 import {recordingHoursOnly} from '@/lib/chatbot/booking-request';
+import {containsPrivateChatData,safeModelHistory,minimalModelDraft} from '@/lib/chatbot/privacy';
 import {audioIntake,reviewQuote,confirmedQuote,isQuoteConfirmation,reviseQuote} from '@/lib/chatbot/review';
 import {quoteInputSchema} from '@/lib/chatbot/checkout';
 import {projectIntake} from '@/lib/chatbot/project-intake';
@@ -18,9 +19,9 @@ export async function POST(request:Request){
   const text=await request.text();if(text.length>85000)return Response.json({error:'Messaggio troppo lungo.'},{status:413});
   const {messages,draft}=schema.parse(JSON.parse(text));if(messages[0].role!=='user'||messages.at(-1)?.role!=='user')throw Error('messages');
   if(/\b(?:il mio|mio)\s+(?:numero|telefono)\b/i.test(messages.at(-1)?.content??''))return Response.json({reply:'Non inserire dati personali in chat. Per parlare con GENKS usa [DM Instagram](https://www.instagram.com/prodbygenks/) o assistenza@prodbygenks.com.'});
-  const privateText=(value:string)=>/[\w.+-]+@[\w.-]+\.[a-z]{2,}|(?:\+?\d[\s().-]*){8,}|https?:\/\/|\b(?:il mio|mio)\s+(?:numero|telefono)\b/i.test(value);
+  const privateText=containsPrivateChatData;
   if(privateText(messages.at(-1)!.content))return Response.json({reply:'Non inserire email, telefoni, collegamenti ai file o dati personali in chat. Per il tuo ordine usa [l’assistenza](https://www.prodbygenks.com/account) oppure [DM Instagram](https://www.instagram.com/prodbygenks/).'});
-  const safeMessages=messages.map(m=>m.role==='user'&&privateText(m.content)?{...m,content:'[Messaggio precedente con dati personali omesso]'}:m);
+  const safeMessages=safeModelHistory(messages);
   const latest=messages.at(-1)!.content;
   if(draft&&/^(?:riepilogo|riprendiamo|ricordami il riepilogo|ricapitoliamo)[.!\s]*$/i.test(latest))return Response.json({...reviewQuote(draft),active:true});
   if(draft&&isQuoteConfirmation(latest))return Response.json({...confirmedQuote(draft,latest),active:true});
@@ -34,7 +35,7 @@ export async function POST(request:Request){
   if(intake){if('reply' in intake)return Response.json({reply:intake.reply,active:true});return Response.json({...reviewQuote(intake.input),active:true});}
   const hours=recordingHoursOnly(latest);if(hours)return Response.json({...reviewQuote({ore_registrazione:hours}),active:true});
   if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)return Response.json({reply:fallback,active:false});
-  const context=draft?[{role:'user' as const,content:'Bozza corrente da mantenere salvo modifiche esplicite: '+JSON.stringify(draft).slice(0,16000)},...safeMessages]:safeMessages;
+  const context=draft?[{role:'user' as const,content:'Quantità e servizi della bozza corrente: '+JSON.stringify(minimalModelDraft(draft)).slice(0,16000)},...safeMessages]:safeMessages;
   const result=await rispondi(context);
   return Response.json(result?{...result,active:true}:{reply:fallback,active:false});
  }catch{return Response.json({reply:'Non riesco a elaborare questa richiesta. Riprova con un messaggio breve sui servizi GENKS.'},{status:400});}

@@ -274,14 +274,14 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
     scene.add(rim);
 
     const modelFrame = section.querySelector<HTMLElement>('[data-hero-model-frame]');
-    let portraitFrame: {height:number;center:number}|null = null;
+    let portraitFrame: {height:number;center:number;centerX:number}|null = null;
     const resize = () => {
       const width = mount.clientWidth;
       const height = mount.clientHeight;
       if (!width || !height) return;
       const frameRect = modelFrame?.getBoundingClientRect();
       const mountRect = mount.getBoundingClientRect();
-      portraitFrame = frameRect && frameRect.height>0 ? {height:frameRect.height,center:frameRect.top-mountRect.top+frameRect.height/2} : null;
+      portraitFrame = frameRect && frameRect.height>0 ? {height:frameRect.height,center:frameRect.top-mountRect.top+frameRect.height/2,centerX:frameRect.left-mountRect.left+frameRect.width/2} : null;
       qualityRatio = window.devicePixelRatio;
       renderer.setSize(width, height);
       camera.aspect = width / height;
@@ -290,6 +290,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       needsRender = true;
     };
     const resizeObserver = new ResizeObserver(resize);
+    window.addEventListener("genks:hero-layout", resize);
     resizeObserver.observe(mount);
     if(modelFrame)resizeObserver.observe(modelFrame);
     resize();
@@ -398,10 +399,11 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
         ? landscapePhone ? Math.max(100,Math.min(190,height-220)) : Math.min(compact ? Math.min(width * .9, 300) : 520, Math.max(compact ? 150 : 220, height - (compact ? 330 : 300)))
         : Math.max(250, height - 340 * uiSpace);
       const offset = (portraitFrame ? height/2-portraitFrame.center : wideLayout ? (landscapePhone ? 14 : compact ? 48 : -16) : 80) * uiSpace;
+      const offsetX=(portraitFrame?width/2-portraitFrame.centerX:0)*uiSpace;
       const fitHeight = wideLayout ? THREE.MathUtils.lerp(modelHeight, height, 1 - uiSpace) : modelHeight;
       const distance = mode === "hero" ? Math.max(6.3 * height / fitHeight, 6.3 / camera.aspect) : Math.max(5.95, 5.95 / camera.aspect) + .5;
-      if (mode === "hero" && (!camera.view || camera.view.offsetY !== offset || camera.view.fullWidth !== width || camera.view.fullHeight !== height)) {
-        camera.setViewOffset(width, height, 0, offset, width, height);
+      if (mode === "hero" && (!camera.view || camera.view.offsetX !== offsetX || camera.view.offsetY !== offset || camera.view.fullWidth !== width || camera.view.fullHeight !== height)) {
+        camera.setViewOffset(width, height, offsetX, offset, width, height);
       }
       // Slow optical approach preserves the original mesh and avoids near-plane clipping or a retreating logo.
       assembly.scale.setScalar(1);
@@ -432,6 +434,7 @@ export default function WooferScene({ sectionRef, paused, onReady, onUnavailable
       renderer.setAnimationLoop(null);
       intersection.disconnect();
       resizeObserver.disconnect();
+      window.removeEventListener("genks:hero-layout", resize);
       window.removeEventListener("scroll", onScroll);
       section.removeEventListener("pointermove", onPointer);
       section.removeEventListener("pointerleave", resetPointer);

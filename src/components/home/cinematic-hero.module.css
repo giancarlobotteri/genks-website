@@ -240,3 +240,34 @@
  .discoveryLinks .discoveryShortcut strong{font-size:12px}
  .discoveryLinks .discoveryShortcut small{font-size:10px}
 }
+/* Home ends at the studio console; no empty scroll sequence below it. */
+.sequence.serviceLanding{height:auto}.serviceLanding .stage{position:relative;height:auto;min-height:100svh}
+@media(orientation:landscape) and (max-height:500px) and (max-width:999px){
+ .serviceLanding .stage{display:grid;grid-template-columns:minmax(200px,.9fr) minmax(310px,1.1fr);align-items:center;justify-content:initial;padding:112px 5vw 24px;gap:18px 24px;min-height:100svh}
+ .serviceLanding .modelFrame{width:100%;height:clamp(190px,60svh,280px);grid-column:1;grid-row:1}
+ .serviceLanding .content{width:100%;grid-column:2;grid-row:1}
+ .serviceLanding .actions{flex-direction:column;gap:8px}
+ .serviceLanding .actions>a{width:100%;max-width:100%;min-height:42px}
+ .discoveryLinks{gap:8px;margin-top:10px}.discoveryLinks .discoveryShortcut{padding:9px 8px;min-height:54px}.discoveryLinks .discoveryShortcut>svg:last-child{display:none}.discoveryLinks .discoveryShortcut strong{font-size:11px}.discoveryLinks .discoveryShortcut small{font-size:9px}
+ .serviceLanding :global([data-home-console]){grid-column:1/-1;width:100%}
+}
+@media(orientation:landscape) and (max-height:500px) and (max-width:650px){.serviceLanding .stage{grid-template-columns:minmax(150px,.8fr) minmax(260px,1.2fr);gap:16px;padding-inline:18px}.serviceLanding .modelFrame{height:190px}}
+
+/* One viewport-sized canvas keeps the blue transition centred on the visitor's screen. */
+.serviceLanding .visual{bottom:auto;height:100svh;width:100%}
+.serviceLanding[data-hero-transition] .visual{position:fixed;inset:0;height:100dvh;z-index:6}
+@media(max-width:720px){
+ .serviceLanding .stage{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:136px 16px 28px;gap:20px;min-height:100svh}
+ .serviceLanding .modelFrame{width:100%;height:clamp(210px,34svh,280px);min-height:0}
+ .serviceLanding .content{position:relative;inset:auto;width:100%;min-width:0}
+ .serviceLanding .actions{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;width:100%}
+ .serviceLanding .actions>a{width:100%;max-width:100%;min-height:48px;padding:12px 16px}
+ .serviceLanding .discoveryLinks{grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:10px}
+ .serviceLanding .discoveryShortcut{min-width:0;overflow-wrap:anywhere}
+}
+@media(orientation:landscape) and (max-height:500px) and (max-width:999px){
+ .serviceLanding .stage{display:grid;grid-template-columns:minmax(180px,.9fr) minmax(280px,1.1fr);padding:116px 24px 24px;gap:20px 24px}
+ .serviceLanding .modelFrame{grid-column:1;grid-row:1;height:clamp(200px,62svh,280px);width:100%}
+ .serviceLanding .content{grid-column:2;grid-row:1}
+ .serviceLanding .actions{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+}
