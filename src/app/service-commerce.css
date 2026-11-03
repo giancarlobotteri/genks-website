@@ -27,3 +27,14 @@ body:has([data-genks-live-summary]) .service-v8-mobile-total{display:none!import
 body:has([data-genks-live-summary]) :is(input,select,textarea,button){scroll-margin-bottom:140px}
 @media(orientation:landscape) and (max-height:500px){body:has([data-genks-live-summary]) main{padding-bottom:85px}}
 @media(min-width:1280px) and (min-height:700px){body:has(.utility-workspace) [data-genks-live-summary]{left:24px;transform:none;width:min(880px,calc(100% - var(--workspace-width) - 72px))}}
+/* Desktop: keep the existing sidebar summary in view; the compact bar is for small screens. */
+@media(min-width:851px) and (min-height:600px){
+ body:has([data-genks-live-summary]) [data-genks-live-summary]{display:none}
+ body:has([data-genks-live-summary]) main{padding-bottom:0}
+ body:has([data-genks-live-summary]) .site-footer{padding-bottom:40px}
+ body:has([data-genks-live-summary]) :is(input,select,textarea,button){scroll-margin-bottom:24px}
+ .service-v8-layout>.service-side-stack{position:sticky;top:110px;align-self:start;max-height:calc(100dvh - 130px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;border-radius:24px}
+ .service-v8-layout>.service-side-stack>.service-v8-summary{position:static;margin-top:0}
+ .service-v8-layout>.service-side-stack>.service-v8-summary>.service-summary-total{order:-1}
+ .service-v8-layout>.service-side-stack>.service-v8-summary>h2{order:-2}
+}
