@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
       { key: "X-Frame-Options", value: "DENY" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-    ] }, ...["/admin/:path*", "/admin-access", "/admin-security", "/api/admin/:path*", "/account/:path*", "/checkout/:path*", "/carrello", "/login", "/auth/:path*", "/api/downloads/:path*"].map(source => ({ source, headers: [
+    ] }, ...["/admin/:path*", "/admin-access", "/admin-security", "/api/admin/:path*", "/account/:path*", "/checkout/:path*", "/carrello", "/login", "/auth/:path*", "/api/downloads/:path*", "/services/checkout", "/services/ordine", "/services/consigli"].map(source => ({ source, headers: [
       { key: "Cache-Control", value: "private, no-store" },
       { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
     ] }))];
