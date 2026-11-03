@@ -30,12 +30,12 @@ export function projectIntake(messages:Message[]):{reply:string}|{input:Preventi
  const format=user.reduce<'ep'|'album'>((f,t)=>/\balbum\b/.test(t)?'album':/\bep\b/.test(t)?'ep':f,'ep');
  let external=false;
  for(const t of user){if(/(?:ho già|ho gia|possiedo).{0,25}(?:basi|beat)|beat di altri|basi esterne/.test(t))external=true;else if(/(?:voglio|scelgo|facciamo|produzioni|beat).{0,20}genks/.test(t))external=false;}
- if(external)return {reply:'EP e album comprendono produzioni GENKS, anche in collaborazione con altri producer, mix, master e 2 ore di registrazione per brano. Se vuoi lavorare esclusivamente su basi esterne puoi acquistare [mix e master singolarmente](https://www.prodbygenks.com/services/project).'};
+ if(external)return {reply:'EP e album comprendono **solo beat prodotti da GENKS**, anche in collaborazione con altri producer, mix, master e 2 ore di registrazione per brano. Se vuoi lavorare esclusivamente su basi esterne puoi acquistare [mix e master singolarmente](https://www.prodbygenks.com/services/project).'};
  const songWording=messages.map(m=>m.role==='user'&&/beat.{0,15}genks|produzion.{0,20}genks/i.test(m.content)?{...m,content:m.content.replace(/(\b(?:\d+|due|tre|quattro|cinque|sei))\s+tracce(?!\s+audio|\s+separate)/gi,'$1 brani')}:m);
  const count=projectSongCount(songWording);
- if(count===undefined)return {reply:`L’${format==='ep'?'EP':'album'} include beat GENKS, mix, master, una revisione e 2 ore di studio per brano. Quanti brani vuoi includere?`};
+ if(count===undefined)return {reply:`L’${format==='ep'?'EP':'album'} include solo beat prodotti da GENKS, mix, master, una revisione e 2 ore di studio per brano. Quanti brani vuoi includere?`};
  if(count<2||count>20)return {reply:'Puoi configurare da 2 a 20 brani. Per un progetto diverso [scrivi a GENKS nei DM Instagram](https://www.instagram.com/prodbygenks/).'};
- if(/(?:senza|solo).{0,12}(?:mix|master|beat)/.test(user.at(-1)??''))return {reply:'EP e album includono sempre produzione GENKS, mix, master e 2 ore di registrazione per brano. La gestione tecnica della produzione è a cura di GENKS; le 2 ore per brano sono incluse e le ore ulteriori richiedono una nuova prenotazione separata. Per lavorazioni diverse trovi i [servizi singoli](https://www.prodbygenks.com/services).'};
+ if(/(?:senza|solo).{0,12}(?:mix|master|beat)/.test(user.at(-1)??''))return {reply:'EP e album includono solo beat prodotti da GENKS, mix, master e 2 ore di registrazione per brano. La gestione tecnica della produzione è a cura di GENKS; le 2 ore per brano sono incluse e le ore ulteriori richiedono una nuova prenotazione separata. Per lavorazioni diverse trovi i [servizi singoli](https://www.prodbygenks.com/services).'};
  if(/(?:\b[3-9]\b|tre|quattro|cinque)\s+revisioni?\s+(?:extra|aggiuntive)/.test(latest))return {reply:'Una revisione è inclusa per brano e lavorazione. Per più di due revisioni aggiuntive occorre concordare prima disponibilità e preventivo nei [DM Instagram](https://www.instagram.com/prodbygenks/).'};
  const tracks=Array.from({length:count},()=>8);let artists=1;
  const number=(s:string)=>numbers[s]??Number(s);

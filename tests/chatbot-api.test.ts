@@ -1,3 +1,4 @@
+import {knownAnswer} from '../src/lib/chatbot/answers.ts';
 import {splitChatRequests,combineChatReplies} from '../src/lib/chatbot/multiple-requests.ts';
 import {containsPrivateChatData,safeModelHistory,minimalModelDraft} from '../src/lib/chatbot/privacy.ts';
 import {audioIntake,reviewQuote,confirmedQuote,isQuoteConfirmation,reviseQuote} from '../src/lib/chatbot/review.ts';
@@ -12,10 +13,10 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import {z} from 'zod';
-function route({enabled=true,allowed=true,answer=async()=> ({reply:'Risposta GENKS'})}:{enabled?:boolean;allowed?:boolean;answer?:(messages:unknown)=>Promise<{reply:string}|null>}={}){
+function route({enabled=true,allowed=true,realAnswers=false,answer=async()=> ({reply:'Risposta GENKS'})}:{enabled?:boolean;allowed?:boolean;realAnswers?:boolean;answer?:(messages:unknown)=>Promise<{reply:string}|null>}={}){
  const code=ts.transpileModule(fs.readFileSync(new URL('../src/app/api/chat/route.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
  const exports:Record<string,unknown>={};
- const modules:Record<string,unknown>={'zod':{z},'@/lib/chatbot/multiple-requests':{splitChatRequests,combineChatReplies},'@/lib/chatbot/privacy':{containsPrivateChatData,safeModelHistory,minimalModelDraft},'@/lib/chatbot/review':{audioIntake,reviewQuote,confirmedQuote,isQuoteConfirmation,reviseQuote},'@/lib/chatbot/audio-request':{simpleAudioRequest},'@/lib/chatbot/checkout':{quoteInputSchema},'@/lib/chatbot/project-intake':{projectIntake},'@/lib/chatbot/booking-request':{recordingHoursOnly:()=>null},'@/lib/chatbot/pricing':{calcolaPreventivo},'@/lib/chatbot/quote-request':{formatQuote},'@/lib/chatbot/booking':{answerBookingRequest:async()=>null},'@/lib/chatbot/answers':{knownAnswer:()=>null},'@/lib/chatbot/providers':{rispondi:answer},'@/lib/security/request-limit':{allowPublicRequest:async()=>allowed}};
+ const modules:Record<string,unknown>={'zod':{z},'@/lib/chatbot/multiple-requests':{splitChatRequests,combineChatReplies},'@/lib/chatbot/privacy':{containsPrivateChatData,safeModelHistory,minimalModelDraft},'@/lib/chatbot/review':{audioIntake,reviewQuote,confirmedQuote,isQuoteConfirmation,reviseQuote},'@/lib/chatbot/audio-request':{simpleAudioRequest},'@/lib/chatbot/checkout':{quoteInputSchema},'@/lib/chatbot/project-intake':{projectIntake},'@/lib/chatbot/booking-request':{recordingHoursOnly:()=>null},'@/lib/chatbot/pricing':{calcolaPreventivo},'@/lib/chatbot/quote-request':{formatQuote},'@/lib/chatbot/booking':{answerBookingRequest:async()=>null},'@/lib/chatbot/answers':{knownAnswer:realAnswers?knownAnswer:()=>null},'@/lib/chatbot/providers':{rispondi:answer},'@/lib/security/request-limit':{allowPublicRequest:async()=>allowed}};
  vm.runInNewContext(code,{exports,require:(name:string)=>{assert.ok(name in modules);return modules[name];},Response,Request,URL,console,process:{env:enabled?{CLOUDFLARE_ACCOUNT_ID:'a'.repeat(32),CLOUDFLARE_API_TOKEN:'TEST-NOT-A-TOKEN'}:{}}});
  return exports.POST as (r:Request)=>Promise<Response>;
 }
@@ -55,4 +56,37 @@ test('one message answers both a production quote and an independent question',a
 test('separate quotes cannot be accidentally confirmed together',async()=>{
  const body=await(await route({enabled:false})(request([{role:'user',content:'Vorrei EP da 2 brani? Vorrei beat su misura?'}]))).json();
  assert.equal(body.draft,undefined);assert.match(body.reply,/più offerte distinte/);
+});
+
+test('EP and album explicitly require GENKS beats and do not ask for files across follow-ups',async()=>{
+ const run=route({enabled:false,realAnswers:true});
+ for(const format of ['EP','album']){
+  const messages:{role:'user'|'assistant';content:string}[]=[{role:'user',content:`Vorrei un ${format}`}];
+  let body=await(await run(request(messages))).json();
+  assert.match(body.reply,/solo beat prodotti da GENKS/);
+  assert.match(body.reply,/Quanti brani/);
+  messages.push({role:'assistant',content:body.reply},{role:'user',content:'4'});
+  body=await(await run(request(messages))).json();
+  assert.equal(body.review,true);assert.equal(body.draft.progetto.brani.length,4);
+  assert.match(body.reply,/Solo beat prodotti da GENKS/);
+  assert.doesNotMatch(body.reply,/Quante tracce|inserisci.*SwissTransfer|invia.*link/i);
+  const draft=body.draft;
+  for(const followup of ['Devo inviare il link SwissTransfer?','Non so quante tracce audio separate avranno i beat','Posso usare beat di altri producer?']){
+   const answer=await(await run(request([...messages,{role:'assistant',content:body.reply},{role:'user',content:followup}],undefined,draft))).json();
+   assert.match(answer.reply,/solo beat prodotti da GENKS/);
+   assert.match(answer.reply,/non devi indicare il numero di tracce audio separate né inviare un link SwissTransfer/);
+   assert.doesNotMatch(answer.reply,/Quante tracce audio separate ha/);
+  }
+  const confirmed=await(await run(request([{role:'user',content:'confermo'}],undefined,draft))).json();
+  assert.match(confirmed.reply,/solo beat prodotti da GENKS/);
+  assert.match(confirmed.reply,/preventivo=/);
+ }
+});
+
+test('project context prevents standalone audio questions for already included mix and master',async()=>{
+ const run=route({enabled:false,realAnswers:true});
+ const messages=[{role:'user' as const,content:'Vorrei EP da 4 brani'},{role:'assistant' as const,content:'Beat GENKS inclusi.'},{role:'user' as const,content:'Vorrei mix e master'}];
+ const body=await(await run(request(messages))).json();
+ assert.equal(body.review,true);assert.equal(body.draft.progetto.brani.length,4);
+ assert.doesNotMatch(body.reply,/Quante tracce audio separate ha/);
 });

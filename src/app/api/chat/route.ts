@@ -37,12 +37,12 @@ async function respond(messages:{role:"user"|"assistant";content:string}[],draft
   if(draft&&/^(?:riepilogo|riprendiamo|ricordami il riepilogo|ricapitoliamo)[.!\s]*$/i.test(latest))return Response.json({...reviewQuote(draft),active:true});
   if(draft&&isQuoteConfirmation(latest))return Response.json({...confirmedQuote(draft,latest),active:true});
   if(draft){const revised=reviseQuote(draft,latest);if(revised)return Response.json({...reviewQuote(revised),active:true});}
-  const audio=audioIntake(safeMessages);if(audio)return Response.json({...('input' in audio?reviewQuote(audio.input):audio),active:true});
-  if(/quanto|costa|vorrei|voglio|mi serve/i.test(latest)&&/beat su misura/i.test(latest)&&!/mix|master|registr|\bep\b|album|diritt|revision/i.test(latest))return Response.json({...reviewQuote({beat_su_misura:1}),active:true});
-  const known=knownAnswer(latest);if(known)return Response.json({reply:known,active:true});
-  const booking=await answerBookingRequest(messages.at(-1)!.content);if(booking)return Response.json({reply:booking,active:true});
   const seeded=draft?.progetto&&!safeMessages.some(m=>m.role==='user'&&/\bep\b|\balbum\b/i.test(m.content))?[{role:'user' as const,content:`${draft.progetto.format??'ep'} da ${draft.progetto.brani.length} brani, produzioni GENKS. `+draft.progetto.brani.map((b,i)=>`brano ${i+1} con ${b.tracce} tracce`).join('; ')},...safeMessages]:safeMessages;
   const intake=projectIntake(seeded);
+  const audio=intake?null:audioIntake(safeMessages);if(audio)return Response.json({...('input' in audio?reviewQuote(audio.input):audio),active:true});
+  if(/quanto|costa|vorrei|voglio|mi serve/i.test(latest)&&/beat su misura/i.test(latest)&&!/mix|master|registr|\bep\b|album|diritt|revision/i.test(latest))return Response.json({...reviewQuote({beat_su_misura:1}),active:true});
+  const known=knownAnswer(latest,!!intake);if(known)return Response.json({reply:known,active:true});
+  const booking=await answerBookingRequest(messages.at(-1)!.content);if(booking)return Response.json({reply:booking,active:true});
   if(intake){if('reply' in intake)return Response.json({reply:intake.reply,active:true});return Response.json({...reviewQuote(intake.input),active:true});}
   const hours=recordingHoursOnly(latest);if(hours)return Response.json({...reviewQuote({ore_registrazione:hours}),active:true});
   if(!process.env.CLOUDFLARE_ACCOUNT_ID||!process.env.CLOUDFLARE_API_TOKEN)return Response.json({reply:fallback,active:false});
