@@ -1,7 +1,7 @@
 import {totalEnding99,roundingLineName} from '../order-rounding.ts';
 import {audioPriceV10,fixedPackageV10,ratesV10} from '../service-pricing-v10.ts';
 import {beatVoiceBundle,recordingDepositCents,discountedStudioBundle} from '../service-payment-policy.ts';
-import {revisionTotal} from '../service-catalog.ts';
+import {revisionTotal,vocalPrice} from '../service-catalog.ts';
 import type {ProductionInput} from '../production-calculator.ts';
 import {calculateProduction} from '../production-calculator.ts';
 export type Servizio='mix'|'mix_master'|'master';
@@ -15,7 +15,7 @@ const site='https://www.prodbygenks.com';
 export const euro=(c:number)=>(Math.round(c)/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
 export const arrotonda99=(c:number)=>Math.max(99,Math.round(c/100)*100-1);
 export const costoRevisioni=revisionTotal;
-export function costoCorrezioneVoci(n:number){if(!Number.isInteger(n)||n<0||n>20)throw Error('invalid_artists');return 0;}
+export function costoCorrezioneVoci(n:number){return vocalPrice(n);}
 function int(value:unknown,fallback=0,max=1000){const n=value===undefined?fallback:Number(value);if(!Number.isInteger(n)||n<0||n>max)throw Error('Quantità non valida.');return n;}
 export function codificaPreventivo(input:PreventivoInput){const bytes=new TextEncoder().encode(JSON.stringify(input));return btoa(Array.from(bytes,b=>String.fromCharCode(b)).join('')).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');}
 export function decodificaPreventivo(code:string):PreventivoInput|null{try{if(!code||code.length>16000||!/^[A-Za-z0-9_-]+$/.test(code))return null;return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(code.replaceAll('-','+').replaceAll('_','/')),c=>c.charCodeAt(0))));}catch{return null;}}
@@ -75,6 +75,7 @@ export function calcolaPreventivo(input:PreventivoInput):Preventivo{
   let done=0;
   if(use&&masters.every(s=>s.revisioni===0&&!s.veloce))for(;done+3<=masters.length;done+=3){const brani=masters.slice(done,done+3);const p=fixedPackageV10('masters');add('Master Pack · 3 master stereo · una revisione per brano',p.total,{tipo:'audio_pack',brani,saldo:0},p.separate);}
   for(const s of [...others,...masters.slice(done)])add(`${s.servizio==='master'?'Master stereo':s.servizio==='mix'?'Mix':'Mix + master'} · ${s.file} tracce audio separate`,audioPriceV10(s.servizio,s.file),{tipo:'audio',brani:[s],saldo:0});
+  const artistExtras=songs.reduce((sum,s)=>sum+(s.servizio==='master'?0:costoCorrezioneVoci(s.artisti)),0);if(artistExtras)add('Artisti aggiuntivi · 10,00 € per artista oltre il primo, per brano',artistExtras,{tipo:'audio_extra',brani:[],saldo:0});
   const extras=songs.reduce((sum,s)=>sum+costoRevisioni(s.revisioni)+(s.veloce?1999:0),0);if(extras)add('Extra audio scelti · revisioni e/o prima versione entro 48 ore',extras,{tipo:'audio_extra',brani:[],saldo:0});
 
   while(use&&hours>=5){add('Blocco 5 ore di registrazione · entro 90 giorni, massimo 2 appuntamenti',ratesV10.fiveHours,{tipo:'credits',ore:5,quantita:1,saldo:0},5*ratesV10.recordingHour);hours-=5;}

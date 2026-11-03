@@ -1,3 +1,4 @@
+import {vocalPrice} from './service-catalog.ts';
 import {projectPackageV10,ratesV10} from './service-pricing-v10.ts';
 export type ProductionSong={servizio:'none'|'mix'|'master'|'mix_master';produzione:'genks'|'external';tracce:number;artisti:number;revisioni_extra:number;consegna_veloce:boolean};
 export type ProductionInput={format?:'ep'|'album';brani:ProductionSong[];registrazione:boolean;ore_extra:number};
@@ -10,10 +11,12 @@ export function calculateProduction(input:ProductionInput,quoteAudio:(songs:Audi
  for(const s of input.brani){if(!s||s.produzione!=='genks'||s.servizio!=='mix_master'||!Number.isInteger(s.artisti)||s.artisti<1||s.artisti>20||s.revisioni_extra!==0||s.consegna_veloce!==false)throw Error('EP e album includono produzione GENKS, mix, master e una revisione. Puoi modificare le tracce audio separate; le ore incluse restano fisse.');}
  const q=projectPackageV10(input.format??(input.brani.length>=8?'album':'ep'),input.brani.map(s=>({source:s.produzione,tracks:s.tracce})));
  const beats=input.brani.length,studio=input.ore_extra*ratesV10.recordingHour,custom=q.rows.reduce((sum,r)=>sum+r.base,0);
- const total=q.total+studio,listTotal=q.separate+studio,balance=0,hours=beats*2+input.ore_extra;
+ const artistExtras=input.brani.map(s=>vocalPrice(s.artisti));
+ const artistTotal=artistExtras.reduce((sum,n)=>sum+n,0);
+ const total=q.total+studio+artistTotal,listTotal=q.separate+studio+artistTotal,balance=0,hours=beats*2+input.ore_extra;
  const shares=q.rows.map(r=>r.mix+r.master);
- const lines=q.rows.flatMap((r,i)=>[{name:`Brano ${i+1} · produzione GENKS su misura · quota pacchetto scontata`,amount:r.base},{name:`Brano ${i+1} · mix · ${input.brani[i].tracce} tracce audio separate`,amount:r.mix},{name:`Brano ${i+1} · master stereo`,amount:r.master}]);
+ const lines=q.rows.flatMap((r,i)=>[{name:`Brano ${i+1} · produzione GENKS su misura · quota pacchetto scontata`,amount:r.base},{name:`Brano ${i+1} · mix · ${input.brani[i].tracce} tracce audio separate`,amount:r.mix},{name:`Brano ${i+1} · master stereo`,amount:r.master},...(artistExtras[i]?[{name:`Brano ${i+1} · Artisti aggiuntivi · ${input.brani[i].artisti-1} × 10,00 €`,amount:artistExtras[i]}]:[])]);
  lines.push({name:`Registrazione inclusa · 2 ore per brano · ${beats*2} ore totali`,amount:0});
  if(studio)lines.push({name:`Ore aggiuntive già previste nel progetto · ${input.ore_extra} × 19,99 €`,amount:studio});
- return {total,listTotal,balance,dueNow:total-balance,studio,custom,hours,beats,lines,shares,songTotals:q.rows.map(r=>r.total),audio:{righe:[],importi_centesimi:{totale:shares.reduce((a,b)=>a+b,0),listino:shares.reduce((a,b)=>a+b,0)}}};
+ return {total,listTotal,balance,dueNow:total-balance,studio,custom,hours,beats,lines,shares,songTotals:q.rows.map((r,i)=>r.total+artistExtras[i]),audio:{righe:[],importi_centesimi:{totale:shares.reduce((a,b)=>a+b,0),listino:shares.reduce((a,b)=>a+b,0)}}};
 }

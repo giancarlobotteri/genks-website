@@ -19,7 +19,7 @@ export function normalizeQuoteRequest(input:PreventivoInput,text:string,authoriz
  const noBeat=denied(t,'beat|produzioni?|basi?')||denied(auth,'beat|produzioni?|basi?')&&!/aggiung.*(?:beat|produzion)/.test(t);
  const noMix=denied(t,'mix')||denied(auth,'mix')&&!/aggiung.*mix/.test(t);
  const noMaster=denied(t,'master')||denied(auth,'master')&&!/aggiung.*master/.test(t);
- let next:PreventivoInput={...input,.../(?:niente|senza|no|nessuna|nessuno|non (?:voglio|mi serve))\s+(?:la\s+)?(?:registrazione|studio|rec\b)/i.test(auth)?{ore_registrazione:0}:{},brani:input.brani?.map(b=>({...b,artisti_correzione_voce:/correz|intonaz|pulizia.*voc|tuning|editing|artisti.*voc/.test(auth)?b.artisti_correzione_voce:0,revisioni_extra:/revision|modifiche aggiuntive/.test(auth)?b.revisioni_extra:0,consegna_veloce:/veloc|urgent|rush|express|fast|48\s*(?:ore|h)|consegna.*domani/.test(auth)?b.consegna_veloce:false}))};
+ let next:PreventivoInput={...input,.../(?:niente|senza|no|nessuna|nessuno|non (?:voglio|mi serve))\s+(?:la\s+)?(?:registrazione|studio|rec\b)/i.test(auth)?{ore_registrazione:0}:{},brani:input.brani?.map(b=>({...b,artisti_correzione_voce:/correz|intonaz|pulizia.*voc|tuning|editing|artist|cantant|rapper|feat/.test(auth)?b.artisti_correzione_voce:0,revisioni_extra:/revision|modifiche aggiuntive/.test(auth)?b.revisioni_extra:0,consegna_veloce:/veloc|urgent|rush|express|fast|48\s*(?:ore|h)|consegna.*domani/.test(auth)?b.consegna_veloce:false}))};
  // Optional services must come from the customer, never from model defaults.
  next.usa_pacchetti=!/(?:senza|non voglio|niente|no)\s+(?:i\s+)?pacchetti|servizi separati|singolarmente/.test(auth);
  if(!/mix|master|\bep\b|album/.test(auth))next.brani=[];

@@ -1,5 +1,5 @@
 export * from './pricing-engine-v10.ts';
-export const PREZZI={mix:[2999,4999,6999,8999,11999],mixMaster:[5998,7998,9998,11998,14998],master:2999,maggiorazionePacchetto:[0,2000,4000,6000,9000],oraRegistrazione:1999,oraAggiuntivaPacchetto:1999,mezzoraNotturna:500,beat:3499,consegnaVeloce:1999,revisioneExtraBase:999,correzioneVoceBase:0,pacchetti:{singoloChiaviInMano:9999,registrazioneMixMaster:6997,epPack:35996,masterPack:6999,blocco5Ore:7999}} as const;
+export const PREZZI={mix:[2999,4999,6999,8999,11999],mixMaster:[5998,7998,9998,11998,14998],master:2999,maggiorazionePacchetto:[0,2000,4000,6000,9000],oraRegistrazione:1999,oraAggiuntivaPacchetto:1999,mezzoraNotturna:500,beat:3499,consegnaVeloce:1999,revisioneExtraBase:999,correzioneVoceBase:1000,pacchetti:{singoloChiaviInMano:9999,registrazioneMixMaster:6997,epPack:35996,masterPack:6999,blocco5Ore:7999}} as const;
 export const PROPORZIONI={ep:{soglia:4,rapporto:1},master:{soglia:3,rapporto:6999/(3*2999)}} as const;
 export const ACQUISTO_PREVENTIVI_ATTIVO=true;
 export const PREVENTIVO_TOOL = {
@@ -19,7 +19,7 @@ export const PREVENTIVO_TOOL = {
             servizio: { type: "STRING", enum: ["mix", "mix_master", "master"], description: "mix = solo mix; mix_master = mix + master; master = solo master di un mix stereo" },
             quantita: { type: "INTEGER", description: "Numero di brani con queste caratteristiche. Default 1." },
             file: { type: "INTEGER", description: "File audio (tracce) per brano. Se il cliente non lo dice, ometti: si assume fino a 8." },
-            artisti_correzione_voce: { type: "INTEGER", description: "Artisti a cui correggere/pulire la voce in ciascun brano. Ometti se non richiesto." },
+            artisti_correzione_voce: { type: "INTEGER", description: "Numero totale di artisti nel brano: il primo è incluso, ogni ulteriore artista costa 10 euro. Usa 1 se non specificato; solo mix e mix + master." },
             revisioni_extra: { type: "INTEGER", description: "Revisioni oltre a quella inclusa, per ciascun brano. Ometti se non richiesto." },
             consegna_veloce: { type: "BOOLEAN", description: "true se vuole la prima versione in 48 ore." },
           },

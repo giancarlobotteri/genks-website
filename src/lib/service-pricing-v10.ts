@@ -1,6 +1,6 @@
 /** New agreements only. Activate only with the matching checkout and booking integration. */
 import {discountedStudioBundle} from './service-payment-policy.ts';
-export const pricingVersion = '2026-10-27-v11';
+export const pricingVersion = '2026-11-03-v12';
 export const ratesV10 = {
   master: 2999, beat: 3499, recordingHour: 1999, nightHour: 2999,
   masterPack: 6999, fiveHours: 7999, 

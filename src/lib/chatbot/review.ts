@@ -20,6 +20,8 @@ export function reviewQuote(raw:unknown):ChatResult{
   if(draft.ore_registrazione)lines.push(`**${draft.ore_registrazione} ore di registrazione**, giorno e orario da scegliere e verificare nel modulo.`);
   if((draft.mezzore_dopo_mezzanotte??0)>0)lines.push('Supplemento notturno incluso nel calcolo; viene verificato sull’appuntamento scelto.');
  }
+ const extraArtists=draft.progetto?draft.progetto.brani.reduce((n,b)=>n+Math.max(0,b.artisti-1),0):(draft.brani??[]).reduce((n,b)=>n+(b.servizio==='master'?0:Math.max(0,(b.artisti_correzione_voce??1)-1)*(b.quantita??1)),0);
+ if(extraArtists)lines.push(`**Artisti aggiuntivi: ${extraArtists} × 10,00 € = ${(extraArtists*10).toLocaleString('it-IT',{minimumFractionDigits:2})} €**, già compresi nel totale. Il primo artista è incluso in ciascun brano.`);
  lines.push(`**Totale verificato: ${q.totale}**`,...q.importi_centesimi.listino>q.importi_centesimi.totale?[`Risparmi **${q.risparmio}** rispetto agli stessi servizi separati.`]:[],`Da pagare prima della conferma/avvio: **${q.da_pagare_subito}**.${q.importi_centesimi.saldo?` Saldo ancora da pagare: ${q.saldo_successivo}.`:''}`,'**Confermi questo riepilogo?** Puoi anche dirmi cosa cambiare. Non è stato creato alcun ordine né riservato un orario.');
  return {reply:['**Riepilogo prima dell’offerta**',...lines].join('\n\n'),draft,review:true};
 }

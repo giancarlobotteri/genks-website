@@ -16,5 +16,7 @@ export function simpleAudioRequest(text:string):PreventivoInput|null{
  if(/\b(?:due|tre|uno|una|\d+)\s+da\s+\d+/.test(t))return null;
  const revision=t.match(/\b(\d+)\s+revisioni?\s+(?:extra|aggiuntive)/);
  if(revision&&Number(revision[1])>2)return null;
- return {brani:[{servizio,quantita,file,revisioni_extra:revision?Number(revision[1]):0,consegna_veloce:/veloc|urgent|rush|48\s*(?:ore|h)/.test(t)}]};
+ const artist=t.match(new RegExp(`\\b(${numeric})\\s+(?:artisti?|cantanti?|rapper|artists?)(?:\\s+(aggiuntivi|extra|in più))?\\b`));
+ const artists=artist?(words[artist[1]]??Number(artist[1]))+(artist[2]?1:0):1;
+ return {brani:[{servizio,quantita,file,artisti_correzione_voce:servizio==='master'?0:artists,revisioni_extra:revision?Number(revision[1]):0,consegna_veloce:/veloc|urgent|rush|48\s*(?:ore|h)/.test(t)}]};
 }

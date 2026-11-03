@@ -16,7 +16,7 @@ const cases:[string,PreventivoInput,number][]=[
  ['1 ora',{ore_registrazione:1},1999],
  ['8 ore',{ore_registrazione:8},13996],
  ['consegna veloce',{brani:[{servizio:'mix_master',consegna_veloce:true}]},7997],
- ['tre artisti',{brani:[{servizio:'mix_master',artisti_correzione_voce:3}]},5998],
+ ['tre artisti',{brani:[{servizio:'mix_master',artisti_correzione_voce:3}]},7998],
  ['tre brani',{brani:[{servizio:'mix_master',quantita:3}]},17994],
  ['quattro ore',{ore_registrazione:4},7996],
  ['sabato tre ore fino all’una',{ore_registrazione:3,mezzore_dopo_mezzanotte:2},6997],
@@ -35,4 +35,4 @@ test('preventivi misti: importi originali invariati e tutte le voci Stripe conse
 });
 test('explicit EP distribution cannot double-count the first group',()=>{const fixed=normalizeQuoteRequest({brani:[{servizio:'mix_master',quantita:4,file:8},{servizio:'mix_master',file:18},{servizio:'mix_master',file:30}]},'Ho un EP da 4 brani: due da 8 tracce, uno da 18 e uno da 30');assert.equal(calcolaPreventivo(fixed).importi_centesimi.totale,33999);});
 test('the complete beat/recording/mix request includes all components',()=>{const fixed=normalizeQuoteRequest({brani:[{servizio:'mix_master'}]},'Voglio beat, registrazione e mix di un pezzo');assert.equal(calcolaPreventivo(fixed).importi_centesimi.totale,11999);assert.match(formatQuote(fixed,calcolaPreventivo(fixed),''),/119,99/);});
-test('a model cannot add voice correction, rush or paid revisions without a customer request',()=>{const fixed=normalizeQuoteRequest({brani:[{servizio:'mix_master',artisti_correzione_voce:1,revisioni_extra:2,consegna_veloce:true}]},'Voglio beat, registrazione e mix di un pezzo');assert.equal(calcolaPreventivo(fixed).importi_centesimi.totale,11999);const asked=normalizeQuoteRequest({brani:[{servizio:'mix_master',artisti_correzione_voce:3}]},'Mix e master con correzione voce per 3 artisti');assert.equal(calcolaPreventivo(asked).importi_centesimi.totale,5999);});
+test('a model cannot add voice correction, rush or paid revisions without a customer request',()=>{const fixed=normalizeQuoteRequest({brani:[{servizio:'mix_master',artisti_correzione_voce:1,revisioni_extra:2,consegna_veloce:true}]},'Voglio beat, registrazione e mix di un pezzo');assert.equal(calcolaPreventivo(fixed).importi_centesimi.totale,11999);const asked=normalizeQuoteRequest({brani:[{servizio:'mix_master',artisti_correzione_voce:3}]},'Mix e master con correzione voce per 3 artisti');assert.equal(calcolaPreventivo(asked).importi_centesimi.totale,7999);});
