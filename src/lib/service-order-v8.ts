@@ -9,7 +9,7 @@ import {packageByCode,vocalPrice,revisionTotal,customBeat,guaranteeRefund} from 
 import {buildRecordingQuote} from './recording-quote.ts';
 import {firstVersionEstimate} from './service-delivery.ts';
 import {discountPrice,type PublicDiscount} from './public-discounts.ts';
-export const orderVersion='2026-11-03-artists-v12';
+export const orderVersion='2026-10-26-commerce-v8';
 export type OrderSong={trackTitle:string;trackCount:number;artists:number;revisions:number;rush:boolean;fileUrl:string;production?:'genks'|'external';filesThirtyDays?:boolean};
 export type OrderSelection={kind:'production'|'mix'|'master'|'mix_master'|'recording'|'custom'|'package';packageCode?:string;production?:ProductionInput;songs:OrderSong[];hours:number;extraHours:number;date:string;time:string;payment:'card'|'cash';notes:string;rights:'split50'|'own';appointments?:import('./project-appointments-v10.ts').ProjectAppointmentV10[];};
 export type OrderLine={name:string;amount:number;payNow?:number};
