@@ -35,4 +35,4 @@ test("both reminder types reuse the Gmail dark-mode frame with white text and es
   }
 });
 
-test('website calendar links disclose only locality; email events retain directions',()=>{assert.equal(new URL(bookingCalendarUrl(booking)).searchParams.get('location'),'Ponte San Giovanni (PG)');assert.doesNotMatch(bookingCalendarFile(booking),/Quintina/);assert.match(bookingCalendarFile(booking,true),/Quintina/);});
+test('website calendar links disclose only locality; email events retain directions',()=>{assert.equal(new URL(bookingCalendarUrl(booking)).searchParams.get('location'),'Perugia');assert.doesNotMatch(bookingCalendarFile(booking),/Quintina/);assert.match(bookingCalendarFile(booking,true),/Quintina/);});
