@@ -1,5 +1,5 @@
-import { studioAppointmentPaymentNotice } from "@/lib/studio-deposit-final-balance";
 "use client";
+import { studioAppointmentPaymentNotice } from "@/lib/studio-deposit-final-balance";
 import {LiveOrderSummary} from './live-order-summary';
 import {HomeCartPreview} from './service-cart-rail-v8';
 import {useEffect,useRef,useState,type FormEvent} from 'react';

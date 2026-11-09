@@ -1,5 +1,5 @@
-import { studioAppointmentPaymentNotice } from "@/lib/studio-deposit-final-balance";
 "use client";
+import { studioAppointmentPaymentNotice } from "@/lib/studio-deposit-final-balance";
 import {LiveOrderSummary} from './live-order-summary';
 import {totalEnding99} from '@/lib/order-rounding';
 import {TrackStepper} from './track-stepper';
