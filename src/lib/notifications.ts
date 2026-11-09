@@ -1,4 +1,5 @@
 import "server-only";
+import { studioAppointmentPaymentPolicy } from '@/lib/studio-deposit-final-balance';
 import { isStandaloneStudio } from "@/lib/booking-order-reference";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTransactionalEmail } from "@/lib/email";
@@ -42,7 +43,7 @@ export async function deliverNotification(id: string) {
         const parts=await db.from('service_order_parts_v8').select('method').eq('project_id',target);
         if(project.error||parts.error)throw Error('Metodo di pagamento da verificare.');
         if(!project.data||!parts.data?.length)throw Error('Voci ordine non disponibili.');
-        return {card:parts.data.some(part=>part.method==='card')};
+        return {card:project.data.commerce_snapshot?.paymentPolicy!==studioAppointmentPaymentPolicy&&parts.data.some(part=>part.method==='card')};
       },
       payment:async target=>{const p=await db.from('payments').select('status').eq('id',target).maybeSingle();if(p.error)throw Error('Pagamento da verificare.');return p.data;},
       contract:target=>agreementState('project_id',target),
@@ -154,10 +155,10 @@ export async function deliverNotification(id: string) {
           ? savedQuote.parts.flatMap(part=>typeof part?.title==='string'&&part.title.trim() ? [part.title] : [])
           : [];
         const purchases=savedTitles.length ? savedTitles : [p.data.track_title || italianLabel(p.data.service) || 'Servizio GENKS'];
-        concise=serviceEmailSummary({purchases,purchaseDetails:owner?savedOrderDetails(p.data.commerce_snapshot):undefined,quoteLines:savedQuote?.preventivo?.righe,initialDue:(deadlines.data??[]).reduce((n,x)=>n+Math.max(0,x.initial_cents-x.paid_cents),0),cashDeadlines:(deadlines.data??[]).flatMap(part=>{
+        concise=serviceEmailSummary({confirmedServices:p.data.commerce_snapshot?.paymentPolicy===studioAppointmentPaymentPolicy,purchases,purchaseDetails:owner?savedOrderDetails(p.data.commerce_snapshot):undefined,quoteLines:savedQuote?.preventivo?.righe,initialDue:(deadlines.data??[]).reduce((n,x)=>n+Math.max(0,x.initial_cents-x.paid_cents),0),cashDeadlines:(deadlines.data??[]).flatMap(part=>{
           const amount=part.initial_cents-part.paid_cents;
-          if(part.method!=='cash'||!part.hold_until||amount<=0)return [];
-          return [{until:part.hold_until,amount,deposit:isStandaloneStudio(part.snapshot)&&part.initial_cents<part.total_cents}];
+          if(!part.hold_until||amount<=0||(part.method!=='cash'&&p.data.commerce_snapshot?.paymentPolicy!==studioAppointmentPaymentPolicy))return [];
+          return [{until:part.hold_until,amount,deposit:p.data.commerce_snapshot?.paymentPolicy===studioAppointmentPaymentPolicy||(isStandaloneStudio(part.snapshot)&&part.initial_cents<part.total_cents),method:part.method}];
         }),reference:p.data.reference,total:p.data.price_cents??0,paid,name:p.data.name,artistName:p.data.artist_name,email:p.data.email},owner?'owner':'customer');
         if(!owner){const contract=await db.from('project_contracts').select('terms_body').eq('project_id',p.data.id).limit(1).maybeSingle();if(contract.error)throw Error('Condizioni da verificare.');if(contract.data)documents=[{filename:`Condizioni-${p.data.reference}.txt`,content:contract.data.terms_body}];}
       }

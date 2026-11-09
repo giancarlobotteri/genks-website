@@ -1,3 +1,4 @@
+import { withStudioDepositAndFinalBalance } from '../studio-deposit-final-balance.ts';
 import {roundOrderQuote} from '../order-rounding.ts';
 import {recordingDepositCents} from '../service-payment-policy.ts';
 import {productionSelection,quoteProductionPart} from '../production-order.ts';
@@ -53,7 +54,7 @@ function verifiedBreakdown(code:string){
  if(!canonical||!annotated||JSON.stringify(canonical.importi_centesimi)!==JSON.stringify(annotated.importi_centesimi)||canonical.righe.length!==annotated.righe.length||canonical.righe.some((r,i)=>r.prezzo!==annotated.righe[i].prezzo||r.descrizione!==annotated.righe[i].descrizione))throw Error('Preventivo non verificabile.');
  return {...canonical,righe:annotated.righe};
 }
-export function quotePreventivo(code:string,rawDetails:unknown=[],payment:'card'|'cash'='card',early=false,now=new Date(),requireDates=false){
+function quotePreventivoLegacy(code:string,rawDetails:unknown=[],payment:'card'|'cash'='card',early=false,now=new Date(),requireDates=false){
  const input=validateQuoteCode(code);
  if(input.progetto){const details=quoteDetailsSchema.parse(rawDetails);const info=details[0];const selection=productionSelection(input.progetto);selection.payment=payment;selection.date=info?.date??'';selection.time=info?.time??'';selection.songs=selection.songs.map((s,i)=>({...s,trackTitle:info?.titles[i]??s.trackTitle,fileUrl:info?.files[i]??'',filesThirtyDays:info?.fileConfirmations[i]??false}));const part=quoteProductionPart(selection,early,now,requireDates);return roundOrderQuote({version:orderVersion,parts:[{...part,preventivoCode:code,personalizzato:true,creditMinutes:undefined as number|undefined}],total:part.total,cardNow:part.cardNow,cashNow:part.cashNow,balance:part.balance,saving:part.saving,preventivoCode:code,preventivo:canonicalQuote(code)!});}
  let checked=verifiedBreakdown(code);let ds=drafts(checked.righe);const details=quoteDetailsSchema.parse(rawDetails);
@@ -82,3 +83,9 @@ export function quotePreventivo(code:string,rawDetails:unknown=[],payment:'card'
  if(quote.total!==checked.importi_centesimi.totale||quote.balance!==checked.importi_centesimi.saldo)throw Error('Importi del preventivo non coerenti.');
  return quote;
 }
+
+export function quotePreventivo(...args: Parameters<typeof quotePreventivoLegacy>) {
+ return withStudioDepositAndFinalBalance(quotePreventivoLegacy(...args));
+}
+
+export { quotePreventivoLegacy };

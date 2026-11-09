@@ -65,7 +65,15 @@ async function fulfil(session: Stripe.Checkout.Session, event: Stripe.Event) {
   if (session.amount_total === null || !session.currency) throw new Error("Dati del pagamento incompleti.");
   const db = createSupabaseAdminClient();
   const isV8=session.metadata?.payment_type==="service_cart_v8";
-  const settledV8=isV8?await db.rpc("settle_service_cart_v8",{p_quote:quoteId,p_session:session.id,p_payment:intentId??session.id,p_amount:session.amount_total,p_currency:session.currency,p_live:session.livemode,p_event:event.id,p_paid_at:new Date(event.created*1000).toISOString()}):null;
+  let policy=session.metadata?.payment_policy;
+  if(isV8&&quoteId&&!policy){
+    const linked=await db.from("service_quotes").select("service_projects(commerce_snapshot)").eq("id",quoteId).maybeSingle();
+    if(linked.error)throw new Error("Regola di pagamento dell’ordine non disponibile.");
+    const project=Array.isArray(linked.data?.service_projects)?linked.data.service_projects[0]:linked.data?.service_projects;
+    policy=project?.commerce_snapshot?.paymentPolicy;
+  }
+  const settlementRpc=policy==="studio-appointment-fixed20-v1"?"settle_service_cart_v16":"settle_service_cart_v8";
+  const settledV8=isV8?await db.rpc(settlementRpc,{p_quote:quoteId,p_session:session.id,p_payment:intentId??session.id,p_amount:session.amount_total,p_currency:session.currency,p_live:session.livemode,p_event:event.id,p_paid_at:new Date(event.created*1000).toISOString()}):null;
   const { data: paymentId, error } = settledV8??await db.rpc("fulfil_stripe_checkout", {
     p_session: session.id, p_payment: intentId ?? session.id, p_amount: session.amount_total,
     p_currency: session.currency, p_live: session.livemode, p_event: event.id,

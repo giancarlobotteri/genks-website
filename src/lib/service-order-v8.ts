@@ -1,3 +1,4 @@
+import { studioAppointmentPaymentNotice, studioAppointmentPaymentPolicy, withStudioDepositAndFinalBalance } from './studio-deposit-final-balance.ts';
 import {roundOrderQuote,roundingLineName} from './order-rounding.ts';
 import {recordingDepositCents} from './service-payment-policy.ts';
 import {quoteBeatVoice,quoteStudioBundle} from './studio-bundle-order.ts';
@@ -15,7 +16,7 @@ export type OrderSelection={kind:'production'|'mix'|'master'|'mix_master'|'recor
 export type OrderLine={name:string;amount:number;payNow?:number};
 export type OrderPart={selection:OrderSelection;title:string;total:number;listTotal:number;saving:number;deposit:number;dueNow:number;cardNow:number;cashNow:number;balance:number;studioAmount:number;customAmount:number;hours:number;guarantees:{title:string;amount:number}[];lines:OrderLine[];firstVersion:string|null;creditMinutes?:number;bookingDeposit?:number;bookingAmount?:number;standaloneRecording?:boolean};
 const int=(value:unknown,min:number,max:number)=>{if(!Number.isInteger(value)||Number(value)<min||Number(value)>max)throw Error('Valore numerico non valido.');return Number(value);};
-export function quoteOrder(input:unknown,early=false,now=new Date(),discounts:PublicDiscount[]=[],options:{requireFiles?:boolean;roundTotal?:boolean}={}):OrderQuote{
+export function quoteOrder(input:unknown,early=false,now=new Date(),discounts:PublicDiscount[]=[],options:{requireFiles?:boolean;roundTotal?:boolean;legacyPayment?:boolean}={}):OrderQuote{
  if(!Array.isArray(input)||input.length<1||input.length>20)throw Error('Scegli da 1 a 20 servizi.');
  const parts:OrderPart[]=input.map((raw):OrderPart=>{
   if(!raw||typeof raw!=='object')throw Error('Servizio non valido.');
@@ -82,18 +83,23 @@ export function quoteOrder(input:unknown,early=false,now=new Date(),discounts:Pu
  });
  const sum=(key:'total'|'cardNow'|'cashNow'|'balance'|'saving')=>parts.reduce((n,p)=>n+p[key],0);
  const quote={version:orderVersion,parts,total:sum('total'),cardNow:sum('cardNow'),cashNow:sum('cashNow'),balance:sum('balance'),saving:sum('saving')};
- return options.roundTotal===false?quote:roundOrderQuote(quote);
+ const rounded = options.roundTotal===false ? quote : roundOrderQuote(quote);
+ return options.legacyPayment ? rounded : withStudioDepositAndFinalBalance(rounded);
 }
-export type OrderQuote={version:string;parts:OrderPart[];total:number;cardNow:number;cashNow:number;balance:number;saving:number};
+export type OrderQuote={version:string;paymentPolicy?:string;parts:OrderPart[];total:number;cardNow:number;cashNow:number;balance:number;saving:number};
 export function orderSummary(q:OrderQuote){return [
  ...q.parts.flatMap((p,i)=>[`SERVIZIO ${i+1} · ${p.title}`,...p.lines.map(l=>`${l.name}: ${serviceAmount(l.amount)}`),`Totale servizio: ${serviceAmount(p.total)} · Risparmi ${serviceAmount(p.saving)}`,`Da versare ora: ${serviceAmount(p.dueNow)} (${p.selection.payment==='card'?'carta':'contanti in studio'}) · Saldo ancora da pagare: ${serviceAmount(p.balance)}`,...(p.selection.production?p.selection.production.brani.map((s,i)=>`${p.selection.songs[i].trackTitle}: ${s.produzione==='genks'?'Produzione GENKS inclusa nel pacchetto':'Base del cliente, produzione 0 EUR'}; ${s.servizio==='none'?'nessuna lavorazione audio':s.servizio.replaceAll('_',' + ')}; ${s.tracce} tracce audio separate; ${s.artisti} artisti; primo incluso, +10,00 € per ogni artista aggiuntivo`):[]),...p.selection.songs.filter(s=>s.fileUrl).map(s=>`File · ${s.trackTitle}: ${s.fileUrl}`),p.selection.notes?`Note del cliente: ${p.selection.notes}`:"",...p.guarantees.map(g=>`Garanzia commerciale 30% · ${g.title}: ${serviceAmount(g.amount)}`),p.selection.date?`Appuntamento richiesto: ${p.selection.date} ${p.selection.time} · ${p.hours} ore · Europe/Rome`:'',p.selection.rights==='split50'?'Beat GENKS: split 50/50 dei diritti patrimoniali concordati sulla composizione. Il 100% richiede un preventivo.':'Materiale del cliente: nessuno split attribuito dal solo mix/master o registrazione.']),
  `TOTALE ORDINE: ${serviceAmount(q.total)}`,`CARTA ORA: ${serviceAmount(q.cardNow)}`,`CONTANTI DA VERSARE ORA IN STUDIO: ${serviceAmount(q.cashNow)}`,`SALDO ANCORA DA PAGARE: ${serviceAmount(q.balance)}`,
- 'Pacchetti e progetti: pagamento completo del totale configurato prima dell’avvio. Sola prenotazione studio: acconto 20 €, oppure 10 € su un totale di 19,99 €, senza superare il prezzo; il saldo resta da versare. Beat singolo: 34,99 € da pagare interamente prima dell’avvio. Per i contanti passa in studio, paga e presenta il codice ordine entro metà del tempo tra richiesta e appuntamento. Senza incasso l’orario si libera automaticamente. Per EP e album sono prenotabili solo le 2 ore incluse per brano; le ore ulteriori richiedono una nuova prenotazione separata con relativo pagamento, secondo disponibilità. Gli altri pacchetti consentono le ore configurabili previste; eventuali prolungamenti non previsti si concordano, senza addebiti automatici.',
+ studioAppointmentPaymentNotice,
  'Una revisione inclusa per lavorazione. Extra: prima +9,99 €, seconda +14,99 €, poi +5 € sul prezzo della precedente; oltre due extra serve disponibilità GENKS. Garanzia commerciale 30% dopo la revisione inclusa, entro 14 giorni; condizioni e diritti legali restano distinti.'
  ].filter(Boolean).join('\n\n');}
 
 /** Integer allocation: audio extras are paid in full; studio/beat advance is distributed across its lines. */
-export function cardOrderLines(q:OrderQuote):OrderLine[]{const output=q.parts.filter(p=>p.cardNow>0).flatMap(p=>{
+export function cardOrderLines(q:OrderQuote):OrderLine[]{
+ if(q.paymentPolicy===studioAppointmentPaymentPolicy) {
+  return q.parts.flatMap(part=>part.cardNow>0 ? [{name:'Acconto studio · '+part.title,amount:part.cardNow}] : []);
+ }
+ const output=q.parts.filter(p=>p.cardNow>0).flatMap(p=>{
  if(p.lines.every(l=>l.payNow!==undefined)){const lines=p.lines.filter(l=>(l.payNow??0)>0).map(l=>({name:l.name,amount:l.payNow!}));if(lines.reduce((n,l)=>n+l.amount,0)!==p.cardNow&&!p.lines.some(l=>l.name===roundingLineName&&l.amount<0))throw Error('Ripartizione pagamento non valida.');return lines;}
  const isExtra=(name:string)=>/Correzione e pulizia|Artisti aggiuntivi|Revisioni aggiuntive|Prima versione entro 48/.test(name);
  const extras=p.lines.filter(l=>isExtra(l.name));const bases=p.lines.filter(l=>!isExtra(l.name));

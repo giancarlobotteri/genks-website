@@ -1,7 +1,7 @@
-/** Match the message to the verified payment state, never a percentage from an old agreement. */
+import { studioAppointmentPaymentNotice } from './studio-deposit-final-balance.ts';
 export function serviceOrderNotice({paid,review,awaitingCard}:{paid:boolean;review:boolean;awaitingCard:boolean}){
- if(paid&&!review)return 'Le sessioni pagate con carta sono confermate dopo la verifica dell’importo richiesto. Le sessioni con pagamento in contanti restano in attesa dell’incasso.';
- if(review)return 'GENKS verificherà la disponibilità prima di confermare. Controlla l’email e non ripetere il pagamento.';
- if(awaitingCard)return 'Stiamo attendendo la conferma verificata del pagamento con carta. Non ripetere il pagamento: controlla l’email e la tua area personale. Se la conferma non arriva, contatta l’assistenza indicando il codice ordine.';
- return 'La creazione dell’ordine non conferma una sessione. Per i contanti passa in studio, paga e presenta il codice ordine: GENKS registrerà l’incasso e la conferma. Per la sola registrazione versa 20 € di acconto; se il totale della sessione è 19,99 €, bastano 10 €. L’acconto non supera mai il totale. Pacchetti, beat e altri servizi si pagano per intero prima dell’avvio. Per le sessioni in contanti versa la quota iniziale entro metà del tempo tra richiesta e inizio: tra 2 giorni hai 1 giorno, tra 6 giorni hai 3 giorni. Senza incasso registrato la riserva scade automaticamente. La scadenza esatta è nell’email.';
+ if(review)return 'GENKS verificherà l’incasso e la disponibilità. Controlla l’email e non ripetere il pagamento.';
+ if(paid)return 'Pagamento ricevuto. L’acconto con carta conferma automaticamente solo la relativa sessione. Il saldo si paga a fine lavoro.';
+ if(awaitingCard)return 'La conferma delle sessioni pagate con carta è in verifica. Il resto dell’ordine è già confermato.';
+ return studioAppointmentPaymentNotice;
 }
