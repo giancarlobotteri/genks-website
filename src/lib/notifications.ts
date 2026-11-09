@@ -4,6 +4,7 @@ import { sendTransactionalEmail } from "@/lib/email";
 import { bookingCalendarFile, bookingCalendarUrl, studioAddress } from "@/lib/booking-calendar";
 
 import {notificationPaymentGuard} from "@/lib/notification-payment-guard";
+import { italianLabel } from "@/lib/italian";
 import {serviceEmailSummary} from "@/lib/service-email-summary";
 
 type Message = Parameters<typeof sendTransactionalEmail>[0];
@@ -67,14 +68,14 @@ export async function deliverNotification(id: string) {
       if(result.error||!result.data)throw new Error("Dati della prenotazione da verificare.");
       const b=result.data;
       const paid=await db.from("payments").select("id").eq("booking_id",b.id).eq("status","succeeded").limit(1);if(paid.error)throw new Error("Pagamento da verificare");const card=Boolean(paid.data?.length);
-      body=["La prenotazione è già confermata. Non serve approvarla.",`Cliente: ${b.name}`,`Email cliente: ${b.email}`,`Telefono: ${b.phone||"Non indicato"}`,"Servizio: Registrazione in studio",`Inizio: ${date(b.starts_at)}`,`Fine: ${date(b.ends_at)}`,`Totale: ${b.price_cents===null?"Da concordare":money(b.price_cents)}`,card?"Pagamento: Carta · pagamento confermato":"Pagamento: Contanti presso lo studio",`Riferimento: ${b.reference}`,...(b.notes?[`Note: ${b.notes}`]:[]),card?"Pagamento online già registrato nelle Vendite. Non registrare un secondo incasso.":"Registra l’incasso soltanto dopo aver ricevuto i contanti."].join("\n");
+      body=["La prenotazione è già confermata. Non serve approvarla.",`Cliente: ${b.name}`,`Email cliente: ${b.email}`,`Telefono: ${b.phone||"Non indicato"}`,"Acquistato / prenotato: Registrazione in studio",`Inizio: ${date(b.starts_at)}`,`Fine: ${date(b.ends_at)}`,`Totale: ${b.price_cents===null?"Da concordare":money(b.price_cents)}`,card?"Pagamento: Carta · pagamento confermato":"Pagamento: Contanti presso lo studio",`Riferimento: ${b.reference}`,...(b.notes?[`Note: ${b.notes}`]:[]),card?"Pagamento online già registrato nelle Vendite. Non registrare un secondo incasso.":"Registra l’incasso soltanto dopo aver ricevuto i contanti."].join("\n");
     }
     if(projectAlert){
       const result=await db.from("service_projects").select("id,songs,reference,name,email,phone,service,track_title,track_count,price_cents,status,notes").eq("reference",projectAlert[1]).single();
       if(result.error||!result.data)throw new Error("Dati del progetto da verificare.");
       const p=result.data;
       const songLines=Array.isArray(p.songs)?p.songs.map((song,index)=>`Brano ${index+1}: ${song.trackTitle} · ${String(song.service??p.service).replaceAll("_"," + ")} · ${song.trackCount} tracce · ${money(song.amountCents)}`):[];
-      body=["Hai ricevuto una nuova richiesta GENKS.",`Cliente: ${p.name}`,`Email cliente: ${p.email}`,`Telefono: ${p.phone||"Non indicato"}`,`Servizio: ${p.service.replaceAll("_"," + ")}`,`Modalità: ${p.notes?.includes("Modalità: studio") ? "Fisicamente in studio" : "A distanza"}`,`Brano: ${p.track_title}`,`Tracce audio complessive: ${p.track_count}`,...songLines,`Totale: ${p.price_cents===null?"Da concordare":money(p.price_cents)}`,`Pagamento: ${p.status==="paid"?"Carta · pagamento confermato":"Contanti presso lo studio"}`,`Riferimento: ${p.reference}`,...(p.notes?[`Note: ${p.notes}`]:[])].join("\n");
+      body=["Hai ricevuto una nuova richiesta GENKS.",`Cliente: ${p.name}`,`Email cliente: ${p.email}`,`Telefono: ${p.phone||"Non indicato"}`,`Acquistato / prenotato: ${italianLabel(p.service) || p.track_title}`,`Modalità: ${p.notes?.includes("Modalità: studio") ? "Fisicamente in studio" : "A distanza"}`,`Brano: ${p.track_title}`,`Tracce audio complessive: ${p.track_count}`,...songLines,`Totale: ${p.price_cents===null?"Da concordare":money(p.price_cents)}`,`Pagamento: ${p.status==="paid"?"Carta · pagamento confermato":"Contanti presso lo studio"}`,`Riferimento: ${p.reference}`,...(p.notes?[`Note: ${p.notes}`]:[])].join("\n");
       const detail=await db.from("service_quotes").select("scope").eq("project_id",p.id).order("created_at",{ascending:false}).limit(1).maybeSingle();
       if(detail.error)throw new Error("Dettagli del preventivo da verificare.");
       if(detail.data)body+="\n\nVOCI DEL RIEPILOGO\n"+detail.data.scope;
@@ -136,15 +137,22 @@ export async function deliverNotification(id: string) {
     const cashReceipt=String(message.dedupe_key).match(/^cash-v8-([a-f0-9-]{36})-(initial|balance)$/);
     if(cashReceipt){const r=await db.from('service_order_parts_v8').select('project_id').eq('id',cashReceipt[1]).single();if(r.error)throw Error('Incasso da verificare.');summaryProject=r.data.project_id;}
     if(summaryProject){
-      const p=await db.from('service_projects').select('id,reference,name,artist_name,email,price_cents,commerce_snapshot').eq('id',summaryProject).single();
+      const p=await db.from('service_projects').select('id,reference,name,artist_name,email,price_cents,track_title,service,commerce_snapshot').eq('id',summaryProject).single();
       if(p.error)throw Error('Ordine da verificare.');
       const owner=Boolean(orderMail?.[1]==='owner'||paidOwner);
       if(owner||p.data.email.toLowerCase()===message.recipient.toLowerCase()){
         const movements=await db.from('payments').select('amount_cents,refunded_cents').eq('project_id',p.data.id).eq('status','succeeded');if(movements.error)throw Error('Incassi da verificare.');
         const paid=(movements.data??[]).reduce((n,m)=>n+m.amount_cents-m.refunded_cents,0);
         const deadlines=await db.from('service_order_parts_v8').select('hold_until,paid_cents,initial_cents,method').eq('project_id',p.data.id);if(deadlines.error)throw Error('Scadenze da verificare.');
-        const savedQuote=p.data.commerce_snapshot as {preventivo?:{righe?:{descrizione:string;prezzo:string}[]}}|null;
-        concise=serviceEmailSummary({quoteLines:savedQuote?.preventivo?.righe,initialDue:(deadlines.data??[]).reduce((n,x)=>n+Math.max(0,x.initial_cents-x.paid_cents),0),cashDeadlines:(deadlines.data??[]).filter(x=>x.method==='cash'&&x.hold_until&&x.paid_cents<x.initial_cents).map(x=>x.hold_until!),reference:p.data.reference,total:p.data.price_cents??0,paid,name:p.data.name,artistName:p.data.artist_name,email:p.data.email},owner?'owner':'customer');
+        const savedQuote=p.data.commerce_snapshot as {
+          preventivo?:{righe?:{descrizione:string;prezzo:string}[]};
+          parts?:{title?:string}[];
+        }|null;
+        const savedTitles=Array.isArray(savedQuote?.parts)
+          ? savedQuote.parts.flatMap(part=>typeof part?.title==='string'&&part.title.trim() ? [part.title] : [])
+          : [];
+        const purchases=savedTitles.length ? savedTitles : [p.data.track_title || italianLabel(p.data.service) || 'Servizio GENKS'];
+        concise=serviceEmailSummary({purchases,quoteLines:savedQuote?.preventivo?.righe,initialDue:(deadlines.data??[]).reduce((n,x)=>n+Math.max(0,x.initial_cents-x.paid_cents),0),cashDeadlines:(deadlines.data??[]).filter(x=>x.method==='cash'&&x.hold_until&&x.paid_cents<x.initial_cents).map(x=>x.hold_until!),reference:p.data.reference,total:p.data.price_cents??0,paid,name:p.data.name,artistName:p.data.artist_name,email:p.data.email},owner?'owner':'customer');
         if(!owner){const contract=await db.from('project_contracts').select('terms_body').eq('project_id',p.data.id).limit(1).maybeSingle();if(contract.error)throw Error('Condizioni da verificare.');if(contract.data)documents=[{filename:`Condizioni-${p.data.reference}.txt`,content:contract.data.terms_body}];}
       }
     }
