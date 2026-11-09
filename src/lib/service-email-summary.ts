@@ -21,7 +21,7 @@ export function serviceEmailSummary(order:ServiceEmailOrder,audience:'owner'|'cu
     `Nome artista: ${clean(order.artistName?.trim()||order.name)}`,
   ];
   if(!order.purchaseDetails?.length && purchases.length) fields.push(`Acquistato / prenotato: ${purchases.join(" • ")}`);
-  if(order.confirmedServices) fields.push("Il saldo è a fine lavoro. Gli altri servizi sono confermati anche se la sessione di studio è in attesa.");
+  if(order.confirmedServices) fields.push("Quello che resta da pagare si salda a fine lavoro. Gli altri servizi sono confermati anche se la sessione di studio è in attesa.");
   fields.push(...deadlineLines);
   return {subject,heading:'Hai un nuovo ordine.',body:fields.join('\n'),purchaseDetails:order.purchaseDetails,compact:true as const};
  }

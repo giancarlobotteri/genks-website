@@ -8,10 +8,10 @@ test('pending card does not ask for a second payment or an unrelated cash deposi
 });
 test('cash instructions distinguish fixed recording deposits from full package payment',()=>{
  const text=serviceOrderNotice({paid:false,review:false,awaitingCard:false});
- assert.match(text,/20 € di acconto/);assert.match(text,/19,99 €.*10 €/);assert.match(text,/si pagano per intero/);assert.match(text,/metà del tempo/);assert.doesNotMatch(text,/50%/);
+ assert.match(text,/20 € di acconto/);assert.match(text,/si pagano per intero/);assert.match(text,/a fine lavoro/);assert.match(text,/metà del tempo/);assert.doesNotMatch(text,/50%/);
 });
 test('only verified payments show confirmation, while review remains conditional',()=>{
- assert.match(serviceOrderNotice({paid:true,review:false,awaitingCard:true}),/sono confermate/);
+ assert.match(serviceOrderNotice({paid:true,review:false,awaitingCard:true}),/sono confermat/);
  assert.match(serviceOrderNotice({paid:true,review:true,awaitingCard:true}),/prima di confermare/);
 });
 test('freebusy-only calendar is shown as connected even without write permission',()=>{

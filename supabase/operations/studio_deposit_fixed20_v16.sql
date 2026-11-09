@@ -10,11 +10,11 @@ alter table public.service_order_parts_v8 add constraint service_order_parts_v8_
   check (total_cents >= 50 or (total_cents >= 0 and studio_released_at is not null));
 
 create or replace function public.studio_booking_touch_v16() returns trigger
-language plpgsql set search_path='' as $
+language plpgsql set search_path='' as $$
 begin
  if new is distinct from old then new.updated_at:=clock_timestamp(); end if;
  return new;
-end $;
+end $$;
 drop trigger if exists studio_booking_touch_v16 on public.bookings;
 create trigger studio_booking_touch_v16 before update on public.bookings
 for each row execute function public.studio_booking_touch_v16();
@@ -196,7 +196,7 @@ begin
  values(nullif(p_data->>'customerId','')::uuid,p_data->>'name',nullif(p_data->>'artistName',''),lower(p_data->>'email'),p_data->>'phone',
  case when jsonb_array_length(p_quote->'parts')=1 then p_quote->'parts'->0->>'title' else 'Carrello servizi GENKS' end,
  case when p_quote->'parts'->0->'selection'->>'kind' in ('mix','master','mix_master') then p_quote->'parts'->0->'selection'->>'kind' else 'studio_package' end,
- p_summary,1,p_summary,case when new_policy then 'in_progress'::public.project_status else 'awaiting_payment'::public.project_status end,total,'[]',p_quote) returning * into p;
+ p_summary,1,p_summary,case when new_policy and upfront=0 then 'in_progress'::public.project_status else 'awaiting_payment'::public.project_status end,total,'[]',p_quote) returning * into p;
  update public.notification_outbox set cancelled_at=now() where sent_at is null and dedupe_key='request-'||p.reference||'-customer';
  for part in select value from jsonb_array_elements(p_quote->'parts') loop
   sel:=part->'selection';b.id:=null;expiry:=null;
@@ -217,7 +217,8 @@ begin
     expiry:=public.genks_cash_hold_until(now(),start_at);
     if expiry<=now() then raise exception 'cash_booking_too_close';end if;
    end if;
-   if (part->>'dueNow')::integer is distinct from 2000 or (part->>'total')::integer<2000 then raise exception 'invalid_booking_deposit';end if;
+   -- 20 € per sessione; con carta il resto della voce (servizi non studio) si paga subito insieme all'acconto
+   if (part->>'bookingDeposit')::integer is distinct from 2000 or (part->>'dueNow')::integer<2000 or (part->>'total')::integer<2000 then raise exception 'invalid_booking_deposit';end if;
    insert into public.bookings(customer_id,service_id,name,artist_name,email,phone,starts_at,ends_at,notes,status,price_cents,deposit_cents,hold_expires_at)
    values(p.customer_id,(select id from public.booking_services where code='recording' and active limit 1),p.name,p.artist_name,p.email,p.phone,
    start_at,start_at+make_interval(mins=>round((part->>'hours')::numeric*60)::integer),p.reference||E'\n'||p_summary,

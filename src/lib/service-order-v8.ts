@@ -97,7 +97,7 @@ export function orderSummary(q:OrderQuote){return [
 /** Integer allocation: audio extras are paid in full; studio/beat advance is distributed across its lines. */
 export function cardOrderLines(q:OrderQuote):OrderLine[]{
  if(q.paymentPolicy===studioAppointmentPaymentPolicy) {
-  return q.parts.flatMap(part=>part.cardNow>0 ? [{name:'Acconto studio · '+part.title,amount:part.cardNow}] : []);
+  return q.parts.flatMap(part=>part.cardNow>0 ? [{name:(part.balance>0&&part.bookingDeposit&&part.cardNow<=2000*Math.max(1,part.selection.appointments?.length??1)?'Acconto studio · ':'Pagamento · ')+part.title,amount:part.cardNow}] : []);
  }
  const output=q.parts.filter(p=>p.cardNow>0).flatMap(p=>{
  if(p.lines.every(l=>l.payNow!==undefined)){const lines=p.lines.filter(l=>(l.payNow??0)>0).map(l=>({name:l.name,amount:l.payNow!}));if(lines.reduce((n,l)=>n+l.amount,0)!==p.cardNow&&!p.lines.some(l=>l.name===roundingLineName&&l.amount<0))throw Error('Ripartizione pagamento non valida.');return lines;}

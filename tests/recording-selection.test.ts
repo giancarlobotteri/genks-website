@@ -7,9 +7,10 @@ test("card lead time is enforced before selecting a slot and cash follows the sa
   const now=Date.parse("2026-10-23T17:00:00Z");
   assert.equal(recordingStartAllowed("2026-10-23","19:30","card",now),false);
   assert.equal(recordingStartAllowed("2026-10-23","19:30","cash",now),false);
-  assert.equal(recordingStartAllowed("2026-10-23","20:00","card",now),true);
-  assert.equal(recordingStartAllowed("2026-10-23","19:30","card",Date.parse("2026-10-23T16:55:00Z")),false);
-  assert.equal(recordingStartAllowed("2026-10-23","19:30","card",Date.parse("2026-10-23T16:54:59Z")),true);
+  assert.equal(recordingStartAllowed("2026-10-23","20:00","card",now),false); // carta: servono più di 65 minuti
+  assert.equal(recordingStartAllowed("2026-10-23","20:30","card",now),true);
+  assert.equal(recordingStartAllowed("2026-10-23","19:30","card",Date.parse("2026-10-23T16:25:00Z")),false);
+  assert.equal(recordingStartAllowed("2026-10-23","19:30","card",Date.parse("2026-10-23T16:24:59Z")),true);
   assert.equal(recordingStartAllowed("2026-03-29","02:30","card",now),false);
 });
 

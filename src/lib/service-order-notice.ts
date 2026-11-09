@@ -1,7 +1,7 @@
 import { studioAppointmentPaymentNotice } from './studio-deposit-final-balance.ts';
 export function serviceOrderNotice({paid,review,awaitingCard}:{paid:boolean;review:boolean;awaitingCard:boolean}){
- if(review)return 'GENKS verificherà l’incasso e la disponibilità. Controlla l’email e non ripetere il pagamento.';
- if(paid)return 'Pagamento ricevuto. L’acconto con carta conferma automaticamente solo la relativa sessione. Il saldo si paga a fine lavoro.';
- if(awaitingCard)return 'La conferma delle sessioni pagate con carta è in verifica. Il resto dell’ordine è già confermato.';
+ if(review)return 'GENKS verificherà l’incasso e la disponibilità prima di confermare. Controlla l’email e non ripetere il pagamento.';
+ if(paid)return 'Pagamento ricevuto: le sessioni e i servizi pagati con carta sono confermati. Quello che resta si paga a fine lavoro.';
+ if(awaitingCard)return 'Il pagamento con carta è in verifica. Non ripetere il pagamento: l’ordine si conferma appena l’incasso è verificato.';
  return studioAppointmentPaymentNotice;
 }

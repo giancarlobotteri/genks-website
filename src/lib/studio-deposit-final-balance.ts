@@ -1,7 +1,7 @@
 import type { OrderPart, OrderQuote } from './service-order-v8.ts';
 
 export const studioAppointmentPaymentPolicy = 'studio-appointment-fixed20-v1';
-export const studioAppointmentPaymentNotice = 'Per ogni sessione di registrazione prenotata, anche inclusa in un pacchetto, l’acconto è di 20,00 €. Il minimo per prenotare è 20,00 €. Va versato entro metà del tempo tra richiesta e inizio della sessione. Senza acconto si libera solo l’orario e la quota studio non resta da pagare. Gli altri servizi restano confermati e si pagano a fine lavoro.';
+export const studioAppointmentPaymentNotice = 'Per ogni sessione in studio prenotata, anche inclusa in un pacchetto, servono 20 € di acconto (minimo per prenotare: 20,00 €), da versare entro metà del tempo tra richiesta e inizio della sessione. Senza acconto si libera solo l’orario e la quota studio non resta da pagare. Gli altri servizi (beat, mix, master, extra) con carta si pagano per intero subito; in contanti si pagano a fine lavoro.';
 
 export function withStudioDepositAndFinalBalance<T extends OrderQuote>(quote: T): T {
   const parts: OrderPart[] = quote.parts.map(part => {
@@ -11,6 +11,10 @@ export function withStudioDepositAndFinalBalance<T extends OrderQuote>(quote: T)
     const deposit = 2000 * scheduled;
     const total = Math.max(part.total, deposit);
     const adjustment = total - part.total;
+    // Studio: 20 € per sessione. Altri servizi: con carta subito per intero, in contanti a fine lavoro.
+    const studioPortion = scheduled ? Math.min(total, part.studioAmount + adjustment) : 0;
+    const otherServices = Math.max(0, total - studioPortion);
+    const dueNow = part.selection.payment === 'card' ? Math.min(total, deposit + otherServices) : deposit;
     return {
       ...part,
       total,
@@ -18,11 +22,11 @@ export function withStudioDepositAndFinalBalance<T extends OrderQuote>(quote: T)
       studioAmount: part.studioAmount + adjustment,
       bookingAmount: part.bookingAmount === undefined ? undefined : part.bookingAmount + adjustment,
       saving: Math.max(0, part.listTotal - total),
-      deposit,
-      dueNow: deposit,
-      balance: total - deposit,
-      cardNow: part.selection.payment === 'card' ? deposit : 0,
-      cashNow: part.selection.payment === 'cash' ? deposit : 0,
+      deposit: dueNow,
+      dueNow,
+      balance: total - dueNow,
+      cardNow: part.selection.payment === 'card' ? dueNow : 0,
+      cashNow: part.selection.payment === 'cash' ? dueNow : 0,
       ...(scheduled ? { bookingDeposit: 2000 } : {}),
     };
   });
