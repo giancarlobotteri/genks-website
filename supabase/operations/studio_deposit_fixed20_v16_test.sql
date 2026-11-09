@@ -64,8 +64,8 @@ begin
  result:=public.gestionale_set_deposit(booking_id,false);
  if result->>'status' is distinct from 'cancelled' then raise exception 'Repeated release failed: %',result; end if;
 
- insert into public.bookings(service_id,name,email,starts_at,ends_at,status,price_cents,deposit_cents)
- select service_id,'GENKS QA concorrente','genks-qa-'||gen_random_uuid()||'@example.invalid',starts_at,ends_at,'confirmed',2000,2000
+ insert into public.bookings(service_id,name,email,phone,starts_at,ends_at,status,price_cents,deposit_cents)
+ select service_id,'GENKS QA concorrente','genks-qa-'||gen_random_uuid()||'@example.invalid','0000000000',starts_at,ends_at,'confirmed',2000,2000
  from public.bookings where id=booking_id returning id into competing_id;
  result:=public.gestionale_set_deposit(booking_id,true);
  if result->>'error' is distinct from 'slot_taken' then raise exception 'Expected slot_taken: %',result; end if;
