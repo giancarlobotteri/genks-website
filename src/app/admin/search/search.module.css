@@ -106,3 +106,9 @@
   .page { padding-top: 0; }
   .search button { width: 100%; }
 }
+
+.lineItems { list-style: none; margin: 9px 0 0; padding: 0; }
+.purchases .lineItems li { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; border-top: 1px solid #2c5375; padding-top: 6px; margin-top: 6px; }
+.lineItems strong { flex: 0 0 auto; font-size: .86rem; }
+.lineItems span { margin: 0; }
+.panel p a { color: #a7e1ff; text-decoration: underline; }

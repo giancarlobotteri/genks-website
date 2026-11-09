@@ -1,4 +1,6 @@
-type StudioEmail = {subject:string;heading:string;body:string;actionUrl?:string;actionLabel?:string;totalLabel?:string;compact?:boolean;receiptFooter?:boolean};
+import type { SavedOrderPart } from './saved-order-details.ts';
+
+type StudioEmail = {subject:string;heading:string;body:string;actionUrl?:string;actionLabel?:string;totalLabel?:string;compact?:boolean;receiptFooter?:boolean;purchaseDetails?:SavedOrderPart[]};
 const escape=(value:string)=>value.replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]!);
 
 /** Table layout and inline colours keep the essential design readable in mail clients. */
@@ -10,7 +12,19 @@ export function renderGenksStudioEmail(input:StudioEmail) {
     if(field&&!/^https?$/i.test(field[1]))return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 14px"><tr><td bgcolor="#10274b" style="padding:17px 20px;border:1px solid #2b5590;border-radius:12px"><span style="display:block;color:#ffffff;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase">${escape(field[1])}</span><p style="margin:8px 0 0;color:#ffffff;font-size:16px;line-height:1.65;overflow-wrap:anywhere">${escape(field[2])}</p></td></tr></table>`;
     return `<p style="margin:0 0 24px;padding-bottom:16px;border-bottom:1px solid #234774;color:#ffffff;font-size:16px;line-height:1.8;overflow-wrap:anywhere">${escape(line)}</p>`;
   }).join("");
-  return renderGenksEmailFrame(input,paragraphs);
+  const purchaseDetails = input.purchaseDetails?.length ? `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 14px">
+      <tr><td bgcolor="#10274b" style="padding:17px 20px;border:1px solid #2b5590;border-radius:12px">
+        <span style="display:block;color:#ffffff;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Acquistato / prenotato</span>
+        ${input.purchaseDetails.map(part => `
+          <p style="margin:14px 0 4px;color:#ffffff;font-size:16px"><strong>${escape(part.title)}</strong></p>
+          ${part.hours ? `<p style="margin:0 0 8px;color:#ffffff;font-size:14px">Studio · ${escape(part.hours)}</p>` : ''}
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+            ${part.items.map(item => `<tr><td style="padding:7px 8px 7px 0;border-top:1px solid #315b92;font-size:14px;color:#ffffff;overflow-wrap:anywhere">${escape(item.name)}</td><td align="right" style="padding:7px 0;border-top:1px solid #315b92;font-size:14px;color:#ffffff;white-space:nowrap">${escape(item.amount ?? '')}</td></tr>`).join('')}
+          </table>`).join('')}
+      </td></tr>
+    </table>` : '';
+  return renderGenksEmailFrame(input, paragraphs + purchaseDetails);
 }
 
 /** Only accepts reviewed Supabase template source, never customer-supplied HTML. */

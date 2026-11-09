@@ -5,6 +5,7 @@ import { bookingCalendarFile, bookingCalendarUrl, studioAddress } from "@/lib/bo
 
 import {notificationPaymentGuard} from "@/lib/notification-payment-guard";
 import { italianLabel } from "@/lib/italian";
+import { savedOrderDetails } from "@/lib/saved-order-details";
 import {serviceEmailSummary} from "@/lib/service-email-summary";
 
 type Message = Parameters<typeof sendTransactionalEmail>[0];
@@ -152,7 +153,7 @@ export async function deliverNotification(id: string) {
           ? savedQuote.parts.flatMap(part=>typeof part?.title==='string'&&part.title.trim() ? [part.title] : [])
           : [];
         const purchases=savedTitles.length ? savedTitles : [p.data.track_title || italianLabel(p.data.service) || 'Servizio GENKS'];
-        concise=serviceEmailSummary({purchases,quoteLines:savedQuote?.preventivo?.righe,initialDue:(deadlines.data??[]).reduce((n,x)=>n+Math.max(0,x.initial_cents-x.paid_cents),0),cashDeadlines:(deadlines.data??[]).filter(x=>x.method==='cash'&&x.hold_until&&x.paid_cents<x.initial_cents).map(x=>x.hold_until!),reference:p.data.reference,total:p.data.price_cents??0,paid,name:p.data.name,artistName:p.data.artist_name,email:p.data.email},owner?'owner':'customer');
+        concise=serviceEmailSummary({purchases,purchaseDetails:owner?savedOrderDetails(p.data.commerce_snapshot):undefined,quoteLines:savedQuote?.preventivo?.righe,initialDue:(deadlines.data??[]).reduce((n,x)=>n+Math.max(0,x.initial_cents-x.paid_cents),0),cashDeadlines:(deadlines.data??[]).filter(x=>x.method==='cash'&&x.hold_until&&x.paid_cents<x.initial_cents).map(x=>x.hold_until!),reference:p.data.reference,total:p.data.price_cents??0,paid,name:p.data.name,artistName:p.data.artist_name,email:p.data.email},owner?'owner':'customer');
         if(!owner){const contract=await db.from('project_contracts').select('terms_body').eq('project_id',p.data.id).limit(1).maybeSingle();if(contract.error)throw Error('Condizioni da verificare.');if(contract.data)documents=[{filename:`Condizioni-${p.data.reference}.txt`,content:contract.data.terms_body}];}
       }
     }
