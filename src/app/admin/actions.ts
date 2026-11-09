@@ -40,8 +40,9 @@ export async function updateBookingStatus(formData:FormData){
   const id=z.uuid().parse(formData.get("id"));
   const status=z.enum(["pending","approved_awaiting_payment","confirmed","completed","cancelled","rejected","no_show"]).parse(formData.get("status"));
   const db=await audit("status_change","booking",id,{status});
-  const {data:current}=await db.from("bookings").select("status,reference,starts_at,ends_at,google_calendar_event_id,hold_expires_at").eq("id",id).single();
+  const {data:current}=await db.from("bookings").select("status,reference,starts_at,ends_at,google_calendar_event_id,hold_expires_at,service_order_parts_v8(id),service_credit_bookings_v8(part_id)").eq("id",id).single();
   if(!current)throw new Error("Prenotazione non trovata.");
+  if(status==="confirmed"&&current.status!=="confirmed"&&[current.service_order_parts_v8,current.service_credit_bookings_v8].some(link=>Array.isArray(link)?link.length>0:Boolean(link)))redirect("/admin/bookings?notice=invalid_status");
   if(!canChangeServiceStatus("booking",current.status,status))redirect("/admin/bookings?notice=invalid_status");
   if(["cancelled","rejected"].includes(status)){try{await expireServiceQuotes("booking",id)}catch{redirect("/admin/bookings?notice=status_error")}}
   let eventId=current.google_calendar_event_id;

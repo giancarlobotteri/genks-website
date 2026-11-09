@@ -1,3 +1,4 @@
+import { bookingOrderReference } from "@/lib/booking-order-reference";
 import { calendarFeedAllowed } from "@/lib/calendar-feed";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { renderCalendar, type CalendarEntry } from "@/lib/ical";
@@ -10,12 +11,12 @@ export async function GET(request: Request) {
   for (const table of ["bookings", "service_projects"] as const) {
     for (let offset = 0; ; offset += 500) {
       const query = table === "bookings"
-        ? db.from(table).select("id,reference,starts_at,ends_at,updated_at").in("status", ["confirmed", "completed"])
+        ? db.from(table).select("id,reference,starts_at,ends_at,updated_at,service_order_parts_v8(service_projects(reference)),service_credit_bookings_v8(service_order_parts_v8(service_projects(reference)))").in("status", ["confirmed", "completed"])
         : db.from(table).select("id,reference,service,agreed_deadline,updated_at").in("status", ["paid", "in_progress", "review"]).not("agreed_deadline", "is", null);
       const { data, error } = await query.order("id").range(offset, offset + 499);
       if (error) return new Response("Calendario temporaneamente non disponibile", { status: 503 });
       for (const row of data ?? []) {
-        if ("starts_at" in row) entries.push({ id: `booking-${row.id}`, title: `Studio GENKS · ${row.reference}`, start: row.starts_at, end: row.ends_at, updated: row.updated_at });
+        if ("starts_at" in row) entries.push({ id: `booking-${row.id}`, title: `Studio GENKS · ${bookingOrderReference(row)??row.reference}`, start: row.starts_at, end: row.ends_at, updated: row.updated_at });
         else entries.push({ id: `project-${row.id}`, title: `Scadenza ${row.service.replaceAll("_", " & ")} GENKS · ${row.reference}`, start: row.agreed_deadline!, allDay: true, updated: row.updated_at });
       }
       if (!data || data.length < 500) break;

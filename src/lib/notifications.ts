@@ -1,4 +1,5 @@
 import "server-only";
+import { isStandaloneStudio } from "@/lib/booking-order-reference";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTransactionalEmail } from "@/lib/email";
 import { bookingCalendarFile, bookingCalendarUrl, studioAddress } from "@/lib/booking-calendar";
@@ -144,7 +145,7 @@ export async function deliverNotification(id: string) {
       if(owner||p.data.email.toLowerCase()===message.recipient.toLowerCase()){
         const movements=await db.from('payments').select('amount_cents,refunded_cents').eq('project_id',p.data.id).eq('status','succeeded');if(movements.error)throw Error('Incassi da verificare.');
         const paid=(movements.data??[]).reduce((n,m)=>n+m.amount_cents-m.refunded_cents,0);
-        const deadlines=await db.from('service_order_parts_v8').select('hold_until,paid_cents,initial_cents,method').eq('project_id',p.data.id);if(deadlines.error)throw Error('Scadenze da verificare.');
+        const deadlines=await db.from('service_order_parts_v8').select('hold_until,paid_cents,initial_cents,total_cents,method,snapshot').eq('project_id',p.data.id);if(deadlines.error)throw Error('Scadenze da verificare.');
         const savedQuote=p.data.commerce_snapshot as {
           preventivo?:{righe?:{descrizione:string;prezzo:string}[]};
           parts?:{title?:string}[];
@@ -153,7 +154,11 @@ export async function deliverNotification(id: string) {
           ? savedQuote.parts.flatMap(part=>typeof part?.title==='string'&&part.title.trim() ? [part.title] : [])
           : [];
         const purchases=savedTitles.length ? savedTitles : [p.data.track_title || italianLabel(p.data.service) || 'Servizio GENKS'];
-        concise=serviceEmailSummary({purchases,purchaseDetails:owner?savedOrderDetails(p.data.commerce_snapshot):undefined,quoteLines:savedQuote?.preventivo?.righe,initialDue:(deadlines.data??[]).reduce((n,x)=>n+Math.max(0,x.initial_cents-x.paid_cents),0),cashDeadlines:(deadlines.data??[]).filter(x=>x.method==='cash'&&x.hold_until&&x.paid_cents<x.initial_cents).map(x=>x.hold_until!),reference:p.data.reference,total:p.data.price_cents??0,paid,name:p.data.name,artistName:p.data.artist_name,email:p.data.email},owner?'owner':'customer');
+        concise=serviceEmailSummary({purchases,purchaseDetails:owner?savedOrderDetails(p.data.commerce_snapshot):undefined,quoteLines:savedQuote?.preventivo?.righe,initialDue:(deadlines.data??[]).reduce((n,x)=>n+Math.max(0,x.initial_cents-x.paid_cents),0),cashDeadlines:(deadlines.data??[]).flatMap(part=>{
+          const amount=part.initial_cents-part.paid_cents;
+          if(part.method!=='cash'||!part.hold_until||amount<=0)return [];
+          return [{until:part.hold_until,amount,deposit:isStandaloneStudio(part.snapshot)&&part.initial_cents<part.total_cents}];
+        }),reference:p.data.reference,total:p.data.price_cents??0,paid,name:p.data.name,artistName:p.data.artist_name,email:p.data.email},owner?'owner':'customer');
         if(!owner){const contract=await db.from('project_contracts').select('terms_body').eq('project_id',p.data.id).limit(1).maybeSingle();if(contract.error)throw Error('Condizioni da verificare.');if(contract.data)documents=[{filename:`Condizioni-${p.data.reference}.txt`,content:contract.data.terms_body}];}
       }
     }

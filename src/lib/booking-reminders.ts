@@ -1,4 +1,5 @@
 import "server-only";
+import { bookingOrderReference } from "@/lib/booking-order-reference";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendTransactionalEmail } from "@/lib/email";
 import { bookingCalendarFile, bookingReminderMessage } from "@/lib/booking-calendar";
@@ -10,7 +11,7 @@ export async function sendDueBookingReminders() {
   let sent = 0, failures = 0, cancelled = 0;
   for (const reminder of claimed.data ?? []) {
     // Recheck the live booking immediately before sending; never trust a stale queued email.
-    const current = await db.from("bookings").select("id,reference,name,email,starts_at,ends_at,updated_at,status")
+    const current = await db.from("bookings").select("id,reference,name,email,starts_at,ends_at,updated_at,status,service_order_parts_v8(service_projects(reference)),service_credit_bookings_v8(service_order_parts_v8(service_projects(reference)))")
       .eq("id", reminder.booking_id).maybeSingle();
     if (current.error) { failures++; await db.rpc("finish_booking_reminder", { p_id: reminder.id, p_result: "failed", p_email_id: null }); continue; }
     const booking = current.data;
@@ -21,10 +22,11 @@ export async function sendDueBookingReminders() {
       await db.rpc("finish_booking_reminder", { p_id: reminder.id, p_result: "cancelled", p_email_id: null }); cancelled++; continue;
     }
     try {
+      const displayBooking = {...booking,reference:bookingOrderReference(booking)??booking.reference};
       const result = await sendTransactionalEmail({ to: reminder.recipient,
-        ...bookingReminderMessage({ ...booking, hours_before: reminder.hours_before }),
+        ...bookingReminderMessage({ ...displayBooking, hours_before: reminder.hours_before }),
         serviceRequest: true, idempotencyKey: `booking-reminder-${reminder.id}`,
-        calendarFile: bookingCalendarFile(booking,true), calendarFilename: `GENKS-${booking.reference}.ics`,
+        calendarFile: bookingCalendarFile(displayBooking,true), calendarFilename: `GENKS-${displayBooking.reference}.ics`,
       });
       const saved = await db.rpc("finish_booking_reminder", { p_id: reminder.id, p_result: "sent", p_email_id: result.emailId });
       if (saved.error) throw new Error("Conferma dell’invio da registrare.");

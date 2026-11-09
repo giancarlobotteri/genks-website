@@ -1,3 +1,4 @@
+import { bookingOrderReference } from "@/lib/booking-order-reference";
 import Link from "next/link";
 import { AdminPagination, pageNumber } from "@/components/admin/pagination";
 import { getBusinessSales } from "@/lib/admin-sales";
@@ -32,10 +33,6 @@ const dayFormat = new Intl.DateTimeFormat("it-IT", {
 const timeFormat = new Intl.DateTimeFormat("it-IT", {
   timeZone: "Europe/Rome", timeStyle: "short",
 });
-
-function firstRelated<T>(value: T | T[] | null | undefined): T | undefined {
-  return Array.isArray(value) ? value[0] : value ?? undefined;
-}
 
 function studioSlot(start: string, end: string) {
   const first = new Date(start);
@@ -97,7 +94,7 @@ function ResultCard({ result }: { result: SearchResult }) {
           <p className={styles.amount}>
             {amount === null ? "Da concordare" : money(amount, currency)}
           </p>
-          {result.parentOrder && <p className={styles.muted}>Inclusa nell’ordine <Link href={`/admin/payments?code=${encodeURIComponent(result.parentOrder)}`}>{result.parentOrder}</Link></p>}
+          {result.parentOrder && <p className={styles.muted}>Già compresa nel totale dell’ordine</p>}
           {!result.parentOrder && paid !== undefined && total !== null && paid !== total && (
             <p className={styles.muted}>Totale ordine {money(total, currency)}</p>
           )}
@@ -139,15 +136,12 @@ export default async function AdminSearch({ searchParams }: { searchParams: Prom
       paidByReference.set(sale.reference, (paidByReference.get(sale.reference) ?? 0) + sale.amount - sale.refunded);
     }
     for (const b of bookings.data ?? []) {
-      const directPart = firstRelated(b.service_order_parts_v8);
-      const creditPart = firstRelated(firstRelated(b.service_credit_bookings_v8)?.service_order_parts_v8);
-      const parentOrder = firstRelated(directPart?.service_projects)?.reference
-        ?? firstRelated(creditPart?.service_projects)?.reference;
+      const parentOrder = bookingOrderReference(b);
       rows.push({
-        id: b.id, type: "Prenotazione studio", reference: b.reference,
+        id: b.id, type: parentOrder ? "Sessione inclusa" : "Prenotazione studio", reference: parentOrder ?? b.reference,
         customer: b.name, email: b.email, phone: b.phone,
         purchases: [{ name: "Registrazione in studio", detail: studioSlot(b.starts_at, b.ends_at) }],
-        total: b.price_cents, paid: parentOrder ? undefined : paidByReference.get(b.reference), parentOrder, target: "/admin/bookings",
+        total: b.price_cents, paid: parentOrder ? undefined : paidByReference.get(b.reference), parentOrder, target: parentOrder ? `/admin/payments?code=${encodeURIComponent(parentOrder)}` : "/admin/bookings",
       });
     }
     for (const p of projects.data ?? []) {
