@@ -1,0 +1,37 @@
+.layout { align-items:start; }
+.form, .summary { min-width:0; }
+.form header h1 { margin:.4rem 0; }
+.form header p { margin:.5rem 0 0; }
+.back { color:#a9e1ff; font-size:.83rem; }
+.scheduler { display:grid; gap:1rem; }
+.scheduler section { min-width:0; }
+.scheduler h2 { font-size:1.05rem; margin:0; }
+.scheduler .days, .scheduler .slots { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.scheduler .days button { min-width:0; min-height:53px; padding:5px 3px; display:grid; grid-template-rows:auto auto; gap:0; }
+.scheduler .days button > span { white-space:normal; line-height:1.3; }
+.scheduler .days button > small { line-height:1.25; }
+.scheduler .slots button { min-width:0; min-height:44px; padding:6px; font-variant-numeric:tabular-nums; }
+.duration { display:grid; gap:5px; }
+.duration > span { font-size:.8rem; color:#b9dfff; }
+.duration select { min-height:44px; }
+.moreDays { margin-top:8px; min-height:36px; color:#a9e1ff; text-decoration:underline; }
+.rules { color:#c4e0f7; font-size:.85rem; }
+.rules summary { cursor:pointer; }
+.payment { margin:0; }
+.payment p { font-size:.86rem; grid-column:1/-1; }
+.summary { display:grid; gap:12px; }
+.summary h2,.summary p { margin:0; }
+.costs { display:grid; gap:8px; margin:0; }
+.costs div { display:flex; justify-content:space-between; align-items:baseline; gap:10px; min-width:0; }
+.costs dt { color:#d5eaff; font-size:.9rem; overflow-wrap:anywhere; }
+.costs dd { color:#fff; font-weight:750; margin:0; flex-shrink:0; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.total { border-top:1px solid #4a799c; padding-top:10px; margin-top:4px; }
+.total dt,.total dd { font-size:1.15rem; }
+.actions { display:grid; gap:8px; margin-top:6px; }
+.actions button { width:100%; min-height:44px; }
+@media(max-width:760px){
+ .layout { padding-bottom:110px; }
+ .form { padding:14px; }
+ .summary { padding:15px; }
+ .scheduler h2 { font-size:1rem; }
+}

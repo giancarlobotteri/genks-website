@@ -70,3 +70,15 @@
 .pill{background:linear-gradient(120deg,#277bff,#2460cb);border-color:#a0dfff}
 @media(hover:hover) and (pointer:fine){.cards article:hover,.offerCard:hover{border-color:#91e0ff;box-shadow:inset 0 1px #d1f5ff3b,0 18px 44px #0872dd33}}
 @media(max-width:720px){.cards .price{font-size:22px}.heroFacts span{padding:7px 9px}.offerBottom{padding-top:14px}}
+
+.intents{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:0 20px 17px}
+.intents a{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:9px;min-height:78px;padding:12px;border:1px solid #4e81af;border-radius:15px;background:#122d4c;color:#eef8ff;text-decoration:none}
+.intents a:hover,.intents a:focus-visible{border-color:#9dd9ff;background:#184570}
+.intents .intentPrimary{border-color:#89caff;background:linear-gradient(135deg,#165cb2,#12406d)}
+.intents strong,.intents small{display:block;line-height:1.35}
+.intents strong{font-size:clamp(.9rem,1.35vw,1.12rem)}
+.intents small{margin-top:3px;font-size:.76rem;color:#d4ebff}
+.intents svg{color:#b7e5ff}
+.audioCards{grid-template-columns:repeat(3,minmax(0,1fr))}
+.startActions{display:flex;flex-wrap:wrap;gap:10px}
+@media(max-width:850px){.intents{grid-template-columns:1fr;padding:0 13px 13px}.intents a{min-height:55px}.hero:has(.intents) .heroVisual{display:none}.hero:has(.intents) .heroCopy{grid-column:1/-1;padding:18px 15px}.hero:has(.intents) .heroCopy h1{margin:8px 0}.hero:has(.intents) .heroCopy p{margin:0}.audioCards{grid-template-columns:1fr}.startActions>*{width:100%}}
