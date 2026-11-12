@@ -21,6 +21,7 @@ export function StudioScheduler({value,bundle,clock,fixedHours,minHours,maxHours
   const firstDays=days.slice(0,6);
   const visibleDays=showMoreDays||Boolean(day&&!firstDays.includes(day))?days:firstDays;
   const availableTimes=day?.allSlots.filter(time=>studioSlotAvailable(day,time,hours,value.payment,clock))??[];
+  const nextCompatibleDay=day&&!availableTimes.length?days.find(d=>d.date>day.date&&d.allSlots.some(time=>studioSlotAvailable(d,time,hours,value.payment,clock))):undefined;
   const slots=(times:string[])=>times.map(time=><button type="button" key={time} disabled={loading} aria-pressed={value.time===time} onClick={()=>onChange({time})}>{time}</button>);
   return <div className={`studio-scheduler ${styles.scheduler}`}>
    <section aria-labelledby="recording-day"><div className="studio-step-title"><span>1</span><h2 id="recording-day">Scegli il giorno</h2></div>
@@ -39,7 +40,7 @@ export function StudioScheduler({value,bundle,clock,fixedHours,minHours,maxHours
     </section>
     <section aria-labelledby="recording-time"><div className="studio-step-title"><span>3</span><h2 id="recording-time">Scegli l’ora di inizio</h2></div>
      {availableTimes.length?<><div className={`slot-grid ${styles.slots}`}>{slots(availableTimes.slice(0,6))}</div>
-      {availableTimes.length>6&&<details key={`${day.date}-${hours}`} open={availableTimes.indexOf(value.time)>5||undefined}><summary>Altri orari ({availableTimes.length-6})</summary><div className={`slot-grid ${styles.slots}`}>{slots(availableTimes.slice(6))}</div></details>}</>:<p role="status">Nessun orario per questa durata. Scegli una durata più breve o un altro giorno.</p>}
+      {availableTimes.length>6&&<details key={`${day.date}-${hours}`} open={availableTimes.indexOf(value.time)>5||undefined}><summary>Altri orari ({availableTimes.length-6})</summary><div className={`slot-grid ${styles.slots}`}>{slots(availableTimes.slice(6))}</div></details>}</>:<div role="status"><p>Non ci sono {durationLabel(hours)} consecutive libere in questa data. Il venerdì e il sabato puoi proseguire oltre mezzanotte quando lo studio è libero.</p>{nextCompatibleDay&&<button type="button" className={styles.moreDays} onClick={()=>onChange({date:nextCompatibleDay.date,time:''})}>Primo giorno con {durationLabel(hours)} libere: {new Intl.DateTimeFormat('it-IT',{weekday:'short',day:'numeric',month:'short'}).format(new Date(nextCompatibleDay.date+'T12:00:00Z'))} →</button>}</div>}
      {valid&&<p className="studio-selection" role="status">{recordingAppointmentLabel(value.date,value.time,hours)}</p>}
     </section>
    </>}
