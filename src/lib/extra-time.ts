@@ -8,6 +8,8 @@ export function recordingSessionCents(day: string, time: string, hours: number, 
   const start=fromRomeWallTime(day,time);
   const next=new Date(`${day}T12:00:00Z`); next.setUTCDate(next.getUTCDate()+1);
   const midnight=fromRomeWallTime(next.toISOString().slice(0,10),"00:00");
-  const nightMinutes=Math.max(0,(start.getTime()+hours*3600000-midnight.getTime())/60000);
+  const weekday=new Date(`${day}T12:00:00Z`).getUTCDay();
+  const startsOvernight=(weekday===6||weekday===0)&&time<'06:00';
+  const nightMinutes=startsOvernight?hours*60:Math.max(0,(start.getTime()+hours*3600000-midnight.getTime())/60000);
   return Math.max(50,Math.round(hourly*hours)+Math.round(nightMinutes*1000/60));
 }
