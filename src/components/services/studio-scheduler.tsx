@@ -32,14 +32,14 @@ export function StudioScheduler({value,bundle,clock,fixedHours,minHours,maxHours
     {loading&&<p role="status">Carico il calendario…</p>}
     {error&&<div role="alert"><p>{error}</p><button type="button" className="button button-secondary" onClick={()=>{setLoading(true);setError('');setRetry(n=>n+1);}}>Riprova</button></div>}
     <div className={`booking-days ${styles.days}`}>{visibleDays.map(d=>{
-      const available=dayHasAvailability(d,value.payment,clock);
+      const available=dayHasAvailability(d,value.payment,clock,1);
       return <button type="button" key={d.date} disabled={!available||loading} aria-pressed={value.date===d.date} onClick={()=>onChange({date:d.date,time:''})}><span>{new Intl.DateTimeFormat('it-IT',{weekday:'short',day:'numeric',month:'short'}).format(new Date(d.date+'T12:00:00Z'))}</span><small>{available?'Libero':'Non disponibile'}</small></button>;
     })}</div>
     {!showMoreDays&&visibleDays.length<days.length&&<button type="button" className={styles.moreDays} onClick={()=>setShowMoreDays(true)}>Mostra altri giorni ↓</button>}
    </section>
    {day&&<>
     <section aria-labelledby="recording-duration"><div className="studio-step-title"><span>2</span><h2 id="recording-duration">Quanto tempo ti serve?</h2></div>
-     <label className={styles.duration}><span>Durata della registrazione</span><select value={hours} onChange={event=>changeDuration(Number(event.target.value))}>{Array.from({length:maxHours*4},(_,index)=>(index+1)/4).map(option=><option key={option} value={option}>{durationLabel(option)}</option>)}</select></label>
+     <label className={styles.duration}><span>Durata della registrazione</span><select value={hours} onChange={event=>changeDuration(Number(event.target.value))}>{Array.from({length:(maxHours-1)*2+1},(_,index)=>1+index/2).map(option=><option key={option} value={option}>{durationLabel(option)}</option>)}</select></label>
     </section>
     <section aria-labelledby="recording-time"><div className="studio-step-title"><span>3</span><h2 id="recording-time">Scegli l’ora di inizio</h2></div>
      {availableTimes.length?<><div className={`slot-grid ${styles.slots}`}>{slots(availableTimes.slice(0,6))}</div>
