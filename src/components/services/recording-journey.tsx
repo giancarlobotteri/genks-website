@@ -79,8 +79,12 @@ export function RecordingJourney({ discounts, initialDate, initialTime, hours }:
       {ready && <fieldset className={`payment-choice ${styles.payment}`}><legend>Come vuoi versare l’acconto?</legend>
         <label><input type="radio" name="recording-payment" checked={selection.payment==='card'} onChange={()=>update({payment:'card'})}/>Carta o Apple Pay</label>
         <label><input type="radio" name="recording-payment" checked={selection.payment==='cash'} onChange={()=>update({payment:'cash'})}/>Contanti in studio</label>
-        {midpoint&&<p>In studio, entro {midpoint} circa. L’email riporta la scadenza esatta.</p>}
+        
       </fieldset>}
+      {ready && selection.payment==='cash' && <section className="cash-deposit-notice" aria-label="Acconto in contanti">
+        <h3>Acconto in contanti · 20 €</h3>
+        <p>Versa 20 € in studio per confermare la sessione.{midpoint&&<> Scadenza indicativa: {midpoint}. L’email riporta quella esatta.</>}</p>
+      </section>}
     </section>
     <div className={`service-side-stack ${styles.summaryStack}`}>
       <aside className={`service-v8-summary ${styles.summary}`} aria-label="Costi della sessione">
