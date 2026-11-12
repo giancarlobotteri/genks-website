@@ -93,7 +93,7 @@ export function RecordingJourney({ discounts, initialDate, initialTime, hours }:
           <dl className={styles.costs}>
             {quote.lines.map((line,index)=><div key={index}><dt>{line.name}</dt><dd>{serviceAmount(line.amount)}</dd></div>)}
             <div className={styles.total}><dt>Totale</dt><dd>{serviceAmount(quote.total)}</dd></div>
-            <div><dt>Acconto per confermare</dt><dd>{serviceAmount(quote.dueNow)}</dd></div>
+            <div><dt>{selection.payment==='cash'?'Acconto in contanti':'Da pagare online'}</dt><dd>{serviceAmount(quote.dueNow)}</dd></div>
             <div><dt>Saldo ancora da pagare</dt><dd>{serviceAmount(quote.balance)}</dd></div>
           </dl>
         </>:<p>Acconto fisso di 20,00 €. Scegli durata e orario per vedere il totale e il saldo.</p>}
