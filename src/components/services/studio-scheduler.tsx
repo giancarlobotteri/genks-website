@@ -23,7 +23,7 @@ export function StudioScheduler({value,bundle,clock,fixedHours,minHours,maxHours
   const availableTimes=day?.allSlots.filter(time=>studioSlotAvailable(day,time,hours,value.payment,clock))??[];
   const overnightDate=day&&[5,6].includes(new Date(day.date+'T12:00:00Z').getUTCDay())?shiftDay(day.date,1):null;
   const overnightDay=days.find(d=>d.date===overnightDate);
-  const hasOvernight=overnightDay?.allSlots.some(time=>time<'06:00'&&studioSlotAvailable(overnightDay,time,hours,value.payment,clock));
+  const hasOvernight=overnightDay?.allSlots.some(time=>time<'10:00'&&studioSlotAvailable(overnightDay,time,hours,value.payment,clock));
   const nextCompatibleDay=day&&!availableTimes.length?days.find(d=>d.date>day.date&&d.allSlots.some(time=>studioSlotAvailable(d,time,hours,value.payment,clock))):undefined;
   const slots=(times:string[])=>times.map(time=><button type="button" key={time} disabled={loading} aria-pressed={value.time===time} onClick={()=>onChange({time})}>{time}</button>);
   return <div className={`studio-scheduler ${styles.scheduler}`}>

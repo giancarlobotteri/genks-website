@@ -73,7 +73,7 @@ export function RecordingJourney({ discounts, initialDate, initialTime, hours }:
       <StudioScheduler value={selection} bundle={false} clock={clock} compact onChange={update} onValidityChange={setAvailable}/>
       <details className={styles.rules}><summary>Orari dello studio e supplemento notturno</summary>
         <p>Da lunedì a giovedì 19:30–00:00, venerdì dalle 19:30, sabato dalle 10:00 e domenica 10:00–00:00. Tutti gli orari sono italiani.</p>
-        <p>Nelle notti di venerdì e sabato puoi anche iniziare dopo mezzanotte, fino alle 5:30. Alle ore dopo mezzanotte si aggiungono 10 € l’ora. Il supplemento è incluso nel totale mostrato quando scegli l’orario.</p>
+        <p>Nelle notti di venerdì e sabato puoi anche iniziare dopo mezzanotte, secondo disponibilità. Alle ore dopo mezzanotte si aggiungono 10 € l’ora. Il supplemento è incluso nel totale mostrato quando scegli l’orario.</p>
         <Link href="/services/regole">Regole di prenotazione</Link>
       </details>
       {ready && <fieldset className={`payment-choice ${styles.payment}`}><legend>Come vuoi versare l’acconto?</legend>
