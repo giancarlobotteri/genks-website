@@ -82,3 +82,10 @@
 .audioCards{grid-template-columns:repeat(3,minmax(0,1fr))}
 .startActions{display:flex;flex-wrap:wrap;gap:10px}
 @media(max-width:850px){.intents{grid-template-columns:1fr;padding:0 13px 13px}.intents a{min-height:55px}.hero:has(.intents) .heroVisual{display:none}.hero:has(.intents) .heroCopy{grid-column:1/-1;padding:18px 15px}.hero:has(.intents) .heroCopy h1{margin:8px 0}.hero:has(.intents) .heroCopy p{margin:0}.audioCards{grid-template-columns:1fr}.startActions>*{width:100%}}
+
+/* Direct links to the price list and packages open their respective paths. */
+.audioPath,.productionPath{display:none}
+.audioPath:has([data-path-target]:target),.productionPath:has([data-path-target]:target){display:grid;gap:clamp(28px,5vw,52px)}
+.hero[id="percorsi"]{scroll-margin-top:145px}
+
+:global(body):has(.page:not(:has([data-path-target]:target))) :global(.utility-workspace){display:none}
