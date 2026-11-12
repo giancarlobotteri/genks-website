@@ -96,7 +96,7 @@ export function RecordingJourney({ discounts, initialDate, initialTime, hours }:
             <div><dt>{selection.payment==='cash'?'Acconto in contanti':'Da pagare online'}</dt><dd>{serviceAmount(quote.dueNow)}</dd></div>
             <div><dt>Saldo ancora da pagare</dt><dd>{serviceAmount(quote.balance)}</dd></div>
           </dl>
-        </>:<p>Acconto fisso di 20,00 €. Scegli durata e orario per vedere il totale e il saldo.</p>}
+        </>:<p>Scegli durata e orario per vedere il totale e il saldo.</p>}
         <div className={styles.actions}>
           <button type="button" className="button button-primary" disabled={busy||!ready} onClick={()=>continueBooking(true)}>Continua al riepilogo</button>
           {ready&&<button type="button" className="button button-secondary" disabled={busy} onClick={()=>continueBooking(false)}>Aggiungi al carrello</button>}
