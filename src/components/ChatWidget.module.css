@@ -96,3 +96,5 @@
 
 /* Vivid GENKS functional colors; preserve the electric surfaces. */
 .form button,.reviewActions button{background:var(--color-cta-gradient);color:var(--color-on-cta);border-color:#8acfff}.form button:hover:not(:disabled),.reviewActions button:hover{background:var(--color-cta-hover-gradient)}
+
+@media(min-width:1280px) and (min-height:700px){.panel[data-home=true][open]{inset:0;margin:auto;width:min(560px,calc(100vw - 32px));height:min(680px,calc(100dvh - 32px));max-height:none}}

@@ -271,3 +271,7 @@
  .serviceLanding .content{grid-column:2;grid-row:1}
  .serviceLanding .actions{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
 }
+
+.serviceLanding .actions{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;width:min(100%,420px);margin-inline:auto}
+.serviceLanding .actions>a{width:100%;max-width:none;box-sizing:border-box}
+@media(min-width:1000px){.serviceLanding .stage{padding-inline:6vw}}

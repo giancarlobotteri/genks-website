@@ -1,20 +1,18 @@
 "use client";
 
-import {HomeConsole} from "./home-console";
-import type {PublicDiscount} from "@/lib/public-discounts";
-import {HomeCartPreview} from "@/components/services/service-cart-rail-v8";
+import {HomeAssistantButton} from "./home-console";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ArrowDown, ArrowUpRight, Pause, Play, Wallet, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowUpRight, Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { useHomeSceneActive } from "./cinematic-home";
 import styles from "./cinematic-hero.module.css";
 
 const WooferScene = dynamic(() => import("./woofer-scene"), { ssr: false });
 
-export function CinematicHero({ serviceLanding = false, sideContent, discounts=[] }: { serviceLanding?: boolean; sideContent?: ReactNode;discounts?:PublicDiscount[] }) {
+export function CinematicHero({ serviceLanding = false, sideContent }: { serviceLanding?: boolean; sideContent?: ReactNode }) {
   const router = useRouter();
   const active = useHomeSceneActive();
   const sectionRef = useRef<HTMLElement>(null);
@@ -192,22 +190,19 @@ export function CinematicHero({ serviceLanding = false, sideContent, discounts=[
             onUnavailable={() => { setReady(false); window.dispatchEvent(new Event("genks:hero-settled")); }} /> : null}
         </div>
 
-        {serviceLanding&&<div className={styles.nextStep}><HomeCartPreview discounts={discounts}/></div>}
         {sideContent && <div className={styles.serviceDesk}>{sideContent}</div>}
         <div className={styles.content}>
           <div className={styles.actions}>
             {serviceLanding ? <>
             <Link className={styles.primary} href="/services" onClick={event => goToCatalog(event, "/services")}><span>Scegli un servizio</span><ArrowUpRight size={20} aria-hidden="true" /></Link>
-            <Link className={styles.secondary} href="/services/recording" onClick={event => goToCatalog(event, "/services/recording")}><span>Prenota lo studio</span><ArrowUpRight size={20} aria-hidden="true" /></Link>
+            <HomeAssistantButton/>
             </> : <>
             <Link className={styles.primary} href="/services" onClick={event => goToCatalog(event, "/services")}><span>Prenota un servizio<small>Registrazione, mix e master.</small></span><ArrowUpRight size={20} aria-hidden="true" /></Link>
             <a className={styles.secondary} href="#catalog" onClick={event => goToCatalog(event)}><span>Vai al catalogo<small>Ascolta i beat. Trova il tuo suono.</small></span><ArrowUpRight size={20} aria-hidden="true" /></a>
             </>}
           </div>
-          {serviceLanding && <nav className={styles.discoveryLinks} aria-label="Budget e suggerimenti"><a className={styles.discoveryShortcut} href="/services/budget" onClick={event=>goToCatalog(event,"/services/budget")}><Wallet size={20} aria-hidden="true"/><span><strong>Trova per budget</strong><small>Le proposte per la tua cifra</small></span><ArrowDown size={16} aria-hidden="true"/></a><a className={styles.discoveryShortcut} href="/services/consigli" onClick={event=>goToCatalog(event,"/services/consigli")}><Sparkles size={20} aria-hidden="true"/><span><strong>Consigli per te</strong><small>Dai tuoi acquisti precedenti</small></span><ArrowDown size={16} aria-hidden="true"/></a></nav>}
         </div>
 
-        {serviceLanding && <HomeConsole discounts={discounts}/>}
         {!serviceLanding && <div className={styles.bottomline}>
           <a className={styles.scroll} href="#catalog" onClick={event => goToCatalog(event)}><ArrowDown size={14} aria-hidden="true" /> Scopri il tuo prossimo suono</a>
           <button type="button" className={styles.motion} disabled={!ready} aria-pressed={paused} onClick={() => setPaused(value => !value)}>

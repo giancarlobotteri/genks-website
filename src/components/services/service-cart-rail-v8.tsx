@@ -62,9 +62,9 @@ export function ServiceCartRailV8({discounts=[]}:{discounts?:PublicDiscount[]}) 
  if(!visible)return null;
  const empty=status==="ready"&&!items.length;
  return <>
-  <button data-genks-cart-launcher data-home-hero={heroActive||undefined} data-summary-cart={pathname!=='/'||undefined} className={`${styles.launcher} ${heroActive?styles.homeHidden:""}`} type="button" aria-haspopup="dialog" aria-expanded={open} aria-label={`Apri carrello servizi (${items.length})`} onClick={()=>{window.dispatchEvent(new Event("genks:cart-opened"));setOpen(true);setConfirmClear(false);}}>
+  {pathname!=='/'&&<button data-genks-cart-launcher data-home-hero={heroActive||undefined} data-summary-cart={pathname!=='/'||undefined} className={`${styles.launcher} ${heroActive?styles.homeHidden:""}`} type="button" aria-haspopup="dialog" aria-expanded={open} aria-label={`Apri carrello servizi (${items.length})`} onClick={()=>{window.dispatchEvent(new Event("genks:cart-opened"));setOpen(true);setConfirmClear(false);}}>
    <ShoppingBag size={19} aria-hidden="true"/><span>Carrello</span><strong aria-live="polite">{items.length}</strong>{quote&&<span className={styles.launcherTotal}>{serviceAmount(quote.total)}</span>}
-  </button>
+  </button>}
   <Modal open={open} onClose={()=>setOpen(false)} titleId={titleId}>
    <div className={styles.panel} data-service-cart-panel>
     <div className={styles.eyebrow}><ShoppingBag size={18} aria-hidden="true"/>GENKS · CARRELLO</div>
