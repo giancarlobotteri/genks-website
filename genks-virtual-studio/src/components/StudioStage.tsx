@@ -95,6 +95,7 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality === "high" ? 1.75 : 1.25));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
+    if (window.location.search.includes("debug")) (window as unknown as { __vsInfo: unknown }).__vsInfo = renderer.info;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     const rig = buildStudio(renderer, quality);
     const camera = new THREE.PerspectiveCamera(42, 1, 0.03, 40);
@@ -103,7 +104,7 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
       // 8-bit target: cannot hold NaN/overflow values, which otherwise spread through the bloom blur and blank the frame
       composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.UnsignedByteType, samples: 4 }));
       composer.addPass(new RenderPass(rig.scene, camera));
-      composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.6, 0.72));
+      composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.6, 0.82));
       composer.addPass(new OutputPass());
     }
 

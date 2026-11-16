@@ -85,14 +85,15 @@ Per passare alla produzione si sostituiscono le implementazioni locali in `src/a
 ## Scelte tecniche
 
 - **Vite + React + TypeScript**: progetto nuovo, senza backend obbligatorio.
-- **Three.js senza React Three Fiber**: la scena è un unico modulo imperativo, una dipendenza in meno. Tutto il 3D è generato da primitive, senza modelli esterni.
+- **Three.js senza React Three Fiber**: la scena è un unico modulo imperativo, una dipendenza in meno. Modelli, materiali fisici e mappa di riflessione sono generati dal codice, senza file esterni.
+- **Due livelli di qualità**: alta (ombre morbide, luci d'area, bagliore) su computer capaci; ridotta su telefoni e dispositivi deboli. Si può forzare con `?quality=high` o `?quality=low`.
 - **Scroll senza GSAP**: il percorso camera è un'interpolazione propria e testata; evita una dipendenza con licenza non open source.
 - **Audio sintetizzato nel browser**: anteprime originali, nessun file da licenziare.
 
 ## Limiti noti e priorità
 
 1. Il wordmark cromato resta un'immagine raster: la sua versione vettoriale riproduce solo i contorni (vedi `docs/LOGHI.md`).
-2. Lo studio è fatto di primitive: leggibile e coerente, ma non fotorealistico. Modelli GLB originali sono il primo miglioramento visivo.
+2. Lo studio è modellato e illuminato interamente dal codice (legno, metallo spazzolato, tessuto e schiuma acustica generati; ombre morbide e bagliore in alta qualità). È dettagliato ma non fotografico: texture fotografiche e modelli scansionati restano il passo successivo.
 3. Prestazioni misurate solo in emulazione software; su telefoni reali vanno verificati fluidità e consumo. Su schermi piccoli o dispositivi deboli qualità e risoluzione si riducono da sole.
 4. I testi di licenza e le condizioni commerciali sono segnaposto: vanno sostituiti con testi approvati prima di vendere.
 5. L'area gestione non ha autenticazione: è solo dimostrativa.

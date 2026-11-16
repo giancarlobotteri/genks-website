@@ -17,7 +17,8 @@ Il marchio GENKS appartiene al committente.
 
 | Contenuto | Come è fatto | Diritti |
 | --- | --- | --- |
-| Studio 3D (microfono, mixer, monitor, rack, pannelli) | Primitive Three.js generate dal codice | Originale, nessun modello esterno |
+| Studio 3D (microfono, mixer, monitor, rack, sedia, pannelli) | Geometrie generate dal codice (`src/scene/build-studio.ts`) | Originale, nessun modello esterno |
+| Materiali (legno, metallo, tessuto, schiuma) e riflessi | Texture disegnate dal codice (`src/scene/textures.ts`) | Originali, nessuna texture o HDRI esterna |
 | Anteprime audio dei beat | Sintetizzate nel browser (`src/lib/synth.ts`) | Originali, nessun campione o brano di terzi |
 | Suoni del sequencer | Sintetizzati nel browser | Originali |
 | Copertine dei beat | SVG generati dal codice | Originali |
