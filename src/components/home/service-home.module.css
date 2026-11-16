@@ -84,3 +84,8 @@
  .home:has(.customerPaths) section:global(#home) [class*="cinematic-hero_visual"]{height:100%}
  .customerPaths:global(#percorsi) h2{margin-bottom:6px;font-size:1.55rem}
 }
+
+/* Keep opening actions above the animated visual and its effects. */
+.customerPaths:global(#percorsi){z-index:10;isolation:isolate}
+.customerPaths:global(#percorsi) .pathGrid>*{animation:none;opacity:1;visibility:visible}
+.home:has(.customerPaths) section:global(#home){z-index:0}
