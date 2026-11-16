@@ -57,3 +57,23 @@
 .pathGrid>:nth-child(n+4){grid-column:span 3}
 @media(max-width:850px){.pathGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.pathGrid>*,.pathGrid>:nth-child(n+4){grid-column:auto}.pathGrid>:nth-child(3){grid-column:1/-1}}
 @media(max-width:540px){.pathGrid{grid-template-columns:minmax(0,1fr)}.pathGrid>:nth-child(3){grid-column:auto}}
+
+/* Keep the service choices within the opening screen. */
+.home:has(.customerPaths){position:relative}
+.home:has(.customerPaths) section#home{min-height:100svh}
+.home section#home>div{min-height:100svh;padding-right:48%}
+.customerPaths#percorsi{position:absolute;top:clamp(135px,30vh,280px);right:var(--gutter);width:min(45%,620px);margin:0}
+#percorsi .pathGrid{gap:8px;margin-top:10px}
+#percorsi .pathGrid>*{min-height:58px;padding:9px 12px}
+@media(max-width:850px){
+ .home section#home,.home section#home>div{min-height:0}
+ .home section#home>div{padding:128px 16px 0}
+ .home section#home [data-hero-model-frame]{height:clamp(76px,16svh,140px)}
+ .home section#home [class*="cinematic-hero_visual"]{height:270px}
+ .customerPaths#percorsi{position:relative;inset:auto;width:calc(100% - 2 * var(--gutter));margin:0 auto 36px}
+ #percorsi .pathGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #percorsi .pathGrid>*{grid-column:auto}
+ #percorsi .pathGrid>:last-child{grid-column:1/-1}
+ #percorsi .pathGrid strong{font-size:.92rem}
+ #percorsi .pathGrid small{font-size:.74rem}
+}
