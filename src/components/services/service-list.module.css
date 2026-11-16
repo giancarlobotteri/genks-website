@@ -89,3 +89,5 @@
 .hero[id="percorsi"]{scroll-margin-top:145px}
 
 :global(body):has(.page:not(:has([data-path-target]:target))) :global(.utility-workspace){display:none}
+
+@media(max-width:850px){.audioPath,.audioCards,.audioCards article,.audioPath>*,.audioPath .tableWrap{min-width:0}.audioPath:has([data-path-target]:target){grid-template-columns:minmax(0,1fr)}.cards.audioCards{grid-template-columns:minmax(0,1fr)}}

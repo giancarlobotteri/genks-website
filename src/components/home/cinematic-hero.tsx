@@ -1,6 +1,5 @@
 "use client";
 
-import {HomeAssistantButton} from "./home-console";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -193,10 +192,7 @@ export function CinematicHero({ serviceLanding = false, sideContent }: { service
         {sideContent && <div className={styles.serviceDesk}>{sideContent}</div>}
         <div className={styles.content}>
           <div className={styles.actions}>
-            {serviceLanding ? <>
-            <Link className={styles.primary} href="/services" onClick={event => goToCatalog(event, "/services")}><span>Scegli un servizio</span><ArrowUpRight size={20} aria-hidden="true" /></Link>
-            <HomeAssistantButton/>
-            </> : <>
+            {!serviceLanding && <>
             <Link className={styles.primary} href="/services" onClick={event => goToCatalog(event, "/services")}><span>Prenota un servizio<small>Registrazione, mix e master.</small></span><ArrowUpRight size={20} aria-hidden="true" /></Link>
             <a className={styles.secondary} href="#catalog" onClick={event => goToCatalog(event)}><span>Vai al catalogo<small>Ascolta i beat. Trova il tuo suono.</small></span><ArrowUpRight size={20} aria-hidden="true" /></a>
             </>}

@@ -66,7 +66,7 @@ export function RecordingJourney({ discounts, initialDate, initialTime, hours }:
     {ready && <LiveOrderSummary total={quote?.total} dueNow={quote?.dueNow} balance={quote?.balance} lines={quote?.lines}/>}
     <section className={`premium-form ${styles.form}`}>
       <header className="service-form-heading">
-        <Link className={styles.back} href="/services">← Tutti i percorsi</Link>
+        <Link className={styles.back} href="/#percorsi">← Tutti i percorsi</Link>
         <h1>Prenota lo studio</h1>
         <p>Scegli giorno, durata e orario. Poi controlla il prezzo della tua sessione.</p>
       </header>

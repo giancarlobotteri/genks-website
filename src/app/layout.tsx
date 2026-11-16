@@ -12,7 +12,6 @@ import { CartRail } from "@/components/commerce/cart-rail";
 import { Footer } from "@/components/layout/footer";
 import { PersistentPlayer } from "@/components/player/persistent-player";
 import { SiteAtmosphere } from "@/components/ui/site-atmosphere";
-import { MotionObserver } from "@/components/ui/motion-observer";
 import { AssetGuard } from "@/components/ui/asset-guard";
 import { PlayerProvider } from "@/features/player/player-provider";
 import { LicenseProvider } from "@/features/licenses/license-provider";
@@ -82,7 +81,6 @@ export default async function RootLayout({
               <UtilityDock discounts={discounts} assistantEnabled={assistantEnabled}>{CART_ENABLED && <CartRail discounts={discounts} />}<ChatWidget enabled={assistantEnabled}/></UtilityDock>
               <RetiredFunnelCleanup /><Footer />
               {BEATS_ENABLED && <PersistentPlayer />}
-              <MotionObserver />
               <AssetGuard />
             </CartProvider>
           </LicenseProvider>

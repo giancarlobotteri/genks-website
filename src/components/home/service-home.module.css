@@ -28,3 +28,25 @@
 .faq summary{color:#effaff}
 .closing{border:1px solid #509fce;border-radius:26px;padding:clamp(24px,4vw,52px);margin-bottom:60px;background:radial-gradient(ellipse at right,#1c70c83b,transparent 65%),linear-gradient(130deg,#103265,#081a35)}
 @media(max-width:720px){.faq details{padding:16px}.closing{margin-bottom:90px;border-radius:20px}}
+
+.customerPaths{width:min(calc(100% - 2 * var(--gutter)),var(--content-width));margin:0 auto var(--space-section);scroll-margin-top:140px;color:var(--color-text)}
+.pathGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:16px;margin-top:20px}
+.pathGrid>a,.pathGrid>button{display:grid;align-content:center;gap:6px;min-height:88px;padding:16px;border:1px solid var(--color-control-border);border-radius:var(--radius);background:var(--color-surface);color:var(--color-text)}
+.pathGrid>button{display:flex;align-items:center;text-align:left}.pathGrid small{color:var(--color-text-secondary)}.customerPaths :is(a,button):focus-visible{outline:2px solid var(--color-focus);outline-offset:3px}.customerPaths p a{text-decoration:underline}
+/* GENKS design tokens, with static fallbacks for browsers without OKLCH mixing. */
+.customerPaths h2{font-size:clamp(1.8rem,4vw,3rem);line-height:1.12;text-wrap:balance;margin-block:0 16px}
+.customerPaths p,.customerPaths ol{max-width:65ch;color:var(--color-text-secondary)}
+.pathGrid>a,.pathGrid>button{background:var(--color-surface);background:linear-gradient(145deg,color-mix(in oklch,var(--color-surface) 82%,var(--blue-light)),var(--color-bg));touch-action:manipulation}
+.pathGrid strong{font-size:1.125rem}
+.pathGrid :is(a,button):active{outline:2px solid var(--color-focus);outline-offset:2px}
+@media(hover:hover) and (pointer:fine){.pathGrid :is(a,button):hover{border-color:var(--color-focus);background:var(--surface-raised)}}
+
+@media(prefers-reduced-motion:no-preference){
+ @supports(animation-timeline:view()){
+  .pathGrid>*{animation:genks-path-reveal linear both;animation-timeline:view();animation-range:entry 0% entry 55%}
+  .pathGrid>:nth-child(2n){animation-range:entry 0% entry 63%}
+  .pathGrid>:nth-child(3n){animation-range:entry 0% entry 69%}
+  .pathGrid>*:focus-visible{animation:none}
+ }
+}
+@keyframes genks-path-reveal{from{opacity:.88}to{opacity:1}}

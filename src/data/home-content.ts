@@ -1,4 +1,4 @@
-export type AudioComparison = { id: string; title: string; artist: string; genre: string; before: string; after: string };
+export type AudioComparison = { id: string; title: string; artist: string; genre: string; before: string; after: string; photo?: string; credits?: string };
 export type ArtistReview = { id: string; artist: string; photo: string; quote: string; songUrl: string };
 // Solo materiali reali con autorizzazione alla pubblicazione. File in public/ o Storage Supabase.
 export const audioComparisons: AudioComparison[] = [];

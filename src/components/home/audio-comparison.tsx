@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useRef, useState } from "react";
 import type { AudioComparison as Comparison } from "@/data/home-content";
 import styles from "./service-home.module.css";
@@ -23,6 +24,8 @@ export function AudioComparison({ item }: { item: Comparison }) {
   player.load();
  }
  return <article className={styles.proofCard}>
+  {item.photo && <Image src={item.photo} alt="" width={480} height={320}/>}
+  {item.credits && <p>Crediti: {item.credits}</p>}
   <div role="group" aria-label={`Confronto ${item.title}`} className={styles.switcher}>{(["before", "after"] as const).map(value => <button type="button" key={value} aria-pressed={version === value} onClick={() => switchVersion(value)}>{value === "before" ? "Prima" : "Dopo"}</button>)}</div>
   <audio ref={audio} src={item.before} controls preload="none" aria-label={`${item.title} — ${version === "before" ? "Prima" : "Dopo"}`} onError={() => setError(true)} />
   {error && <p role="status">Audio non disponibile. Riprova tra poco.</p>}
