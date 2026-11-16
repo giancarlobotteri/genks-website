@@ -18,7 +18,7 @@ export function GenksSymbol({ size = 32, title, className }: { size?: number; ti
 export function GenksWordmark({ className, alt = "GENKS" }: { className?: string; alt?: string }) {
   return (
     <svg className={className} viewBox="0 0 1320 1327" role="img" aria-label={alt} preserveAspectRatio="xMidYMid meet">
-      <image href="/brand/genks-wordmark.webp" width="1320" height="1327" />
+      <image href={`${import.meta.env.BASE_URL}brand/genks-wordmark.webp`} width="1320" height="1327" />
     </svg>
   );
 }

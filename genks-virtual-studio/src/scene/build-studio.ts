@@ -33,7 +33,7 @@ function symbolTexture() {
   tex.anisotropy = 8;
   const img = new Image();
   img.onload = () => { canvas.getContext("2d")!.drawImage(img, 0, 0, 512, 512); tex.needsUpdate = true; };
-  img.src = "/brand/genks-symbol.svg";
+  img.src = `${import.meta.env.BASE_URL}brand/genks-symbol.svg`;
   return tex;
 }
 
