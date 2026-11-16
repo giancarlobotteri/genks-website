@@ -77,3 +77,10 @@
  :global(#percorsi) .pathGrid strong{font-size:.92rem}
  :global(#percorsi) .pathGrid small{font-size:.74rem}
 }
+
+@media(max-width:850px){
+ .home:has(.customerPaths) section:global(#home){height:clamp(270px,48svh,420px);min-height:0;overflow:clip}
+ .home:has(.customerPaths) section:global(#home)>div{height:100%;min-height:0;padding:112px 16px 0}
+ .home:has(.customerPaths) section:global(#home) [class*="cinematic-hero_visual"]{height:100%}
+ .customerPaths:global(#percorsi) h2{margin-bottom:6px;font-size:1.55rem}
+}
