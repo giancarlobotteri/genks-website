@@ -24,12 +24,5 @@ export async function ServiceHome() {
         <HomeAssistantButton/>
       </div>
     </section>
-    <section className={styles.customerPaths} aria-labelledby="home-how">
-      <h2 id="home-how">Come funziona</h2>
-      <ol><li>Configura il servizio o scegli l’orario in studio.</li><li>Controlla il riepilogo e scegli come pagare.</li><li>Invia i file se richiesti. Per mix e master li prepari già durante la configurazione.</li></ol>
-      <p>Prima versione mix o master entro 7 giorni lavorativi da pagamento previsto, file completi e avvio consentito. Beat su misura entro 10 giorni lavorativi da avvio consentito e materiali completi.</p>
-      <p><Link href="/legal/refunds">Garanzia del 30% sulla quota mix o master</Link></p>
-      <p><Link href="/lavori">Lavori</Link> · <Link href="/chi-sono">Chi sono</Link> · <Link href="/guida">Guida all’acquisto</Link></p>
-    </section>
   </div>;
 }
