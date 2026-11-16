@@ -12,5 +12,6 @@ export default tseslint.config(
     plugins: { "react-hooks": reactHooks },
     rules: { ...reactHooks.configs["recommended-latest"].rules },
   },
-  { files: ["scripts/**/*.mjs"], languageOptions: { globals: globals.node } },
+  // scripts carry a blanket disable so the parent repository's linter skips them too
+  { files: ["scripts/**/*.cjs"], languageOptions: { globals: globals.node }, linterOptions: { reportUnusedDisableDirectives: "off" } },
 );

@@ -16,5 +16,9 @@ export function GenksSymbol({ size = 32, title, className }: { size?: number; ti
  * the traced SVG silhouette cannot reproduce the photographic chrome, see docs/LOGHI.md.
  */
 export function GenksWordmark({ className, alt = "GENKS" }: { className?: string; alt?: string }) {
-  return <img className={className} src="/brand/genks-wordmark.webp" width={1320} height={1327} alt={alt} decoding="async" />;
+  return (
+    <svg className={className} viewBox="0 0 1320 1327" role="img" aria-label={alt} preserveAspectRatio="xMidYMid meet">
+      <image href="/brand/genks-wordmark.webp" width="1320" height="1327" />
+    </svg>
+  );
 }

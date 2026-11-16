@@ -110,7 +110,8 @@
   .chapter p:not(.kicker) { font-size: 0.94rem; margin-bottom: 12px; }
   .rail { right: 8px; gap: 22px; }
   .railDot span { display: none; }
-  .hotLabel { font-size: 0.85rem; padding: 8px 12px; }
+  .hotspot { flex-direction: column; align-items: flex-start; gap: 0; }
+  .hotLabel { font-size: 0.85rem; padding: 8px 12px; margin-top: 10px; transform: translateX(-50%); }
 }
 /* Lite mode: no WebGL, readable cards in normal flow */
 .stageLite { height: auto; padding: calc(var(--nav-h) + 24px) 16px 24px; }

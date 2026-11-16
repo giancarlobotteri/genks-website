@@ -60,12 +60,12 @@ function Sequencer() {
         </button>
         <label className={s.seqBpm}>BPM <input type="range" min={70} max={160} value={bpm} onChange={e => setBpm(Number(e.target.value))} /> <output>{bpm}</output></label>
       </div>
-      <div className={s.seqGrid} role="grid" aria-label="Griglia a 16 passi">
+      <div className={s.seqGrid} role="group" aria-label="Griglia a 16 passi">
         {ROWS.map((row, r) => (
-          <div key={row} role="row" className={s.seqRow}>
-            <span role="rowheader">{row}</span>
+          <div key={row} role="group" aria-label={row} className={s.seqRow}>
+            <span aria-hidden="true">{row}</span>
             {grid[r].map((on, c) => (
-              <button key={c} type="button" role="gridcell" aria-pressed={on} aria-label={`${row} passo ${c + 1}`} data-on={on || undefined} data-now={step === c || undefined} data-beat={c % 4 === 0 || undefined}
+              <button key={c} type="button" aria-pressed={on} aria-label={`${row} passo ${c + 1}`} data-on={on || undefined} data-now={step === c || undefined} data-beat={c % 4 === 0 || undefined}
                 onClick={() => setGrid(g => g.map((rr, ri) => (ri === r ? rr.map((v, ci) => (ci === c ? !v : v)) : rr)))} />
             ))}
           </div>

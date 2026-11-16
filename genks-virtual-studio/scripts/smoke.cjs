@@ -1,3 +1,4 @@
+/* eslint-disable */
 /* End-to-end smoke test of the acceptance criteria (brief §10).
  * Usage: start the app (npm run preview) then: node scripts/smoke.cjs [url] [screenshotDir]
  * Requires Playwright with Chromium (not a project dependency: `npm i -D playwright && npx playwright install chromium`).
