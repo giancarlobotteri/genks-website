@@ -1,0 +1,52 @@
+/* GENKS Virtual Studio — design tokens (palette from the brief) */
+:root {
+  --bg: #060B17;
+  --bg-2: #0a1224;
+  --surface: #0d1630;
+  --surface-2: #122042;
+  --blue: #4C83FF;
+  --blue-light: #9CBFFF;
+  --silver: #B7C5DE;
+  --text: #EEF3FF;
+  --muted: #A9B8D6;
+  --line: rgba(156, 191, 255, 0.2);
+  --line-strong: rgba(156, 191, 255, 0.42);
+  --danger: #ffb4c2;
+  --ok: #9ff0c8;
+  --radius: 14px;
+  --radius-lg: 22px;
+  --font-head: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, sans-serif;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --fast: 160ms;
+  --mid: 320ms;
+  --nav-h: 64px;
+  --player-h: 0px;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scrollbar-gutter: stable; -webkit-text-size-adjust: 100%; }
+html[data-vs-locked] { overflow: hidden; }
+html[data-vs-intro="on"] { overflow: hidden; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 16px/1.55 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+body:has(aside[aria-label="Player anteprime"]) { --player-h: 76px; }
+h1, h2, h3, h4 { font-family: var(--font-head); font-weight: 700; line-height: 1.12; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+a { color: var(--blue-light); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--blue-light); outline-offset: 3px; }
+img, svg, canvas { display: block; max-width: 100%; }
+::selection { background: var(--blue); color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}
