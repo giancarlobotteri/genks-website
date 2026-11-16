@@ -193,6 +193,27 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   ok("admin demo: modifica al beat visibile nel catalogo senza toccare il codice", await page.getByRole("heading", { name: "Notte Cobalto MOD" }).isVisible());
   await ctx.close();
 
+  /* ---------- 3D scene actually visible in both quality levels ---------- */
+  for (const q of ["high", "low"]) {
+    ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    page = await ctx.newPage();
+    await page.addInitScript(() => sessionStorage.setItem("genks:vs:intro", "1"));
+    await page.goto(url + "?quality=" + q);
+    await page.waitForTimeout(5000);
+    // count bright pixels of the WebGL canvas only (UI overlays excluded)
+    const lit = await page.evaluate(() => new Promise(res => requestAnimationFrame(() => {
+      const src = document.querySelector("#studio canvas");
+      const c = document.createElement("canvas"); c.width = 160; c.height = 100;
+      const g = c.getContext("2d"); g.drawImage(src, 0, 0, 160, 100);
+      const d = g.getImageData(0, 0, 160, 100).data; let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] > 120) n++;
+      res(n / (d.length / 4));
+    })));
+    ok(`scena 3D visibile (qualità ${q})`, lit > 0.03, `${(lit * 100).toFixed(1)}% pixel illuminati`);
+    await snap(page, "19-scene-" + q);
+    await ctx.close();
+  }
+
   /* ---------- Mobile + reduced motion + keyboard ---------- */
   ctx = await browser.newContext({ ...devices["iPhone 13"], reducedMotion: "reduce" });
   page = await ctx.newPage();

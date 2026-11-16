@@ -31,7 +31,7 @@ npm run lint       # ESLint, zero warning ammessi
 npm test           # 17 test unitari (catalogo, carrello, pacchetti, moduli, audio, camera)
 ```
 
-Test end-to-end dei criteri di accettazione (35 controlli su desktop, mobile, tastiera e motion ridotto). Playwright non è una dipendenza del progetto; per usarlo:
+Test end-to-end dei criteri di accettazione (37 controlli su desktop, mobile, tastiera e motion ridotto). Playwright non è una dipendenza del progetto; per usarlo:
 
 ```bash
 npm i -D playwright && npx playwright install chromium
@@ -39,7 +39,7 @@ npm run preview &
 npm run smoke      # opzionale: node scripts/smoke.cjs <url> <cartella-screenshot>
 ```
 
-Ultima esecuzione: build, typecheck, lint, 17/17 test unitari e 35/35 controlli end-to-end superati.
+Ultima esecuzione: build, typecheck, lint, 17/17 test unitari e 35/37 controlli end-to-end superati.
 
 ## Percorsi funzionanti
 

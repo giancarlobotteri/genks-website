@@ -12,6 +12,9 @@ import s from "../styles/vs.module.css";
 import { prefersReducedMotion } from "./ui.tsx";
 
 export function detectQuality(): Quality {
+  // Manual override for testing: ?quality=low or ?quality=high
+  const forced = new URLSearchParams(window.location.search).get("quality");
+  if (forced === "low" || forced === "high") return forced;
   const nav = navigator as Navigator & { deviceMemory?: number };
   const small = window.matchMedia("(max-width: 820px)").matches;
   const weak = (nav.hardwareConcurrency ?? 8) <= 4 || (nav.deviceMemory ?? 8) <= 4;
@@ -97,7 +100,8 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
     const camera = new THREE.PerspectiveCamera(42, 1, 0.03, 40);
     let composer: EffectComposer | null = null;
     if (quality === "high") {
-      composer = new EffectComposer(renderer);
+      // 8-bit target: cannot hold NaN/overflow values, which otherwise spread through the bloom blur and blank the frame
+      composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.UnsignedByteType, samples: 4 }));
       composer.addPass(new RenderPass(rig.scene, camera));
       composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.6, 0.72));
       composer.addPass(new OutputPass());
@@ -151,6 +155,7 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
     const clock = new THREE.Clock();
     let raf = 0;
     let first = true;
+    let frames = 0;
 
     const frame = () => {
       raf = requestAnimationFrame(frame);
@@ -184,6 +189,17 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
       rig.tick(t, !reduced);
       if (composer) composer.render(); else renderer.render(rig.scene, camera);
       first = false;
+      // Safety net: if post-processing ever outputs a fully black frame on this GPU, drop it and render directly.
+      if (composer && ++frames === 6) {
+        const gl = renderer.getContext();
+        const px = new Uint8Array(4);
+        let lit = 0;
+        for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.3], [0.75, 0.3], [0.3, 0.75], [0.7, 0.75], [0.5, 0.15]]) {
+          gl.readPixels(Math.floor(gl.drawingBufferWidth * fx), Math.floor(gl.drawingBufferHeight * fy), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+          lit = Math.max(lit, px[0], px[1], px[2]);
+        }
+        if (lit < 3) { composer.dispose(); composer = null; }
+      }
 
       // project hotspots & info tags
       const w = canvas.clientWidth, h = canvas.clientHeight;
