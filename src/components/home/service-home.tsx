@@ -20,7 +20,7 @@ export async function ServiceHome() {
     <section id="percorsi" className={styles.customerPaths} aria-labelledby="home-paths">
       <h2 id="home-paths">Da dove vuoi partire?</h2>
       <div className={styles.pathGrid}>
-        {paths.map(path => <Link key={path.href} href={path.href}><strong>{path.title}</strong><small>{path.detail}</small></Link>)}
+        {paths.map(path => <a key={path.href} href={path.href}><strong>{path.title}</strong><small>{path.detail}</small></a>)}
         <HomeAssistantButton/>
       </div>
     </section>
