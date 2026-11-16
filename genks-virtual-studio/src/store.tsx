@@ -3,6 +3,7 @@ import { localCart, localContent } from "./adapters.ts";
 import { demoContent } from "./data/fixtures.ts";
 import { upsertCart } from "./lib/catalog.ts";
 import { renderBeatPreview } from "./lib/synth.ts";
+import { encodeWav } from "./lib/wav.ts";
 import type { Beat, CartItem, StudioContent } from "./types.ts";
 
 /* ---------------- Panels / UI ---------------- */
@@ -95,6 +96,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urls = useRef(new Map<string, string>());
   const reqId = useRef(0);
+  const unlocked = useRef(false);
   const [ps, setPs] = useState<PlayerState>({ currentId: null, playing: false, loading: false, error: null, volume: 0.7, queue: [] });
   const [prog, setProg] = useState<ProgressCtx>({ time: 0, duration: 0 });
   const contentRef = useRef(content);
@@ -121,6 +123,14 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     const id = ++reqId.current;
     window.dispatchEvent(new CustomEvent(AUDIO_CLAIM, { detail: "player" }));
     setPs(s => ({ ...s, currentId: beat.id, loading: true, error: null, queue: queue ?? (s.queue.includes(beat.id) ? s.queue : [beat.id]) }));
+    // iOS/Safari only allow play() inside the tap itself. The preview is rendered asynchronously,
+    // so the element is "unlocked" right now with a moment of silence, still within the gesture.
+    if (!unlocked.current) {
+      unlocked.current = true;
+      const a = audio();
+      a.src = URL.createObjectURL(new Blob([encodeWav([new Float32Array(800)], 8000)], { type: "audio/wav" }));
+      void a.play().catch(() => {});
+    }
     try {
       let url = urls.current.get(beat.id + beat.style + beat.bpm + beat.key);
       if (!url) {

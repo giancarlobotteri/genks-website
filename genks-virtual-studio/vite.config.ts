@@ -6,7 +6,7 @@ export default defineConfig({
   server: { host: true, port: 5173 },
   build: {
     target: "es2022",
-    chunkSizeWarningLimit: 900,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: { output: { manualChunks: id => (id.includes("node_modules/three") ? "three" : undefined) } },
   },
   test: { environment: "node", include: ["tests/**/*.test.ts"] },

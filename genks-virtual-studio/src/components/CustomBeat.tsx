@@ -55,7 +55,15 @@ function Sequencer() {
     <div className={s.seq} aria-label="Sequencer dimostrativo">
       <div className={s.seqHead}>
         <button type="button" className={s.playBtn} aria-pressed={playing} aria-label={playing ? "Ferma il sequencer" : "Avvia il sequencer"}
-          onClick={() => { if (!playing) window.dispatchEvent(new CustomEvent(AUDIO_CLAIM, { detail: "sequencer" })); setPlaying(p => !p); }}>
+          onClick={() => {
+            if (!playing) {
+              window.dispatchEvent(new CustomEvent(AUDIO_CLAIM, { detail: "sequencer" }));
+              // create/resume inside the tap so mobile browsers allow sound
+              ctxRef.current ??= new AudioContext();
+              void ctxRef.current.resume();
+            }
+            setPlaying(p => !p);
+          }}>
           {playing ? <Pause size={18} /> : <Play size={18} />}
         </button>
         <label className={s.seqBpm}>BPM <input type="range" min={70} max={160} value={bpm} onChange={e => setBpm(Number(e.target.value))} /> <output>{bpm}</output></label>

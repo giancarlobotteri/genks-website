@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLightUniformsLib.js";
+import { loadPhotoAssets } from "./photo-assets.ts";
 import { brushedTexture, dawTexture, fabricTexture, meshTexture, noiseTexture, shadowBlob, streakRoughness, woodTexture } from "./textures.ts";
 
 export type Quality = "high" | "low";
@@ -118,6 +119,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
 
   /* ---------- materials ---------- */
   const mWalnut = std({ map: tWalnut, roughnessMap: tWalnutR, roughness: 0.75, metalness: 0 });
+  const mWalnutV = std({ map: tWalnut, roughnessMap: tWalnutR, roughness: 0.75, metalness: 0 }); // vertical grain (slats, frames)
   const mFloor = std({ map: tFloor, roughnessMap: tFloorR, roughness: 0.62, metalness: 0.05 });
   const mWall = std({ color: "#0c1326", roughness: 0.95, bumpMap: tNoise, bumpScale: 0.4 });
   const mCeil = std({ color: "#070b16", roughness: 1 });
@@ -163,7 +165,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   // slat wall (centre of the back wall) with LED lines glowing between the slats
   const slats: { p: THREE.Vector3 }[] = [];
   for (let i = 0; i < 58; i++) slats.push({ p: v3(-2.85 + i * 0.1, 1.75, -3.53) });
-  instanced(rbox(0.055, 3.3, 0.05, 0.006, 1), mWalnut, scene, slats);
+  instanced(rbox(0.055, 3.3, 0.05, 0.006, 1), mWalnutV, scene, slats);
   mesh(box(5.9, 3.3, 0.02), std({ color: "#05070d", roughness: 1 }), scene, 0, 1.75, -3.575);
   const stripsH = [0.12, 3.38].map(y => mesh(box(5.8, 0.025, 0.02), mStrip, scene, 0, y, -3.545));
   const stripsV = [-2.98, 2.98].map(x => mesh(box(0.03, 3.3, 0.03), mStrip, scene, x, 1.75, -3.53));
@@ -174,7 +176,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   const frameGeo = rbox(0.96, 1.56, 0.05, 0.01, 1);
   const addPanel = (x: number, y: number, z: number, ry: number, dark: boolean) => {
     const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g);
-    mesh(frameGeo, mWalnut, g, 0, 0, 0);
+    mesh(frameGeo, mWalnutV, g, 0, 0, 0);
     mesh(panelGeo, dark ? mFabricDark : mFabric, g, 0, 0, 0.03);
   };
   [-4.3, -3.3, 3.3, 4.3].forEach((x, i) => addPanel(x, 1.75, -3.55, 0, i % 2 === 0));
@@ -356,7 +358,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   const buildRack = () => {
     const g = new THREE.Group();
     mesh(rbox(0.62, 1.5, 0.6, 0.015, 3), mPlastic, g, 0, 0.77, 0).castShadow = true;
-    for (const x of [-0.325, 0.325]) mesh(rbox(0.03, 1.52, 0.62, 0.008, 1), mWalnut, g, x, 0.77, 0);
+    for (const x of [-0.325, 0.325]) mesh(rbox(0.03, 1.52, 0.62, 0.008, 1), mWalnutV, g, x, 0.77, 0);
     instanced(cyl(0.03, 0.03, 0.03, 20), mRubber, g, [[-0.25, 0.25], [0.25, 0.25], [-0.25, -0.25], [0.25, -0.25]].map(([x, z]) => ({ p: v3(x, 0.012, z) })));
     const units: { p: THREE.Vector3 }[] = [], knobs: { p: THREE.Vector3; r: THREE.Euler }[] = [], handles: { p: THREE.Vector3 }[] = [];
     for (let u = 0; u < 8; u++) {
@@ -535,8 +537,24 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
     }
   };
 
+  /* ---------- photographic textures + scanned models (CC0), loaded progressively ---------- */
+  let alive = true;
+  loadPhotoAssets(scene, [
+    { material: mFloor, name: "parquet", repeat: [5, 4], tint: "#7d6a60", roughness: 0.85 },
+    { material: mWalnut, name: "walnut", repeat: [1, 1], tint: "#7a5a4c", normalScale: 0.6 },
+    { material: mWalnutV, name: "walnut", repeat: [1, 1], tint: "#6e5145", rotate: true, normalScale: 0.6 },
+    { material: mFabric, name: "linen", repeat: [3, 5], tint: "#33467f" },
+    { material: mFabricDark, name: "linen", repeat: [3, 5], tint: "#1b2545" },
+    { material: mRug, name: "wool", repeat: [7, 5], tint: "#2b3c74" },
+    { material: mWall, name: "plaster", repeat: [5, 2], tint: "#1a2748", normalScale: 1.4 },
+    { material: mLeather, name: "leather", repeat: [1, 1], tint: "#2b2420", normalScale: 0.8, roughness: 0.8 },
+  ], [
+    { name: "sofa_03", position: [-4.1, 0, -0.7], rotationY: Math.PI / 2, tint: "#8f97b4" },
+    { name: "potted_plant_04", position: [1.33, 0.806, -1.22], rotationY: 0.6 },
+  ], hi, () => alive, d => disposables.push(d));
+
   return {
     scene, anchors, setReveal, tick,
-    dispose() { disposables.forEach(d => d.dispose()); },
+    dispose() { alive = false; disposables.forEach(d => d.dispose()); },
   };
 }

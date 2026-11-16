@@ -92,7 +92,8 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
     }
     const quality = detectQuality();
     const reduced = prefersReducedMotion();
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality === "high" ? 1.75 : 1.25));
+    let pixelRatio = Math.min(window.devicePixelRatio, quality === "high" ? 1.75 : 1.5);
+    renderer.setPixelRatio(pixelRatio);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     if (window.location.search.includes("debug")) (window as unknown as { __vsInfo: unknown }).__vsInfo = renderer.info;
@@ -111,6 +112,7 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
     const resize = () => {
       const w = canvas.clientWidth, h = canvas.clientHeight;
       renderer.setSize(w, h, false);
+      composer?.setPixelRatio(renderer.getPixelRatio());
       composer?.setSize(w, h);
       camera.aspect = w / h;
       // Wider vertical FOV on portrait phones so the subjects stay framed.
@@ -157,11 +159,23 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
     let raf = 0;
     let first = true;
     let frames = 0;
+    let slowSum = 0, slowN = 0, drops = 0;
 
     const frame = () => {
       raf = requestAnimationFrame(frame);
       // real elapsed time (capped) so slow devices still finish the intro on schedule
       const rdt = Math.min(clock.getDelta(), 0.5);
+      // Adaptive resolution: if this device cannot hold ~25 fps, render fewer pixels instead of stuttering.
+      if (!first && visible) {
+        slowSum += rdt; slowN++;
+        if (slowN >= 50) {
+          if (slowSum / slowN > 0.04 && pixelRatio > 0.75 && drops < 4) {
+            pixelRatio = Math.max(0.75, pixelRatio - 0.25); drops++;
+            renderer.setPixelRatio(pixelRatio); resize();
+          }
+          slowSum = 0; slowN = 0;
+        }
+      }
       if (!running || (!visible && !first)) return;
       const t = clock.elapsedTime;
       const target = sectionProgress(section);

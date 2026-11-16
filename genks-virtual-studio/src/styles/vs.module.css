@@ -31,7 +31,7 @@
 .playBtn:hover { transform: scale(1.06); }
 
 /* ============ Nav ============ */
-.nav { position: fixed; inset: 0 0 auto; z-index: 40; height: var(--nav-h); display: flex; align-items: center; gap: 14px; padding: 0 max(16px, env(safe-area-inset-left)); background: linear-gradient(180deg, rgba(6, 11, 23, 0.92), rgba(6, 11, 23, 0.55)); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(156, 191, 255, 0.1); }
+.nav { position: fixed; inset: 0 0 auto; z-index: 50; height: calc(var(--nav-h) + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px) !important; display: flex; align-items: center; gap: 14px; padding: 0 max(16px, env(safe-area-inset-left)); background: linear-gradient(180deg, rgba(6, 11, 23, 0.92), rgba(6, 11, 23, 0.55)); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(156, 191, 255, 0.1); }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font: 700 1.05rem var(--font-head); letter-spacing: 0.14em; margin-right: auto; }
 .brand svg { flex: none; }
 .navLinks { display: flex; align-items: center; gap: 6px; }
@@ -48,7 +48,7 @@
 @media (max-width: 1080px) {
   .menuToggle { display: inline-grid; order: 3; }
   .cartBtn { order: 2; }
-  .navLinks { position: fixed; inset: var(--nav-h) 0 auto; flex-direction: column; align-items: stretch; padding: 14px 16px 20px; background: rgba(6, 11, 23, 0.97); border-bottom: 1px solid var(--line); transform: translateY(-8px); opacity: 0; visibility: hidden; transition: opacity var(--fast), transform var(--mid) var(--ease), visibility var(--fast); }
+  .navLinks { position: fixed; inset: calc(var(--nav-h) + env(safe-area-inset-top, 0px)) 0 auto; flex-direction: column; align-items: stretch; padding: 14px 16px 20px; max-height: calc(100dvh - var(--nav-h)); overflow-y: auto; background: #060B17; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7); border-bottom: 1px solid var(--line); transform: translateY(-8px); opacity: 0; visibility: hidden; transition: opacity var(--fast), transform var(--mid) var(--ease), visibility var(--fast); }
   .navLinks[data-open] { opacity: 1; transform: none; visibility: visible; }
   .navLinks ul { flex-direction: column; }
   .navLinks ul button, .navLinks ul a { width: 100%; min-height: 48px; font-size: 1.05rem; }
@@ -57,7 +57,7 @@
 @media (max-width: 420px) { .brand > span:last-child { display: none; } }
 
 /* ============ Intro ============ */
-.intro { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px 16px; background: radial-gradient(ellipse at 50% 45%, #0b1838 0%, #060B17 55%, #03060d 100%); transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); overflow: auto; }
+.intro { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: 18px; padding: 24px 16px; background: radial-gradient(ellipse at 50% 45%, #0b1838 0%, #060B17 55%, #03060d 100%); transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); overflow: auto; }
 .intro[data-leaving] { opacity: 0; transform: scale(1.04); pointer-events: none; }
 .introGlow { position: absolute; inset: 0; background: radial-gradient(circle at 50% 46%, rgba(76, 131, 255, 0.28), transparent 42%); animation: breathe 4s ease-in-out infinite; pointer-events: none; }
 @keyframes breathe { 50% { opacity: 0.55; } }
@@ -154,7 +154,7 @@
 .beatCard:hover, .beatCard:focus-within { transform: translateY(-3px); border-color: var(--line-strong); box-shadow: 0 18px 40px -22px rgba(76, 131, 255, 0.7); }
 .beatCoverWrap { position: relative; }
 .cover { position: relative; aspect-ratio: 1; overflow: hidden; background: #050913; }
-.cover > svg { width: 100%; height: 100%; }
+.cover > svg:first-child { width: 100%; height: 100%; }
 .coverMark { position: absolute; right: 8%; bottom: 8%; width: 14%; height: auto; aspect-ratio: 1; }
 .coverPlay { position: absolute; left: 14px; bottom: 14px; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; border: 1px solid #a9c3ff; background: rgba(76, 131, 255, 0.9); color: #fff; box-shadow: 0 6px 22px rgba(76, 131, 255, 0.6); transition: transform var(--fast) var(--ease); }
 .coverPlay:hover { transform: scale(1.07); }
@@ -404,3 +404,52 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 .adminGrid { display: grid; gap: 12px; padding: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
 .adminField { display: grid; gap: 6px; font-size: 0.85rem; color: var(--silver); }
 .adminField:has(textarea), fieldset.adminField { grid-column: 1 / -1; }
+
+/* ============ Phone refinements ============ */
+@media (max-width: 560px) {
+  /* compact horizontal beat cards: more beats per screen, big touch targets */
+  .beatGrid { gap: 12px; }
+  .beatCard { flex-direction: row; align-items: stretch; }
+  .beatCoverWrap { width: 116px; flex: none; align-self: flex-start; }
+  .coverPlay { left: 8px; bottom: 8px; width: 46px; height: 46px; }
+  .coverBadge { top: 6px; left: 6px; }
+  .beatInfo { padding: 12px; gap: 6px; min-width: 0; }
+  .beatInfo h3 { font-size: 1.05rem; }
+  .licBadges { display: none; }
+  .beatFoot { padding-top: 4px; }
+  /* sequencer: 2 × 8 steps per instrument, every pad stays tappable without side-scrolling */
+  .seq { padding: 14px; }
+  .seqGrid { overflow: visible; gap: 10px; }
+  .seqRow { min-width: 0; grid-template-columns: 46px repeat(8, 1fr); gap: 5px; }
+  .seqRow > span { grid-row: span 2; font-size: 0.66rem; }
+  .seqBpm input { width: 120px; }
+  .sectionHead h2 { font-size: 1.7rem; }
+  .store, .custom, .bundles { padding-left: 14px; padding-right: 14px; }
+  .customForm { padding: 16px; }
+  .bundleCard { padding: 18px; }
+  .tabs button { font-size: 0.84rem; }
+  .bigPrice { justify-items: start; }
+  .compare { font-size: 0.82rem; }
+  .compare th, .compare td { padding: 8px 10px; }
+  .footer { padding-top: 40px; }
+}
+/* phones held sideways: keep the scene visible behind a smaller caption */
+@media (max-height: 480px) and (orientation: landscape) {
+  .chapter { width: min(340px, 46%); padding: 12px 14px; bottom: 8px; }
+  .chapter h2 { font-size: 1.15rem; margin-bottom: 4px; }
+  .chapter p:not(.kicker) { font-size: 0.82rem; margin-bottom: 8px; }
+  .chapter .btnPrimary { min-height: 38px; font-size: 0.85rem; }
+  .rail { gap: 14px; }
+  .introLogo { width: min(44vmin, 520px); }
+  .intro { gap: 10px; padding: 12px; }
+  .sheet:not(.sheetSide) { max-height: 96vh; }
+  .player { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr); padding: 6px 10px; }
+  .playerProgress { grid-column: auto; }
+  body:has(.player) { --player-h: 70px; }
+}
+@media (hover: none) {
+  /* no hover on touch screens: never leave elements stuck in a hover state */
+  .beatCard:hover, .bundleCard:hover, .btnPrimary:hover { transform: none; }
+}
+.stageLoading { height: 100svh; display: grid; place-items: center; color: var(--muted); font: 500 0.9rem var(--font-head); letter-spacing: 0.12em; text-transform: uppercase; }
+.stageLoading p { animation: breathe 1.6s ease-in-out infinite; }

@@ -18,13 +18,28 @@ Il marchio GENKS appartiene al committente.
 | Contenuto | Come è fatto | Diritti |
 | --- | --- | --- |
 | Studio 3D (microfono, mixer, monitor, rack, sedia, pannelli) | Geometrie generate dal codice (`src/scene/build-studio.ts`) | Originale, nessun modello esterno |
-| Materiali (legno, metallo, tessuto, schiuma) e riflessi | Texture disegnate dal codice (`src/scene/textures.ts`) | Originali, nessuna texture o HDRI esterna |
+| Materiali (legno, metallo, tessuto, schiuma) e riflessi | Texture disegnate dal codice (`src/scene/textures.ts`) | Originali; usati come base e come ripiego se le texture fotografiche non si caricano |
 | Anteprime audio dei beat | Sintetizzate nel browser (`src/lib/synth.ts`) | Originali, nessun campione o brano di terzi |
 | Suoni del sequencer | Sintetizzati nel browser | Originali |
 | Copertine dei beat | SVG generati dal codice | Originali |
 | Titoli, descrizioni, prezzi, licenze, pacchetti | Dati di esempio in `src/data/fixtures.ts` | Inventati, marcati DEMO |
 
-Nessuna immagine, video, modello, font o audio è stato scaricato da terzi o generato con servizi a pagamento. Non servono attribuzioni.
+## Materiali di terzi (Poly Haven, licenza CC0)
+
+Scaricati da polyhaven.com: dominio pubblico (CC0), uso commerciale libero, attribuzione non richiesta. Ridimensionati e convertiti in WebP in `public/assets/`.
+
+| Asset | Uso nella scena |
+| --- | --- |
+| Texture `herringbone_parquet` | Pavimento |
+| Texture `black_walnut_veneer_02` | Scrivania, doghe, fianchi |
+| Texture `rough_linen` | Pannelli acustici |
+| Texture `fabric_leather_02` | Sedia, poggiapolsi, cuffie |
+| Texture `poly_wool_herringbone` | Tappeto |
+| Texture `beige_wall_001` | Pareti |
+| Modello `sofa_03` (Fran Calvente) | Divano |
+| Modello `potted_plant_04` (James Ray Cock) | Pianta sulla scrivania |
+
+Nessun asset a pagamento o generato con servizi a pagamento. Audio e font non provengono da terzi (i font sono OFL, vedi sotto).
 
 ## Dipendenze
 
