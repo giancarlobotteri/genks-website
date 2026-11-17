@@ -35,7 +35,8 @@ export function WaveBridge() {
     const ro = new ResizeObserver(resize); ro.observe(canvas);
     const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { rootMargin: "200px" }); io.observe(section);
 
-    const rr = (x: number, y: number, ww: number, hh: number, r: number) => { ctx.beginPath(); ctx.roundRect(x, y, ww, hh, r); };
+    // roundRect is missing on older iPhones (Safari < 16): fall back to a plain rectangle
+    const rr = (x: number, y: number, ww: number, hh: number, r: number) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, ww, hh, r); else ctx.rect(x, y, ww, hh); };
     ctx.imageSmoothingEnabled = false;
 
     const draw = (time: number) => {

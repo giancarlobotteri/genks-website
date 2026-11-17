@@ -70,6 +70,8 @@ export function StudioStage({ introDone, noGl, onWebglFail }: Props) {
   const hintRef = useRef<HTMLDivElement>(null);
   const live = useRef({ introDone, focus: null as null | "mic" | "mixer" | "screen" });
   const [ready, setReady] = useState(false);
+  // bumped when the phone gives the WebGL context back after a memory-pressure loss: the scene is rebuilt
+  const [glGen, setGlGen] = useState(0);
   const services = content.mix;
 
   useEffect(() => { live.current.introDone = introDone; }, [introDone]);
@@ -97,6 +99,10 @@ export function StudioStage({ introDone, noGl, onWebglFail }: Props) {
       onWebglFail();
       return;
     }
+    const onLost = (e: Event) => { e.preventDefault(); cancelAnimationFrame(raf); };
+    const onRestored = () => setGlGen(g => g + 1);
+    canvas.addEventListener("webglcontextlost", onLost);
+    canvas.addEventListener("webglcontextrestored", onRestored);
     const quality = detectQuality();
     const reduced = prefersReducedMotion();
     // Moderate pixel ratio: fill-rate is what limits 120 Hz screens, not geometry.
@@ -292,6 +298,8 @@ export function StudioStage({ introDone, noGl, onWebglFail }: Props) {
 
     return () => {
       cancelAnimationFrame(raf);
+      canvas.removeEventListener("webglcontextlost", onLost);
+      canvas.removeEventListener("webglcontextrestored", onRestored);
       window.clearTimeout(readyT);
       ro.disconnect();
       io.disconnect();
@@ -302,7 +310,7 @@ export function StudioStage({ introDone, noGl, onWebglFail }: Props) {
       renderer.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noGl]);
+  }, [noGl, glGen]);
 
   if (noGl) return <StudioFallback />;
 
