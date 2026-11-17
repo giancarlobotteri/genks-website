@@ -181,14 +181,17 @@ export function StoreScreen() {
   return (
     <div className={s.storeScreen} data-on={on || undefined} data-tab={storeTab} role="region" aria-labelledby="store-screen-title">
       <div className={s.storeScreenBar}>
-        <button type="button" className={s.btnText} data-store-back onClick={() => void goStudio(STORE_STOP)}><ArrowLeft size={16} /> Studio</button>
+        <button type="button" className={s.btnText} data-store-back onClick={() => void goStudio(STORE_STOP)} aria-label="Torna allo studio"><ArrowLeft size={16} /><span className={s.hideXxs}> Studio</span></button>
         <h2 id="store-screen-title" ref={headRef} tabIndex={-1} className={s.srOnly}>Beat Store GENKS</h2>
         <div role="tablist" aria-label="Catalogo" className={s.storeTabs} style={{ ["--tab" as string]: storeTab === "beats" ? 0 : 1 } as CSSProperties}>
           <span className={s.tabInk} aria-hidden="true" />
           <button type="button" role="tab" aria-selected={storeTab === "beats"} onClick={() => setStoreTab("beats")}>Beat</button>
           <button type="button" role="tab" aria-selected={storeTab === "bundles"} onClick={() => setStoreTab("bundles")}>Pacchetti</button>
         </div>
-        <button type="button" className={s.btnText} onClick={() => setIntro({ visit: Date.now(), full: true })} aria-label="Rivedi l’intro del Beat Store"><RotateCcw size={16} /><span className={s.hideXs}> Intro</span></button>
+        <div className={s.storeScreenEnd}>
+          <DemoBadge><span className={s.hideXs}>Catalogo&nbsp;</span>DEMO</DemoBadge>
+          <button type="button" className={s.btnText} onClick={() => setIntro({ visit: Date.now(), full: true })} aria-label="Rivedi l’intro del Beat Store"><RotateCcw size={16} /><span className={s.hideXs}> Intro</span></button>
+        </div>
       </div>
       <div className={s.storeScreenBody}>
         {storeTab === "beats" ? <BeatStore /> : (

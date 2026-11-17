@@ -44,7 +44,7 @@ export function BeatStore() {
   // Paged catalogue sized to the screen: the grid measures its own free space and shows exactly
   // as many beats as fit (no cut-off cards, no page scrolling to see a page).
   const area = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState({ cols: 3, rows: 2, compact: false });
+  const [fit, setFit] = useState({ cols: 3, rows: 2, compact: false, narrow: false });
   useEffect(() => {
     const el = area.current;
     if (!el) return;
@@ -55,7 +55,9 @@ export function BeatStore() {
       const rows = Math.max(1, Math.min(cols === 1 ? 5 : 2, Math.floor((height + gap) / (minH + gap))));
       // short cards switch to a side-by-side layout so the cover never gets squashed
       const compact = cols === 1 || (height - gap * (rows - 1)) / rows < 300;
-      setFit(f => (f.cols === cols && f.rows === rows && f.compact === compact ? f : { cols, rows, compact }));
+      // very narrow phones: page numbers become "1 / 4" so the bar never overflows
+      const narrow = width < 380;
+      setFit(f => (f.cols === cols && f.rows === rows && f.compact === compact && f.narrow === narrow ? f : { cols, rows, compact, narrow }));
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -123,7 +125,7 @@ export function BeatStore() {
         {pages > 1 && (
           <nav className={s.pager} aria-label="Pagine del catalogo">
             <button type="button" className={s.iconBtn} onClick={() => goPage(page - 1)} aria-label="Pagina precedente"><ChevronLeft size={20} /></button>
-            {pages <= 5 ? (
+            {pages <= (fit.narrow ? 3 : 5) ? (
               <ol>
                 {Array.from({ length: pages }, (_, n) => (
                   <li key={n}><button type="button" aria-current={n === page ? "page" : undefined} aria-label={`Pagina ${n + 1}`} onClick={() => goPage(n)}><span>{n + 1}</span></button></li>

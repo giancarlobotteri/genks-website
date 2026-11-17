@@ -878,3 +878,13 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 .scrollHint { left: 0; right: 0; width: max-content; max-width: calc(100vw - 32px); margin: 0 auto; transform: translateY(10px); }
 .scrollHint:not([data-state="off"]) { transform: none; }
 @media (max-width: 900px) and (orientation: portrait), (max-width: 640px) { .svcNav { left: 0; right: 0; width: max-content; margin: 0 auto; transform: none; } }
+/* phones: the screen bar already says where you are, the catalogue gets the room */
+@media (max-width: 560px), (max-height: 820px) { .storeScreenBody .storeHead { display: none; } }
+.storeScreenBar .demoBadge { flex: none; }
+.storeScreenEnd { display: flex; align-items: center; gap: 10px; }
+@media (max-width: 400px) {
+  .hideXxs { display: none; }
+  .storeScreenBar { gap: 8px; padding: 6px 12px 0; }
+  .storeTabs button { padding: 0 13px; font-size: 0.85rem; }
+  .storeScreenEnd { gap: 6px; }
+}
