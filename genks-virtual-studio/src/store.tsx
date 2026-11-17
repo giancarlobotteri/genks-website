@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { localCart, localContent } from "./adapters.ts";
 import { demoContent } from "./data/fixtures.ts";
 import { upsertCart } from "./lib/catalog.ts";
+import { bindAudio, envelopeOf, registerEnvelope } from "./lib/level.ts";
 import { renderBeatPreview } from "./lib/synth.ts";
 import { encodeWav } from "./lib/wav.ts";
 import type { Beat, CartItem, StudioContent } from "./types.ts";
@@ -116,6 +117,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       a.addEventListener("pause", () => setPs(s => ({ ...s, playing: false })));
       a.addEventListener("ended", () => setPs(s => ({ ...s, playing: false })));
       audioRef.current = a;
+      bindAudio(a);
     }
     return audioRef.current;
   }, []);
@@ -135,7 +137,9 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     try {
       let url = urls.current.get(beat.id + beat.style + beat.bpm + beat.key);
       if (!url) {
-        url = URL.createObjectURL(await renderBeatPreview(beat));
+        const blob = await renderBeatPreview(beat);
+        url = URL.createObjectURL(blob);
+        registerEnvelope(url, envelopeOf(blob));
         urls.current.set(beat.id + beat.style + beat.bpm + beat.key, url);
       }
       if (id !== reqId.current) return;

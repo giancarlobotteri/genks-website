@@ -9,11 +9,12 @@ import { Player } from "./components/Player.tsx";
 import { TopNav, type NavItem } from "./components/TopNav.tsx";
 import { DemoBadge } from "./components/ui.tsx";
 import { travelTo, travelToId } from "./lib/stepper.ts";
-import { WaveBridge } from "./components/WaveBridge.tsx";
+import { BeatBurst, enterStore } from "./components/BeatBurst.tsx";
 import { StudioProvider, useStudio } from "./store.tsx";
 import s from "./styles/vs.module.css";
 
 // The 3D engine is the heaviest part: load it in parallel so the page shell appears immediately.
+const goToStop = (id: "mic" | "daw" | "mix") => import("./components/StudioStage.tsx").then(m => m.travelToStop(id, 2200));
 const StudioStage = lazy(() => import("./components/StudioStage.tsx").then(m => ({ default: m.StudioStage })));
 
 const subscribeHash = (cb: () => void) => { window.addEventListener("hashchange", cb); return () => window.removeEventListener("hashchange", cb); };
@@ -36,12 +37,13 @@ function Studio() {
   useEffect(() => { document.documentElement.dataset.vsIntro = introDone ? "done" : "on"; }, [introDone]);
 
   const items: NavItem[] = [
-    { label: "Studio", go: () => travelTo(0) },
-    { label: "Registrazione", go: () => open({ type: "recording" }) },
-    { label: "Beat su misura", go: () => open({ type: "custom" }) },
-    { label: "Mix & Master", go: () => open({ type: "mix" }) },
-    { label: "Beat Store", go: () => travelToId("beat-store") },
-    { label: "Pacchetti", go: () => travelToId("bundle") },
+    { label: "Studio", go: () => void travelTo(0) },
+    // services: the camera first travels to the object, then the panel opens on it
+    { label: "Registrazione", go: () => void goToStop("mic").then(() => open({ type: "recording" })) },
+    { label: "Beat su misura", go: () => void goToStop("daw").then(() => open({ type: "custom" })) },
+    { label: "Mix & Master", go: () => void goToStop("mix").then(() => open({ type: "mix" })) },
+    { label: "Beat Store", go: () => void enterStore() },
+    { label: "Pacchetti", go: () => void travelToId("bundle") },
   ];
 
   return (
@@ -52,7 +54,6 @@ function Studio() {
         <Suspense fallback={<section id="studio" className={s.stageLoading} aria-busy="true"><p>Carico lo studio…</p></section>}>
           <StudioStage introDone={introDone} noGl={noGl} onWebglFail={() => setNoGl(true)} />
         </Suspense>
-        {!noGl && <WaveBridge />}
         <BeatStore />
         <Bundles />
       </main>
@@ -75,6 +76,7 @@ export default function App() {
         <a className={s.skip} href={route === "admin" ? "#admin" : "#beat-store"}>{route === "admin" ? "Vai alla gestione" : "Salta al Beat Store"}</a>
         {route === "admin" ? <main id="admin"><Admin backHref="#top" /></main> : <Studio />}
         <PanelHost />
+        <BeatBurst />
         <Player />
       </div>
     </StudioProvider>

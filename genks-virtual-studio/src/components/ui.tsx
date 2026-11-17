@@ -16,8 +16,10 @@ export const prefersReducedMotion = () =>
  * Accessible modal built on the native <dialog>: focus trap, Esc, inert page, focus return.
  * The page scroll is locked while open and restored without jumps.
  */
-export function Sheet({ open, onClose, title, kicker, children, variant = "center", footer, wide }: {
+export function Sheet({ open, onClose, title, kicker, children, variant = "center", footer, wide, stage }: {
   open: boolean; onClose: () => void; title: string; kicker?: ReactNode; children: ReactNode; variant?: "center" | "side"; footer?: ReactNode; wide?: boolean;
+  /** studio service: docked to the side, transparent backdrop, the 3D camera stays visible and keeps moving */
+  stage?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -53,7 +55,7 @@ export function Sheet({ open, onClose, title, kicker, children, variant = "cente
   return (
     <dialog
       ref={ref}
-      className={`${s.sheet} ${variant === "side" ? s.sheetSide : ""} ${wide ? s.sheetWide : ""}`}
+      className={`${s.sheet} ${variant === "side" ? s.sheetSide : ""} ${wide ? s.sheetWide : ""} ${stage ? s.sheetStage : ""}`}
       aria-labelledby={titleId}
       onCancel={e => { e.preventDefault(); onClose(); }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
@@ -66,7 +68,7 @@ export function Sheet({ open, onClose, title, kicker, children, variant = "cente
           </div>
           <button type="button" className={s.iconBtn} onClick={onClose} aria-label="Chiudi pannello"><X size={20} /></button>
         </header>
-        <div className={s.sheetBody}>{children}</div>
+        <div className={s.sheetBody} data-sheet-body>{children}</div>
         {footer && <footer className={s.sheetFoot}>{footer}</footer>}
       </div>
     </dialog>

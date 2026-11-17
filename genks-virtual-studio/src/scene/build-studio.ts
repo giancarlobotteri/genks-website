@@ -14,7 +14,7 @@ export type StudioRig = {
   /** 0..1 progressive reveal of the studio lights. */
   setReveal: (v: number) => void;
   /** Called every frame; `t` seconds, `active` = animate meters/faders. */
-  tick: (t: number, active: boolean) => void;
+  tick: (t: number, active: boolean, level?: number) => void;
   dispose: () => void;
 };
 
@@ -310,12 +310,13 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   /* ====================== STUDIO MONITORS ====================== */
   const monitors = new THREE.Group(); scene.add(monitors);
   const coneProfile = [new THREE.Vector2(0.03, -0.035), new THREE.Vector2(0.05, -0.028), new THREE.Vector2(0.075, -0.014), new THREE.Vector2(0.092, -0.002)];
+  const cones: THREE.Object3D[] = [];
   for (const side of [-1, 1]) {
     const spk = new THREE.Group(); spk.position.set(side * 1.15, 1.0625 + 0.25, -1.95); spk.rotation.y = -side * 0.3; monitors.add(spk);
     mesh(rbox(0.26, 0.02, 0.28, 0.006, 1), mRubber, spk, 0, -0.24, 0);                          // isolation pad
     const cab = mesh(rbox(0.3, 0.46, 0.32, 0.022, 4), mPlastic, spk); cab.castShadow = true;
     mesh(rbox(0.285, 0.445, 0.01, 0.018, 3), mGloss, spk, 0, 0, 0.158);                          // front baffle
-    const cone = mesh(new THREE.LatheGeometry(coneProfile, 48), mCone, spk, 0, -0.07, 0.165); cone.rotation.x = Math.PI / 2;
+    const cone = mesh(new THREE.LatheGeometry(coneProfile, 48), mCone, spk, 0, -0.07, 0.165); cone.rotation.x = Math.PI / 2; cones.push(cone);
     mesh(new THREE.TorusGeometry(0.1, 0.011, 16, 56), mRubber, spk, 0, -0.07, 0.163);            // surround
     mesh(new THREE.TorusGeometry(0.114, 0.004, 10, 56), mSatin, spk, 0, -0.07, 0.164);           // trim ring
     mesh(new THREE.CircleGeometry(0.034, 48), mSymbol, spk, 0, -0.07, 0.1335);                   // dust cap = symbol
@@ -506,25 +507,28 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
     rack: anchorAt(rack, 0, 1.6, 0.3),
   };
 
-  let reveal = 0;
+  let reveal = 0, washBase = 0, stripBase = 0.12;
   const setReveal = (v: number) => {
     reveal = THREE.MathUtils.clamp(v, 0, 1);
     const k = (a: number, b: number) => THREE.MathUtils.smoothstep(reveal, a, b);
     deskKey.intensity = 26 * k(0.2, 0.6);
     extra.forEach(e => { e.light.intensity = e.max * k(e.from, e.to); });
     cloudGlowMat.color.set("#cdd9ff").multiplyScalar(0.05 + 0.95 * k(0.25, 0.7));
-    wallWash.intensity = 9 * k(0.05, 0.45);
+    wallWash.intensity = washBase = 9 * k(0.05, 0.45);
     ambient.intensity = (hi ? 0.14 : 0.3) + (hi ? 0.4 : 0.9) * k(0, 0.8);
-    mStrip.color.copy(BLUE).multiplyScalar(0.12 + 0.88 * k(0.08, 0.5));
+    stripBase = 0.12 + 0.88 * k(0.08, 0.5);
+    mStrip.color.copy(BLUE).multiplyScalar(stripBase);
     (scene.fog as THREE.FogExp2).density = 0.15 - 0.105 * k(0, 0.7);
   };
   setReveal(0);
 
   const col = new THREE.Color();
   const OFF = new THREE.Color("#0a1430"), ON = BLUE.clone(), PEAK = BLUE_LIGHT.clone(), HOT = new THREE.Color("#ffffff");
-  const paintMeters = (t: number) => {
+  const paintMeters = (t: number, level = 0) => {
     for (let c = 0; c < meterCh.length; c++) {
-      const lv = 0.25 + Math.abs(Math.sin(t * 2.6 + c * 1.3) * Math.sin(t * 1.3 + c * 0.7)) * 0.75;
+      const idle = 0.25 + Math.abs(Math.sin(t * 2.6 + c * 1.3) * Math.sin(t * 1.3 + c * 0.7)) * 0.75;
+      // with music playing the meters follow its real loudness
+      const lv = level > 0.02 ? 0.1 + level * (0.75 + 0.25 * Math.abs(Math.sin(c * 1.7 + t * 9))) : idle;
       for (let k = 0; k < SEG; k++) {
         const on = k / SEG < lv;
         meters.setColorAt(c * SEG + k, on ? (k >= SEG - 1 ? HOT : k >= SEG - 3 ? PEAK : ON) : OFF);
@@ -534,13 +538,22 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   };
   paintMeters(0.7);
   let last = 0;
-  const tick = (t: number, active: boolean) => {
+  let lastLevel = 0;
+  const tick = (t: number, active: boolean, level = 0) => {
+    // music reactivity: speaker cones pump, LED strip and wall wash breathe with the beat
+    if (level > 0.01 || lastLevel > 0.01) {
+      const pump = 1 + level * 0.35;
+      cones.forEach(c => { c.scale.set(1, 1, pump); });
+      mStrip.color.copy(BLUE).multiplyScalar(stripBase * (1 + level * 1.4));
+      wallWash.intensity = washBase * (1 + level * 0.9);
+      lastLevel = level;
+    }
     if (!active) return;
     faders.forEach((f, i) => { f.position.z = 0.175 + Math.sin(t * 0.55 + i * 0.7) * 0.06 * (0.3 + 0.7 * reveal); });
-    if (t - last > 1 / 20) {
+    if (t - last > (level > 0.02 ? 1 / 40 : 1 / 20)) {
       last = t;
       drawDisplay(t);
-      paintMeters(t);
+      paintMeters(t, level);
       for (let i = 0; i < rackLedItems.length; i++) {
         col.copy(Math.sin(t * 2 + i * 1.7) > 0.3 ? BLUE_LIGHT : BLUE).multiplyScalar(Math.sin(t * 5 + i * 3.1) > -0.6 ? 1 : 0.15);
         rackLedsA.setColorAt(i, col); rackLedsB.setColorAt((i * 7) % rackLedItems.length, col);

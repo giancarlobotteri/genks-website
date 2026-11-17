@@ -1,5 +1,6 @@
 // Browser-only: renders an ORIGINAL short beat preview with the Web Audio API.
 // No samples, no third-party music, no network: every sound is synthesised.
+import { attachEnvelope, envelopeFrom } from "./level.ts";
 import type { Beat, BeatStyle } from "../types.ts";
 import { chordNotes, MAJOR, midiToHz, MINOR, parseKey, previewBars, progression, rng } from "./music.ts";
 import { encodeWav } from "./wav.ts";
@@ -202,5 +203,7 @@ export async function renderBeatPreview(beat: Pick<Beat, "bpm" | "key" | "style"
   // gentle fade out at the end of the preview
   const fade = Math.floor(sampleRate * 0.8);
   for (const c of chans) for (let i = 0; i < fade; i++) c[c.length - 1 - i] *= i / fade;
-  return new Blob([encodeWav(chans, sampleRate)], { type: "audio/wav" });
+  const blob = new Blob([encodeWav(chans, sampleRate)], { type: "audio/wav" });
+  attachEnvelope(blob, envelopeFrom(chans, sampleRate));
+  return blob;
 }

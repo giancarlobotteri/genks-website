@@ -11,34 +11,54 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 
 
 let anim = 0;
 let animating = false;
+let leg: { from: number; to: number; start: number; dur: number } | null = null;
+let done: (() => void) | null = null;
 const listeners = new Set<(on: boolean) => void>();
 const setAnimating = (on: boolean) => { animating = on; listeners.forEach(l => l(on)); };
 export const onTravel = (l: (on: boolean) => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
 export const isTraveling = () => animating;
+/** A custom transition (e.g. the Beat Store burst) is running: ignore scroll gestures. */
+let busy = false;
+export const setBusy = (b: boolean) => { busy = b; };
 
-/** Animated scroll to an absolute Y, with an ease that starts and ends slowly. */
-export function travelTo(y: number, duration?: number) {
+/**
+ * Scroll position of the running guided move at time `now` (rAF timestamp), or the real
+ * scroll position. The 3D loop reads this instead of window.scrollY so camera and page move
+ * on exactly the same curve in the same frame — no one-frame lag, no judder.
+ */
+export function scrollAt(now: number) {
+  if (!leg) return window.scrollY;
+  const t = Math.min(1, Math.max(0, (now - leg.start) / leg.dur));
+  return leg.from + (leg.to - leg.from) * easeInOut(t);
+}
+
+/** Animated scroll to an absolute Y, with an ease that starts and ends slowly. Resolves at the end. */
+export function travelTo(y: number, duration?: number): Promise<void> {
   const from = window.scrollY;
   const to = Math.max(0, Math.min(y, document.documentElement.scrollHeight - window.innerHeight));
   cancelAnimationFrame(anim);
-  if (prefersReducedMotion() || Math.abs(to - from) < 2) { window.scrollTo(0, to); setAnimating(false); return; }
+  done?.();
+  done = null;
+  if (prefersReducedMotion() || Math.abs(to - from) < 2) { window.scrollTo(0, to); leg = null; setAnimating(false); return Promise.resolve(); }
   const dur = duration ?? Math.min(3200, 1500 + Math.abs(to - from) / window.innerHeight * 120);
-  const start = performance.now();
+  leg = { from, to, start: performance.now(), dur };
   setAnimating(true);
-  const step = (now: number) => {
-    const t = Math.min(1, (now - start) / dur);
-    window.scrollTo(0, from + (to - from) * easeInOut(t));
-    if (t < 1) anim = requestAnimationFrame(step);
-    else setAnimating(false);
-  };
-  anim = requestAnimationFrame(step);
+  return new Promise(resolve => {
+    done = resolve;
+    const step = (now: number) => {
+      window.scrollTo(0, Math.round(scrollAt(now)));
+      if (leg && now - leg.start < leg.dur) anim = requestAnimationFrame(step);
+      else { window.scrollTo(0, to); leg = null; setAnimating(false); done = null; resolve(); }
+    };
+    anim = requestAnimationFrame(step);
+  });
 }
 
 export function travelToId(id: string, duration?: number) {
   const el = document.getElementById(id);
-  if (!el) return;
+  if (!el) return Promise.resolve();
   const margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
-  travelTo(el.getBoundingClientRect().top + window.scrollY - margin, duration);
+  return travelTo(el.getBoundingClientRect().top + window.scrollY - margin, duration);
 }
 
 const blocked = (target: EventTarget | null) => {
@@ -49,7 +69,7 @@ const blocked = (target: EventTarget | null) => {
 };
 
 /** Install the stepper. Returns a cleanup function. */
-export function installStepper(stops: Stops, durations: (from: number, to: number) => number) {
+export function installStepper(stops: Stops, durations: (from: number, to: number) => number, special?: (from: number, to: number) => boolean) {
   if (prefersReducedMotion()) return () => {};
   let lastWheel = 0;
   let touchY: number | null = null;
@@ -69,18 +89,21 @@ export function installStepper(stops: Stops, durations: (from: number, to: numbe
     if (next == null) return;
     // from the nearest stop, so a slightly-off position still uses the right duration
     const fromIdx = s.reduce((bi, v, i) => (Math.abs(v - y) < Math.abs(s[bi] - y) ? i : bi), 0);
-    travelTo(next, durations(fromIdx, s.indexOf(next)));
+    const toIdx = s.indexOf(next);
+    if (special?.(fromIdx, toIdx)) return;
+    void travelTo(next, durations(fromIdx, toIdx));
   };
 
   const onWheel = (e: WheelEvent) => {
     if (e.ctrlKey || Math.abs(e.deltaY) < Math.abs(e.deltaX) || blocked(e.target)) return;
     const dir = Math.sign(e.deltaY);
+    if (busy) { e.preventDefault(); return; }
     if (!dir || !inZone(dir)) return;
     e.preventDefault();
     const now = performance.now(), gap = now - lastWheel;
     lastWheel = now;
     // ignore the inertia tail of a trackpad swipe: a new step needs a new gesture
-    if (animating || gap < 180 || Math.abs(e.deltaY) < 4) return;
+    if (animating || busy || gap < 180 || Math.abs(e.deltaY) < 4) return;
     go(dir);
   };
   const onTouchStart = (e: TouchEvent) => { touchY = e.touches.length === 1 ? e.touches[0].clientY : null; touchUsed = false; };
@@ -90,7 +113,7 @@ export function installStepper(stops: Stops, durations: (from: number, to: numbe
     const dir = Math.sign(dy);
     if (!dir || !inZone(dir)) return;
     e.preventDefault();
-    if (!touchUsed && !animating && Math.abs(dy) > 28) { touchUsed = true; go(dir); }
+    if (!touchUsed && !animating && !busy && Math.abs(dy) > 28) { touchUsed = true; go(dir); }
   };
   const onKey = (e: KeyboardEvent) => {
     if (e.altKey || e.ctrlKey || e.metaKey || blocked(e.target)) return;
@@ -98,7 +121,7 @@ export function installStepper(stops: Stops, durations: (from: number, to: numbe
     if (!dir || !inZone(dir)) return;
     if (e.key === " " && (e.target as Element | null)?.closest("button, a")) return;
     e.preventDefault();
-    if (!animating) go(dir);
+    if (!animating && !busy) go(dir);
   };
 
   window.addEventListener("wheel", onWheel, { passive: false });

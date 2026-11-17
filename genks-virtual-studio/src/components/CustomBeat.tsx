@@ -1,6 +1,8 @@
 import { Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { formatEuro } from "../lib/catalog.ts";
+import { pulseLevel } from "../lib/level.ts";
+import { setSubShot, useShotZone } from "../lib/shots.ts";
 import { bassNote, hat, kick, snare } from "../lib/synth.ts";
 import { AUDIO_CLAIM, useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
@@ -38,7 +40,8 @@ function Sequencer({ active }: { active: boolean }) {
     const timer = window.setInterval(() => {
       while (next < ctx.currentTime + 0.12) {
         const g = gridRef.current, k = i % 16, at = next;
-        if (g[0][k]) kick(ctx, out, at);
+        if (g[0][k]) { kick(ctx, out, at); window.setTimeout(() => pulseLevel(1), Math.max(0, (at - ctx.currentTime) * 1000)); }
+        else if (g[1][k]) window.setTimeout(() => pulseLevel(0.7), Math.max(0, (at - ctx.currentTime) * 1000));
         if (g[1][k]) snare(ctx, out, at, 0.8);
         if (g[2][k]) hat(ctx, out, at, 0.7);
         if (g[3][k]) bassNote(ctx, out, at, 0.25, 55, undefined, 0.7);
@@ -60,6 +63,7 @@ function Sequencer({ active }: { active: boolean }) {
           onClick={() => {
             if (!playing) {
               window.dispatchEvent(new CustomEvent(AUDIO_CLAIM, { detail: "sequencer" }));
+              setSubShot("custom:seq");
               // create/resume inside the tap so mobile browsers allow sound
               ctxRef.current ??= new AudioContext();
               void ctxRef.current.resume();
@@ -90,12 +94,16 @@ function Sequencer({ active }: { active: boolean }) {
 export function CustomBeatPanel({ active = true }: { active?: boolean }) {
   const { content } = useStudio();
   const cfg = content.customBeat;
+  const zSeq = useShotZone<HTMLDivElement>("custom:seq");
+  const zSteps = useShotZone<HTMLDivElement>("custom:steps");
+  const zForm = useShotZone<HTMLDivElement>("custom:form");
   return (
     <div className={s.customPanel}>
       <div className={s.customVisual}>
         <div className={s.customHero} aria-hidden="true" />
         <p className={s.customLead}>Sintetizzatori, sequencer e sound design pensati per la tua voce. Prima il brief, poi un preventivo chiaro.</p>
-        <Sequencer active={active} />
+        <div {...zSeq}><Sequencer active={active} /></div>
+        <div {...zSteps} className={s.customVisual}>
         <ol className={s.steps}>{cfg.steps.map((st, i) => <li key={st.title} style={{ ["--i" as string]: i }}><span>{String(i + 1).padStart(2, "0")}</span><strong>{st.title}</strong><p>{st.text}</p></li>)}</ol>
         <dl className={s.facts}>
           <div><dt>Tempi orientativi</dt><dd>{cfg.turnaround}</dd></div>
@@ -103,10 +111,11 @@ export function CustomBeatPanel({ active = true }: { active?: boolean }) {
           <div><dt>Prezzo</dt><dd>{cfg.priceFrom != null ? `da ${formatEuro(cfg.priceFrom)}` : "su preventivo"} <DemoBadge /></dd></div>
         </dl>
         <p className={s.muted}>Diritti, licenza e condizioni vengono definiti nell’accordo scritto: qui non sono riportate condizioni contrattuali.</p>
+        </div>
       </div>
-      <div className={s.customForm}>
+      <div className={s.customForm} {...zForm}>
         <h3>Richiedi un preventivo</h3>
-        <DemoForm kind="custom-beat" submitLabel="Richiedi preventivo"
+        <DemoForm kind="custom-beat" submitLabel="Richiedi preventivo" onDone={() => setSubShot("custom:done")}
           rules={{ name: { required: true, label: "Nome" }, email: { required: true, email: true, label: "Email" }, genre: { required: true, label: "Genere" }, description: { required: true, label: "Descrizione" }, bpm: { min: 40, max: 220, label: "BPM" }, reference: { url: true, label: "Riferimento sonoro" } }}
           summary={v => `${v.genre}${v.bpm ? ` · ${v.bpm} BPM` : ""} · ${v.mood || "mood libero"} · ${v.name}`}>
           {errors => <>

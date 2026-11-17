@@ -39,7 +39,7 @@ npm run preview &
 npm run smoke      # opzionale: node scripts/smoke.cjs <url> <cartella-screenshot>
 ```
 
-Ultima esecuzione: build, typecheck, lint, 18/18 test unitari e 50/50 controlli end-to-end superati.
+Ultima esecuzione: build, typecheck, lint, 18/18 test unitari e 53/53 controlli end-to-end superati.
 
 ## Percorsi funzionanti
 
@@ -50,8 +50,10 @@ Ultima esecuzione: build, typecheck, lint, 18/18 test unitari e 50/50 controlli 
 | Microfono → registrazione | Pulsante «Registrazione voce» sul microfono o menu. Pacchetti, calendario demo, modulo. |
 | Monitor DAW → beat su misura | Pulsante «Beat su misura» sullo schermo o menu. Sequencer suonabile e modulo preventivo in un pannello. |
 | Mixer → Mix / Master / Mix & Master | I tre servizi entrano uno dopo l'altro allo scorrimento; «Scegli…» apre il pannello sul servizio giusto, «Invia il progetto» apre l'upload simulato. |
-| Display → Beat Store | «Entra nel Beat Store» (o uno scroll): l'onda si divide e porta direttamente ai beat. |
-| Beat Store | Catalogo a pagine (6 beat, 4 su telefono) con transizioni animate e swipe; ricerca, filtri, ordinamento, stato vuoto. |
+| Display → Beat Store | «Entra nel Beat Store» (o uno scroll): la telecamera si tuffa nel display, l'onda si spezza e i frammenti atterrano sulle schede dei beat. |
+| Movimento dentro i servizi | Aprendo un servizio la telecamera vola sull'oggetto (microfono, monitor, mixer); ogni passaggio ha la sua inquadratura: pacchetto, calendario, dati, schede Mix/Master, confronto, upload, invio. Pannelli laterali (PC) o in basso (telefono), la scena resta visibile e non smette mai di muoversi. |
+| Studio che reagisce alla musica | Casse, LED e misuratori seguono l'anteprima in riproduzione e il sequencer. |
+| Beat Store | Una schermata intera: la griglia si misura e mostra esattamente i beat che entrano (6 su PC, 3–5 su telefono), pagine con transizioni e swipe; ricerca, filtri sovrapposti, ordinamento, stato vuoto. |
 | Player persistente | Play su un beat: resta attivo mentre si naviga e si aprono pannelli. Mai in autoplay. |
 | Licenze, carrello, checkout DEMO | «Licenze» su un beat → carrello → ordine simulato. |
 | Esclusiva | Richiesta separata, senza prezzo e senza vendita automatica. |

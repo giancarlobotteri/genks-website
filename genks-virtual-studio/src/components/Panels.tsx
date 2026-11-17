@@ -1,6 +1,8 @@
 import { CustomBeatPanel } from "./CustomBeat.tsx";
 import { Check, Minus, ShoppingBag, Trash2 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import { getSubShot, onShot, setSubShot, useShotZone } from "../lib/shots.ts";
+import { enterStore } from "./BeatBurst.tsx";
 import { localAvailability, simulatedCheckout } from "../adapters.ts";
 import { cartLines, cartTotal, formatEuro } from "../lib/catalog.ts";
 import { useStudio, type Panel } from "../store.tsx";
@@ -27,6 +29,18 @@ function ContactFields({ errors, artist = true }: { errors: Record<string, strin
   );
 }
 
+/** Where you are inside a service: follows the camera shot, with a sliding highlight. */
+function StepRail({ steps, fallback }: { steps: { shot: string; label: string }[]; fallback: string }) {
+  const shot = useSyncExternalStore(onShot, getSubShot, () => null) ?? fallback;
+  const i = Math.max(0, steps.findIndex(x => x.shot === shot));
+  return (
+    <ol className={s.stepRail} style={{ ["--step" as string]: i, ["--steps" as string]: steps.length }} aria-label="Passaggi">
+      <span className={s.stepInk} aria-hidden="true" />
+      {steps.map((x, k) => <li key={x.shot} data-on={k === i || undefined} data-done={k < i || undefined} aria-current={k === i ? "step" : undefined}>{x.label}</li>)}
+    </ol>
+  );
+}
+
 const price = (v: number | null, prefix = "") => (v == null ? "Su richiesta" : `${prefix}${formatEuro(v)}`);
 
 /* ---------------- Recording ---------------- */
@@ -38,10 +52,14 @@ function RecordingPanel() {
   const [slot, setSlot] = useState<string>("");
   const selected = content.recording.find(p => p.id === pkg);
   const dayObj = days.find(d => d.iso === day);
+  const zPkg = useShotZone<HTMLFieldSetElement>("rec:pkg");
+  const zCal = useShotZone<HTMLFieldSetElement>("rec:cal");
+  const zContact = useShotZone<HTMLDivElement>("rec:contact");
   return (
     <div className={s.panelStack}>
+      <StepRail fallback="rec:pkg" steps={[{ shot: "rec:pkg", label: "Pacchetto" }, { shot: "rec:cal", label: "Data e ora" }, { shot: "rec:contact", label: "I tuoi dati" }, { shot: "rec:done", label: "Fatto" }]} />
       <DemoNotice>Pacchetti, prezzi e disponibilità sono dimostrativi. La richiesta non blocca uno slot reale.</DemoNotice>
-      <fieldset className={s.optionGrid}>
+      <fieldset className={s.optionGrid} {...zPkg}>
         <legend>1 · Scegli il pacchetto</legend>
         {content.recording.map(p => (
           <label key={p.id} className={s.optionCard} data-checked={pkg === p.id || undefined}>
@@ -53,7 +71,7 @@ function RecordingPanel() {
           </label>
         ))}
       </fieldset>
-      <fieldset className={s.calendar}>
+      <fieldset className={s.calendar} {...zCal}>
         <legend>2 · Data e fascia oraria <span className={s.muted}>(disponibilità dimostrativa)</span></legend>
         <div className={s.days} role="radiogroup" aria-label="Giorno">
           {days.map(d => {
@@ -81,15 +99,16 @@ function RecordingPanel() {
         rules={{ ...contactRules, date: { required: true, label: "Data desiderata" }, time: { required: true, label: "Fascia oraria" } }}
         extra={() => ({ package: selected?.name ?? "", date: day, time: slot, duration: `${selected?.hours ?? ""} h` })}
         summary={v => `${v.package} · ${v.date} ${v.time} · ${v.name}`}
+        onDone={() => setSubShot("rec:done")}
       >
-        {errors => <>
+        {errors => <div className={s.form} {...zContact}>
           <p className={s.formLegend}>3 · I tuoi dati</p>
           {(errors.date || errors.time) && <p className={s.fieldError} role="alert">Seleziona giorno e orario nel calendario qui sopra.</p>}
           <p className={s.muted}>Selezione: <strong>{selected?.name}</strong> · {day || "giorno da scegliere"} · {slot || "orario da scegliere"} · durata {selected?.hours} h</p>
           <ContactFields errors={errors} />
           <Field label="Riferimento (link a brano o demo)" name="reference" error={errors.reference}><input {...fieldProps("reference", errors)} type="url" placeholder="https://" /></Field>
           <Field label="Note" name="notes" error={errors.notes}><textarea {...fieldProps("notes", errors)} rows={3} /></Field>
-        </>}
+        </div>}
       </DemoForm>
     </div>
   );
@@ -100,12 +119,20 @@ const TAB_IDS = ["mix", "master", "mixmaster"] as const;
 
 function MixPanel({ initialTab, initialView }: { initialTab?: MixService["id"]; initialView?: "services" | "remote" }) {
   const { content } = useStudio();
-  const [tab, setTab] = useState<MixService["id"]>(initialTab ?? "mixmaster");
-  const [view, setView] = useState(initialView ?? "services");
+  const [tab, setTabState] = useState<MixService["id"]>(initialTab ?? "mixmaster");
+  const [view, setViewState] = useState(initialView ?? "services");
+  const [dir, setDir] = useState(1);
+  // every tab and every step moves the camera to a different part of the console
+  const setTab = (id: MixService["id"]) => { setDir(TAB_IDS.indexOf(id) >= TAB_IDS.indexOf(tab) ? 1 : -1); setTabState(id); setSubShot(`mix:${id}`); };
+  const setView = (v: "services" | "remote") => { setViewState(v); setSubShot(v === "remote" ? "mix:remote" : `mix:${tab}`); };
+  const zUpload = useShotZone<HTMLDivElement>("mix:upload");
+  const zContact = useShotZone<HTMLDivElement>("mix:contact");
+  const zRemote = useShotZone<HTMLDivElement>("mix:remote");
+  const zCompare = useShotZone<HTMLDivElement>("mix:compare");
   const [files, setFiles] = useState<string[]>([]);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const svc = content.mix.find(m => m.id === tab) ?? content.mix[0];
-  const onFiles = useCallback((n: string[]) => setFiles(n), []);
+  const onFiles = useCallback((n: string[]) => { setFiles(n); if (n.length) setSubShot("mix:upload"); }, []);
 
   const onKey = (e: KeyboardEvent) => {
     const i = TAB_IDS.indexOf(tab);
@@ -127,9 +154,11 @@ function MixPanel({ initialTab, initialView }: { initialTab?: MixService["id"]; 
           rules={{ ...contactRules, title: { required: true, label: "Titolo brano" }, service: { required: true, label: "Servizio" }, stems: { required: true, min: 1, max: 200, label: "Numero tracce/stems" }, referenceUrl: { url: true, label: "Link reference" } }}
           extra={() => ({ files: files.join(", ") })}
           summary={v => `${v.service} · “${v.title}” · ${v.stems} tracce · ${v.name}`}
+          onDone={() => setSubShot("mix:done")}
         >
           {errors => <>
-            <div className={s.grid2}>
+            <StepRail fallback="mix:remote" steps={[{ shot: "mix:remote", label: "Brano" }, { shot: "mix:upload", label: "File" }, { shot: "mix:contact", label: "Contatti" }, { shot: "mix:done", label: "Inviato" }]} />
+            <div className={s.grid2} {...zRemote}>
               <Field label="Titolo brano *" name="title" error={errors.title}><input {...fieldProps("title", errors)} /></Field>
               <Field label="Servizio *" name="service" error={errors.service}>
                 <select {...fieldProps("service", errors)} defaultValue={svc.name}>{content.mix.map(m => <option key={m.id}>{m.name}</option>)}</select>
@@ -139,8 +168,8 @@ function MixPanel({ initialTab, initialView }: { initialTab?: MixService["id"]; 
             </div>
             <Field label="Link a una reference" name="referenceUrl" error={errors.referenceUrl}><input {...fieldProps("referenceUrl", errors)} type="url" placeholder="https://" /></Field>
             <Field label="Note per il mix" name="notes" error={errors.notes}><textarea {...fieldProps("notes", errors)} rows={3} /></Field>
-            <UploadZone onChange={onFiles} />
-            <ContactFields errors={errors} />
+            <div {...zUpload}><UploadZone onChange={onFiles} /></div>
+            <div {...zContact}><ContactFields errors={errors} /></div>
           </>}
         </DemoForm>
       </div>
@@ -155,7 +184,7 @@ function MixPanel({ initialTab, initialView }: { initialTab?: MixService["id"]; 
           <button key={m.id} ref={el => { tabRefs.current[m.id] = el; }} role="tab" type="button" id={`tab-${m.id}`} aria-selected={tab === m.id} aria-controls="mix-tabpanel" tabIndex={tab === m.id ? 0 : -1} onClick={() => setTab(m.id)}>{m.name}</button>
         ))}
       </div>
-      <div id="mix-tabpanel" role="tabpanel" aria-labelledby={`tab-${svc.id}`} className={s.tabPanel} key={svc.id}>
+      <div id="mix-tabpanel" role="tabpanel" aria-labelledby={`tab-${svc.id}`} className={s.tabPanel} key={svc.id} data-dir={dir}>
         <div className={s.tabLead}>
           <div>
             <h3>{svc.name}</h3>
@@ -170,7 +199,7 @@ function MixPanel({ initialTab, initialView }: { initialTab?: MixService["id"]; 
           <div><dt>Cosa serve</dt><dd>{svc.needs}</dd></div>
         </dl>
       </div>
-      <div className={s.tableWrap}>
+      <div className={s.tableWrap} {...zCompare}>
         <table className={s.compare}>
           <caption>Confronto rapido <DemoBadge /></caption>
           <thead><tr><th scope="col">Caratteristica</th>{content.mix.map(m => <th key={m.id} scope="col">{m.name}</th>)}</tr></thead>
@@ -264,7 +293,7 @@ function ExclusivePanel({ beatId }: { beatId: string }) {
 function CartPanel() {
   const { content, cart, removeFromCart, open, close } = useStudio();
   const lines = cartLines(cart, content.beats, content.licenses);
-  if (!lines.length) return <div className={s.empty}><p>Il carrello demo è vuoto.</p><button type="button" className={s.btnPrimary} onClick={() => { close(); window.setTimeout(() => document.getElementById("beat-store")?.scrollIntoView(), 250); }}>Vai al Beat Store</button></div>;
+  if (!lines.length) return <div className={s.empty}><p>Il carrello demo è vuoto.</p><button type="button" className={s.btnPrimary} onClick={() => { close(); window.setTimeout(() => void enterStore(), 250); }}>Vai al Beat Store</button></div>;
   return (
     <div className={s.panelStack}>
       <ul className={s.cartList}>
@@ -360,13 +389,13 @@ export function PanelHost() {
   const bundleTitle = p?.type === "bundle" ? content.bundles.find(b => b.id === p.id)?.name ?? "Pacchetto" : "";
   return (
     <>
-      <Sheet open={is("recording")} onClose={close} kicker="Registrazione voce" title="Prenota una sessione" wide>
+      <Sheet open={is("recording")} stage onClose={close} kicker="Registrazione voce" title="Prenota una sessione" wide>
         {p?.type === "recording" && <RecordingPanel />}
       </Sheet>
-      <Sheet open={is("custom")} onClose={close} kicker="Produzione su commissione" title="Un beat costruito sul tuo brano" wide>
+      <Sheet open={is("custom")} stage onClose={close} kicker="Produzione su commissione" title="Un beat costruito sul tuo brano" wide>
         {p?.type === "custom" && <CustomBeatPanel key={is("custom") ? "open" : "closing"} active={is("custom")} />}
       </Sheet>
-      <Sheet open={is("mix")} onClose={close} kicker="Banco mixer" title="Mix, Master, Mix & Master" wide>
+      <Sheet open={is("mix")} stage onClose={close} kicker="Banco mixer" title="Mix, Master, Mix & Master" wide>
         {p?.type === "mix" && <MixPanel initialTab={p.tab} initialView={p.view} />}
       </Sheet>
       <Sheet open={is("beat")} onClose={close} kicker="Dettaglio beat" title={beatTitle} wide>

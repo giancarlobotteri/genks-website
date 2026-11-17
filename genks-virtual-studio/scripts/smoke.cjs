@@ -55,7 +55,8 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await page.keyboard.press("Escape");
   await mixDlg.waitFor({ state: "hidden" });
 
-  // 02 microphone hotspot
+  // 02 microphone hotspot (the intro shortcut had flown the camera to the mixer: back to the microphone)
+  await page.evaluate(() => scrollTo(0, 0));
   await page.waitForTimeout(2800);
   await snap(page, "04-mic-scene");
   const micHot = page.getByRole("button", { name: "Registrazione voce" }).first();
@@ -65,6 +66,10 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await recDlg.waitFor();
   await page.waitForTimeout(500);
   await snap(page, "05-recording-panel");
+  await page.waitForTimeout(1200);
+  await recDlg.getByLabel("Nome *").focus();
+  await page.waitForTimeout(400);
+  ok("motion: compilando i dati la telecamera passa all'inquadratura «I tuoi dati»", (await recDlg.locator('[aria-current="step"]').textContent()) === "I tuoi dati");
   await recDlg.getByRole("button", { name: "Prenota (richiesta demo)" }).click();
   ok("02 validazione: senza dati la prenotazione non parte", await recDlg.getByText("Controlla i campi evidenziati.").isVisible());
   await recDlg.getByRole("radio", { disabled: false }).filter({ hasText: "disponibile" }).first().click();
@@ -72,6 +77,7 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await fillContact(recDlg);
   await recDlg.getByRole("button", { name: "Prenota (richiesta demo)" }).click();
   ok("02 prenotazione demo confermata senza fingere una prenotazione reale", await recDlg.getByText("non costituisce una prenotazione").isVisible());
+  ok("motion: dopo l'invio la telecamera si allarga sul «Fatto»", (await recDlg.locator('[aria-current="step"]').textContent()) === "Fatto");
   await recDlg.getByRole("button", { name: "Chiudi pannello" }).click();
   await recDlg.waitFor({ state: "hidden" });
 
@@ -124,11 +130,11 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   const storeHot = page.getByRole("button", { name: "Entra nel Beat Store" });
   ok("05 pulsante «Entra nel Beat Store» sul display", await storeHot.isVisible());
   await storeHot.click({ force: true });
-  await page.waitForTimeout(1500);
-  await snap(page, "09-waveform-split");
-  await page.waitForTimeout(2200);
+  await page.waitForFunction(() => { const st = document.getElementById("beat-store"); return !st.dataset.reveal && Math.abs(st.getBoundingClientRect().top) < 4; }, null, { timeout: 20000 }).catch(() => {});
   const [sy, storeTop] = await page.evaluate(() => [scrollY, document.getElementById("beat-store").getBoundingClientRect().top]);
-  ok("05 onda divisa e arrivo diretto ai beat", Math.abs(storeTop - 64) < 8 && sy > 0, `top=${Math.round(storeTop)}`);
+  ok("05 tuffo nel display, onda divisa e arrivo diretto ai beat", Math.abs(storeTop) < 4 && sy > 0, `top=${Math.round(storeTop)}`);
+  const fitInfo = await page.evaluate(() => { const g = document.querySelector("#beat-store ul"); return { n: g.children.length, bottom: g.lastElementChild.getBoundingClientRect().bottom, vh: innerHeight }; });
+  ok("10 i beat della pagina entrano interi nello schermo", fitInfo.n >= 6 && fitInfo.bottom <= fitInfo.vh, JSON.stringify(fitInfo));
   ok("05 niente più titolo «Ogni onda è un beat»", (await page.getByText("Ogni onda è un beat").count()) === 0);
 
   // 06 store: search / filter / empty / play / licence / order
@@ -141,11 +147,12 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await store.getByRole("searchbox").fill("zzzz");
   ok("06 stato vuoto", await store.getByText("Nessun beat corrisponde").isVisible());
   await store.getByRole("button", { name: "Mostra tutto il catalogo" }).click();
-  await store.getByRole("button", { name: "Filtri" }).click();
+  await store.getByRole("button", { name: "Filtri", exact: true }).click();
   await store.getByLabel("Genere").selectOption("Trap");
   await store.getByLabel("BPM min").fill("145");
   ok("06 filtri genere + BPM", (await count()) === 1);
   await store.getByRole("button", { name: "Azzera filtri" }).click();
+  await store.getByRole("button", { name: "Filtri", exact: true }).click();
   ok("06 almeno 6 beat demo per pagina", (await count()) >= 6, String(await count()));
   await store.getByRole("button", { name: "Pagina successiva" }).click();
   await page.waitForTimeout(900);
@@ -264,7 +271,8 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Apri menu" }).tap();
   await page.getByRole("navigation", { name: "Sezioni" }).getByRole("button", { name: "Beat su misura" }).tap();
-  ok("10 mobile: beat su misura dal menu", await page.getByRole("dialog", { name: "Un beat costruito sul tuo brano" }).isVisible());
+  const customDlg = page.getByRole("dialog", { name: "Un beat costruito sul tuo brano" });
+  ok("10 mobile: beat su misura dal menu (la telecamera va prima al monitor)", await customDlg.waitFor({ timeout: 8000 }).then(() => true, () => false));
   await snap(page, "18-mobile-custom");
   ok("menu senza «modalità leggera»", (await page.getByText("Modalità leggera").count()) === 0);
   await ctx.close();

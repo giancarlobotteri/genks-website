@@ -87,11 +87,6 @@
 .hotspot:hover .hotLabel, .hotspot:focus-visible .hotLabel { background: var(--blue); border-color: #fff; }
 .hotspot:focus-visible { outline: none; }
 .hotspot:focus-visible .hotPulse { outline: 2px solid #fff; outline-offset: 4px; }
-/* ============ Waveform bridge ============ */
-.bridge { position: relative; height: 220vh; }
-.bridgeSticky { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
-.bridgeCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-
 /* ============ Sections ============ */
 .sectionHead { max-width: 760px; margin-bottom: 28px; }
 .sectionHead h2 { font-size: clamp(1.8rem, 4vw, 3rem); margin-bottom: 12px; }
@@ -372,7 +367,6 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
   /* compact horizontal beat cards: more beats per screen, big touch targets */
   .beatGrid { gap: 12px; }
   .beatCard { flex-direction: row; align-items: stretch; }
-  .beatCoverWrap { width: 116px; flex: none; align-self: flex-start; }
   .coverPlay { left: 8px; bottom: 8px; width: 46px; height: 46px; }
   .coverBadge { top: 6px; left: 6px; }
   .beatInfo { padding: 12px; gap: 6px; min-width: 0; }
@@ -495,18 +489,11 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 
 /* ============ Beat Store: cinematic backdrop + paged crate ============ */
 .store { isolation: isolate; }
-.storeBg { position: absolute; inset: 0 calc(50% - 50vw + 8px) auto; height: min(78vh, 760px); z-index: -1; background: linear-gradient(180deg, rgba(6, 11, 23, 0.55), rgba(6, 11, 23, 0.82) 55%, var(--bg)), url(/assets/img/store-bg.webp) 50% 30% / cover no-repeat; pointer-events: none; }
-@media (max-width: 700px) { .storeBg { left: 0; right: 0; background-image: linear-gradient(180deg, rgba(6, 11, 23, 0.55), rgba(6, 11, 23, 0.85) 55%, var(--bg)), url(/assets/img/store-bg-sm.webp); } }
-.crate { position: relative; touch-action: pan-y; overflow-x: clip; overflow-clip-margin: 24px; }
 @media (max-width: 900px) and (orientation: portrait), (max-width: 640px) { .scrollHint[data-state="svc"] { opacity: 0; } }
-.beatGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); perspective: 1600px; }
-@media (max-width: 960px) { .beatGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .beatCard { animation: none; }
-.crate[data-seen] .beatCard { animation: cardIn 0.75s calc(var(--i) * 70ms) var(--ease) both; }
 .beatGrid[data-dir="-1"] .beatCard { --from: -1; }
 @keyframes cardIn { from { opacity: 0; transform: translate3d(calc(var(--from, 1) * 60px), 30px, -80px) rotateY(calc(var(--from, 1) * -24deg)); } }
-.crate:not([data-seen]) .beatCard { opacity: 0; }
-.pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 26px; }
+.pager { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .pager ol { display: flex; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .pager ol button { position: relative; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; color: var(--muted); font: 600 0.9rem var(--font-head); }
 .pager ol button::before { content: ""; position: absolute; left: 10px; right: 10px; bottom: 6px; height: 3px; border-radius: 3px; background: var(--line-strong); transition: background var(--mid), box-shadow var(--mid), left var(--mid) var(--ease), right var(--mid) var(--ease); }
@@ -515,7 +502,6 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 .coverEq { position: absolute; right: 12px; bottom: 14px; display: flex; align-items: flex-end; gap: 3px; height: 22px; }
 .coverEq i { width: 4px; height: 100%; border-radius: 2px; background: #fff; transform-origin: bottom; animation: eq 0.6s calc(var(--i) * -0.17s) ease-in-out infinite alternate; }
 @media (max-width: 560px) {
-  .beatGrid { grid-template-columns: 1fr; }
   .coverEq { right: 8px; bottom: 60px; height: 16px; }
 }
 
@@ -531,6 +517,132 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 
 @media (prefers-reduced-motion: reduce) {
   .svcWave i, .svcMeter i, .coverEq i, .hintIcon, .hintHand, .introMouse i, .introChevron, .customHero { animation: none !important; }
-  .crate[data-seen] .beatCard { animation: none; }
-  .crate:not([data-seen]) .beatCard { opacity: 1; }
 }
+
+/* ============ Beat Store: one screen, fitted grid ============ */
+.store.store { height: 100vh; height: 100svh; max-width: 1320px; display: flex; flex-direction: column; gap: 10px; padding: calc(var(--nav-h) + 16px) 16px calc(var(--player-h) + 16px); scroll-margin-top: 0; overflow: hidden; }
+.storeBg { position: absolute; inset: 0 calc(50% - 50vw + 8px); z-index: -1; pointer-events: none; background: radial-gradient(ellipse at 50% 0%, rgba(76, 131, 255, 0.16), transparent 60%), linear-gradient(180deg, rgba(6, 11, 23, 0.6), var(--bg) 70%), url(/assets/img/store-bg.webp) 50% 30% / cover no-repeat; animation: bgDrift 30s ease-in-out infinite alternate; }
+@media (max-width: 700px) { .storeBg { inset: 0; background-image: radial-gradient(ellipse at 50% 0%, rgba(76, 131, 255, 0.16), transparent 60%), linear-gradient(180deg, rgba(6, 11, 23, 0.62), var(--bg) 70%), url(/assets/img/store-bg-sm.webp); } }
+@keyframes bgDrift { to { background-position: 50% 0%, 0 0, 46% 40%; } }
+.storeHead h2 { font-size: clamp(1.35rem, 2.6vw, 2.2rem); margin: 0 0 4px; }
+.storeHead .kicker { margin-bottom: 6px; }
+.storeLead { color: var(--silver); font-size: 0.95rem; }
+@media (max-height: 760px) { .storeLead { display: none; } }
+.storeTools { margin-bottom: 0; }
+.storeBar { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; }
+.storeBar .resultCount { margin: 0; }
+.crate { position: relative; flex: 1; min-height: 0; touch-action: pan-y; }
+.beatGrid { height: 100%; gap: 16px; perspective: 1600px; }
+.beatCard { min-height: 0; }
+.beatCoverWrap { flex: 1; min-height: 0; }
+.beatCoverWrap .cover { aspect-ratio: auto; height: 100%; }
+.beatInfo { flex: none; padding: 12px 14px 14px; gap: 5px; }
+.beatInfo .licBadges { display: none; }
+.beatGrid[data-anim="page"] .beatCard { animation: cardIn 0.7s calc(var(--i) * 60ms) var(--ease) both; }
+.beatGrid[data-dir="-1"] .beatCard { --from: -1; }
+@keyframes cardIn { from { opacity: 0; transform: translate3d(calc(var(--from, 1) * 70px), 24px, -90px) rotateY(calc(var(--from, 1) * -26deg)); } }
+/* Beat Store entry: cards wait for the waveform pieces, then open up where they land */
+[data-reveal="0"] [data-card] { opacity: 0; animation: none; }
+[data-reveal="1"] [data-card] { animation: cardReveal 0.8s calc(var(--i) * 55ms) var(--ease) both; }
+@keyframes cardReveal { from { opacity: 0; clip-path: inset(46% 0 46% 0 round 22px); transform: scale(0.94); } 40% { opacity: 1; } to { opacity: 1; clip-path: inset(0 0 0 0 round 22px); transform: none; } }
+.burst { position: fixed; inset: 0; z-index: 48; width: 100%; height: 100%; pointer-events: none; display: none; }
+.burst[data-on] { display: block; }
+.beatGrid[data-compact] .beatCard { flex-direction: row; }
+.beatGrid[data-compact] .beatCoverWrap { flex: none; height: 100%; aspect-ratio: 1; }
+.beatGrid[data-compact] .beatInfo { flex: 1; min-width: 0; justify-content: center; padding: 8px 14px; gap: 4px; }
+.beatGrid[data-compact] .coverPlay { width: 46px; height: 46px; left: 50%; top: 50%; bottom: auto; transform: translate(-50%, -50%); }
+.beatGrid[data-compact] .coverPlay:hover { transform: translate(-50%, -50%) scale(1.07); }
+.beatGrid[data-compact] .coverBadge { display: none; }
+.beatGrid[data-compact] .coverEq { right: 6px; bottom: 6px; height: 14px; }
+.beatGrid[data-compact] .beatInfo h3 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 559px) {
+  .beatGrid { gap: 10px; }
+  .beatInfo h3 { font-size: 1rem; }
+  .beatInfo .tags { display: none; }
+  .coverPlay { width: 42px; height: 42px; }
+}
+@media (max-width: 559px) and (max-height: 700px) { .beatFoot .btnSmall { min-height: 34px; } }
+
+/* ============ Docked service panels: the studio stays in view ============ */
+.sheetStage::backdrop { background: linear-gradient(90deg, transparent 35%, rgba(3, 6, 13, 0.55)); backdrop-filter: none; }
+@media (min-width: 900px) {
+  .sheet.sheetStage { margin: calc(var(--nav-h) + 12px) 20px 16px auto; height: calc(100vh - var(--nav-h) - 28px); height: calc(100dvh - var(--nav-h) - 28px); max-height: none; width: min(560px, 44vw); }
+  .sheetStage[open] { animation: dockIn 0.7s var(--ease) both; }
+  .sheetStage[data-closing] { animation: dockOut 0.25s ease-in both; }
+  .sheetStage .customPanel { grid-template-columns: 1fr; }
+}
+@keyframes dockIn { from { opacity: 0; transform: translate3d(60px, 0, 0) rotateY(-8deg); clip-path: inset(0 0 0 30% round 22px); } to { opacity: 1; transform: none; clip-path: inset(0 0 0 0 round 22px); } }
+@keyframes dockOut { to { opacity: 0; transform: translate3d(40px, 0, 0); } }
+@media (max-width: 899px) {
+  .sheetStage::backdrop { background: linear-gradient(180deg, transparent 30%, rgba(3, 6, 13, 0.5)); }
+  .sheet.sheetStage { width: 100vw; max-height: 64vh; max-height: 64dvh; margin: auto 0 0; border-radius: 22px 22px 0 0; }
+  .sheet.sheetStage[open] { animation: upIn 0.55s var(--ease) both; }
+}
+.sheetStage { background: linear-gradient(170deg, rgba(15, 26, 56, 0.96), rgba(7, 13, 28, 0.97) 60%); }
+
+/* ============ Motion inside every panel ============ */
+.sheet[open] .panelStack > *, .sheet[open] .beatDetail > *, .sheet[open] .form > * { animation: panelIn 0.6s var(--ease) both; }
+.sheet[open] :is(.panelStack, .beatDetail, .form) > :nth-child(2) { animation-delay: 70ms; }
+.sheet[open] :is(.panelStack, .beatDetail, .form) > :nth-child(3) { animation-delay: 140ms; }
+.sheet[open] :is(.panelStack, .beatDetail, .form) > :nth-child(4) { animation-delay: 210ms; }
+.sheet[open] :is(.panelStack, .beatDetail, .form) > :nth-child(5) { animation-delay: 280ms; }
+.sheet[open] :is(.panelStack, .beatDetail, .form) > :nth-child(n+6) { animation-delay: 340ms; }
+@keyframes panelIn { from { opacity: 0; transform: translate3d(0, 18px, 0); } }
+.optionCard, .licenseCard, .day, .slot { transition: border-color var(--fast), background var(--fast), transform 0.35s var(--ease), box-shadow 0.35s var(--ease); }
+.optionCard[data-checked], .licenseCard[data-checked] { animation: pick 0.45s var(--ease); box-shadow: inset 0 0 0 1px var(--blue), 0 12px 30px -16px rgba(76, 131, 255, 0.9); }
+.day[aria-checked="true"], .slot[aria-checked="true"] { animation: pick 0.4s var(--ease); box-shadow: 0 8px 22px -10px rgba(76, 131, 255, 0.9); }
+@keyframes pick { 40% { transform: scale(1.04); } }
+.optionCard::after, .licenseCard::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(100deg, transparent 30%, rgba(156, 191, 255, 0.22) 50%, transparent 70%) no-repeat; background-size: 250% 100%; background-position: 130% 0; }
+.optionCard[data-checked]::after, .licenseCard[data-checked]::after { animation: sheen 0.9s var(--ease); }
+@keyframes sheen { to { background-position: -30% 0; } }
+.tabPanel[data-dir="1"] { animation: tabFromR 0.5s var(--ease) both; }
+.tabPanel[data-dir="-1"] { animation: tabFromL 0.5s var(--ease) both; }
+@keyframes tabFromR { from { opacity: 0; transform: translate3d(40px, 0, 0); } }
+@keyframes tabFromL { from { opacity: 0; transform: translate3d(-40px, 0, 0); } }
+.success { animation: doneIn 0.7s var(--ease) both; position: relative; overflow: hidden; }
+.success > svg { animation: doneIcon 0.9s 0.15s var(--ease) both; }
+.success::before { content: ""; position: absolute; left: 40px; top: 40px; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--ok); animation: doneRing 1.2s 0.2s ease-out both; pointer-events: none; }
+@keyframes doneIn { from { opacity: 0; transform: scale(0.94) translateY(12px); } }
+@keyframes doneIcon { from { transform: scale(0) rotate(-90deg); } 60% { transform: scale(1.2); } }
+@keyframes doneRing { from { transform: scale(1); opacity: 1; } to { transform: scale(9); opacity: 0; } }
+.field input, .field select, .field textarea { transition: border-color var(--fast), box-shadow 0.3s var(--ease), transform 0.3s var(--ease); }
+.field input:focus, .field select:focus, .field textarea:focus { transform: translateY(-1px); }
+.stepRail { position: relative; display: grid; grid-template-columns: repeat(var(--steps), 1fr); margin: 0; padding: 0 0 10px; list-style: none; }
+.stepRail li { position: relative; z-index: 1; padding-top: 14px; color: var(--muted); font: 600 0.78rem var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; transition: color 0.4s var(--ease); }
+.stepRail li::before { content: ""; position: absolute; left: 0; right: 6px; top: 0; height: 3px; border-radius: 3px; background: var(--line); }
+.stepRail li[data-done], .stepRail li[data-on] { color: #fff; }
+.stepRail li[data-done]::before { background: rgba(76, 131, 255, 0.55); }
+.stepInk { position: absolute; left: 0; top: 0; height: 3px; width: calc(100% / var(--steps) - 6px); border-radius: 3px; background: var(--blue); box-shadow: 0 0 14px var(--blue); transform: translateX(calc(var(--step) * (100% + 6px))); transition: transform 0.7s var(--ease); z-index: 2; }
+@media (prefers-reduced-motion: reduce) {
+  .sheet[open] :is(.panelStack, .beatDetail, .form) > *, .beatCard, [data-reveal] [data-card], .tabPanel, .success, .success > svg, .success::before, .storeBg { animation: none !important; }
+}
+
+.pageOf { min-width: 56px; text-align: center; color: var(--muted); font: 600 0.95rem var(--font-head); font-variant-numeric: tabular-nums; }
+.pageOf strong { display: inline-block; color: #fff; animation: pick 0.4s var(--ease); }
+@media (max-width: 559px) {
+  .hideXs { display: none; }
+  .storeTools { flex-wrap: nowrap; gap: 8px; }
+  .storeTools .search { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 12px; }
+  .storeTools .btnGhost { padding: 0 12px; min-height: 44px; }
+  .storeTools .sortSel select { max-width: 132px; min-height: 44px; padding: 0 8px; }
+  .storeHead .kicker { margin-bottom: 2px; }
+  .storeHead h2 { font-size: 1.12rem; }
+  .store.store { gap: 8px; padding-top: calc(var(--nav-h) + 10px); }
+  .storeBar { min-height: 40px; }
+  .pager { gap: 4px; }
+  .beatFoot { padding-top: 2px; }
+  .beatFoot .btnSmall { min-height: 34px; padding: 0 12px; }
+  .price strong { font-size: 1rem; }
+}
+/* the step rail stays visible while the panel scrolls */
+.stepRail { position: sticky; top: -20px; z-index: 3; margin: -20px -22px 0; padding: 16px 22px 12px; background: linear-gradient(180deg, #0f1a38 70%, rgba(15, 26, 56, 0)); }
+.stepRail .stepInk { left: 22px; top: 16px; width: calc((100% - 44px) / var(--steps) - 6px); }
+.stepRail li::before { top: 0; }
+@media (max-width: 640px) { .stepRail { margin: -20px -16px 0; padding: 14px 16px 10px; } .stepRail .stepInk { left: 16px; top: 14px; width: calc((100% - 32px) / var(--steps) - 6px); } .stepRail li { font-size: 0.68rem; } }
+
+.price { white-space: nowrap; }
+
+/* filters float over the grid instead of pushing it: the page keeps its 6 beats */
+.toolsWrap { position: relative; z-index: 6; }
+.toolsWrap .filters { position: absolute; left: 0; right: 0; top: calc(100% + 8px); margin: 0 !important; padding: 0 16px; border-radius: var(--radius-lg); background: rgba(9, 16, 34, 0.97); border: 1px solid transparent; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.9); transform: translateY(-8px); transition: max-height var(--mid) var(--ease), opacity var(--mid), transform var(--mid) var(--ease), padding var(--mid), border-color var(--mid); }
+.toolsWrap .filters[data-open] { padding: 16px; border-color: var(--line-strong); transform: none; }
