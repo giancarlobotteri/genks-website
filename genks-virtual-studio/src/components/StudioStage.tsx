@@ -122,8 +122,10 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       composer?.setPixelRatio(renderer.getPixelRatio());
       composer?.setSize(w, h);
       camera.aspect = w / h;
-      // Wider vertical FOV on portrait phones so the subjects stay framed.
-      camera.fov = w / h < 0.8 ? 62 : 42;
+      // Wider vertical FOV on portrait phones so the subjects stay framed; on super-ultrawide
+      // monitors (32:9) the horizontal angle is capped at ~95° so the room never looks stretched.
+      const aspect = w / h;
+      camera.fov = aspect < 0.8 ? 62 : Math.min(42, (2 * Math.atan(Math.tan((47.5 * Math.PI) / 180) / aspect) * 180) / Math.PI);
       camera.updateProjectionMatrix();
     };
     resize();
@@ -238,9 +240,13 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       // framing: slide the picture away from whatever covers part of the screen
       const svcBand = dir.screen === "studio" && !live.current.framed ? band(pos, 2, 4, 0.5) : 0;
       let gx = 0, gy = 0;
-      if (dir.screen === "reel") { gx = portrait ? 0 : -0.15; gy = portrait ? 0.12 : 0; }
-      else if (live.current.framed) { gx = portrait ? 0 : 0.21; gy = portrait ? 0.17 : 0; }
-      else if (svcBand > 0) { gx = portrait ? 0 : 0.21 * svcBand; gy = portrait ? 0.2 * svcBand : 0; }
+      // the subject is centred in the free part of the screen, measured from the real widths of
+      // the text / panel / card (so 16:9, 21:9, 32:9 and 4:3 monitors all frame it the same way)
+      if (dir.screen === "reel") {
+        if (dir.reelChoosing) { gx = 0; gy = 0; }
+        else { gx = portrait ? 0 : -Math.min(0.2, (Math.min(660, w * 0.92) + Math.min(56, Math.max(16, w * 0.04))) / 2 / w); gy = portrait ? 0.12 : 0; }
+      } else if (live.current.framed) { gx = portrait ? 0 : Math.min(0.24, (Math.min(600, w * 0.47) + 28) / 2 / w + 20 / w); gy = portrait ? 0.17 : 0; }
+      else if (svcBand > 0) { gx = portrait ? 0 : Math.min(0.24, (Math.min(500, w * 0.44) + Math.max(16, w * 0.05)) / 2 / w + 10 / w) * svcBand; gy = portrait ? 0.2 * svcBand : 0; }
       const kf = reduced ? 1 : 1 - Math.exp(-dt * 2.6);
       fx += (gx - fx) * kf; fy += (gy - fy) * kf;
       if (Math.abs(fx) + Math.abs(fy) > 0.001) camera.setViewOffset(w, h, w * fx, h * fy, w, h);

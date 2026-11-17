@@ -657,11 +657,11 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 .reelBars button:hover span { background: rgba(156, 191, 255, 0.4); }
 .reelStage { flex: 1; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; min-height: 0; }
 .reelChapter { position: relative; display: grid; gap: 14px; justify-items: start; max-width: min(660px, 100%); padding-bottom: clamp(6px, 5vh, 64px); }
-.reelNum { position: absolute; left: -0.05em; bottom: calc(100% - 0.02em); font: 800 clamp(6rem, 19vw, 15rem)/0.8 var(--font-head); letter-spacing: -0.05em; color: transparent; -webkit-text-stroke: 1.5px rgba(156, 191, 255, 0.4); pointer-events: none; animation: numIn 1.4s var(--ease) both; }
+.reelNum { position: absolute; left: -0.05em; bottom: calc(100% - 0.02em); font: 800 clamp(5rem, min(19vw, 22vh), 15rem)/0.8 var(--font-head); letter-spacing: -0.05em; color: transparent; -webkit-text-stroke: 1.5px rgba(156, 191, 255, 0.4); pointer-events: none; animation: numIn 1.4s var(--ease) both; }
 @keyframes numIn { from { opacity: 0; transform: translate3d(-60px, 30px, 0); letter-spacing: 0.15em; } }
 .reelWipe { position: fixed; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(100deg, transparent 38%, rgba(76, 131, 255, 0.4) 50%, transparent 62%) no-repeat; background-size: 320% 100%; mix-blend-mode: screen; animation: wipe 1.1s var(--ease) both; }
 @keyframes wipe { from { background-position: 100% 0; } 80% { opacity: 1; } to { background-position: 0 0; opacity: 0; } }
-.reelTitle { font-size: clamp(2.3rem, 6.2vw, 5.2rem); line-height: 0.98; letter-spacing: -0.035em; text-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); }
+.reelTitle { font-size: clamp(2.1rem, min(6.2vw, 9.4vh), 5.2rem); line-height: 0.98; letter-spacing: -0.035em; text-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); }
 .reelText { max-width: 46ch; color: var(--silver); font-size: clamp(1rem, 1.5vw, 1.15rem); animation: fadeUp 0.8s 0.6s var(--ease) both; }
 .reelChips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .reelChips li { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line-strong); background: rgba(9, 16, 34, 0.72); backdrop-filter: blur(8px); font: 600 0.86rem var(--font-head); animation: chipIn 0.7s calc(0.8s + var(--c) * 110ms) var(--ease) both; }
@@ -679,7 +679,7 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 
 /* the final question */
 .choose { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px; width: 100%; max-width: 1120px; margin: 0 auto; padding: 12px 0 0; min-height: 0; }
-.chooseTitle { font-size: clamp(2.4rem, 6.6vw, 5.2rem); line-height: 0.98; letter-spacing: -0.035em; outline: none; }
+.chooseTitle { font-size: clamp(2.2rem, min(6.6vw, 10vh), 5.2rem); line-height: 0.98; letter-spacing: -0.035em; outline: none; }
 .chooseGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; perspective: 1200px; }
 .chooseGrid li { animation: cardRise 0.95s calc(0.5s + var(--c) * 110ms) var(--ease) both; }
 @keyframes cardRise { from { opacity: 0; transform: translate3d(0, 50px, -80px) rotateX(22deg); } }
@@ -717,7 +717,7 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 @keyframes wordDrift { to { transform: translate3d(4%, 0, 0); } }
 .svcHead { grid-column: 1; grid-row: 1; display: grid; gap: 10px; justify-items: start; max-width: 600px; }
 .svcHead [data-svc-back] { animation: fadeIn 0.6s both; }
-.svcScreenTitle { font-size: clamp(2rem, 4.2vw, 3.7rem); line-height: 1; letter-spacing: -0.03em; outline: none; text-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); }
+.svcScreenTitle { font-size: clamp(1.8rem, min(4.2vw, 7vh), 3.7rem); line-height: 1; letter-spacing: -0.03em; outline: none; text-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); }
 .switchChips { display: flex; flex-wrap: wrap; gap: 6px; max-width: 100%; }
 .switchChips button { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 38px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--line); background: rgba(9, 16, 34, 0.75); backdrop-filter: blur(8px); color: var(--silver); font: 600 0.8rem var(--font-head); animation: chipIn 0.6s calc(0.55s + var(--c) * 80ms) var(--ease) both; transition: border-color 0.2s, color 0.2s, transform 0.35s var(--ease); }
 .switchChips button:hover { border-color: var(--blue-light); color: #fff; transform: translateY(-2px); }
@@ -888,3 +888,5 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
   .storeTabs button { padding: 0 13px; font-size: 0.85rem; }
   .storeScreenEnd { gap: 6px; }
 }
+/* narrow desktop panels (4:3, 1024 px): the demo note stays at the top of the panel, the buttons keep their room */
+@media (max-width: 1180px) { .wzFootNote { display: none; } }

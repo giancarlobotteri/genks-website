@@ -19,9 +19,11 @@ type State = {
   storeVisit: number;
   /** the preview starts from its first chapter (false: straight to the final question) */
   reelFromStart: boolean;
+  /** the preview is showing its final question (the picture stays centred) */
+  reelChoosing: boolean;
 };
 
-let state: State = { screen: "reel", reelShot: "reel:intro", storeTab: "beats", storeVisit: 0, reelFromStart: false };
+let state: State = { screen: "reel", reelShot: "reel:intro", storeTab: "beats", storeVisit: 0, reelFromStart: false, reelChoosing: false };
 const subs = new Set<() => void>();
 const set = (patch: Partial<State>) => {
   state = { ...state, ...patch };
@@ -40,6 +42,7 @@ export const setScreen = (screen: Screen) => set({ screen, reelShot: screen === 
 /** Play the preview again from its first chapter. */
 export const playReel = () => set({ screen: "reel", reelShot: "reel:intro", reelFromStart: true });
 export const setReelShot = (reelShot: string | null) => { if (reelShot !== state.reelShot) set({ reelShot }); };
+export const setReelChoosing = (reelChoosing: boolean) => { if (reelChoosing !== state.reelChoosing) set({ reelChoosing }); };
 export const openStore = (tab: StoreTab = "beats") => set({ screen: "store", reelShot: null, storeTab: tab, storeVisit: state.storeVisit + 1 });
 export const setStoreTab = (storeTab: StoreTab) => set({ storeTab });
 

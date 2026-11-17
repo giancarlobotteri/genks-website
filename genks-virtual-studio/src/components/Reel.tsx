@@ -1,7 +1,7 @@
 import { ArrowRight, ChevronLeft, ChevronRight, Disc3, Mic, MonitorPlay, Pause, Play, RotateCcw, SlidersHorizontal, Compass } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { formatEuro } from "../lib/catalog.ts";
-import { getDirector, setReelShot } from "../lib/director.ts";
+import { getDirector, setReelChoosing, setReelShot } from "../lib/director.ts";
 import { enterStore, goService, goStudio } from "../lib/nav.ts";
 import { useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
@@ -67,6 +67,7 @@ export function Reel() {
   // the camera follows the chapter
   useEffect(() => {
     setReelShot(choosing ? "reel:choose" : chapters[i].shot);
+    setReelChoosing(choosing);
     if (choosing) markSeen();
   }, [i, choosing, chapters]);
 
