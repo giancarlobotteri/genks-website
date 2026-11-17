@@ -148,14 +148,23 @@
 .sheetHead { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding: 20px 22px 14px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, rgba(76, 131, 255, 0.1), transparent); }
 .sheetHead h2 { font-size: clamp(1.3rem, 3vw, 1.8rem); }
 .sheetHead .kicker { margin-bottom: 4px; }
-.sheetBody { padding: 20px 22px 26px; overflow-y: auto; overscroll-behavior: contain; }
+.sheetBody { padding: 20px 22px 26px; overflow-y: auto; overscroll-behavior: contain; flex: 1 1 auto; min-height: 0; }
 .sheetFoot { padding: 14px 22px; border-top: 1px solid var(--line); }
+/* Phones: bottom sheet. The <dialog> becomes a transparent full-screen frame sized to the visible
+   area (svh) and the panel sits at its bottom. iOS Safari does not place a margin-auto dialog
+   reliably (it ended up below the screen), so nothing here depends on that. */
 @media (max-width: 640px) {
-  .sheet:not(.sheetSide) { width: 100vw; max-height: 92vh; margin: auto 0 0; border-radius: 22px 22px 0 0; }
-  .sheet:not(.sheetSide)[open] { animation: upIn 0.42s var(--ease) both; }
-  @keyframes upIn { from { transform: translateY(40%); opacity: 0; } }
+  .sheet:not(.sheetSide) { inset: 0; width: 100vw; height: 100vh; height: 100svh; max-width: none; max-height: none; margin: 0; background: transparent; border: 0; border-radius: 0; box-shadow: none; overflow: hidden; }
+  .sheet:not(.sheetSide)[open] { display: flex; flex-direction: column; justify-content: flex-end; animation: none; }
+  .sheet:not(.sheetSide)[data-closing] { animation: none; }
+  .sheet:not(.sheetSide) > .sheetInner { height: auto; max-height: 92vh; max-height: 92svh; border-top: 1px solid var(--line-strong); border-radius: 22px 22px 0 0; background: linear-gradient(170deg, #0f1a38, #070d1c 60%); box-shadow: 0 -30px 90px -30px rgba(76, 131, 255, 0.5); overflow: hidden; }
+  .sheet:not(.sheetSide)[open] > .sheetInner { animation: upIn 0.5s var(--ease) both; }
+  .sheet:not(.sheetSide)[data-closing] > .sheetInner { animation: downOut 0.2s ease-in both; }
   .sheetHead, .sheetBody { padding-left: 16px; padding-right: 16px; }
+  .sheetBody { padding-bottom: calc(26px + env(safe-area-inset-bottom, 0px)); }
 }
+@keyframes upIn { from { transform: translate3d(0, 40%, 0); opacity: 0; } }
+@keyframes downOut { to { transform: translate3d(0, 30%, 0); opacity: 0; } }
 
 /* ============ Forms ============ */
 .form { display: grid; gap: 14px; }
@@ -575,10 +584,15 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 @keyframes dockOut { to { opacity: 0; transform: translate3d(40px, 0, 0); } }
 @media (max-width: 899px) {
   .sheetStage::backdrop { background: linear-gradient(180deg, transparent 30%, rgba(3, 6, 13, 0.5)); }
-  .sheet.sheetStage { width: 100vw; max-height: 64vh; max-height: 64dvh; margin: auto 0 0; border-radius: 22px 22px 0 0; }
-  .sheet.sheetStage[open] { animation: upIn 0.55s var(--ease) both; }
+  .sheet.sheetStage { inset: 0; width: 100vw; height: 100vh; height: 100svh; max-width: none; max-height: none; margin: 0; background: transparent; border: 0; border-radius: 0; box-shadow: none; overflow: hidden; }
+  .sheet.sheetStage[open] { display: flex; flex-direction: column; justify-content: flex-end; animation: none; }
+  .sheet.sheetStage[data-closing] { animation: none; }
+  .sheet.sheetStage > .sheetInner { height: auto; max-height: 64vh; max-height: 64svh; border-top: 1px solid var(--line-strong); border-radius: 22px 22px 0 0; background: linear-gradient(170deg, rgba(15, 26, 56, 0.97), rgba(7, 13, 28, 0.98) 60%); box-shadow: 0 -30px 90px -30px rgba(76, 131, 255, 0.5); overflow: hidden; }
+  .sheet.sheetStage[open] > .sheetInner { animation: upIn 0.55s var(--ease) both; }
+  .sheet.sheetStage[data-closing] > .sheetInner { animation: downOut 0.22s ease-in both; }
+  .sheetStage .sheetBody { padding-bottom: calc(26px + env(safe-area-inset-bottom, 0px)); }
 }
-.sheetStage { background: linear-gradient(170deg, rgba(15, 26, 56, 0.96), rgba(7, 13, 28, 0.97) 60%); }
+@media (min-width: 900px) { .sheetStage { background: linear-gradient(170deg, rgba(15, 26, 56, 0.96), rgba(7, 13, 28, 0.97) 60%); } }
 
 /* ============ Motion inside every panel ============ */
 .sheet[open] .panelStack > *, .sheet[open] .beatDetail > *, .sheet[open] .form > * { animation: panelIn 0.6s var(--ease) both; }
