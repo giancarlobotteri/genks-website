@@ -28,10 +28,10 @@ npm run preview    # http://localhost:4173
 ```bash
 npm run typecheck  # TypeScript
 npm run lint       # ESLint, zero warning ammessi
-npm test           # 17 test unitari (catalogo, carrello, pacchetti, moduli, audio, camera)
+npm test           # test unitari (catalogo, carrello, pacchetti, moduli, audio, camera, scroll)
 ```
 
-Test end-to-end dei criteri di accettazione (37 controlli su desktop, mobile, tastiera e motion ridotto). Playwright non è una dipendenza del progetto; per usarlo:
+Test end-to-end dei criteri di accettazione (desktop, telefono, tastiera e motion ridotto). Playwright non è una dipendenza del progetto; per usarlo:
 
 ```bash
 npm i -D playwright && npx playwright install chromium
@@ -39,25 +39,23 @@ npm run preview &
 npm run smoke      # opzionale: node scripts/smoke.cjs <url> <cartella-screenshot>
 ```
 
-Ultima esecuzione: build, typecheck, lint, 18/18 test unitari e 53/53 controlli end-to-end superati.
+Ultima esecuzione: build, typecheck, lint, 24/24 test unitari e 69/69 controlli end-to-end superati.
 
 ## Percorsi funzionanti
 
 | Percorso | Come arrivarci |
 | --- | --- |
-| Intro GENKS, saltabile | All'apertura. «Salta intro», tasto Esc o primo scroll; indicazione «Scorri per entrare». Link diretti a ogni servizio. |
-| Visita guidata a tappe | Ogni rotellina, swipe o freccia ↓ fa un movimento completo e lento della camera fino alla tappa successiva: microfono → monitor DAW → Mix → Master → Mix & Master → display → Beat Store. Con «riduci movimento» lo scroll resta libero. |
-| Microfono → registrazione | Pulsante «Registrazione voce» sul microfono o menu. Pacchetti, calendario demo, modulo. |
-| Monitor DAW → beat su misura | Pulsante «Beat su misura» sullo schermo o menu. Sequencer suonabile e modulo preventivo in un pannello. |
-| Mixer → Mix / Master / Mix & Master | I tre servizi entrano uno dopo l'altro allo scorrimento; «Scegli…» apre il pannello sul servizio giusto, «Invia il progetto» apre l'upload simulato. |
-| Display → Beat Store | «Entra nel Beat Store» (o uno scroll): la telecamera si tuffa nel display, l'onda si spezza e i frammenti atterrano sulle schede dei beat. |
-| Movimento dentro i servizi | Aprendo un servizio la telecamera vola sull'oggetto (microfono, monitor, mixer); ogni passaggio ha la sua inquadratura: pacchetto, calendario, dati, schede Mix/Master, confronto, upload, invio. Pannelli laterali (PC) o in basso (telefono), la scena resta visibile e non smette mai di muoversi. |
+| Anteprima dei servizi | All'apertura parte un'anteprima animata sullo studio 3D: cinque capitoli (studio, registrazione, beat su misura, Mix & Master, Beat Store), ognuno con il suo movimento di telecamera e titoli animati. Barra dei capitoli cliccabile, pausa, avanti/indietro (frecce o tocco a destra/sinistra), «Salta». Ogni capitolo ha il suo pulsante per scegliere subito quel servizio. |
+| «Di cosa hai bisogno?» | Alla fine dell'anteprima: quattro scelte (puntandole la telecamera si sposta sul servizio), più «Esplora lo studio liberamente» e «Rivedi l'anteprima». Nella stessa sessione si torna direttamente qui. |
+| Schermate di servizio a passaggi | Registrazione, beat su misura e Mix & Master si aprono come schermate nuove: un passaggio alla volta (ore e prezzi → giorno e orario → dati → riepilogo; brief, sequencer, sound, dettagli; servizio, dettagli, brano, file, contatti). Ogni passaggio ha la sua inquadratura e i suoi elementi entrano uno dopo l'altro; i prezzi contano fino al valore. |
+| Cambiare servizio | In ogni schermata di servizio, nella barra dello studio e dopo l'invio: un tocco porta a un altro servizio, con il movimento di telecamera relativo. |
+| Visita dello studio | Scroll virtuale: la pagina non scorre, la telecamera segue dito o trackpad e al rilascio scivola alla tappa successiva (microfono → monitor DAW → Mix → Master → Mix & Master → display). Indicatore delle tappe a destra, cliccabile. Oltre il display si entra nel Beat Store. |
 | Studio che reagisce alla musica | Casse, LED e misuratori seguono l'anteprima in riproduzione e il sequencer. |
-| Beat Store | Una schermata intera: la griglia si misura e mostra esattamente i beat che entrano (6 su PC, 3–5 su telefono), pagine con transizioni e swipe; ricerca, filtri sovrapposti, ordinamento, stato vuoto. |
+| Beat Store | Schermata propria con la sua intro animata (titolo, conteggio dei beat, licenze, poi l'onda si spezza e atterra sulle schede; completa la prima volta, breve le successive, «Intro» per rivederla). La griglia mostra esattamente i beat che entrano (6 su PC, 3–5 su telefono), pagine con transizioni e swipe; ricerca, filtri, ordinamento. Scheda «Pacchetti» accanto a «Beat». |
 | Player persistente | Play su un beat: resta attivo mentre si naviga e si aprono pannelli. Mai in autoplay. |
 | Licenze, carrello, checkout DEMO | «Licenze» su un beat → carrello → ordine simulato. |
 | Esclusiva | Richiesta separata, senza prezzo e senza vendita automatica. |
-| Pacchetti | Card confrontabili e richiesta. |
+| Pacchetti | Nel Beat Store, scheda «Pacchetti» (anche dal menu): card confrontabili e richiesta. |
 | Gestione contenuti demo | Menu → «Gestione demo» (`#/gestione`). |
 | Senza WebGL | Solo se il browser non supporta il 3D compare una griglia con gli stessi servizi (nessun interruttore «modalità leggera»). |
 
@@ -74,7 +72,10 @@ src/
   store.tsx             stato dell'app e player audio unico
   lib/                  logica pura: catalogo, validazione, disponibilità, sintesi audio, WAV
   scene/                studio 3D procedurale e percorso camera
-  components/           intro, scena, pannelli, store, player, admin
+  lib/director.ts       schermate (anteprima, studio, Beat Store) e inquadrature richieste
+  lib/stepper.ts        scroll virtuale a molla (segue il dito, poi scivola alla tappa)
+  lib/nav.ts            ogni navigazione come movimento di telecamera
+  components/           anteprima, scena, schermate di servizio, Beat Store, pannelli, player, admin
   styles/               token di design e stili
 public/brand/           loghi usati dal sito
 docs/brand-originals/   loghi originali forniti, non modificati
@@ -89,7 +90,7 @@ Per passare alla produzione si sostituiscono le implementazioni locali in `src/a
 - **Vite + React + TypeScript**: progetto nuovo, senza backend obbligatorio.
 - **Three.js senza React Three Fiber**: la scena è un unico modulo imperativo, una dipendenza in meno. Modelli, materiali fisici e mappa di riflessione sono generati dal codice, senza file esterni.
 - **Due livelli di qualità**: alta (ombre morbide, luci d'area, bagliore) su computer capaci; ridotta su telefoni e dispositivi deboli. Si può forzare con `?quality=high` o `?quality=low`.
-- **Scroll senza GSAP**: il percorso camera è un'interpolazione propria e testata; evita una dipendenza con licenza non open source.
+- **Scroll senza GSAP**: la pagina non scorre; una molla a smorzamento critico (testata a 60, 90, 120 e 144 Hz) muove la telecamera nello stesso frame del rendering, quindi niente scatti tra scroll e 3D. Evita anche una dipendenza con licenza non open source.
 - **Audio sintetizzato nel browser**: anteprime originali, nessun file da licenziare.
 
 ## Limiti noti e priorità

@@ -50,3 +50,6 @@ img, svg, canvas { display: block; max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
 }
+
+/* the site is a set of full screens over the 3D studio: the page itself never scrolls */
+html[data-route="studio"], html[data-route="studio"] body { height: 100%; overflow: hidden; overscroll-behavior: none; scrollbar-gutter: auto; }

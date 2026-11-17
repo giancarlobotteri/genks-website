@@ -129,3 +129,60 @@ describe("percorso camera", () => {
     expect(band(0.225, 0, 0.2, 0.05)).toBeCloseTo(0.5);
   });
 });
+
+import { smoothDamp } from "../src/lib/stepper.ts";
+import { drift, SHOTS } from "../src/scene/shot-table.ts";
+
+describe("virtual scroll spring", () => {
+  it("glides to the target without overshooting, at any frame rate", () => {
+    for (const hz of [60, 90, 120, 144]) {
+      let x = 0, v = 0, max = 0;
+      for (let f = 0; f < hz * 4; f++) {
+        [x, v] = smoothDamp(x, 1, v, 0.5, 1 / hz);
+        max = Math.max(max, x);
+      }
+      expect(max).toBeLessThanOrEqual(1);
+      expect(x).toBeGreaterThan(0.999);
+    }
+  });
+  it("starts gently and keeps its speed when the target moves mid-way", () => {
+    let x = 0, v = 0;
+    [x, v] = smoothDamp(x, 1, v, 0.5, 1 / 120);
+    expect(x).toBeLessThan(0.01); // smooth start, no jump
+    for (let f = 0; f < 40; f++) [x, v] = smoothDamp(x, 1, v, 0.5, 1 / 120);
+    const before = v;
+    const [, after] = smoothDamp(x, 2, v, 0.5, 1 / 120); // a new gesture: next stop
+    expect(after).toBeGreaterThan(before * 0.9); // no stop-and-go
+  });
+  it("is the same curve at 60 and 120 Hz (frame-rate independent)", () => {
+    const run = (hz: number) => { let x = 0, v = 0; for (let f = 0; f < hz * 0.6; f++) [x, v] = smoothDamp(x, 1, v, 0.5, 1 / hz); return x; };
+    expect(Math.abs(run(60) - run(120))).toBeLessThan(0.01);
+  });
+});
+
+describe("camera shots", () => {
+  it("every preview shot exists and keeps moving while held", () => {
+    for (const id of ["reel:intro", "reel:rec", "reel:custom", "reel:mix", "reel:choose"]) {
+      const o = SHOTS[id];
+      expect(o).toBeTruthy();
+      const later = drift(o, 4);
+      expect(later.yaw !== o.yaw || later.dist !== o.dist || later.t[0] !== o.t[0]).toBe(true);
+    }
+  });
+  it("a held shot never collapses onto its subject", () => {
+    for (const o of Object.values(SHOTS)) expect(drift(o, 600).dist).toBeGreaterThan(o.dist * 0.5);
+  });
+});
+
+import { goToStop, stopPos, tickStepper } from "../src/lib/stepper.ts";
+
+describe("virtual scroll timing", () => {
+  it("reaches the next stop in the same time whether the device renders 120, 30 or 5 frames per second", () => {
+    for (const fps of [120, 30, 5]) {
+      void goToStop(0, true);
+      void goToStop(1);
+      for (let t = 0; t < 2.5; t += 1 / fps) tickStepper(1 / fps);
+      expect(stopPos()).toBeGreaterThan(0.999);
+    }
+  });
+});

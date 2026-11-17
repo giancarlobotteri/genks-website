@@ -1,17 +1,14 @@
-import { CustomBeatPanel } from "./CustomBeat.tsx";
-import { Check, Minus, ShoppingBag, Trash2 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
-import { getSubShot, onShot, setSubShot, useShotZone } from "../lib/shots.ts";
-import { enterStore } from "./BeatBurst.tsx";
-import { localAvailability, simulatedCheckout } from "../adapters.ts";
+import { ShoppingBag, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { enterStore } from "../lib/nav.ts";
+import { simulatedCheckout } from "../adapters.ts";
 import { cartLines, cartTotal, formatEuro } from "../lib/catalog.ts";
 import { useStudio, type Panel } from "../store.tsx";
 import s from "../styles/vs.module.css";
-import type { DemoRequest, MixService } from "../types.ts";
+import type { DemoRequest } from "../types.ts";
 import { PlayButton } from "./BeatStore.tsx";
 import { DemoForm } from "./DemoForm.tsx";
 import { BeatCover, DemoBadge, DemoNotice, Field, fieldProps, Sheet } from "./ui.tsx";
-import { UploadZone } from "./UploadZone.tsx";
 
 const contactRules = {
   name: { required: true, label: "Nome" },
@@ -25,198 +22,6 @@ function ContactFields({ errors, artist = true }: { errors: Record<string, strin
       {artist && <Field label="Nome artista" name="artist" error={errors.artist}><input {...fieldProps("artist", errors)} /></Field>}
       <Field label="Email *" name="email" error={errors.email}><input {...fieldProps("email", errors)} type="email" autoComplete="email" /></Field>
       <Field label="Telefono (facoltativo)" name="phone" error={errors.phone}><input {...fieldProps("phone", errors)} type="tel" autoComplete="tel" /></Field>
-    </div>
-  );
-}
-
-/** Where you are inside a service: follows the camera shot, with a sliding highlight. */
-function StepRail({ steps, fallback }: { steps: { shot: string; label: string }[]; fallback: string }) {
-  const shot = useSyncExternalStore(onShot, getSubShot, () => null) ?? fallback;
-  const i = Math.max(0, steps.findIndex(x => x.shot === shot));
-  return (
-    <ol className={s.stepRail} style={{ ["--step" as string]: i, ["--steps" as string]: steps.length }} aria-label="Passaggi">
-      <span className={s.stepInk} aria-hidden="true" />
-      {steps.map((x, k) => <li key={x.shot} data-on={k === i || undefined} data-done={k < i || undefined} aria-current={k === i ? "step" : undefined}>{x.label}</li>)}
-    </ol>
-  );
-}
-
-const price = (v: number | null, prefix = "") => (v == null ? "Su richiesta" : `${prefix}${formatEuro(v)}`);
-
-/* ---------------- Recording ---------------- */
-function RecordingPanel() {
-  const { content } = useStudio();
-  const days = useMemo(() => localAvailability.list(new Date()), []);
-  const [pkg, setPkg] = useState(content.recording[1]?.id ?? content.recording[0]?.id);
-  const [day, setDay] = useState<string>("");
-  const [slot, setSlot] = useState<string>("");
-  const selected = content.recording.find(p => p.id === pkg);
-  const dayObj = days.find(d => d.iso === day);
-  const zPkg = useShotZone<HTMLFieldSetElement>("rec:pkg");
-  const zCal = useShotZone<HTMLFieldSetElement>("rec:cal");
-  const zContact = useShotZone<HTMLDivElement>("rec:contact");
-  return (
-    <div className={s.panelStack}>
-      <StepRail fallback="rec:pkg" steps={[{ shot: "rec:pkg", label: "Pacchetto" }, { shot: "rec:cal", label: "Data e ora" }, { shot: "rec:contact", label: "I tuoi dati" }, { shot: "rec:done", label: "Fatto" }]} />
-      <DemoNotice>Pacchetti, prezzi e disponibilità sono dimostrativi. La richiesta non blocca uno slot reale.</DemoNotice>
-      <fieldset className={s.optionGrid} {...zPkg}>
-        <legend>1 · Scegli il pacchetto</legend>
-        {content.recording.map(p => (
-          <label key={p.id} className={s.optionCard} data-checked={pkg === p.id || undefined}>
-            <input type="radio" name="pkg-choice" value={p.id} checked={pkg === p.id} onChange={() => setPkg(p.id)} />
-            <span className={s.optionTitle}>{p.name}</span>
-            <span className={s.optionPrice}>{price(p.price)} <DemoBadge /></span>
-            <span className={s.muted}>{p.description}</span>
-            <ul>{p.includes.map(i => <li key={i}><Check size={14} aria-hidden="true" />{i}</li>)}</ul>
-          </label>
-        ))}
-      </fieldset>
-      <fieldset className={s.calendar} {...zCal}>
-        <legend>2 · Data e fascia oraria <span className={s.muted}>(disponibilità dimostrativa)</span></legend>
-        <div className={s.days} role="radiogroup" aria-label="Giorno">
-          {days.map(d => {
-            const free = d.slots.some(x => x.free);
-            return (
-              <button key={d.iso} type="button" role="radio" aria-checked={day === d.iso} disabled={!free} className={s.day} onClick={() => { setDay(d.iso); setSlot(""); }}>
-                <span>{d.weekday}</span><strong>{d.label}</strong><small>{free ? "disponibile" : "chiuso"}</small>
-              </button>
-            );
-          })}
-        </div>
-        {dayObj && (
-          <div className={s.slots} role="radiogroup" aria-label="Orario di inizio">
-            {dayObj.slots.map(x => (
-              <button key={x.start} type="button" role="radio" aria-checked={slot === x.start} disabled={!x.free} className={s.slot} onClick={() => setSlot(x.start)}>
-                {x.start}{!x.free && <small> occupato</small>}
-              </button>
-            ))}
-          </div>
-        )}
-      </fieldset>
-      <DemoForm
-        kind="booking"
-        submitLabel="Prenota (richiesta demo)"
-        rules={{ ...contactRules, date: { required: true, label: "Data desiderata" }, time: { required: true, label: "Fascia oraria" } }}
-        extra={() => ({ package: selected?.name ?? "", date: day, time: slot, duration: `${selected?.hours ?? ""} h` })}
-        summary={v => `${v.package} · ${v.date} ${v.time} · ${v.name}`}
-        onDone={() => setSubShot("rec:done")}
-      >
-        {errors => <div className={s.form} {...zContact}>
-          <p className={s.formLegend}>3 · I tuoi dati</p>
-          {(errors.date || errors.time) && <p className={s.fieldError} role="alert">Seleziona giorno e orario nel calendario qui sopra.</p>}
-          <p className={s.muted}>Selezione: <strong>{selected?.name}</strong> · {day || "giorno da scegliere"} · {slot || "orario da scegliere"} · durata {selected?.hours} h</p>
-          <ContactFields errors={errors} />
-          <Field label="Riferimento (link a brano o demo)" name="reference" error={errors.reference}><input {...fieldProps("reference", errors)} type="url" placeholder="https://" /></Field>
-          <Field label="Note" name="notes" error={errors.notes}><textarea {...fieldProps("notes", errors)} rows={3} /></Field>
-        </div>}
-      </DemoForm>
-    </div>
-  );
-}
-
-/* ---------------- Mix & Master ---------------- */
-const TAB_IDS = ["mix", "master", "mixmaster"] as const;
-
-function MixPanel({ initialTab, initialView }: { initialTab?: MixService["id"]; initialView?: "services" | "remote" }) {
-  const { content } = useStudio();
-  const [tab, setTabState] = useState<MixService["id"]>(initialTab ?? "mixmaster");
-  const [view, setViewState] = useState(initialView ?? "services");
-  const [dir, setDir] = useState(1);
-  // every tab and every step moves the camera to a different part of the console
-  const setTab = (id: MixService["id"]) => { setDir(TAB_IDS.indexOf(id) >= TAB_IDS.indexOf(tab) ? 1 : -1); setTabState(id); setSubShot(`mix:${id}`); };
-  const setView = (v: "services" | "remote") => { setViewState(v); setSubShot(v === "remote" ? "mix:remote" : `mix:${tab}`); };
-  const zUpload = useShotZone<HTMLDivElement>("mix:upload");
-  const zContact = useShotZone<HTMLDivElement>("mix:contact");
-  const zRemote = useShotZone<HTMLDivElement>("mix:remote");
-  const zCompare = useShotZone<HTMLDivElement>("mix:compare");
-  const [files, setFiles] = useState<string[]>([]);
-  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const svc = content.mix.find(m => m.id === tab) ?? content.mix[0];
-  const onFiles = useCallback((n: string[]) => { setFiles(n); if (n.length) setSubShot("mix:upload"); }, []);
-
-  const onKey = (e: KeyboardEvent) => {
-    const i = TAB_IDS.indexOf(tab);
-    const n = e.key === "ArrowRight" ? (i + 1) % 3 : e.key === "ArrowLeft" ? (i + 2) % 3 : e.key === "Home" ? 0 : e.key === "End" ? 2 : -1;
-    if (n < 0) return;
-    e.preventDefault();
-    setTab(TAB_IDS[n]);
-    tabRefs.current[TAB_IDS[n]]?.focus();
-  };
-
-  if (view === "remote") {
-    return (
-      <div className={s.panelStack}>
-        <button type="button" className={s.btnText} onClick={() => setView("services")}>← Torna ai servizi</button>
-        <DemoNotice>Invio progetto dimostrativo: nessun file viene caricato o conservato senza uno storage sicuro.</DemoNotice>
-        <DemoForm
-          kind="remote-project"
-          submitLabel="Invia richiesta progetto (demo)"
-          rules={{ ...contactRules, title: { required: true, label: "Titolo brano" }, service: { required: true, label: "Servizio" }, stems: { required: true, min: 1, max: 200, label: "Numero tracce/stems" }, referenceUrl: { url: true, label: "Link reference" } }}
-          extra={() => ({ files: files.join(", ") })}
-          summary={v => `${v.service} · “${v.title}” · ${v.stems} tracce · ${v.name}`}
-          onDone={() => setSubShot("mix:done")}
-        >
-          {errors => <>
-            <StepRail fallback="mix:remote" steps={[{ shot: "mix:remote", label: "Brano" }, { shot: "mix:upload", label: "File" }, { shot: "mix:contact", label: "Contatti" }, { shot: "mix:done", label: "Inviato" }]} />
-            <div className={s.grid2} {...zRemote}>
-              <Field label="Titolo brano *" name="title" error={errors.title}><input {...fieldProps("title", errors)} /></Field>
-              <Field label="Servizio *" name="service" error={errors.service}>
-                <select {...fieldProps("service", errors)} defaultValue={svc.name}>{content.mix.map(m => <option key={m.id}>{m.name}</option>)}</select>
-              </Field>
-              <Field label="Numero tracce / stems *" name="stems" error={errors.stems}><input {...fieldProps("stems", errors)} type="number" min={1} inputMode="numeric" /></Field>
-              <Field label="Deadline" name="deadline" error={errors.deadline}><input {...fieldProps("deadline", errors)} type="date" /></Field>
-            </div>
-            <Field label="Link a una reference" name="referenceUrl" error={errors.referenceUrl}><input {...fieldProps("referenceUrl", errors)} type="url" placeholder="https://" /></Field>
-            <Field label="Note per il mix" name="notes" error={errors.notes}><textarea {...fieldProps("notes", errors)} rows={3} /></Field>
-            <div {...zUpload}><UploadZone onChange={onFiles} /></div>
-            <div {...zContact}><ContactFields errors={errors} /></div>
-          </>}
-        </DemoForm>
-      </div>
-    );
-  }
-
-  return (
-    <div className={s.panelStack}>
-      <div role="tablist" aria-label="Servizi" className={s.tabs} onKeyDown={onKey} style={{ ["--tab" as string]: TAB_IDS.indexOf(tab) }}>
-        <span className={s.tabInk} aria-hidden="true" />
-        {content.mix.map(m => (
-          <button key={m.id} ref={el => { tabRefs.current[m.id] = el; }} role="tab" type="button" id={`tab-${m.id}`} aria-selected={tab === m.id} aria-controls="mix-tabpanel" tabIndex={tab === m.id ? 0 : -1} onClick={() => setTab(m.id)}>{m.name}</button>
-        ))}
-      </div>
-      <div id="mix-tabpanel" role="tabpanel" aria-labelledby={`tab-${svc.id}`} className={s.tabPanel} key={svc.id} data-dir={dir}>
-        <div className={s.tabLead}>
-          <div>
-            <h3>{svc.name}</h3>
-            <p>{svc.summary}</p>
-          </div>
-          <p className={s.bigPrice}>{price(svc.price, "da ")}<small>{svc.priceNote}</small><DemoBadge /></p>
-        </div>
-        <ul className={s.checks}>{svc.includes.map(i => <li key={i}><Check size={16} aria-hidden="true" />{i}</li>)}</ul>
-        <dl className={s.facts}>
-          <div><dt>Tempi</dt><dd>{svc.turnaround}</dd></div>
-          <div><dt>Revisioni</dt><dd>{svc.revisions}</dd></div>
-          <div><dt>Cosa serve</dt><dd>{svc.needs}</dd></div>
-        </dl>
-      </div>
-      <div className={s.tableWrap} {...zCompare}>
-        <table className={s.compare}>
-          <caption>Confronto rapido <DemoBadge /></caption>
-          <thead><tr><th scope="col">Caratteristica</th>{content.mix.map(m => <th key={m.id} scope="col">{m.name}</th>)}</tr></thead>
-          <tbody>
-            <tr><th scope="row">Prezzo</th>{content.mix.map(m => <td key={m.id}>{price(m.price, "da ")}</td>)}</tr>
-            <tr><th scope="row">Bilanciamento tracce</th>{content.mix.map(m => <td key={m.id}>{m.id === "master" ? <Minus size={16} aria-label="No" /> : <Check size={16} aria-label="Sì" />}</td>)}</tr>
-            <tr><th scope="row">Loudness per streaming</th>{content.mix.map(m => <td key={m.id}>{m.id === "mix" ? <Minus size={16} aria-label="No" /> : <Check size={16} aria-label="Sì" />}</td>)}</tr>
-            <tr><th scope="row">Materiale richiesto</th>{content.mix.map(m => <td key={m.id}>{m.needs}</td>)}</tr>
-            <tr><th scope="row">Tempi</th>{content.mix.map(m => <td key={m.id}>{m.turnaround}</td>)}</tr>
-            <tr><th scope="row">Revisioni</th>{content.mix.map(m => <td key={m.id}>{m.revisions}</td>)}</tr>
-          </tbody>
-        </table>
-      </div>
-      <div className={s.ctaRow}>
-        <button type="button" className={s.btnPrimary} onClick={() => setView("remote")}>Invia progetto da remoto</button>
-        <p className={s.muted}>Il pagamento non è attivo nel prototipo: dopo la richiesta ricevi (in produzione) un preventivo confermato.</p>
-      </div>
     </div>
   );
 }
@@ -389,15 +194,6 @@ export function PanelHost() {
   const bundleTitle = p?.type === "bundle" ? content.bundles.find(b => b.id === p.id)?.name ?? "Pacchetto" : "";
   return (
     <>
-      <Sheet open={is("recording")} stage onClose={close} kicker="Registrazione voce" title="Prenota una sessione" wide>
-        {p?.type === "recording" && <RecordingPanel />}
-      </Sheet>
-      <Sheet open={is("custom")} stage onClose={close} kicker="Produzione su commissione" title="Un beat costruito sul tuo brano" wide>
-        {p?.type === "custom" && <CustomBeatPanel key={is("custom") ? "open" : "closing"} active={is("custom")} />}
-      </Sheet>
-      <Sheet open={is("mix")} stage onClose={close} kicker="Banco mixer" title="Mix, Master, Mix & Master" wide>
-        {p?.type === "mix" && <MixPanel initialTab={p.tab} initialView={p.view} />}
-      </Sheet>
       <Sheet open={is("beat")} onClose={close} kicker="Dettaglio beat" title={beatTitle} wide>
         {p?.type === "beat" && <BeatPanel key={p.id} id={p.id} />}
       </Sheet>

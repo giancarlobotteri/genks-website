@@ -3,7 +3,6 @@
  * upload or confirmation asks the studio camera for its own framing.
  * Panels only *name* a shot; StudioStage turns names into camera moves.
  */
-import { useEffect, useRef } from "react";
 
 let sub: string | null = null;
 let dive = 0;
@@ -22,24 +21,21 @@ export const onShot = (f: () => void) => { subs.add(f); return () => { subs.dele
 export const getDive = () => dive;
 export const setDive = (v: number) => { dive = v; };
 
-/**
- * Props for a block of a panel: when the user points at it, focuses a field inside it,
- * or scrolls it into the middle of the panel, the camera moves to `shot`.
- */
-export function useShotZone<T extends HTMLElement>(shot: string) {
-  const ref = useRef<T>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const root = el.closest("dialog") ?? null;
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) setSubShot(shot); }, { root: root?.querySelector("[data-sheet-body]") ?? null, rootMargin: "-45% 0px -45% 0px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [shot]);
-  return { ref, onFocusCapture: () => setSubShot(shot), onPointerDownCapture: () => setSubShot(shot) };
-}
-
-/** Ask for a shot as soon as a block appears (e.g. a confirmation). */
-export function useShotOnMount(shot: string) {
-  useEffect(() => { setSubShot(shot); }, [shot]);
+let diveAnim = 0;
+/** Animate the dive towards `to` (1 = inside the display, 0 = back in the room). */
+export function animateDive(to: number, ms: number): Promise<void> {
+  cancelAnimationFrame(diveAnim);
+  const from = dive;
+  if (from === to || ms <= 0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { dive = to; return Promise.resolve(); }
+  const t0 = performance.now();
+  return new Promise(resolve => {
+    const step = (now: number) => {
+      const u = Math.min(1, (now - t0) / ms);
+      const e = u < 0.5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2;
+      dive = from + (to - from) * e;
+      if (u < 1) diveAnim = requestAnimationFrame(step);
+      else resolve();
+    };
+    diveAnim = requestAnimationFrame(step);
+  });
 }

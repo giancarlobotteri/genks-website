@@ -1,13 +1,10 @@
 import { Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { formatEuro } from "../lib/catalog.ts";
 import { pulseLevel } from "../lib/level.ts";
-import { setSubShot, useShotZone } from "../lib/shots.ts";
+import { setSubShot } from "../lib/shots.ts";
 import { bassNote, hat, kick, snare } from "../lib/synth.ts";
-import { AUDIO_CLAIM, useStudio } from "../store.tsx";
+import { AUDIO_CLAIM } from "../store.tsx";
 import s from "../styles/vs.module.css";
-import { DemoForm } from "./DemoForm.tsx";
-import { DemoBadge, Field, fieldProps } from "./ui.tsx";
 
 const ROWS = ["Kick", "Snare", "Hi-hat", "Basso"] as const;
 const START: boolean[][] = [
@@ -18,7 +15,7 @@ const START: boolean[][] = [
 ].map(r => r.map(Boolean));
 
 /** A small, playable 16-step sequencer: the "digital instruments" visual of the custom-beat area. */
-function Sequencer({ active }: { active: boolean }) {
+export function Sequencer({ active }: { active: boolean }) {
   const [grid, setGrid] = useState(START);
   const [bpm, setBpm] = useState(120);
   const [wantPlay, setPlaying] = useState(false);
@@ -90,55 +87,3 @@ function Sequencer({ active }: { active: boolean }) {
   );
 }
 
-/** "Beat su misura": opened from the DAW monitor in the studio or from the menu. */
-export function CustomBeatPanel({ active = true }: { active?: boolean }) {
-  const { content } = useStudio();
-  const cfg = content.customBeat;
-  const zSeq = useShotZone<HTMLDivElement>("custom:seq");
-  const zSteps = useShotZone<HTMLDivElement>("custom:steps");
-  const zForm = useShotZone<HTMLDivElement>("custom:form");
-  return (
-    <div className={s.customPanel}>
-      <div className={s.customVisual}>
-        <div className={s.customHero} aria-hidden="true" />
-        <p className={s.customLead}>Sintetizzatori, sequencer e sound design pensati per la tua voce. Prima il brief, poi un preventivo chiaro.</p>
-        <div {...zSeq}><Sequencer active={active} /></div>
-        <div {...zSteps} className={s.customVisual}>
-        <ol className={s.steps}>{cfg.steps.map((st, i) => <li key={st.title} style={{ ["--i" as string]: i }}><span>{String(i + 1).padStart(2, "0")}</span><strong>{st.title}</strong><p>{st.text}</p></li>)}</ol>
-        <dl className={s.facts}>
-          <div><dt>Tempi orientativi</dt><dd>{cfg.turnaround}</dd></div>
-          <div><dt>Revisioni</dt><dd>{cfg.revisions}</dd></div>
-          <div><dt>Prezzo</dt><dd>{cfg.priceFrom != null ? `da ${formatEuro(cfg.priceFrom)}` : "su preventivo"} <DemoBadge /></dd></div>
-        </dl>
-        <p className={s.muted}>Diritti, licenza e condizioni vengono definiti nell’accordo scritto: qui non sono riportate condizioni contrattuali.</p>
-        </div>
-      </div>
-      <div className={s.customForm} {...zForm}>
-        <h3>Richiedi un preventivo</h3>
-        <DemoForm kind="custom-beat" submitLabel="Richiedi preventivo" onDone={() => setSubShot("custom:done")}
-          rules={{ name: { required: true, label: "Nome" }, email: { required: true, email: true, label: "Email" }, genre: { required: true, label: "Genere" }, description: { required: true, label: "Descrizione" }, bpm: { min: 40, max: 220, label: "BPM" }, reference: { url: true, label: "Riferimento sonoro" } }}
-          summary={v => `${v.genre}${v.bpm ? ` · ${v.bpm} BPM` : ""} · ${v.mood || "mood libero"} · ${v.name}`}>
-          {errors => <>
-            <Field label="Riferimento sonoro (link)" name="reference" error={errors.reference}><input {...fieldProps("reference", errors)} type="url" placeholder="https://" /></Field>
-            <div className={s.grid2}>
-              <Field label="Genere *" name="genre" error={errors.genre}><input {...fieldProps("genre", errors)} list="genres" /></Field>
-              <Field label="BPM (facoltativo)" name="bpm" error={errors.bpm}><input {...fieldProps("bpm", errors)} type="number" inputMode="numeric" min={40} max={220} /></Field>
-              <Field label="Mood" name="mood" error={errors.mood}><input {...fieldProps("mood", errors)} placeholder="es. notturno, energico" /></Field>
-              <Field label="Budget indicativo" name="budget" error={errors.budget}>
-                <select {...fieldProps("budget", errors)} defaultValue=""><option value="">Da definire</option><option>Fino a 250 €</option><option>250–500 €</option><option>Oltre 500 €</option></select>
-              </Field>
-              <Field label="Deadline" name="deadline" error={errors.deadline}><input {...fieldProps("deadline", errors)} type="date" /></Field>
-              <Field label="Telefono (facoltativo)" name="phone" error={errors.phone}><input {...fieldProps("phone", errors)} type="tel" /></Field>
-            </div>
-            <datalist id="genres"><option>Trap</option><option>Drill</option><option>R&amp;B</option><option>Boom bap</option><option>Afro</option><option>Lo-fi</option><option>Pop</option></datalist>
-            <Field label="Descrizione *" name="description" error={errors.description}><textarea {...fieldProps("description", errors)} rows={4} placeholder="Strumenti, atmosfera, struttura, destinazione del brano…" /></Field>
-            <div className={s.grid2}>
-              <Field label="Nome *" name="name" error={errors.name}><input {...fieldProps("name", errors)} autoComplete="name" /></Field>
-              <Field label="Email *" name="email" error={errors.email}><input {...fieldProps("email", errors)} type="email" autoComplete="email" /></Field>
-            </div>
-          </>}
-        </DemoForm>
-      </div>
-    </div>
-  );
-}

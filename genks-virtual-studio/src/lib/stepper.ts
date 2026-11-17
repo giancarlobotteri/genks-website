@@ -1,137 +1,170 @@
 /**
- * Step-by-step scrolling through the studio: every scroll gesture (wheel, swipe, keyboard)
- * plays one complete, slow camera move to the next stop instead of free scrolling.
- * Outside the studio range the page scrolls normally.
+ * Virtual, physics-based scrolling through the studio stops. The page itself never scrolls:
+ * wheel, trackpad, swipe and keys move a "position" measured in stops (0 = microphone …
+ * last = mixer display). While the finger/trackpad moves, the camera follows it; on release it
+ * glides to the next stop with a critically-damped spring (no linear starts or abrupt stops,
+ * the speed carries over when a new gesture arrives mid-move). The 3D loop advances the spring
+ * in its own frame (tickStepper), so camera and UI share one value per frame at any refresh rate.
  */
 import { prefersReducedMotion } from "../components/ui.tsx";
 
-type Stops = () => number[]; // absolute scrollY values, ascending
+let count = 6;
+let pos = 0, vel = 0, target = 0;
+let mode: "idle" | "follow" | "snap" = "idle";
+let waiters: (() => void)[] = [];
 
-const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+const FOLLOW_T = 0.085; // seconds: how tightly the camera follows a finger / trackpad
+const SNAP_T = 0.5; // seconds: the cinematic glide between stops
 
-let anim = 0;
-let animating = false;
-let leg: { from: number; to: number; start: number; dur: number } | null = null;
-let done: (() => void) | null = null;
-const listeners = new Set<(on: boolean) => void>();
-const setAnimating = (on: boolean) => { animating = on; listeners.forEach(l => l(on)); };
-export const onTravel = (l: (on: boolean) => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
-export const isTraveling = () => animating;
-/** A custom transition (e.g. the Beat Store burst) is running: ignore scroll gestures. */
-let busy = false;
-export const setBusy = (b: boolean) => { busy = b; };
+export const stopCount = () => count;
+export const stopPos = () => pos;
+export const stopTarget = () => target;
+/** 0 at rest on a stop, up to ~0.35 while pulling past the last stop (the "dive" towards the Beat Store). */
+export const overshoot = () => Math.max(0, pos - (count - 1));
+export const isMoving = () => mode !== "idle";
 
-/**
- * Scroll position of the running guided move at time `now` (rAF timestamp), or the real
- * scroll position. The 3D loop reads this instead of window.scrollY so camera and page move
- * on exactly the same curve in the same frame — no one-frame lag, no judder.
- */
-export function scrollAt(now: number) {
-  if (!leg) return window.scrollY;
-  const t = Math.min(1, Math.max(0, (now - leg.start) / leg.dur));
-  return leg.from + (leg.to - leg.from) * easeInOut(t);
+const rubber = (x: number, k = 0.32) => k * (1 - Math.exp(-x / k));
+const limit = (t: number) => (t < 0 ? -rubber(-t, 0.18) : t > count - 1 ? count - 1 + rubber(t - (count - 1), 0.4) : t);
+
+/** Critically damped spring towards `to` (Unity-style SmoothDamp): smooth start, smooth landing, never overshoots. */
+export function smoothDamp(cur: number, to: number, v: number, smoothTime: number, dt: number): [number, number] {
+  const omega = 2 / Math.max(1e-4, smoothTime);
+  const x = omega * dt;
+  const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+  const change = cur - to;
+  const temp = (v + omega * change) * dt;
+  let nv = (v - omega * temp) * exp;
+  let out = to + (change + temp) * exp;
+  if ((to - cur > 0) === (out > to)) { out = to; nv = 0; }
+  return [out, nv];
 }
 
-/** Animated scroll to an absolute Y, with an ease that starts and ends slowly. Resolves at the end. */
-export function travelTo(y: number, duration?: number): Promise<void> {
-  const from = window.scrollY;
-  const to = Math.max(0, Math.min(y, document.documentElement.scrollHeight - window.innerHeight));
-  cancelAnimationFrame(anim);
-  done?.();
-  done = null;
-  if (prefersReducedMotion() || Math.abs(to - from) < 2) { window.scrollTo(0, to); leg = null; setAnimating(false); return Promise.resolve(); }
-  const dur = duration ?? Math.min(3200, 1500 + Math.abs(to - from) / window.innerHeight * 120);
-  leg = { from, to, start: performance.now(), dur };
-  setAnimating(true);
-  return new Promise(resolve => {
-    done = resolve;
-    const step = (now: number) => {
-      window.scrollTo(0, Math.round(scrollAt(now)));
-      if (leg && now - leg.start < leg.dur) anim = requestAnimationFrame(step);
-      else { window.scrollTo(0, to); leg = null; setAnimating(false); done = null; resolve(); }
-    };
-    anim = requestAnimationFrame(step);
-  });
+/** Advance the spring. Called once per rendered frame by the 3D loop (dt in seconds). */
+export function tickStepper(dt: number) {
+  if (mode === "idle") return;
+  // fixed sub-steps: a dropped frame is caught up, never turned into slow motion
+  let rem = Math.min(dt, 0.25);
+  while (rem > 1e-6) {
+    const h = Math.min(rem, 1 / 120);
+    [pos, vel] = smoothDamp(pos, target, vel, mode === "follow" ? FOLLOW_T : SNAP_T, h);
+    rem -= h;
+  }
+  // landed: the last few thousandths of a stop are invisible, so the tour is "at rest" as soon as it looks it
+  if (mode === "snap" && Math.abs(pos - target) < 4e-3 && Math.abs(vel) < 2e-2) {
+    pos = target; vel = 0; mode = "idle";
+    const w = waiters; waiters = []; w.forEach(f => f());
+  }
 }
 
-export function travelToId(id: string, duration?: number) {
-  const el = document.getElementById(id);
-  if (!el) return Promise.resolve();
-  const margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
-  return travelTo(el.getBoundingClientRect().top + window.scrollY - margin, duration);
+/** Glide to stop `i`. Resolves when the camera has landed. */
+export function goToStop(i: number, instant = false): Promise<void> {
+  target = Math.max(0, Math.min(count - 1, i));
+  if (instant || prefersReducedMotion()) {
+    pos = target; vel = 0; mode = "idle";
+    const w = waiters; waiters = []; w.forEach(f => f());
+    return Promise.resolve();
+  }
+  mode = "snap";
+  return new Promise(r => waiters.push(r));
 }
 
-const blocked = (target: EventTarget | null) => {
+const blocked = (el: EventTarget | null) => {
   const html = document.documentElement;
-  if (html.dataset.vsLocked != null || html.dataset.vsIntro === "on") return true;
-  const el = target instanceof Element ? target : null;
-  return Boolean(el?.closest("dialog, nav[data-open], input, textarea, select, [contenteditable]"));
+  if (html.dataset.screen !== "studio" || html.dataset.vsLocked != null || html.dataset.service != null || html.dataset.busy != null) return true;
+  const node = el instanceof Element ? el : null;
+  return Boolean(node?.closest("dialog, nav[data-open], input, textarea, select, [contenteditable], [data-own-scroll]"));
 };
 
-/** Install the stepper. Returns a cleanup function. */
-export function installStepper(stops: Stops, durations: (from: number, to: number) => number, special?: (from: number, to: number) => boolean) {
-  if (prefersReducedMotion()) return () => {};
-  let lastWheel = 0;
-  let touchY: number | null = null;
-  let touchUsed = false;
-
-  const inZone = (dir: number) => {
-    const s = stops(), y = window.scrollY;
-    // the last stop (Beat Store) is the exit: below it the page scrolls freely
-    if (y > s[s.length - 1] + 2) return false;
-    if (y >= s[s.length - 1] - 2 && dir > 0) return false;
-    if (y < s[0] - 2) return false;
-    return true;
+/**
+ * Install the gesture handlers. `onPastEnd` runs when the user pushes beyond the last stop
+ * (the mixer display → Beat Store transition).
+ */
+export function installStepper(stops: number, onPastEnd: () => void) {
+  count = stops;
+  const H = () => window.innerHeight;
+  let anchor = 0;
+  const release = (dir: number, moved: number) => {
+    const next = Math.abs(moved) > 0.1 || dir !== 0 ? anchor + (dir || Math.sign(moved)) : anchor;
+    if (next > count - 1) { void goToStop(count - 1); onPastEnd(); return; }
+    void goToStop(next);
   };
-  const go = (dir: number) => {
-    const s = stops(), y = window.scrollY;
-    const next = dir > 0 ? s.find(v => v > y + 4) : [...s].reverse().find(v => v < y - 4);
-    if (next == null) return;
-    // from the nearest stop, so a slightly-off position still uses the right duration
-    const fromIdx = s.reduce((bi, v, i) => (Math.abs(v - y) < Math.abs(s[bi] - y) ? i : bi), 0);
-    const toIdx = s.indexOf(next);
-    if (special?.(fromIdx, toIdx)) return;
-    void travelTo(next, durations(fromIdx, toIdx));
-  };
+  const begin = () => { anchor = Math.round(Math.max(0, Math.min(count - 1, target))); mode = "follow"; };
 
+  // ---- wheel & trackpad ----
+  let acc = 0, lastWheel = 0, lastAbs = 0, lock = false, idle = 0, wheeling = false;
   const onWheel = (e: WheelEvent) => {
-    if (e.ctrlKey || Math.abs(e.deltaY) < Math.abs(e.deltaX) || blocked(e.target)) return;
-    const dir = Math.sign(e.deltaY);
-    if (busy) { e.preventDefault(); return; }
-    if (!dir || !inZone(dir)) return;
+    if (e.ctrlKey || blocked(e.target)) return;
     e.preventDefault();
-    const now = performance.now(), gap = now - lastWheel;
+    const d = (Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : 0) * (e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? H() : 1);
+    if (!d) return;
+    const now = performance.now(), gap = now - lastWheel, a = Math.abs(d);
     lastWheel = now;
-    // ignore the inertia tail of a trackpad swipe: a new step needs a new gesture
-    if (animating || busy || gap < 180 || Math.abs(e.deltaY) < 4) return;
-    go(dir);
+    // the inertia tail of a finished trackpad swipe is not a new gesture
+    if (lock) {
+      if (gap > 220 || (a > lastAbs * 1.8 && a > 24)) lock = false;
+      else { lastAbs = a; return; }
+    }
+    lastAbs = a;
+    if (!wheeling) { begin(); acc = 0; wheeling = true; }
+    acc += d;
+    target = limit(anchor + Math.max(-1, Math.min(1, acc / 420)));
+    window.clearTimeout(idle);
+    idle = window.setTimeout(() => {
+      wheeling = false; lock = true;
+      release(0, target - anchor);
+    }, 120);
   };
-  const onTouchStart = (e: TouchEvent) => { touchY = e.touches.length === 1 ? e.touches[0].clientY : null; touchUsed = false; };
+
+  // ---- touch: the studio follows the finger, then glides on release ----
+  let y0: number | null = null;
+  let samples: { t: number; y: number }[] = [];
+  const onTouchStart = (e: TouchEvent) => {
+    if (e.touches.length !== 1 || blocked(e.target)) { y0 = null; return; }
+    y0 = e.touches[0].clientY; samples = [{ t: performance.now(), y: y0 }];
+  };
   const onTouchMove = (e: TouchEvent) => {
-    if (touchY == null || blocked(e.target)) return;
-    const dy = touchY - e.touches[0].clientY;
-    const dir = Math.sign(dy);
-    if (!dir || !inZone(dir)) return;
+    if (y0 == null) return;
+    const y = e.touches[0].clientY, dy = y0 - y;
+    if (mode !== "follow") { if (Math.abs(dy) < 6) return; begin(); }
     e.preventDefault();
-    if (!touchUsed && !animating && !busy && Math.abs(dy) > 28) { touchUsed = true; go(dir); }
+    target = limit(anchor + Math.max(-1.15, Math.min(1.15, dy / (H() * 0.5))));
+    const now = performance.now();
+    samples.push({ t: now, y });
+    while (samples.length > 2 && now - samples[0].t > 100) samples.shift();
   };
+  const onTouchEnd = () => {
+    if (y0 == null || mode !== "follow") { y0 = null; return; }
+    const a = samples[0], b = samples[samples.length - 1];
+    const v = b && a && b.t > a.t ? (a.y - b.y) / (b.t - a.t) : 0; // px/ms, positive = finger moving up
+    const moved = target - anchor;
+    y0 = null;
+    release(Math.abs(v) > 0.3 ? Math.sign(v) : 0, Math.abs(moved) > 0.16 ? moved : 0);
+  };
+
+  // ---- keyboard ----
   const onKey = (e: KeyboardEvent) => {
     if (e.altKey || e.ctrlKey || e.metaKey || blocked(e.target)) return;
-    const dir = ["ArrowDown", "PageDown", " "].includes(e.key) && !e.shiftKey ? 1 : ["ArrowUp", "PageUp"].includes(e.key) || (e.key === " " && e.shiftKey) ? -1 : 0;
-    if (!dir || !inZone(dir)) return;
+    const dir = ["ArrowDown", "PageDown"].includes(e.key) || (e.key === " " && !e.shiftKey) ? 1 : ["ArrowUp", "PageUp"].includes(e.key) || (e.key === " " && e.shiftKey) ? -1 : 0;
+    if (!dir) return;
     if (e.key === " " && (e.target as Element | null)?.closest("button, a")) return;
     e.preventDefault();
-    if (!animating && !busy) go(dir);
+    anchor = Math.round(Math.max(0, Math.min(count - 1, target)));
+    release(dir, 0);
   };
 
   window.addEventListener("wheel", onWheel, { passive: false });
   window.addEventListener("touchstart", onTouchStart, { passive: true });
   window.addEventListener("touchmove", onTouchMove, { passive: false });
+  window.addEventListener("touchend", onTouchEnd, { passive: true });
+  window.addEventListener("touchcancel", onTouchEnd, { passive: true });
   window.addEventListener("keydown", onKey);
   return () => {
+    window.clearTimeout(idle);
     window.removeEventListener("wheel", onWheel);
     window.removeEventListener("touchstart", onTouchStart);
     window.removeEventListener("touchmove", onTouchMove);
+    window.removeEventListener("touchend", onTouchEnd);
+    window.removeEventListener("touchcancel", onTouchEnd);
     window.removeEventListener("keydown", onKey);
   };
 }
