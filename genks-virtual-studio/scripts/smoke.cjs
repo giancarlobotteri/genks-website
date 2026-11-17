@@ -52,8 +52,8 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await page.keyboard.press("ArrowRight");
   ok("04 tab Mix/Master/Mix & Master navigabili da tastiera", (await mixDlg.getByRole("tab", { name: "Mix", exact: true }).getAttribute("aria-selected")) === "true");
   await mixDlg.getByRole("button", { name: "Invia progetto da remoto" }).click();
-  await page.waitForTimeout(300);
-  ok("cue: «Invia progetto da remoto» porta la camera sullo schermo", (await page.evaluate(() => document.documentElement.dataset.vsCinema)) === "on" && await page.getByText("La sessione si apre").isVisible());
+  const screenCue = await page.waitForFunction(() => document.documentElement.dataset.vsCinema === "on" && document.body.innerText.includes("SCREEN"), null, { timeout: 5000 }).then(() => true, () => false);
+  ok("cue: «Invia progetto da remoto» porta la camera sullo schermo", screenCue);
   await settle(page);
   await mixDlg.getByLabel("Titolo brano *").fill("Brano di prova");
   await mixDlg.getByLabel("Numero tracce / stems *").fill("18");
@@ -63,8 +63,8 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   ok("04 upload: file selezionato con progresso simulato", await mixDlg.getByText("pronto (demo)").isVisible());
   await snap(page, "03-remote-upload");
   await mixDlg.getByText("Carta · subito").click();
-  await page.waitForTimeout(300);
-  ok("cue pagamento: la scelta della carta mostra il POS", await page.getByText("CAM", { exact: false }).first().isVisible() && (await page.evaluate(() => document.documentElement.dataset.vsCinema)) === "on");
+  const posCue = await page.waitForFunction(() => document.documentElement.dataset.vsCinema === "on" && document.body.innerText.includes("POS"), null, { timeout: 5000 }).then(() => true, () => false);
+  ok("cue pagamento: la scelta della carta mostra il POS", posCue);
   await snap(page, "03b-cue-pos");
   await settle(page);
   await mixDlg.getByRole("button", { name: "Invia richiesta progetto (demo)" }).click();
