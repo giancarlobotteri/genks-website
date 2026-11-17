@@ -39,25 +39,25 @@ npm run preview &
 npm run smoke      # opzionale: node scripts/smoke.cjs <url> <cartella-screenshot>
 ```
 
-Ultima esecuzione: build, typecheck, lint, 17/17 test unitari e 35/37 controlli end-to-end superati.
+Ultima esecuzione: build, typecheck, lint, 18/18 test unitari e 50/50 controlli end-to-end superati.
 
 ## Percorsi funzionanti
 
 | Percorso | Come arrivarci |
 | --- | --- |
-| Intro GENKS, saltabile | All'apertura. «Salta intro», tasto Esc o primo scroll. Link diretti a ogni servizio. |
-| Microfono → registrazione | Hotspot «Esplora registrazione» o menu. Pacchetti, calendario demo, modulo. |
-| Reveal dello studio | Scroll: la camera arretra e accende monitor, scrivania, rack, pannelli. |
-| Mixer → Mix / Master / Mix & Master | Hotspot «Apri servizi Mix & Master» o menu. Schede, confronto, invio progetto remoto con upload simulato. |
-| Waveform → Beat Store | Scroll oltre il display del mixer, oppure «Salta al catalogo». |
-| Beat Store | Ricerca, filtri (genere, mood, tonalità, BPM, prezzo), ordinamento, stato vuoto. |
+| Intro GENKS, saltabile | All'apertura. «Salta intro», tasto Esc o primo scroll; indicazione «Scorri per entrare». Link diretti a ogni servizio. |
+| Visita guidata a tappe | Ogni rotellina, swipe o freccia ↓ fa un movimento completo e lento della camera fino alla tappa successiva: microfono → monitor DAW → Mix → Master → Mix & Master → display → Beat Store. Con «riduci movimento» lo scroll resta libero. |
+| Microfono → registrazione | Pulsante «Registrazione voce» sul microfono o menu. Pacchetti, calendario demo, modulo. |
+| Monitor DAW → beat su misura | Pulsante «Beat su misura» sullo schermo o menu. Sequencer suonabile e modulo preventivo in un pannello. |
+| Mixer → Mix / Master / Mix & Master | I tre servizi entrano uno dopo l'altro allo scorrimento; «Scegli…» apre il pannello sul servizio giusto, «Invia il progetto» apre l'upload simulato. |
+| Display → Beat Store | «Entra nel Beat Store» (o uno scroll): l'onda si divide e porta direttamente ai beat. |
+| Beat Store | Catalogo a pagine (6 beat, 4 su telefono) con transizioni animate e swipe; ricerca, filtri, ordinamento, stato vuoto. |
 | Player persistente | Play su un beat: resta attivo mentre si naviga e si aprono pannelli. Mai in autoplay. |
 | Licenze, carrello, checkout DEMO | «Licenze» su un beat → carrello → ordine simulato. |
 | Esclusiva | Richiesta separata, senza prezzo e senza vendita automatica. |
-| Beat su misura | Sequencer suonabile e modulo «Richiedi preventivo». |
 | Pacchetti | Card confrontabili e richiesta. |
 | Gestione contenuti demo | Menu → «Gestione demo» (`#/gestione`). |
-| Modalità leggera | Menu → «Modalità leggera»: niente 3D, stessi servizi. Si attiva da sola se WebGL manca. |
+| Senza WebGL | Solo se il browser non supporta il 3D compare una griglia con gli stessi servizi (nessun interruttore «modalità leggera»). |
 
 Cosa è reale e cosa è simulato: [`docs/DEMO_VS_REALE.md`](docs/DEMO_VS_REALE.md).
 Loghi e report di vettorializzazione: [`docs/LOGHI.md`](docs/LOGHI.md).

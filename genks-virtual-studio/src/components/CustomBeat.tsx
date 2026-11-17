@@ -16,10 +16,12 @@ const START: boolean[][] = [
 ].map(r => r.map(Boolean));
 
 /** A small, playable 16-step sequencer: the "digital instruments" visual of the custom-beat area. */
-function Sequencer() {
+function Sequencer({ active }: { active: boolean }) {
   const [grid, setGrid] = useState(START);
   const [bpm, setBpm] = useState(120);
-  const [playing, setPlaying] = useState(false);
+  const [wantPlay, setPlaying] = useState(false);
+  // the sound stops by itself when the panel closes
+  const playing = wantPlay && active;
   const [step, setStep] = useState(-1);
   const gridRef = useRef(grid);
   const bpmRef = useRef(bpm);
@@ -62,7 +64,7 @@ function Sequencer() {
               ctxRef.current ??= new AudioContext();
               void ctxRef.current.resume();
             }
-            setPlaying(p => !p);
+            setPlaying(!playing);
           }}>
           {playing ? <Pause size={18} /> : <Play size={18} />}
         </button>
@@ -84,19 +86,17 @@ function Sequencer() {
   );
 }
 
-export function CustomBeat() {
+/** "Beat su misura": opened from the DAW monitor in the studio or from the menu. */
+export function CustomBeatPanel({ active = true }: { active?: boolean }) {
   const { content } = useStudio();
   const cfg = content.customBeat;
   return (
-    <section id="beat-su-misura" className={s.custom} aria-labelledby="custom-title">
+    <div className={s.customPanel}>
       <div className={s.customVisual}>
-        <header className={s.sectionHead}>
-          <p className={s.kicker}>Produzione su commissione</p>
-          <h2 id="custom-title">Un beat costruito sul tuo brano.</h2>
-          <p>Sintetizzatori, sequencer e sound design pensati per la tua voce. Prima il brief, poi un preventivo chiaro.</p>
-        </header>
-        <Sequencer />
-        <ol className={s.steps}>{cfg.steps.map((st, i) => <li key={st.title}><span>{String(i + 1).padStart(2, "0")}</span><strong>{st.title}</strong><p>{st.text}</p></li>)}</ol>
+        <div className={s.customHero} aria-hidden="true" />
+        <p className={s.customLead}>Sintetizzatori, sequencer e sound design pensati per la tua voce. Prima il brief, poi un preventivo chiaro.</p>
+        <Sequencer active={active} />
+        <ol className={s.steps}>{cfg.steps.map((st, i) => <li key={st.title} style={{ ["--i" as string]: i }}><span>{String(i + 1).padStart(2, "0")}</span><strong>{st.title}</strong><p>{st.text}</p></li>)}</ol>
         <dl className={s.facts}>
           <div><dt>Tempi orientativi</dt><dd>{cfg.turnaround}</dd></div>
           <div><dt>Revisioni</dt><dd>{cfg.revisions}</dd></div>
@@ -130,6 +130,6 @@ export function CustomBeat() {
           </>}
         </DemoForm>
       </div>
-    </section>
+    </div>
   );
 }

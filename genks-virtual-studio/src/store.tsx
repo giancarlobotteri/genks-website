@@ -9,6 +9,7 @@ import type { Beat, CartItem, StudioContent } from "./types.ts";
 /* ---------------- Panels / UI ---------------- */
 export type Panel =
   | { type: "recording" }
+  | { type: "custom" }
   | { type: "mix"; tab?: "mix" | "master" | "mixmaster"; view?: "services" | "remote" }
   | { type: "beat"; id: string }
   | { type: "cart" }

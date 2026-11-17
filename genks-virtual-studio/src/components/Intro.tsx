@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import s from "../styles/vs.module.css";
 import { GenksWordmark } from "./brand.tsx";
@@ -15,7 +16,8 @@ export function Intro({ onDone, links }: { onDone: () => void; links: QuickLink[
     if (done.current) return;
     done.current = true;
     try { sessionStorage.setItem("genks:vs:intro", "1"); } catch { /* ignore */ }
-    const end = () => { onDone(); after?.(); };
+    // run the shortcut once the page is scrollable again
+    const end = () => { onDone(); if (after) requestAnimationFrame(() => requestAnimationFrame(after)); };
     if (prefersReducedMotion()) end();
     else { setLeaving(true); window.setTimeout(end, 650); }
   };
@@ -48,6 +50,11 @@ export function Intro({ onDone, links }: { onDone: () => void; links: QuickLink[
         <button type="button" className={s.btnPrimary} onClick={() => finish()}>Entra nello studio</button>
         <button type="button" data-skip className={s.btnGhost} onClick={() => finish()}>Salta intro</button>
       </div>
+      <button type="button" className={s.introScroll} onClick={() => finish()} aria-label="Scorri verso il basso per entrare nello studio">
+        <span className={s.introMouse} aria-hidden="true"><i /></span>
+        <span>Scorri per entrare</span>
+        <ChevronDown size={18} aria-hidden="true" className={s.introChevron} />
+      </button>
       <nav className={s.introLinks} aria-label="Vai direttamente a">
         <span>Vai direttamente a</span>
         {links.map(l => <button key={l.label} type="button" onClick={() => finish(l.go)}>{l.label}</button>)}

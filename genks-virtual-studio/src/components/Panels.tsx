@@ -1,3 +1,4 @@
+import { CustomBeatPanel } from "./CustomBeat.tsx";
 import { Check, Minus, ShoppingBag, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { localAvailability, simulatedCheckout } from "../adapters.ts";
@@ -361,6 +362,9 @@ export function PanelHost() {
     <>
       <Sheet open={is("recording")} onClose={close} kicker="Registrazione voce" title="Prenota una sessione" wide>
         {p?.type === "recording" && <RecordingPanel />}
+      </Sheet>
+      <Sheet open={is("custom")} onClose={close} kicker="Produzione su commissione" title="Un beat costruito sul tuo brano" wide>
+        {p?.type === "custom" && <CustomBeatPanel key={is("custom") ? "open" : "closing"} active={is("custom")} />}
       </Sheet>
       <Sheet open={is("mix")} onClose={close} kicker="Banco mixer" title="Mix, Master, Mix & Master" wide>
         {p?.type === "mix" && <MixPanel initialTab={p.tab} initialView={p.view} />}

@@ -16,7 +16,6 @@ export function WaveBridge() {
   const { content } = useStudio();
   const ref = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const titleRef = useRef<HTMLDivElement>(null);
   const beats = publicBeats(content.beats).slice(0, 6);
   const titles = beats.map(b => b.title).join("|");
 
@@ -37,6 +36,7 @@ export function WaveBridge() {
     const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { rootMargin: "200px" }); io.observe(section);
 
     const rr = (x: number, y: number, ww: number, hh: number, r: number) => { ctx.beginPath(); ctx.roundRect(x, y, ww, hh, r); };
+    ctx.imageSmoothingEnabled = false;
 
     const draw = (time: number) => {
       raf = requestAnimationFrame(draw);
@@ -66,7 +66,6 @@ export function WaveBridge() {
         const cx = gx + col * (cw + gap), cy = gy + row * (ch + gap);
         const cover = Math.min(cw, ch * 0.72);
         if (frames > 0) {
-          ctx.shadowBlur = 0;
           ctx.globalAlpha = frames;
           ctx.fillStyle = "#0b1428"; rr(cx, cy, cw, ch, 14); ctx.fill();
           ctx.strokeStyle = "rgba(156,191,255,.28)"; ctx.lineWidth = 1; ctx.stroke();
@@ -86,14 +85,12 @@ export function WaveBridge() {
           const tx = cx + pad + j * ((cw - pad * 2) / PER), tW = (cw - pad * 2) / PER * 0.5;
           const th = heights[c][j] * cover * 0.6, ty = cy + cover * 0.52 - th / 2;
           const x = fx + (tx - fx) * m, y = fy + (ty - fy) * m, bwid = fW + (tW - fW) * m, bh = fh + (th - fh) * m;
+          // cheap glow (no shadowBlur: it is the slowest canvas operation and would cap the frame rate)
+          const g = 5 * glow * (1 - m * 0.7);
+          if (g > 0.5) { ctx.fillStyle = "rgba(76,131,255,0.22)"; ctx.fillRect(x - g, y - g, bwid + g * 2, bh + g * 2); }
           ctx.fillStyle = j % 5 === 0 ? "#9CBFFF" : "#4C83FF";
-          ctx.shadowColor = "#4C83FF"; ctx.shadowBlur = 14 * glow * (1 - m * 0.7);
-          rr(x, y, bwid, bh, Math.min(bwid / 2, 3)); ctx.fill();
+          ctx.fillRect(x, y, bwid, bh);
         }
-      }
-      ctx.shadowBlur = 0;
-      if (titleRef.current) {
-        titleRef.current.style.opacity = String(clamp01((q - 0.8) / 0.15));
       }
     };
     raf = requestAnimationFrame(draw);
@@ -102,16 +99,9 @@ export function WaveBridge() {
   }, [titles]);
 
   return (
-    <section id="onda" ref={ref} className={s.bridge} aria-label="Transizione dal mixer al Beat Store">
+    <section id="onda" ref={ref} className={s.bridge} aria-hidden="true">
       <div className={s.bridgeSticky}>
         <canvas ref={canvasRef} className={s.bridgeCanvas} aria-hidden="true" />
-        <div ref={titleRef} className={s.bridgeTitle}>
-          <p className={s.kicker}>05 · Beat Store</p>
-          <p className={s.bridgeHeadline}>Ogni onda è un beat.</p>
-        </div>
-        <button type="button" className={`${s.btnGhost} ${s.bridgeSkip}`} onClick={() => document.getElementById("beat-store")?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth" })}>
-          Salta al catalogo
-        </button>
       </div>
     </section>
   );

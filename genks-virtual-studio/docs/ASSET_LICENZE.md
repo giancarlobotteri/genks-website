@@ -24,6 +24,16 @@ Il marchio GENKS appartiene al committente.
 | Copertine dei beat | SVG generati dal codice | Originali |
 | Titoli, descrizioni, prezzi, licenze, pacchetti | Dati di esempio in `src/data/fixtures.ts` | Inventati, marcati DEMO |
 
+## Immagini generate con Higgsfield (crediti gratuiti dell'account)
+
+| File | Uso |
+| --- | --- |
+| `public/assets/tex/daw-screen-*.webp` | Schermata DAW sul monitor dello studio 3D |
+| `public/assets/img/store-bg*.webp` | Sfondo cinematografico del Beat Store |
+| `public/assets/img/custom-hero*.webp` | Copertina del pannello «Beat su misura» |
+
+Immagini generate con l'IA, senza loghi né marchi di terzi. Prima di un uso commerciale verificare i termini d'uso del piano Higgsfield attivo.
+
 ## Materiali di terzi (Poly Haven, licenza CC0)
 
 Scaricati da polyhaven.com: dominio pubblico (CC0), uso commerciale libero, attribuzione non richiesta. Ridimensionati e convertiti in WebP in `public/assets/`.

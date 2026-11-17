@@ -5,7 +5,7 @@ import { bundleSaving, cartLines, cartTotal, emptyFilters, filterBeats, priceFro
 import { chordNotes, MINOR, parseKey, previewBars } from "../src/lib/music.ts";
 import { validate } from "../src/lib/validate.ts";
 import { encodeWav } from "../src/lib/wav.ts";
-import { band, KEYS, poseAt, type Pose } from "../src/scene/camera-path.ts";
+import { band, KEYS, poseAt, STOPS, type Pose } from "../src/scene/camera-path.ts";
 
 const { beats, licenses, bundles } = demoContent;
 
@@ -108,15 +108,20 @@ describe("percorso camera", () => {
     expect(poseAt(1, end)).toEqual(end);
     expect(poseAt(2, end)).toEqual(end);
   });
-  it("arretra per rivelare lo studio prima di raggiungere il mixer", () => {
-    const z = [0, 0.36, 0.56, 0.78].map(p => poseAt(p, end).pos[2]);
-    expect(z[1]).toBeGreaterThan(z[0]);
-    expect(z[2]).toBeGreaterThan(z[1]);
-    expect(z[3]).toBeLessThan(0);
+  it("si ferma esattamente su ogni tappa: microfono, DAW, tre servizi, display", () => {
+    for (const st of STOPS.slice(0, -1)) {
+      const k = KEYS.find(x => x.p === st.p)!;
+      expect(k).toBeTruthy();
+      poseAt(st.p, end).pos.forEach((v, i) => expect(v).toBeCloseTo(k.pos[i], 6));
+    }
+  });
+  it("arretra per rivelare lo studio tra microfono e monitor DAW", () => {
+    expect(poseAt(0.11, end).pos[2]).toBeGreaterThan(poseAt(0, end).pos[2]);
+    expect(poseAt(0.22, end).pos[2]).toBeLessThan(0);
   });
   it("motion ridotto: nessun movimento continuo, solo pose chiave", () => {
-    expect(poseAt(0.4, end, true).pos).toEqual(KEYS[2].pos);
-    expect(poseAt(0.41, end, true).pos).toEqual(KEYS[2].pos);
+    expect(poseAt(0.21, end, true).pos).toEqual(KEYS[2].pos);
+    expect(poseAt(0.24, end, true).pos).toEqual(KEYS[2].pos);
   });
   it("visibilità degli hotspot per fascia di scroll", () => {
     expect(band(0.1, 0, 0.2)).toBe(1);

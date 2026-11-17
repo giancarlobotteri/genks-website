@@ -58,7 +58,7 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   // 02 microphone hotspot
   await page.waitForTimeout(2800);
   await snap(page, "04-mic-scene");
-  const micHot = page.getByRole("button", { name: "Esplora registrazione" }).first();
+  const micHot = page.getByRole("button", { name: "Registrazione voce" }).first();
   ok("02 hotspot microfono visibile con etichetta", await micHot.isVisible());
   await micHot.click({ force: true }); // the hotspot follows the gently swaying camera
   const recDlg = page.getByRole("dialog", { name: "Prenota una sessione" });
@@ -75,31 +75,61 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await recDlg.getByRole("button", { name: "Chiudi pannello" }).click();
   await recDlg.waitFor({ state: "hidden" });
 
-  // 03 reveal, 04 mixer hotspot, 05 waveform
-  const span = await page.evaluate(() => document.getElementById("studio").offsetHeight - innerHeight);
-  await page.evaluate(y => scrollTo({ top: y, behavior: "instant" }), span * 0.5);
-  await page.waitForTimeout(1800);
-  await snap(page, "06-studio-reveal");
-  ok("03 reveal dello studio: capitolo e etichette monitor/rack", await page.getByText("Lo spazio si accende.").isVisible() && await page.getByText("Monitor da studio", { exact: true }).isVisible());
-  await page.evaluate(y => scrollTo({ top: y, behavior: "instant" }), span * 0.8);
-  await page.waitForTimeout(1800);
-  await snap(page, "07-mixer");
-  const mixHot = page.getByRole("button", { name: "Apri servizi Mix & Master" }).first();
-  ok("04 hotspot mixer visibile", await mixHot.isVisible());
-  await mixHot.click({ force: true });
+  // 03 guided scroll: one wheel gesture = one complete camera move to the next stop
+  const stopY = p => page.evaluate(p => { const e = document.getElementById("studio"); return e.offsetTop + (e.offsetHeight - innerHeight) * p; }, p);
+  const wheelTo = async (p, label) => {
+    await page.mouse.move(640, 300);
+    await page.mouse.wheel(0, 120);
+    // wait until the guided move has finished (software rendering in CI can be slow)
+    const want = await stopY(p);
+    await page.waitForFunction(w => Math.abs(scrollY - w) < 2, want, { timeout: 9000 }).catch(() => {});
+    await page.waitForTimeout(600);
+    const y = await page.evaluate(() => scrollY);
+    ok(`03 scroll a tappe: una rotellina → ${label}`, Math.abs(y - want) < 6, `y=${Math.round(y)} atteso ${Math.round(want)}`);
+  };
+  await page.waitForTimeout(1200);
+  ok("03 indicazione «scorri» visibile all'ingresso", await page.getByText("Scorri verso il basso per scoprire i servizi").isVisible());
+  await wheelTo(0.22, "monitor DAW (beat su misura)");
+  await snap(page, "06-daw-custom");
+  const dawHot = page.getByRole("button", { name: "Beat su misura" }).and(page.locator("[data-id]"));
+  ok("08 hotspot «Beat su misura» sul monitor DAW", await dawHot.isVisible());
+  await dawHot.click({ force: true });
+  const custom = page.getByRole("dialog", { name: "Un beat costruito sul tuo brano" });
+  await custom.waitFor();
+  await custom.getByLabel("Genere *").fill("Trap");
+  await custom.getByLabel("Descrizione *").fill("Beat scuro con 808 lunghi.");
+  await fillContact(custom);
+  await page.waitForTimeout(500);
+  await snap(page, "13-custom-beat");
+  await custom.getByRole("button", { name: "Richiedi preventivo" }).click();
+  ok("08 beat su misura: richiesta preventivo demo", await custom.getByText("Richiesta demo registrata").isVisible());
+  await page.keyboard.press("Escape");
+  await custom.waitFor({ state: "hidden" });
+
+  await wheelTo(0.5, "servizio Mix");
+  await snap(page, "07-mixer-mix");
+  ok("04 servizio Mix presentato allo scorrimento", await page.getByRole("heading", { name: "Mix", exact: true }).isVisible() && !(await page.getByRole("heading", { name: "Master", exact: true }).isVisible()));
+  await wheelTo(0.62, "servizio Master");
+  ok("04 servizio Master compare dopo il Mix", await page.getByRole("heading", { name: "Master", exact: true }).isVisible());
+  await page.getByRole("button", { name: "Scegli Master" }).click();
   await mixDlg.waitFor();
+  ok("04 dalla scheda servizio si apre il pannello sul tab giusto", (await mixDlg.getByRole("tab", { name: "Master", exact: true }).getAttribute("aria-selected")) === "true");
   const yBefore = await page.evaluate(() => scrollY);
   await page.keyboard.press("Escape");
   await mixDlg.waitFor({ state: "hidden" });
   ok("scroll: nessun salto alla chiusura del pannello", Math.abs((await page.evaluate(() => scrollY)) - yBefore) < 2);
-  const [bTop, bSpan] = await page.evaluate(() => { const e = document.getElementById("onda"); return [e.offsetTop, e.offsetHeight - innerHeight]; });
-  await page.evaluate(y => scrollTo({ top: y, behavior: "instant" }), bTop + bSpan * 0.5);
-  await page.waitForTimeout(700);
-  await snap(page, "08-waveform-morph");
-  await page.evaluate(y => scrollTo({ top: y, behavior: "instant" }), bTop + bSpan * 0.97);
-  await page.waitForTimeout(700);
-  await snap(page, "09-waveform-cards");
-  ok("05 transizione waveform → catalogo presente e saltabile", await page.getByRole("button", { name: "Salta al catalogo" }).isVisible());
+  await wheelTo(0.74, "servizio Mix & Master");
+  await snap(page, "08-mixer-mixmaster");
+  await wheelTo(1, "display del mixer");
+  const storeHot = page.getByRole("button", { name: "Entra nel Beat Store" });
+  ok("05 pulsante «Entra nel Beat Store» sul display", await storeHot.isVisible());
+  await storeHot.click({ force: true });
+  await page.waitForTimeout(1500);
+  await snap(page, "09-waveform-split");
+  await page.waitForTimeout(2200);
+  const [sy, storeTop] = await page.evaluate(() => [scrollY, document.getElementById("beat-store").getBoundingClientRect().top]);
+  ok("05 onda divisa e arrivo diretto ai beat", Math.abs(storeTop - 64) < 8 && sy > 0, `top=${Math.round(storeTop)}`);
+  ok("05 niente più titolo «Ogni onda è un beat»", (await page.getByText("Ogni onda è un beat").count()) === 0);
 
   // 06 store: search / filter / empty / play / licence / order
   await page.evaluate(() => document.getElementById("beat-store").scrollIntoView({ behavior: "instant" }));
@@ -116,7 +146,12 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await store.getByLabel("BPM min").fill("145");
   ok("06 filtri genere + BPM", (await count()) === 1);
   await store.getByRole("button", { name: "Azzera filtri" }).click();
-  ok("06 almeno 6 beat demo", (await count()) >= 6, String(await count()));
+  ok("06 almeno 6 beat demo per pagina", (await count()) >= 6, String(await count()));
+  await store.getByRole("button", { name: "Pagina successiva" }).click();
+  await page.waitForTimeout(900);
+  ok("10 catalogo a pagine: pagina 2 con altri beat", await store.getByText("pagina 2 di").isVisible() && !(await store.getByRole("heading", { name: "Notte Cobalto" }).isVisible()));
+  await store.getByRole("button", { name: "Pagina 1" }).click();
+  await page.waitForTimeout(900);
   await snap(page, "10-beat-store");
   await store.getByRole("button", { name: "Ascolta l’anteprima di Notte Cobalto" }).click();
   const player = page.locator('aside[aria-label="Player anteprime"]');
@@ -158,15 +193,7 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await page.keyboard.press("Escape");
   await beatDlg.waitFor({ state: "hidden" });
 
-  // 08 custom beat + bundle
-  const custom = page.locator("#beat-su-misura");
-  await custom.scrollIntoViewIfNeeded();
-  await custom.getByLabel("Genere *").fill("Trap");
-  await custom.getByLabel("Descrizione *").fill("Beat scuro con 808 lunghi.");
-  await fillContact(custom);
-  await snap(page, "13-custom-beat");
-  await custom.getByRole("button", { name: "Richiedi preventivo" }).click();
-  ok("08 beat su misura: richiesta preventivo demo", await custom.getByText("Richiesta demo registrata").isVisible());
+  // bundle
   const bundles = page.locator("#bundle");
   await bundles.scrollIntoViewIfNeeded();
   await page.waitForTimeout(600);
@@ -236,9 +263,28 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   ok("10 mobile/touch + motion ridotto: pannello registrazione dal menu", true);
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Apri menu" }).tap();
-  await page.getByRole("button", { name: "Modalità leggera" }).tap();
-  ok("10 modalità leggera: servizi raggiungibili senza 3D", (await page.locator("canvas").count()) === 0 && await page.getByRole("button", { name: "Apri servizi Mix & Master" }).isVisible());
-  await snap(page, "18-mobile-lite");
+  await page.getByRole("navigation", { name: "Sezioni" }).getByRole("button", { name: "Beat su misura" }).tap();
+  ok("10 mobile: beat su misura dal menu", await page.getByRole("dialog", { name: "Un beat costruito sul tuo brano" }).isVisible());
+  await snap(page, "18-mobile-custom");
+  ok("menu senza «modalità leggera»", (await page.getByText("Modalità leggera").count()) === 0);
+  await ctx.close();
+
+  /* ---------- Phone swipe: one swipe = one step ---------- */
+  ctx = await browser.newContext({ ...devices["iPhone 13"] });
+  page = await ctx.newPage();
+  page.on("pageerror", e => errors.push(e.message));
+  await page.addInitScript(() => sessionStorage.setItem("genks:vs:intro", "1"));
+  await page.goto(url + "?quality=low");
+  await page.waitForTimeout(3500);
+  await page.evaluate(() => {
+    const t = y => new Touch({ identifier: 1, target: document.body, clientX: 200, clientY: y });
+    window.dispatchEvent(new TouchEvent("touchstart", { touches: [t(600)], cancelable: true }));
+    for (const y of [580, 540, 480, 420]) window.dispatchEvent(new TouchEvent("touchmove", { touches: [t(y)], cancelable: true }));
+  });
+  await page.waitForFunction(() => { const e = document.getElementById("studio"); return Math.abs(scrollY - (e.offsetTop + (e.offsetHeight - innerHeight) * 0.22)) < 2; }, null, { timeout: 9000 }).catch(() => {});
+  const [py, pwant] = await page.evaluate(() => { const e = document.getElementById("studio"); return [scrollY, e.offsetTop + (e.offsetHeight - innerHeight) * 0.22]; });
+  ok("10 telefono: uno swipe porta alla tappa successiva", Math.abs(py - pwant) < 6, `y=${Math.round(py)} atteso ${Math.round(pwant)}`);
+  await snap(page, "20-mobile-daw");
   await ctx.close();
 
   ok("nessun errore JavaScript in console", errors.length === 0, errors.slice(0, 3).join(" | "));

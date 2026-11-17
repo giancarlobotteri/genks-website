@@ -1,4 +1,4 @@
-import { Menu, ShoppingBag, X, Zap } from "lucide-react";
+import { Menu, ShoppingBag, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
@@ -8,7 +8,7 @@ import { DemoBadge } from "./ui.tsx";
 export type NavItem = { label: string; go: () => void };
 
 /** Persistent menu: every service is reachable at any time, without completing a scene. */
-export function TopNav({ items, lite, onToggleLite, adminHref }: { items: NavItem[]; lite: boolean; onToggleLite: () => void; adminHref: string }) {
+export function TopNav({ items, adminHref }: { items: NavItem[]; adminHref: string }) {
   const { cart, open } = useStudio();
   const [menu, setMenu] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -29,9 +29,6 @@ export function TopNav({ items, lite, onToggleLite, adminHref }: { items: NavIte
           {items.map(it => <li key={it.label}><button type="button" onClick={() => { setMenu(false); it.go(); }}>{it.label}</button></li>)}
           <li><a href={adminHref} onClick={() => setMenu(false)}>Gestione demo</a></li>
         </ul>
-        <button type="button" className={s.liteToggle} aria-pressed={lite} onClick={onToggleLite} title="Disattiva la scena 3D per dispositivi lenti">
-          <Zap size={14} /> Modalità leggera
-        </button>
       </nav>
       <button type="button" className={s.cartBtn} onClick={() => open({ type: "cart" })} aria-label={`Carrello demo, ${cart.length} articoli`}>
         <ShoppingBag size={20} />{cart.length > 0 && <span className={s.cartCount}>{cart.length}</span>}

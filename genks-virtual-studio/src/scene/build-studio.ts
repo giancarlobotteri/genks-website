@@ -10,7 +10,7 @@ export type Quality = "high" | "low";
 
 export type StudioRig = {
   scene: THREE.Scene;
-  anchors: { mic: THREE.Object3D; mixer: THREE.Object3D; display: THREE.Object3D; monitors: THREE.Object3D; rack: THREE.Object3D };
+  anchors: { mic: THREE.Object3D; mixer: THREE.Object3D; screen: THREE.Object3D; display: THREE.Object3D; monitors: THREE.Object3D; rack: THREE.Object3D };
   /** 0..1 progressive reveal of the studio lights. */
   setReveal: (v: number) => void;
   /** Called every frame; `t` seconds, `active` = animate meters/faders. */
@@ -71,6 +71,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   if (hi) RectAreaLightUniformsLib.init();
 
   const disposables: { dispose: () => void }[] = [envTex];
+  let alive = true;
   const track = <T extends { dispose: () => void }>(o: T) => { disposables.push(o); return o; };
   const std = (p: THREE.MeshStandardMaterialParameters) => track(new THREE.MeshStandardMaterial(p));
   // clearcoat only where the GPU can afford it
@@ -327,7 +328,14 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   /* ====================== COMPUTER SCREEN ====================== */
   const scr = new THREE.Group(); scr.position.set(0, 1.44, -2.02); scene.add(scr);
   mesh(rbox(1.16, 0.53, 0.022, 0.012, 3), mPlastic, scr).castShadow = true;
-  mesh(new THREE.PlaneGeometry(1.13, 0.5), basic("#ffffff", { map: track(dawTexture()) }), scr, 0, 0.004, 0.0116);
+  const screenMat = basic("#ffffff", { map: track(dawTexture()) });
+  mesh(new THREE.PlaneGeometry(1.13, 0.5), screenMat, scr, 0, 0.004, 0.0116);
+  // Realistic DAW screenshot (generated image); the procedural screen stays until it arrives.
+  new THREE.TextureLoader().loadAsync(`/assets/tex/daw-screen-${hi ? 2048 : 1024}.webp`).then(t => {
+    if (!alive) { t.dispose(); return; }
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = hi ? 8 : 2;
+    track(t); screenMat.map = t; screenMat.color.set("#c9d3ea"); screenMat.needsUpdate = true;
+  }).catch(() => { /* keep the procedural screen */ });
   const glassM = phys({ color: "#000000", roughness: 0.05, metalness: 0, transparent: true, opacity: 0.08, clearcoat: 1 });
   mesh(new THREE.PlaneGeometry(1.13, 0.5), glassM, scr, 0, 0.004, 0.0122);
   mesh(rbox(0.05, 0.26, 0.03, 0.008, 1), mSatin, scr, 0, -0.3, -0.03);
@@ -481,12 +489,18 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
     for (const l of [micKey, deskKey]) {
       l.castShadow = true; l.shadow.mapSize.set(2048, 2048); l.shadow.bias = -0.0004; l.shadow.radius = 5; l.shadow.camera.near = 0.5; l.shadow.camera.far = 8;
     }
+    // The room is static: render the shadow maps once (and again when a scanned model arrives),
+    // not on every frame. This is the biggest single saving for high refresh rates.
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
+    scene.addEventListener("childadded", () => { renderer.shadowMap.needsUpdate = true; });
   }
 
   const anchorAt = (parent: THREE.Object3D, x: number, y: number, z: number) => { const a = new THREE.Object3D(); a.position.set(x, y, z); parent.add(a); return a; };
   const anchors = {
     mic: anchorAt(head, 0, 0.02, 0),
     mixer: anchorAt(mixer, 0, 0.05, 0.12),
+    screen: anchorAt(scr, 0.12, 0.04, 0.03),
     display: anchorAt(mb, 0, 0, 0.0356),
     monitors: anchorAt(monitors.children[1], 0, 0.3, 0),
     rack: anchorAt(rack, 0, 1.6, 0.3),
@@ -538,7 +552,6 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   };
 
   /* ---------- photographic textures + scanned models (CC0), loaded progressively ---------- */
-  let alive = true;
   loadPhotoAssets(scene, [
     { material: mFloor, name: "parquet", repeat: [5, 4], tint: "#7d6a60", roughness: 0.85 },
     { material: mWalnut, name: "walnut", repeat: [1, 1], tint: "#7a5a4c", normalScale: 0.6 },

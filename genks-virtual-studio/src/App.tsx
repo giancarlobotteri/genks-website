@@ -1,14 +1,14 @@
-import { lazy, Suspense, useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from "react";
 import { Admin } from "./components/Admin.tsx";
 import { GenksSymbol } from "./components/brand.tsx";
 import { BeatStore } from "./components/BeatStore.tsx";
 import { Bundles } from "./components/Bundles.tsx";
-import { CustomBeat } from "./components/CustomBeat.tsx";
 import { Intro } from "./components/Intro.tsx";
 import { PanelHost } from "./components/Panels.tsx";
 import { Player } from "./components/Player.tsx";
 import { TopNav, type NavItem } from "./components/TopNav.tsx";
-import { DemoBadge, prefersReducedMotion } from "./components/ui.tsx";
+import { DemoBadge } from "./components/ui.tsx";
+import { travelTo, travelToId } from "./lib/stepper.ts";
 import { WaveBridge } from "./components/WaveBridge.tsx";
 import { StudioProvider, useStudio } from "./store.tsx";
 import s from "./styles/vs.module.css";
@@ -19,7 +19,6 @@ const StudioStage = lazy(() => import("./components/StudioStage.tsx").then(m => 
 const subscribeHash = (cb: () => void) => { window.addEventListener("hashchange", cb); return () => window.removeEventListener("hashchange", cb); };
 const useRoute = () => useSyncExternalStore(subscribeHash, () => (window.location.hash.startsWith("#/gestione") ? "admin" : "studio"), () => "studio");
 
-const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth" });
 
 function webglAvailable() {
   try {
@@ -31,31 +30,30 @@ function webglAvailable() {
 function Studio() {
   const { open } = useStudio();
   const [introDone, setIntroDone] = useState(() => { try { return sessionStorage.getItem("genks:vs:intro") === "1"; } catch { return false; } });
-  const [lite, setLite] = useState(() => { try { return localStorage.getItem("genks:vs:lite") === "1" || !webglAvailable(); } catch { return !webglAvailable(); } });
-  const toggleLite = useCallback(() => setLite(v => { try { localStorage.setItem("genks:vs:lite", v ? "0" : "1"); } catch { /* ignore */ } return !v; }), []);
+  // No "light mode" switch: the 2D fallback appears only if this browser cannot run WebGL at all.
+  const [noGl, setNoGl] = useState(() => !webglAvailable());
 
   useEffect(() => { document.documentElement.dataset.vsIntro = introDone ? "done" : "on"; }, [introDone]);
 
   const items: NavItem[] = [
-    { label: "Studio", go: () => scrollTo("studio") },
+    { label: "Studio", go: () => travelTo(0) },
     { label: "Registrazione", go: () => open({ type: "recording" }) },
+    { label: "Beat su misura", go: () => open({ type: "custom" }) },
     { label: "Mix & Master", go: () => open({ type: "mix" }) },
-    { label: "Beat Store", go: () => scrollTo("beat-store") },
-    { label: "Beat su misura", go: () => scrollTo("beat-su-misura") },
-    { label: "Pacchetti", go: () => scrollTo("bundle") },
+    { label: "Beat Store", go: () => travelToId("beat-store") },
+    { label: "Pacchetti", go: () => travelToId("bundle") },
   ];
 
   return (
     <>
       {!introDone && <Intro onDone={() => setIntroDone(true)} links={items.slice(1)} />}
-      <TopNav items={items} lite={lite} onToggleLite={toggleLite} adminHref="#/gestione" />
+      <TopNav items={items} adminHref="#/gestione" />
       <main id="top">
         <Suspense fallback={<section id="studio" className={s.stageLoading} aria-busy="true"><p>Carico lo studio…</p></section>}>
-          <StudioStage introDone={introDone} lite={lite} onWebglFail={() => setLite(true)} />
+          <StudioStage introDone={introDone} noGl={noGl} onWebglFail={() => setNoGl(true)} />
         </Suspense>
-        {!lite && <WaveBridge />}
+        {!noGl && <WaveBridge />}
         <BeatStore />
-        <CustomBeat />
         <Bundles />
       </main>
       <footer className={s.footer}>
