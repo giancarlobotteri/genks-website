@@ -1,4 +1,5 @@
-import { Check, Minus, ShoppingBag, Trash2 } from "lucide-react";
+import { Banknote, Check, CreditCard, Minus, ShoppingBag, Smartphone, Trash2 } from "lucide-react";
+import { playCue } from "../cinema.ts";
 import { useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { localAvailability, simulatedCheckout } from "../adapters.ts";
 import { cartLines, cartTotal, formatEuro } from "../lib/catalog.ts";
@@ -7,7 +8,7 @@ import s from "../styles/vs.module.css";
 import type { DemoRequest, MixService } from "../types.ts";
 import { PlayButton } from "./BeatStore.tsx";
 import { DemoForm } from "./DemoForm.tsx";
-import { BeatCover, DemoBadge, DemoNotice, Field, fieldProps, Sheet } from "./ui.tsx";
+import { BeatCover, Confetti, DemoBadge, DemoNotice, Field, fieldProps, Sheet } from "./ui.tsx";
 import { UploadZone } from "./UploadZone.tsx";
 
 const contactRules = {
@@ -28,6 +29,45 @@ function ContactFields({ errors, artist = true }: { errors: Record<string, strin
 
 const price = (v: number | null, prefix = "") => (v == null ? "Su richiesta" : `${prefix}${formatEuro(v)}`);
 
+/* ---------------- Payment method ---------------- */
+type PayId = "card" | "cash" | "wallet";
+type PayOption = { id: PayId; title: string; note: string };
+const PAY_ICONS = { card: CreditCard, cash: Banknote, wallet: Smartphone } as const;
+
+/** Payment method cards: choosing one flies the camera to the POS terminal or the cash box. */
+function PaymentChoice({ legend, options, value, onChange, error }: { legend: string; options: PayOption[]; value: PayId | ""; onChange: (v: PayId) => void; error?: string }) {
+  return (
+    <fieldset className={s.payGrid}>
+      <legend>{legend}</legend>
+      {options.map(o => {
+        const Icon = PAY_ICONS[o.id];
+        return (
+          <label key={o.id} className={s.payCard} data-checked={value === o.id || undefined}>
+            <input type="radio" name="pay-choice" value={o.id} checked={value === o.id} onChange={() => {
+              onChange(o.id);
+              void playCue(o.id === "cash" ? "cash" : "pos", {
+                kicker: `Pagamento · ${o.id === "cash" ? "Contanti" : o.id === "wallet" ? "Wallet" : "Carta"}`,
+                title: o.title,
+                sub: o.note,
+              }, { data: { method: o.id, state: "ready" } });
+            }} />
+            <span className={s.payIcon} aria-hidden="true"><Icon size={20} /></span>
+            <strong>{o.title}</strong>
+            <small>{o.note}</small>
+          </label>
+        );
+      })}
+      {error && <p className={s.fieldError} role="alert">{error}</p>}
+    </fieldset>
+  );
+}
+
+/** Final shot after a confirmed request: approved terminal (or closed cash box), then a second beat. */
+async function confirmShot(method: string, title: string, sub: string, then?: Parameters<typeof playCue>) {
+  await playCue(method === "cash" ? "cash" : "approved", { kicker: method === "cash" ? "Contanti · in studio" : "Pagamento approvato", title, sub }, { ms: 2500, data: { method, state: "done" } });
+  if (then) await playCue(...then);
+}
+
 /* ---------------- Recording ---------------- */
 function RecordingPanel() {
   const { content } = useStudio();
@@ -35,6 +75,7 @@ function RecordingPanel() {
   const [pkg, setPkg] = useState(content.recording[1]?.id ?? content.recording[0]?.id);
   const [day, setDay] = useState<string>("");
   const [slot, setSlot] = useState<string>("");
+  const [pay, setPay] = useState<PayId | "">("");
   const selected = content.recording.find(p => p.id === pkg);
   const dayObj = days.find(d => d.iso === day);
   return (
@@ -44,7 +85,7 @@ function RecordingPanel() {
         <legend>1 · Scegli il pacchetto</legend>
         {content.recording.map(p => (
           <label key={p.id} className={s.optionCard} data-checked={pkg === p.id || undefined}>
-            <input type="radio" name="pkg-choice" value={p.id} checked={pkg === p.id} onChange={() => setPkg(p.id)} />
+            <input type="radio" name="pkg-choice" value={p.id} checked={pkg === p.id} onChange={() => { setPkg(p.id); void playCue("mic", { kicker: "01 · Registrazione", title: p.name, sub: `${p.hours} h in sala con il fonico · ${price(p.price)}` }, { data: { hours: String(p.hours) } }); }} />
             <span className={s.optionTitle}>{p.name}</span>
             <span className={s.optionPrice}>{price(p.price)} <DemoBadge /></span>
             <span className={s.muted}>{p.description}</span>
@@ -67,7 +108,7 @@ function RecordingPanel() {
         {dayObj && (
           <div className={s.slots} role="radiogroup" aria-label="Orario di inizio">
             {dayObj.slots.map(x => (
-              <button key={x.start} type="button" role="radio" aria-checked={slot === x.start} disabled={!x.free} className={s.slot} onClick={() => setSlot(x.start)}>
+              <button key={x.start} type="button" role="radio" aria-checked={slot === x.start} disabled={!x.free} className={s.slot} onClick={() => { setSlot(x.start); void playCue("clock", { kicker: "02 · Data e ora", title: `${dayObj.weekday} ${dayObj.label} · ore ${x.start}`, sub: "Lo slot è bloccato per te (demo)." }, { ms: 2000, data: { time: x.start } }); }}>
                 {x.start}{!x.free && <small> occupato</small>}
               </button>
             ))}
@@ -77,9 +118,12 @@ function RecordingPanel() {
       <DemoForm
         kind="booking"
         submitLabel="Prenota (richiesta demo)"
-        rules={{ ...contactRules, date: { required: true, label: "Data desiderata" }, time: { required: true, label: "Fascia oraria" } }}
-        extra={() => ({ package: selected?.name ?? "", date: day, time: slot, duration: `${selected?.hours ?? ""} h` })}
-        summary={v => `${v.package} · ${v.date} ${v.time} · ${v.name}`}
+        rules={{ ...contactRules, date: { required: true, label: "Data desiderata" }, time: { required: true, label: "Fascia oraria" }, pay: { required: true, label: "Metodo di pagamento" } }}
+        extra={() => ({ package: selected?.name ?? "", date: day, time: slot, duration: `${selected?.hours ?? ""} h`, pay })}
+        summary={v => `${v.package} · ${v.date} ${v.time} · ${v.pay === "cash" ? "contanti" : "carta"} · ${v.name}`}
+        doneTitle="Sessione prenotata (demo)"
+        beforeDone={v => confirmShot(v.pay, v.pay === "cash" ? "Paghi in studio" : "Acconto approvato", v.pay === "cash" ? `${v.package} · ${v.date} ore ${v.time}` : `20 € di acconto · ${v.package}`,
+          ["onair", { kicker: "Ci vediamo in studio", title: "ON AIR", sub: `${new Date(`${v.date}T12:00`).toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })} · ore ${v.time}` }, { ms: 2000 }])}
       >
         {errors => <>
           <p className={s.formLegend}>3 · I tuoi dati</p>
@@ -88,6 +132,10 @@ function RecordingPanel() {
           <ContactFields errors={errors} />
           <Field label="Riferimento (link a brano o demo)" name="reference" error={errors.reference}><input {...fieldProps("reference", errors)} type="url" placeholder="https://" /></Field>
           <Field label="Note" name="notes" error={errors.notes}><textarea {...fieldProps("notes", errors)} rows={3} /></Field>
+          <PaymentChoice legend="4 · Come vuoi pagare?" value={pay} onChange={setPay} error={errors.pay} options={[
+            { id: "card", title: "Carta · acconto 20 €", note: "Blocchi lo slot subito, il resto a fine sessione." },
+            { id: "cash", title: "Contanti in studio", note: "Paghi tutto a fine sessione, in sala." },
+          ]} />
         </>}
       </DemoForm>
     </div>
@@ -96,12 +144,15 @@ function RecordingPanel() {
 
 /* ---------------- Mix & Master ---------------- */
 const TAB_IDS = ["mix", "master", "mixmaster"] as const;
+const MIX_SHOT = { mix: "faders", master: "rack", mixmaster: "console" } as const;
+const MIX_LINE = { mix: "Ogni traccia al suo posto", master: "Pronto per lo streaming", mixmaster: "Dal multitraccia al master" } as const;
 
 function MixPanel({ initialTab, initialView }: { initialTab?: MixService["id"]; initialView?: "services" | "remote" }) {
   const { content } = useStudio();
   const [tab, setTab] = useState<MixService["id"]>(initialTab ?? "mixmaster");
   const [view, setView] = useState(initialView ?? "services");
   const [files, setFiles] = useState<string[]>([]);
+  const [pay, setPay] = useState<PayId | "">("");
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const svc = content.mix.find(m => m.id === tab) ?? content.mix[0];
   const onFiles = useCallback((n: string[]) => setFiles(n), []);
@@ -123,8 +174,11 @@ function MixPanel({ initialTab, initialView }: { initialTab?: MixService["id"]; 
         <DemoForm
           kind="remote-project"
           submitLabel="Invia richiesta progetto (demo)"
-          rules={{ ...contactRules, title: { required: true, label: "Titolo brano" }, service: { required: true, label: "Servizio" }, stems: { required: true, min: 1, max: 200, label: "Numero tracce/stems" }, referenceUrl: { url: true, label: "Link reference" } }}
-          extra={() => ({ files: files.join(", ") })}
+          rules={{ ...contactRules, title: { required: true, label: "Titolo brano" }, service: { required: true, label: "Servizio" }, stems: { required: true, min: 1, max: 200, label: "Numero tracce/stems" }, referenceUrl: { url: true, label: "Link reference" }, pay: { required: true, label: "Metodo di pagamento" } }}
+          extra={() => ({ files: files.join(", "), pay })}
+          doneTitle="Progetto ricevuto (demo)"
+          beforeDone={v => confirmShot(v.pay, v.pay === "cash" ? "Paghi alla consegna" : "Pagamento approvato", `${v.service} · “${v.title}”`,
+            ["speakers", { kicker: "In lavorazione", title: `“${v.title}” sulle casse`, sub: `${v.stems} tracce · ${v.service}` }, { ms: 2000 }])}
           summary={v => `${v.service} · “${v.title}” · ${v.stems} tracce · ${v.name}`}
         >
           {errors => <>
@@ -140,6 +194,10 @@ function MixPanel({ initialTab, initialView }: { initialTab?: MixService["id"]; 
             <Field label="Note per il mix" name="notes" error={errors.notes}><textarea {...fieldProps("notes", errors)} rows={3} /></Field>
             <UploadZone onChange={onFiles} />
             <ContactFields errors={errors} />
+            <PaymentChoice legend="Come vuoi pagare?" value={pay} onChange={setPay} error={errors.pay} options={[
+              { id: "card", title: "Carta · subito", note: "Paghi il servizio ora, iniziamo appena arrivano le tracce." },
+              { id: "cash", title: "Contanti alla consegna", note: "Paghi in studio quando ritiri il brano finito." },
+            ]} />
           </>}
         </DemoForm>
       </div>
@@ -151,7 +209,7 @@ function MixPanel({ initialTab, initialView }: { initialTab?: MixService["id"]; 
       <div role="tablist" aria-label="Servizi" className={s.tabs} onKeyDown={onKey} style={{ ["--tab" as string]: TAB_IDS.indexOf(tab) }}>
         <span className={s.tabInk} aria-hidden="true" />
         {content.mix.map(m => (
-          <button key={m.id} ref={el => { tabRefs.current[m.id] = el; }} role="tab" type="button" id={`tab-${m.id}`} aria-selected={tab === m.id} aria-controls="mix-tabpanel" tabIndex={tab === m.id ? 0 : -1} onClick={() => setTab(m.id)}>{m.name}</button>
+          <button key={m.id} ref={el => { tabRefs.current[m.id] = el; }} role="tab" type="button" id={`tab-${m.id}`} aria-selected={tab === m.id} aria-controls="mix-tabpanel" tabIndex={tab === m.id ? 0 : -1} onClick={() => { setTab(m.id); void playCue(MIX_SHOT[m.id], { kicker: `Servizio · ${m.name}`, title: MIX_LINE[m.id], sub: `${price(m.price, "da ")} · ${m.turnaround}` }); }}>{m.name}</button>
         ))}
       </div>
       <div id="mix-tabpanel" role="tabpanel" aria-labelledby={`tab-${svc.id}`} className={s.tabPanel} key={svc.id}>
@@ -184,7 +242,7 @@ function MixPanel({ initialTab, initialView }: { initialTab?: MixService["id"]; 
         </table>
       </div>
       <div className={s.ctaRow}>
-        <button type="button" className={s.btnPrimary} onClick={() => setView("remote")}>Invia progetto da remoto</button>
+        <button type="button" className={s.btnPrimary} onClick={() => { setView("remote"); void playCue("screen", { kicker: "Invio da remoto", title: "La sessione si apre", sub: `${svc.name} · carica le tracce e scegli come pagare` }, { data: { label: svc.name } }); }}>Invia progetto da remoto</button>
         <p className={s.muted}>Il pagamento non è attivo nel prototipo: dopo la richiesta ricevi (in produzione) un preventivo confermato.</p>
       </div>
     </div>
@@ -215,7 +273,7 @@ function BeatPanel({ id }: { id: string }) {
         <legend>Scegli la licenza <DemoBadge>Licenze DEMO</DemoBadge></legend>
         {avail.map(l => (
           <label key={l.id} className={s.licenseCard} data-checked={lic === l.id || undefined}>
-            <input type="radio" name="license" value={l.id} checked={lic === l.id} onChange={() => { setLic(l.id); setAdded(false); }} />
+            <input type="radio" name="license" value={l.id} checked={lic === l.id} onChange={() => { setLic(l.id); setAdded(false); void playCue("display", { kicker: `Licenza · ${l.name}`, title: beat.title, sub: `${l.format} · ${l.price == null ? "su richiesta" : formatEuro(l.price)}` }, { data: { label: l.name.toUpperCase(), sub: beat.title } }); }} />
             <span className={s.optionTitle}>{l.name}<small>{l.format}</small></span>
             <span className={s.optionPrice}>{l.price == null ? "Su richiesta" : formatEuro(l.price)}</span>
             <span className={s.licCols}>
@@ -230,7 +288,7 @@ function BeatPanel({ id }: { id: string }) {
         {chosen?.price == null ? (
           <button type="button" className={s.btnPrimary} onClick={() => open({ type: "exclusive", beatId: beat.id })}>Richiedi esclusiva</button>
         ) : (
-          <button type="button" className={s.btnPrimary} onClick={() => { addToCart({ beatId: beat.id, licenseId: chosen.id }); setAdded(true); }}>
+          <button type="button" className={s.btnPrimary} onClick={() => { addToCart({ beatId: beat.id, licenseId: chosen.id }); void playCue("speakers", { kicker: "Aggiunto al carrello", title: beat.title, sub: `${chosen.name} · ${formatEuro(chosen.price!)}` }, { ms: 1800 }).then(() => setAdded(true)); }}>
             <ShoppingBag size={16} /> {inCart ? "Aggiorna licenza nel carrello" : "Aggiungi al carrello"} · {formatEuro(chosen.price)}
           </button>
         )}
@@ -247,7 +305,8 @@ function ExclusivePanel({ beatId }: { beatId: string }) {
     <div className={s.panelStack}>
       <DemoNotice>L’esclusiva non ha un prezzo fisso e non viene venduta automaticamente: è una richiesta separata.</DemoNotice>
       <DemoForm kind="exclusive" submitLabel="Invia richiesta esclusiva (demo)" rules={{ ...contactRules, offer: { min: 0, label: "Offerta indicativa" } }}
-        extra={() => ({ beat: beat?.title ?? beatId })} summary={v => `Esclusiva “${v.beat}” · ${v.name}`}>
+        extra={() => ({ beat: beat?.title ?? beatId })} summary={v => `Esclusiva “${v.beat}” · ${v.name}`}
+        beforeDone={v => playCue("display", { kicker: "Licenza esclusiva", title: "Richiesta inviata", sub: `“${v.beat}” · ti ricontattiamo noi` }, { ms: 2200, data: { label: "ESCLUSIVA", sub: v.beat } })}>
         {errors => <>
           <p>Beat: <strong>{beat?.title}</strong></p>
           <ContactFields errors={errors} />
@@ -278,7 +337,7 @@ function CartPanel() {
         ))}
       </ul>
       <p className={s.total}>Totale <strong>{formatEuro(cartTotal(lines))}</strong> <DemoBadge /></p>
-      <button type="button" className={s.btnPrimary} onClick={() => open({ type: "checkout" })}>Procedi al checkout simulato</button>
+      <button type="button" className={s.btnPrimary} onClick={() => { open({ type: "checkout" }); void playCue("pos", { kicker: "Checkout", title: `Totale ${formatEuro(cartTotal(lines))}`, sub: `${lines.length} ${lines.length === 1 ? "licenza" : "licenze"} · scegli come pagare` }, { data: { method: "card", state: "ready", amount: formatEuro(cartTotal(lines)) } }); }}>Procedi al checkout simulato</button>
       <p className={s.muted}>Nessun pagamento è attivo in questo prototipo.</p>
     </div>
   );
@@ -289,9 +348,12 @@ function CheckoutPanel() {
   const lines = cartLines(cart, content.beats, content.licenses);
   const [order, setOrder] = useState<DemoRequest | null>(null);
   const [err, setErr] = useState<Record<string, string>>({});
+  const [pay, setPay] = useState<PayId | "">("card");
+  const [busy, setBusy] = useState(false);
   if (order) {
     return (
       <div className={s.success} role="status">
+        <Confetti />
         <h3>Ordine simulato <DemoBadge /></h3>
         <p>Riferimento <strong>{order.id}</strong>. <strong>Nessun addebito</strong> è stato effettuato e <strong>nessun file</strong> viene consegnato: questo è un riepilogo dimostrativo.</p>
         <p className={s.muted}>In produzione: pagamento tramite provider, webhook di conferma, email e download autorizzati.</p>
@@ -300,8 +362,9 @@ function CheckoutPanel() {
   }
   if (!lines.length) return <p>Il carrello demo è vuoto.</p>;
   return (
-    <form className={s.form} noValidate onSubmit={e => {
+    <form className={s.form} noValidate onSubmit={async e => {
       e.preventDefault();
+      if (busy) return;
       const fd = new FormData(e.currentTarget);
       const v = { name: String(fd.get("name") ?? ""), email: String(fd.get("email") ?? ""), ack: fd.get("ack") ? "yes" : "" };
       const errors: Record<string, string> = {};
@@ -310,7 +373,11 @@ function CheckoutPanel() {
       if (!v.ack) errors.ack = "Conferma di aver capito che si tratta di una simulazione.";
       setErr(errors);
       if (Object.keys(errors).length) return;
-      const r = simulatedCheckout.simulate(lines.map(l => `${l.beat.title} (${l.license.name})`).join(", ") + ` · ${formatEuro(cartTotal(lines))}`, { ...v, total: String(cartTotal(lines)) });
+      const r = simulatedCheckout.simulate(lines.map(l => `${l.beat.title} (${l.license.name})`).join(", ") + ` · ${formatEuro(cartTotal(lines))}`, { ...v, pay, total: String(cartTotal(lines)) });
+      setBusy(true);
+      await playCue("approved", { kicker: "Pagamento approvato", title: formatEuro(cartTotal(lines)), sub: `Ordine ${r.order.id} · licenze pronte (demo)` }, { ms: 2600, data: { method: pay, state: "done", amount: formatEuro(cartTotal(lines)) } });
+      await playCue("display", { kicker: "Download sbloccati", title: "Il beat è tuo", sub: lines.map(l => l.beat.title).join(" · ") }, { ms: 1900, data: { label: "LICENZA ATTIVA", sub: lines[0].beat.title } });
+      setBusy(false);
       setOrder(r.order);
       clearCart();
     }}>
@@ -323,9 +390,13 @@ function CheckoutPanel() {
         <Field label="Nome *" name="name" error={err.name}><input {...fieldProps("name", err)} autoComplete="name" /></Field>
         <Field label="Email *" name="email" error={err.email}><input {...fieldProps("email", err)} type="email" autoComplete="email" /></Field>
       </div>
+      <PaymentChoice legend="Metodo di pagamento" value={pay} onChange={setPay} options={[
+        { id: "card", title: "Carta", note: "Visa, Mastercard, Amex (simulato)." },
+        { id: "wallet", title: "Apple Pay / Google Pay", note: "Conferma dal telefono (simulato)." },
+      ]} />
       <label className={s.check}><input type="checkbox" name="ack" aria-invalid={err.ack ? true : undefined} /> Ho capito che è un ordine simulato senza pagamento né download.</label>
       {err.ack && <p className={s.fieldError} role="alert">{err.ack}</p>}
-      <button type="submit" className={s.btnPrimary}>Simula ordine</button>
+      <button type="submit" className={s.btnPrimary} disabled={busy}>{busy ? "Pagamento in corso…" : "Simula ordine"}</button>
     </form>
   );
 }
@@ -339,7 +410,8 @@ function BundlePanel({ id }: { id: string }) {
       {b.status === "example" && <DemoNotice>Offerta di esempio, non ancora pubblicata.</DemoNotice>}
       <p>{b.summary}</p>
       <DemoForm kind="bundle" submitLabel="Richiedi questo pacchetto (demo)" rules={contactRules}
-        extra={() => ({ bundle: b.name })} summary={v => `Pacchetto “${v.bundle}” · ${v.name}`}>
+        extra={() => ({ bundle: b.name })} summary={v => `Pacchetto “${v.bundle}” · ${v.name}`}
+        beforeDone={v => playCue("sofa", { kicker: "Pacchetto richiesto", title: v.bundle, sub: "Ti scriviamo per fissare il primo appuntamento." }, { ms: 2200 })}>
         {errors => <>
           <ContactFields errors={errors} />
           <Field label="Preferenze e richieste" name="notes" error={errors.notes}><textarea {...fieldProps("notes", errors)} rows={3} /></Field>

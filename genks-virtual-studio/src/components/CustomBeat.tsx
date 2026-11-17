@@ -5,6 +5,7 @@ import { bassNote, hat, kick, snare } from "../lib/synth.ts";
 import { AUDIO_CLAIM, useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
 import { DemoForm } from "./DemoForm.tsx";
+import { playCue } from "../cinema.ts";
 import { DemoBadge, Field, fieldProps } from "./ui.tsx";
 
 const ROWS = ["Kick", "Snare", "Hi-hat", "Basso"] as const;
@@ -107,6 +108,7 @@ export function CustomBeat() {
       <div className={s.customForm}>
         <h3>Richiedi un preventivo</h3>
         <DemoForm kind="custom-beat" submitLabel="Richiedi preventivo"
+          beforeDone={v => playCue("keys", { kicker: "Beat su misura", title: "Si parte dalla tastiera", sub: `${v.genre}${v.bpm ? ` · ${v.bpm} BPM` : ""} · preventivo in arrivo` }, { ms: 2300 })}
           rules={{ name: { required: true, label: "Nome" }, email: { required: true, email: true, label: "Email" }, genre: { required: true, label: "Genere" }, description: { required: true, label: "Descrizione" }, bpm: { min: 40, max: 220, label: "BPM" }, reference: { url: true, label: "Riferimento sonoro" } }}
           summary={v => `${v.genre}${v.bpm ? ` · ${v.bpm} BPM` : ""} · ${v.mood || "mood libero"} · ${v.name}`}>
           {errors => <>

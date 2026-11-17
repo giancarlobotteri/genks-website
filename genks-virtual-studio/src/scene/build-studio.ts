@@ -3,7 +3,9 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLightUniformsLib.js";
+import type { ShotId } from "../cinema.ts";
 import { loadPhotoAssets } from "./photo-assets.ts";
+import { buildExtras } from "./studio-extras.ts";
 import { brushedTexture, dawTexture, fabricTexture, meshTexture, noiseTexture, shadowBlob, streakRoughness, woodTexture } from "./textures.ts";
 
 export type Quality = "high" | "low";
@@ -11,6 +13,8 @@ export type Quality = "high" | "low";
 export type StudioRig = {
   scene: THREE.Scene;
   anchors: { mic: THREE.Object3D; mixer: THREE.Object3D; display: THREE.Object3D; monitors: THREE.Object3D; rack: THREE.Object3D };
+  /** Start/stop a cinematic cue: drives object animations (POS, cash box, clock, ON AIR, faders…). */
+  setCue: (shot: ShotId | null, data?: Record<string, string>) => void;
   /** 0..1 progressive reveal of the studio lights. */
   setReveal: (v: number) => void;
   /** Called every frame; `t` seconds, `active` = animate meters/faders. */
@@ -205,7 +209,6 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   // wall emblem with a backlit halo
   mesh(new THREE.CircleGeometry(0.4, 72), mSymbol, scene, 0, 2.62, -3.49);
   const halo = mesh(new THREE.TorusGeometry(0.43, 0.012, 12, 72), mStrip, scene, 0, 2.62, -3.5);
-  void halo;
 
   /* ====================== DESK ====================== */
   const desk = new THREE.Group(); desk.position.set(0, 0, -1.6); scene.add(desk);
@@ -290,6 +293,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   }
   const meters = instanced(box(0.03, 0.011, 0.003), basic("#ffffff"), mb, meterItems);
   const dctx = dispCanvas.getContext("2d")!;
+  let dispLabel = "", dispSub = "", dispLabelAt = 0;
   const drawDisplay = (t: number) => {
     const w = dispCanvas.width, h = dispCanvas.height;
     dctx.fillStyle = "#040a1a"; dctx.fillRect(0, 0, w, h);
@@ -302,12 +306,25 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
       dctx.fillStyle = i % 6 === 0 ? "#9CBFFF" : "#4C83FF";
       dctx.fillRect(8 + i * ((w - 16) / n), (h - bh) / 2, (w - 16) / n - 3, bh);
     }
+    if (dispLabel) {
+      const a = Math.min(1, (t - dispLabelAt) * 2.5);
+      dctx.fillStyle = `rgba(4, 10, 26, ${0.78 * a})`; dctx.fillRect(0, 0, w, h);
+      dctx.textAlign = "center"; dctx.textBaseline = "middle";
+      dctx.shadowColor = "#4C83FF"; dctx.shadowBlur = 22 * a;
+      dctx.fillStyle = `rgba(238, 243, 255, ${a})`; dctx.font = "700 46px 'Space Grotesk', sans-serif";
+      const shown = dispLabel.slice(0, Math.ceil(dispLabel.length * Math.min(1, (t - dispLabelAt) * 1.8)));
+      dctx.fillText(shown, w / 2, h / 2 - 14);
+      dctx.shadowBlur = 0;
+      if (dispSub) { dctx.fillStyle = `rgba(156, 191, 255, ${a})`; dctx.font = "500 24px 'Space Grotesk', sans-serif"; dctx.fillText(dispSub, w / 2, h / 2 + 34); }
+      dctx.textAlign = "start"; dctx.textBaseline = "alphabetic";
+    }
     dispTex.needsUpdate = true;
   };
   drawDisplay(0);
 
   /* ====================== STUDIO MONITORS ====================== */
   const monitors = new THREE.Group(); scene.add(monitors);
+  const cones: THREE.Mesh[] = [];
   const coneProfile = [new THREE.Vector2(0.03, -0.035), new THREE.Vector2(0.05, -0.028), new THREE.Vector2(0.075, -0.014), new THREE.Vector2(0.092, -0.002)];
   for (const side of [-1, 1]) {
     const spk = new THREE.Group(); spk.position.set(side * 1.15, 1.0625 + 0.25, -1.95); spk.rotation.y = -side * 0.3; monitors.add(spk);
@@ -315,6 +332,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
     const cab = mesh(rbox(0.3, 0.46, 0.32, 0.022, 4), mPlastic, spk); cab.castShadow = true;
     mesh(rbox(0.285, 0.445, 0.01, 0.018, 3), mGloss, spk, 0, 0, 0.158);                          // front baffle
     const cone = mesh(new THREE.LatheGeometry(coneProfile, 48), mCone, spk, 0, -0.07, 0.165); cone.rotation.x = Math.PI / 2;
+    cones.push(cone);
     mesh(new THREE.TorusGeometry(0.1, 0.011, 16, 56), mRubber, spk, 0, -0.07, 0.163);            // surround
     mesh(new THREE.TorusGeometry(0.114, 0.004, 10, 56), mSatin, spk, 0, -0.07, 0.164);           // trim ring
     mesh(new THREE.CircleGeometry(0.034, 48), mSymbol, spk, 0, -0.07, 0.1335);                   // dust cap = symbol
@@ -330,13 +348,37 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   mesh(new THREE.PlaneGeometry(1.13, 0.5), basic("#ffffff", { map: track(dawTexture()) }), scr, 0, 0.004, 0.0116);
   const glassM = phys({ color: "#000000", roughness: 0.05, metalness: 0, transparent: true, opacity: 0.08, clearcoat: 1 });
   mesh(new THREE.PlaneGeometry(1.13, 0.5), glassM, scr, 0, 0.004, 0.0122);
+  const upCanvas = document.createElement("canvas"); upCanvas.width = 1024; upCanvas.height = 452;
+  const upTex = track(new THREE.CanvasTexture(upCanvas)); upTex.colorSpace = THREE.SRGBColorSpace;
+  const upCtx = upCanvas.getContext("2d")!;
+  const upMesh = mesh(new THREE.PlaneGeometry(1.13, 0.5), basic("#ffffff", { map: upTex, transparent: true }), scr, 0, 0.004, 0.0119);
+  upMesh.visible = false;
+  const drawUpload = (el: number, label: string) => {
+    const W = 1024, H = 452, g = upCtx;
+    g.clearRect(0, 0, W, H);
+    g.fillStyle = "rgba(3,6,14,0.55)"; g.fillRect(0, 0, W, H);
+    const bw = 620, bh = 250, x = (W - bw) / 2, y = (H - bh) / 2;
+    g.fillStyle = "#0d1630"; g.strokeStyle = "#4C83FF"; g.lineWidth = 3;
+    g.beginPath(); g.roundRect(x, y, bw, bh, 22); g.fill(); g.stroke();
+    g.fillStyle = "#9CBFFF"; g.font = "600 24px 'Space Grotesk', sans-serif"; g.fillText("GENKS · INVIO PROGETTO", x + 34, y + 52);
+    g.fillStyle = "#EEF3FF"; g.font = "700 40px 'Space Grotesk', sans-serif"; g.fillText(label || "Mix & Master", x + 34, y + 104);
+    const files = ["Lead_Vox.wav", "Dbl_L.wav", "Dbl_R.wav", "Beat_Stem.wav", "Adlibs.wav"];
+    const prog = Math.min(1, el / 1.7);
+    g.font = "500 22px 'Space Grotesk', sans-serif"; g.fillStyle = "#A9B8D6";
+    g.fillText(prog < 1 ? `Caricamento ${files[Math.min(4, Math.floor(prog * 5))]}…` : "Tracce ricevute ✓", x + 34, y + 152);
+    g.fillStyle = "#14224a"; g.beginPath(); g.roundRect(x + 34, y + 180, bw - 68, 16, 8); g.fill();
+    const grd = g.createLinearGradient(x, 0, x + bw, 0); grd.addColorStop(0, "#9CBFFF"); grd.addColorStop(1, "#4C83FF");
+    g.fillStyle = grd; g.beginPath(); g.roundRect(x + 34, y + 180, Math.max(16, (bw - 68) * prog), 16, 8); g.fill();
+    g.fillStyle = "#EEF3FF"; g.font = "600 22px 'Space Grotesk', sans-serif"; g.fillText(`${Math.round(prog * 100)}%`, x + bw - 92, y + 152);
+    upTex.needsUpdate = true;
+  };
   mesh(rbox(0.05, 0.26, 0.03, 0.008, 1), mSatin, scr, 0, -0.3, -0.03);
   mesh(rbox(0.3, 0.012, 0.18, 0.006, 1), mSatin, scr, 0, -0.372, -0.01);
 
   /* ====================== MIDI KEYBOARD ====================== */
   const keys = new THREE.Group(); keys.position.set(-1.02, 0.826, -1.47); keys.rotation.y = 0.12; scene.add(keys);
   mesh(rbox(0.66, 0.04, 0.22, 0.01, 2), mPlastic, keys).castShadow = true;
-  instanced(rbox(0.0235, 0.012, 0.115, 0.002, 1), mKeyWhite, keys, Array.from({ length: 25 }, (_, i) => ({ p: v3(-0.305 + i * 0.0254, 0.024, 0.045) })));
+  const whiteKeys = instanced(rbox(0.0235, 0.012, 0.115, 0.002, 1), mKeyWhite, keys, Array.from({ length: 25 }, (_, i) => ({ p: v3(-0.305 + i * 0.0254, 0.024, 0.045) })));
   const blacks: { p: THREE.Vector3 }[] = [];
   for (let i = 0; i < 24; i++) if ([0, 1, 3, 4, 5].includes(i % 7)) blacks.push({ p: v3(-0.2923 + i * 0.0254, 0.033, 0.022) });
   instanced(rbox(0.013, 0.014, 0.07, 0.002, 1), mKeyBlack, keys, blacks);
@@ -453,6 +495,14 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   const cable = new THREE.CatmullRomCurve3([v3(0.36, 1.265, 0), v3(0.35, 1.2, 0.01), v3(0.2, 1.24, 0.02), v3(0.03, 1.33, 0.02), v3(0.03, 0.9, 0.03), v3(0.05, 0.3, 0.05), v3(0.2, 0.02, 0.12), v3(0.7, 0.012, 0.0), v3(1.2, 0.012, -0.5)]);
   mesh(new THREE.TubeGeometry(cable, 64, 0.0035, 6), mRubber, mic);
 
+  /* ====================== EXTRAS (payment corner, clock, ON AIR, guitar, lamps, particles) ====================== */
+  const extras = buildExtras({
+    scene, hi, track, std, phys, basic, mesh, contact,
+    mats: { walnut: mWalnut, walnutV: mWalnutV, blackMetal: mBlackMetal, gunmetal: mGunmetal, chrome: mChrome, satin: mSatin, plastic: mPlastic, rubber: mRubber, gloss: mGloss, leather: mLeather, foam: mFoam, symbol: mSymbol, led: mLed },
+    micHead: head,
+    micKeyFrom: v3(-0.2, 2.9, 2.4),
+  });
+
   /* ====================== LIGHTS ====================== */
   const ambient = new THREE.AmbientLight("#1a2a55", 0.2); scene.add(ambient);
   const hemi = new THREE.HemisphereLight("#35548c", "#05070d", 0.12); scene.add(hemi);
@@ -491,6 +541,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
     monitors: anchorAt(monitors.children[1], 0, 0.3, 0),
     rack: anchorAt(rack, 0, 1.6, 0.3),
   };
+  void extras.anchors;
 
   let reveal = 0;
   const setReveal = (v: number) => {
@@ -503,6 +554,9 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
     ambient.intensity = (hi ? 0.14 : 0.3) + (hi ? 0.4 : 0.9) * k(0, 0.8);
     mStrip.color.copy(BLUE).multiplyScalar(0.12 + 0.88 * k(0.08, 0.5));
     (scene.fog as THREE.FogExp2).density = 0.15 - 0.105 * k(0, 0.7);
+    // approval pulse: the whole room breathes once in brand blue
+    const pz = extras.pulse;
+    if (pz > 0) { wallWash.intensity += 14 * pz; mStrip.color.lerp(BLUE_LIGHT, pz * 0.8).multiplyScalar(1 + pz * 1.5); }
   };
   setReveal(0);
 
@@ -520,14 +574,57 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   };
   paintMeters(0.7);
   let last = 0;
+  let cue: ShotId | null = null, cueAt = 0, cueLabel = "", lastT = 0;
+  const recall = Array.from({ length: faders.length }, (_, i) => 0.175 + (Math.sin(i * 1.9) * 0.5 + 0.5) * 0.09 - 0.05);
+  const setCue = (shot: ShotId | null, data: Record<string, string> = {}) => {
+    cue = shot; cueAt = lastT; cueLabel = data.label ?? "";
+    extras.setCue(shot, data);
+    if (shot === "display") { dispLabel = data.label ?? ""; dispSub = data.sub ?? ""; dispLabelAt = lastT; }
+    else if (!shot) { /* keep the label briefly, cleared on next tick */ }
+    upMesh.visible = shot === "screen";
+  };
   const tick = (t: number, active: boolean) => {
+    lastT = t;
+    const el = t - cueAt;
+    extras.tick(t, active, reveal);
+    if (cue !== "display" && dispLabel && t - dispLabelAt > 3) dispLabel = "";
+    if (cue === "screen") drawUpload(el, cueLabel);
+    // speakers: kick-driven cone excursion (bigger on the "speakers" shot)
+    const beat = (t * 1.5) % 1, kick = Math.exp(-beat * 9) * (cue === "speakers" ? 1 : 0.35);
+    cones.forEach(c => { c.position.z = 0.165 + kick * 0.008; c.scale.setScalar(1 + kick * 0.03); });
+    // MIDI keys: a chord progression plays itself on the "keys" shot
+    if (cue === "keys" || whiteKeys.userData.dirty) {
+      const chords = [[0, 2, 4], [3, 5, 7], [4, 6, 8], [2, 4, 6]];
+      const ch = chords[Math.floor(el * 1.6) % 4].map(n => n + 7);
+      for (let i = 0; i < 25; i++) {
+        const down = cue === "keys" && ch.includes(i) && (el * 1.6) % 1 < 0.8;
+        m4.makeTranslation(-0.305 + i * 0.0254, down ? 0.019 : 0.024, 0.045);
+        if (down) m4.multiply(new THREE.Matrix4().makeRotationX(0.06));
+        whiteKeys.setMatrixAt(i, m4);
+      }
+      whiteKeys.instanceMatrix.needsUpdate = true;
+      whiteKeys.userData.dirty = cue === "keys";
+    }
     if (!active) return;
-    faders.forEach((f, i) => { f.position.z = 0.175 + Math.sin(t * 0.55 + i * 0.7) * 0.06 * (0.3 + 0.7 * reveal); });
+    // ambient life: the chair drifts on its swivel, the emblem halo breathes
+    chair.rotation.y = -0.9 + Math.sin(t * 0.21) * 0.07 + (cue === "sofa" ? Math.sin(el * 2) * 0.2 : 0);
+    halo.scale.setScalar(1 + Math.sin(t * 1.1) * 0.012);
+    faders.forEach((f, i) => {
+      const idle = 0.175 + Math.sin(t * 0.55 + i * 0.7) * 0.06 * (0.3 + 0.7 * reveal);
+      // motorised scene recall on the "faders" shot
+      const goal = cue === "faders" ? recall[i] + Math.sin(t * 3 + i) * 0.004 : idle;
+      f.position.z += (goal - f.position.z) * (cue === "faders" ? 0.12 : 0.2);
+    });
     if (t - last > 1 / 20) {
       last = t;
       drawDisplay(t);
       paintMeters(t);
       for (let i = 0; i < rackLedItems.length; i++) {
+        if (cue === "rack") {
+          // chase: each unit lights up like a gain-reduction meter
+          const u = Math.floor(i / 5), l = i % 5, lv = 0.5 + 0.5 * Math.sin(t * 6 - u * 0.6);
+          col.copy(l / 5 < lv ? (l === 4 ? HOT : BLUE_LIGHT) : BLUE).multiplyScalar(l / 5 < lv ? 1.2 : 0.12);
+        } else
         col.copy(Math.sin(t * 2 + i * 1.7) > 0.3 ? BLUE_LIGHT : BLUE).multiplyScalar(Math.sin(t * 5 + i * 3.1) > -0.6 ? 1 : 0.15);
         rackLedsA.setColorAt(i, col); rackLedsB.setColorAt((i * 7) % rackLedItems.length, col);
       }
@@ -554,7 +651,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   ], hi, () => alive, d => disposables.push(d));
 
   return {
-    scene, anchors, setReveal, tick,
+    scene, anchors, setReveal, tick, setCue,
     dispose() { alive = false; disposables.forEach(d => d.dispose()); },
   };
 }

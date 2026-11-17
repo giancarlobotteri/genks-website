@@ -57,6 +57,7 @@ Ultima esecuzione: build, typecheck, lint, 17/17 test unitari e 35/37 controlli 
 | Beat su misura | Sequencer suonabile e modulo «Richiedi preventivo». |
 | Pacchetti | Card confrontabili e richiesta. |
 | Gestione contenuti demo | Menu → «Gestione demo» (`#/gestione`). |
+| Riprese cinematografiche | Ogni scelta di servizio o pagamento sposta la camera sull'oggetto dello studio: pacchetto → microfono, orario → orologio, Mix → fader, Master → rack, Mix & Master → banco, invio remoto → monitor, licenza → display, carrello → casse, carta/wallet → POS, contanti → cassetta, conferma → «APPROVATO» e insegna ON AIR. Esc o tocco per saltare; disattivate con motion ridotto e in modalità leggera. `?cueslow=N` le rallenta per i controlli visivi. |
 | Modalità leggera | Menu → «Modalità leggera»: niente 3D, stessi servizi. Si attiva da sola se WebGL manca. |
 
 Cosa è reale e cosa è simulato: [`docs/DEMO_VS_REALE.md`](docs/DEMO_VS_REALE.md).

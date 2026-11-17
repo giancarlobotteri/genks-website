@@ -7,6 +7,7 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { buildStudio, type Quality } from "../scene/build-studio.ts";
 import { band, CHAPTERS, clamp01, ease, lerpPose, MIC, poseAt, type Pose, type V3 } from "../scene/camera-path.ts";
+import { subscribeCue, getCue, type Cue, type ShotId } from "../cinema.ts";
 import { useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
 import { prefersReducedMotion } from "./ui.tsx";
@@ -52,13 +53,19 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
   const chapterRefs = useRef<(HTMLDivElement | null)[]>([]);
   const railRef = useRef<HTMLDivElement>(null);
   const tagRefs = useRef<Record<string, HTMLSpanElement | null>>({});
-  const live = useRef({ introDone, focus: null as null | "mic" | "mixer" });
+  const live = useRef({ introDone, focus: null as null | "mic" | "mixer", cue: null as Cue | null });
   const [ready, setReady] = useState(false);
 
   useEffect(() => { live.current.introDone = introDone; }, [introDone]);
   useEffect(() => {
     live.current.focus = panel?.type === "recording" ? "mic" : panel?.type === "mix" ? "mixer" : null;
   }, [panel]);
+
+  useEffect(() => {
+    const sync = () => { const st = getCue(); live.current.cue = st.cue && !st.leaving ? st.cue : null; };
+    sync();
+    return subscribeCue(sync);
+  }, []);
 
   const activate = (id: string) => {
     if (id === "mic") open({ type: "recording" });
@@ -91,6 +98,8 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
       return;
     }
     const quality = detectQuality();
+    const root = document.documentElement;
+    root.dataset.vsStage = "3d";
     const reduced = prefersReducedMotion();
     let pixelRatio = Math.min(window.devicePixelRatio, quality === "high" ? 1.75 : 1.5);
     renderer.setPixelRatio(pixelRatio);
@@ -140,8 +149,54 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
       mixer: { pos: [0.0, 1.32, -0.7], target: [0, 0.84, -1.5] },
     };
 
+    // Cinematic shots for service & payment choices (world space, see build-studio / studio-extras).
+    const SHOTS: Record<Exclude<ShotId, "display">, Pose> = {
+      mic: { pos: [-1.28, 1.36, 1.3], target: [-0.94, 1.45, 0.95] },
+      onair: { pos: [-1.55, 2.42, -2.25], target: [-1.95, 2.74, -3.47] },
+      clock: { pos: [1.62, 2.5, -2.4], target: [1.95, 2.76, -3.47] },
+      faders: { pos: [-0.62, 1.02, -0.98], target: [0.18, 0.84, -1.3] },
+      rack: { pos: [1.55, 1.42, -1.2], target: [2.35, 0.9, -2.4] },
+      console: { pos: [0.0, 2.15, 0.35], target: [0, 0.95, -1.6] },
+      screen: { pos: [0.0, 1.38, -1.12], target: [0, 1.43, -2.02] },
+      speakers: { pos: [0.5, 1.45, -0.9], target: [1.1, 1.24, -1.95] },
+      keys: { pos: [-0.78, 1.18, -0.98], target: [-1.04, 0.84, -1.48] },
+      pos: { pos: [4.02, 1.18, -0.5], target: [4.58, 0.84, -0.72] },
+      approved: { pos: [4.3, 1.04, -0.66], target: [4.6, 0.83, -0.73] },
+      cash: { pos: [3.92, 1.22, 0.02], target: [4.58, 0.8, -0.18] },
+      sofa: { pos: [-2.55, 1.45, 1.1], target: [-4.1, 0.7, -0.55] },
+    };
+    const shotPose = (c: Cue): Pose => {
+      if (c.shot === "display") {
+        const dist = camera.aspect < 0.8 ? 0.62 : 0.4;
+        const p = dPos.clone().addScaledVector(normal, dist);
+        return { pos: [p.x, p.y + 0.04, p.z], target: [dPos.x, dPos.y, dPos.z] };
+      }
+      const base = SHOTS[c.shot];
+      if (camera.aspect >= 0.8) return base;
+      // portrait phones: step back along the view line so the subject stays in frame
+      const back = 1.35;
+      return { pos: [base.target[0] + (base.pos[0] - base.target[0]) * back, base.target[1] + (base.pos[1] - base.target[1]) * back, base.target[2] + (base.pos[2] - base.target[2]) * back], target: base.target };
+    };
+    /** Slow push-in plus a small orbit while the shot holds: the frame never feels frozen. */
+    const animateShot = (base: Pose, held: number, dur: number): Pose => {
+      const u = Math.min(1, held / dur);
+      const tx = base.target[0], tz = base.target[2];
+      let dx = base.pos[0] - tx, dz = base.pos[2] - tz;
+      const a = (u - 0.5) * 0.16, ca = Math.cos(a), sa = Math.sin(a);
+      [dx, dz] = [dx * ca - dz * sa, dx * sa + dz * ca];
+      const push = 1 - 0.1 * ease(u);
+      return { pos: [tx + dx * push, base.target[1] + (base.pos[1] - base.target[1]) * push, tz + dz * push], target: base.target };
+    };
+    let cueId = 0, cueAt = 0, cueDur = 2, shotBase: Pose | null = null;
+    let tr: { from: Pose; start: number; dur: number; to: "shot" | "base" } | null = null;
+    let cueLight = 0;
+    const copyPose = (p: Pose): Pose => ({ pos: [...p.pos] as V3, target: [...p.target] as V3 });
+
     let visible = true, running = true;
-    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { rootMargin: "100px" });
+    const io = new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      if (visible) delete root.dataset.vsStageOff; else root.dataset.vsStageOff = "1";
+    }, { rootMargin: "100px" });
     io.observe(section);
     const onVis = () => { running = !document.hidden; };
     document.addEventListener("visibilitychange", onVis);
@@ -176,7 +231,7 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
           slowSum = 0; slowN = 0;
         }
       }
-      if (!running || (!visible && !first)) return;
+      if (!running || (!visible && !first && !live.current.cue && !tr)) return;
       const t = clock.elapsedTime;
       const target = sectionProgress(section);
       smoothP = reduced ? target : smoothP + (target - smoothP) * Math.min(1, rdt * 6);
@@ -189,18 +244,44 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
       let pose = poseAt(p, endPose(), reduced);
       if (focusT > 0.001) pose = lerpPose(pose, focusPose[lastFocus], ease(focusT));
       pose = lerpPose(introPose, pose, ease(introT));
+      // cinematic cue: fly from wherever the camera is to the shot, hold with a push-in, fly back
+      const c = live.current.cue;
+      if (c && c.id !== cueId) {
+        cueId = c.id; cueAt = t; cueDur = c.ms / 1000; shotBase = shotPose(c);
+        tr = { from: copyPose(cur), start: t, dur: reduced ? 0.01 : 1.05, to: "shot" };
+        rig.setCue(c.shot, c.data);
+      } else if (!c && cueId) {
+        cueId = 0;
+        tr = { from: copyPose(cur), start: t, dur: reduced ? 0.01 : 1.1, to: "base" };
+        rig.setCue(null);
+      }
+      const base = pose;
+      if (cueId && shotBase) pose = animateShot(shotBase, t - cueAt, cueDur);
+      if (tr) {
+        const u = Math.min(1, (t - tr.start) / tr.dur), e = ease(u);
+        const goal = tr.to === "shot" ? pose : base;
+        const span = Math.hypot(goal.pos[0] - tr.from.pos[0], goal.pos[2] - tr.from.pos[2]);
+        pose = lerpPose(tr.from, goal, e);
+        // crane arc: rise during long moves, like a jib
+        pose.pos[1] += Math.sin(Math.PI * u) * Math.min(0.6, span * 0.12);
+        if (u >= 1) tr = null;
+      }
+      cueLight += ((cueId ? 1 : 0) - cueLight) * Math.min(1, rdt * 3);
       // gentle idle sway + mouse parallax
       const sway = reduced ? 0 : 1;
-      const px = (pointer.x * 0.12 + Math.sin(t * 0.3) * 0.03) * sway * (1 - p * 0.8);
-      const py = (-pointer.y * 0.06 + Math.sin(t * 0.23) * 0.015) * sway * (1 - p * 0.8);
-      const k = first ? 1 : Math.min(1, rdt * 8);
+      // handheld feel during shots: tiny noise instead of the mouse parallax
+      const hand = cueLight * sway;
+      const px = (pointer.x * 0.12 + Math.sin(t * 0.3) * 0.03) * sway * (1 - p * 0.8) * (1 - cueLight) + (Math.sin(t * 1.7) + Math.sin(t * 2.9) * 0.5) * 0.004 * hand;
+      const py = (-pointer.y * 0.06 + Math.sin(t * 0.23) * 0.015) * sway * (1 - p * 0.8) * (1 - cueLight) + Math.sin(t * 2.3) * 0.003 * hand;
+      const k = first ? 1 : Math.min(1, rdt * (cueId || tr ? 10 : 8));
       for (let i = 0; i < 3; i++) {
         cur.pos[i] += (pose.pos[i] - cur.pos[i]) * k;
         cur.target[i] += (pose.target[i] - cur.target[i]) * k;
       }
       camera.position.set(cur.pos[0] + px, cur.pos[1] + py, cur.pos[2]);
       camera.lookAt(cur.target[0], cur.target[1], cur.target[2]);
-      rig.setReveal(Math.min(ease(introT) * 0.25 + p * 1.6, 1) * Math.max(0.25, introT));
+      // the room lights come up for every cue, even before the scroll reveal
+      rig.setReveal(Math.max(Math.min(ease(introT) * 0.25 + p * 1.6, 1) * Math.max(0.25, introT), cueLight * 0.95));
       rig.tick(t, !reduced);
       if (composer) composer.render(); else renderer.render(rig.scene, camera);
       first = false;
@@ -230,7 +311,7 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
       };
       HOTSPOTS.forEach(hs => {
         const anchor = rig.anchors[hs.id as "mic" | "mixer" | "display"];
-        const v = live.current.focus ? 0 : band(p, hs.band[0], hs.band[1], 0.05) * (hs.id === "mic" ? introT : 1);
+        const v = live.current.focus || cueId ? 0 : band(p, hs.band[0], hs.band[1], 0.05) * (hs.id === "mic" ? introT : 1);
         place(hotRefs.current[hs.id], anchor, v);
       });
       place(tagRefs.current.monitors, rig.anchors.monitors, band(p, 0.3, 0.62, 0.06));
@@ -248,6 +329,8 @@ export function StudioStage({ introDone, lite, onWebglFail }: Props) {
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("pointermove", onMove);
       composer?.dispose();
+      delete root.dataset.vsStage;
+      delete root.dataset.vsStageOff;
       rig.dispose();
       renderer.dispose();
     };

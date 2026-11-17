@@ -4,6 +4,7 @@ import { rng } from "../lib/music.ts";
 import type { Beat } from "../types.ts";
 import s from "../styles/vs.module.css";
 import { GenksSymbol } from "./brand.tsx";
+import { cueActive, skipCue } from "../cinema.ts";
 
 export function DemoBadge({ children = "DEMO" }: { children?: ReactNode }) {
   return <span className={s.demoBadge}>{children}</span>;
@@ -55,8 +56,8 @@ export function Sheet({ open, onClose, title, kicker, children, variant = "cente
       ref={ref}
       className={`${s.sheet} ${variant === "side" ? s.sheetSide : ""} ${wide ? s.sheetWide : ""}`}
       aria-labelledby={titleId}
-      onCancel={e => { e.preventDefault(); onClose(); }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      onCancel={e => { e.preventDefault(); if (cueActive()) skipCue(); else onClose(); }}
+      onClick={e => { if (e.target === e.currentTarget && !document.documentElement.dataset.vsCinema) onClose(); }}
     >
       <div className={s.sheetInner}>
         <header className={s.sheetHead}>
@@ -127,4 +128,18 @@ export const fieldProps = (name: string, _errors?: Record<string, string>) => ({
 
 export function DemoNotice({ children }: { children: ReactNode }) {
   return <p className={s.demoNotice}><DemoBadge />{children}</p>;
+}
+
+/** Small celebratory burst used by success states. */
+export function Confetti({ count = 26 }: { count?: number }) {
+  if (prefersReducedMotion()) return null;
+  const r = rng(count * 13 + 5);
+  const cols = ["#4C83FF", "#9CBFFF", "#EEF3FF", "#9ff0c8", "#2b4fc0"];
+  return (
+    <span className={s.confetti} aria-hidden="true">
+      {Array.from({ length: count }, (_, i) => (
+        <i key={i} style={{ ["--x" as string]: `${r() * 100}%`, ["--dx" as string]: `${(r() - 0.5) * 160}px`, ["--r" as string]: `${(r() - 0.5) * 900}deg`, ["--d" as string]: `${1.2 + r() * 1.2}s`, ["--delay" as string]: `${r() * 0.35}s`, ["--c" as string]: cols[i % cols.length] }} />
+      ))}
+    </span>
+  );
 }

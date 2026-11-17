@@ -11,6 +11,15 @@ const GL = ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swifts
 const results = [];
 const ok = (name, cond, extra = "") => { results.push({ name, pass: Boolean(cond), extra }); console.log(`${cond ? "PASS" : "FAIL"}  ${name}${extra ? "  — " + extra : ""}`); };
 const snap = async (page, name) => { if (shots) { fs.mkdirSync(shots, { recursive: true }); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+// Cinematic cues (service/payment choices) hide the panel for ~2 s: skip them like a visitor would (Esc).
+const settle = async page => {
+  for (let i = 0; i < 40; i++) {
+    const st = await page.evaluate(() => document.documentElement.dataset.vsCinema || "");
+    if (!st) return;
+    if (st === "on") await page.keyboard.press("Escape");
+    await page.waitForTimeout(250);
+  }
+};
 const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: true }).fill("Mario Rossi"); await scope.getByLabel("Email *").fill("mario@example.com"); };
 
 (async () => {
@@ -43,6 +52,9 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await page.keyboard.press("ArrowRight");
   ok("04 tab Mix/Master/Mix & Master navigabili da tastiera", (await mixDlg.getByRole("tab", { name: "Mix", exact: true }).getAttribute("aria-selected")) === "true");
   await mixDlg.getByRole("button", { name: "Invia progetto da remoto" }).click();
+  await page.waitForTimeout(300);
+  ok("cue: «Invia progetto da remoto» porta la camera sullo schermo", (await page.evaluate(() => document.documentElement.dataset.vsCinema)) === "on" && await page.getByText("La sessione si apre").isVisible());
+  await settle(page);
   await mixDlg.getByLabel("Titolo brano *").fill("Brano di prova");
   await mixDlg.getByLabel("Numero tracce / stems *").fill("18");
   await mixDlg.locator('input[type="file"]').setInputFiles({ name: "voce-lead.wav", mimeType: "audio/wav", buffer: Buffer.from("demo") });
@@ -50,7 +62,13 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await page.waitForTimeout(2600);
   ok("04 upload: file selezionato con progresso simulato", await mixDlg.getByText("pronto (demo)").isVisible());
   await snap(page, "03-remote-upload");
+  await mixDlg.getByText("Carta · subito").click();
+  await page.waitForTimeout(300);
+  ok("cue pagamento: la scelta della carta mostra il POS", await page.getByText("CAM", { exact: false }).first().isVisible() && (await page.evaluate(() => document.documentElement.dataset.vsCinema)) === "on");
+  await snap(page, "03b-cue-pos");
+  await settle(page);
   await mixDlg.getByRole("button", { name: "Invia richiesta progetto (demo)" }).click();
+  await settle(page);
   ok("04 richiesta progetto remoto: conferma DEMO trasparente", await mixDlg.getByText("non è stata inviata").isVisible());
   await page.keyboard.press("Escape");
   await mixDlg.waitFor({ state: "hidden" });
@@ -69,8 +87,16 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   ok("02 validazione: senza dati la prenotazione non parte", await recDlg.getByText("Controlla i campi evidenziati.").isVisible());
   await recDlg.getByRole("radio", { disabled: false }).filter({ hasText: "disponibile" }).first().click();
   await recDlg.getByRole("radiogroup", { name: "Orario di inizio" }).getByRole("radio", { disabled: false }).first().click();
+  await page.waitForTimeout(600);
+  await snap(page, "05b-cue-clock");
+  await settle(page);
   await fillContact(recDlg);
+  await recDlg.getByText("Contanti in studio").click();
+  await page.waitForTimeout(600);
+  await snap(page, "05c-cue-cash");
+  await settle(page);
   await recDlg.getByRole("button", { name: "Prenota (richiesta demo)" }).click();
+  await settle(page);
   ok("02 prenotazione demo confermata senza fingere una prenotazione reale", await recDlg.getByText("non costituisce una prenotazione").isVisible());
   await recDlg.getByRole("button", { name: "Chiudi pannello" }).click();
   await recDlg.waitFor({ state: "hidden" });
@@ -129,8 +155,10 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await beatDlg.waitFor();
   await beatDlg.getByRole("radio", { name: /Premium WAV/ }).check();
   await page.waitForTimeout(400);
+  await settle(page);
   await snap(page, "11-beat-detail");
   await beatDlg.getByRole("button", { name: /Aggiungi al carrello/ }).click();
+  await settle(page);
   await beatDlg.getByRole("button", { name: "Apri carrello" }).click();
   const cartDlg = page.getByRole("dialog", { name: "Il tuo carrello" });
   await cartDlg.waitFor();
@@ -140,12 +168,16 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await cartDlg.getByRole("button", { name: "Procedi al checkout simulato" }).click();
   const coDlg = page.getByRole("dialog", { name: "Riepilogo ordine simulato" });
   await coDlg.waitFor();
+  await settle(page);
   await page.waitForTimeout(400);
   await snap(page, "12-checkout-demo");
   ok("11 checkout: nessun campo carta/pagamento", (await coDlg.locator('input[autocomplete^="cc-"], input[name*="card"]').count()) === 0);
   await fillContact(coDlg);
   await coDlg.getByRole("checkbox").check();
   await coDlg.getByRole("button", { name: "Simula ordine" }).click();
+  await page.waitForTimeout(500);
+  await snap(page, "12b-cue-approved");
+  await settle(page);
   ok("06 ordine simulato senza addebito", await coDlg.getByText("Nessun addebito").isVisible());
   await page.keyboard.press("Escape");
   await coDlg.waitFor({ state: "hidden" });
@@ -154,6 +186,7 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   // exclusive is a separate request without price
   await store.getByRole("button", { name: "Licenze per Notte Cobalto" }).click();
   await beatDlg.getByRole("radio", { name: /Esclusiva/ }).check();
+  await settle(page);
   ok("esclusiva: richiesta separata senza prezzo", await beatDlg.getByRole("button", { name: "Richiedi esclusiva" }).isVisible());
   await page.keyboard.press("Escape");
   await beatDlg.waitFor({ state: "hidden" });
@@ -166,6 +199,7 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await fillContact(custom);
   await snap(page, "13-custom-beat");
   await custom.getByRole("button", { name: "Richiedi preventivo" }).click();
+  await settle(page);
   ok("08 beat su misura: richiesta preventivo demo", await custom.getByText("Richiesta demo registrata").isVisible());
   const bundles = page.locator("#bundle");
   await bundles.scrollIntoViewIfNeeded();
@@ -177,6 +211,7 @@ const fillContact = async scope => { await scope.getByLabel("Nome *", { exact: t
   await bDlg.waitFor();
   await fillContact(bDlg);
   await bDlg.getByRole("button", { name: "Richiedi questo pacchetto (demo)" }).click();
+  await settle(page);
   ok("08 bundle: richiesta demo", await bDlg.getByText("Richiesta demo registrata").isVisible());
   await page.keyboard.press("Escape");
 

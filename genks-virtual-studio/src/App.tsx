@@ -3,8 +3,10 @@ import { Admin } from "./components/Admin.tsx";
 import { GenksSymbol } from "./components/brand.tsx";
 import { BeatStore } from "./components/BeatStore.tsx";
 import { Bundles } from "./components/Bundles.tsx";
+import { CinemaOverlay } from "./components/CinemaOverlay.tsx";
 import { CustomBeat } from "./components/CustomBeat.tsx";
 import { Intro } from "./components/Intro.tsx";
+import { MotionLayer } from "./components/MotionLayer.tsx";
 import { PanelHost } from "./components/Panels.tsx";
 import { Player } from "./components/Player.tsx";
 import { TopNav, type NavItem } from "./components/TopNav.tsx";
@@ -77,6 +79,8 @@ export default function App() {
         <a className={s.skip} href={route === "admin" ? "#admin" : "#beat-store"}>{route === "admin" ? "Vai alla gestione" : "Salta al Beat Store"}</a>
         {route === "admin" ? <main id="admin"><Admin backHref="#top" /></main> : <Studio />}
         <PanelHost />
+        <CinemaOverlay />
+        <MotionLayer />
         <Player />
       </div>
     </StudioProvider>
