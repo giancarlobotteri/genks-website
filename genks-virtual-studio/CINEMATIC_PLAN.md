@@ -230,22 +230,26 @@ Quello che non passa non entra nel sito.
 | P2 | Modelli professionali | GLB di microfono, mixer e monitor; bake in Blender; KTX2/Meshopt | Da preventivare |
 | P3 | 6 · QA | Profilazione su dispositivi reali (iPhone, Android medio, PC integrato), registrazioni, confronto con le reference | Gratis |
 
-## 8. Primo prototipo (in corso su questo branch)
+## 8. Prototipo realizzato (branch `claude/genks-cinematic`)
 
-**Sequenza:** Microfono → Rivelazione dello studio → Mixer, nel sito vero (non una demo separata), quindi con interazioni e moduli funzionanti.
+Confronto prima/dopo: `docs/cinematic/before-after.jpg`; schermate in `docs/cinematic/after-*`.
 
-1. **Pipeline cinematografica:**
-   - buffer HDR, profondità di campo che segue il soggetto;
-   - bloom solo sulle sorgenti luminose reali;
-   - tone mapping AgX e grading GENKS (ombre blu profonde, alte luci fredde);
-   - grana, vignetta, SMAA.
-2. **Regia della luce:** alla tappa Microfono lo studio è spento; lo scroll accende le luci in sequenza.
-3. **Sweep di luce blu** che scorre su tutti i cromi.
-4. **Fascio volumetrico e polvere** sul microfono; **tipografia nello spazio** dietro il microfono.
-5. **Focali reali per tappa** (70 mm sul microfono, 40 mm sull'establishing, 85 mm sulle macro della console) e rack focus.
-6. **Nuova tappa «Studio»** (establishing) con tempi di movimento più lunghi e curve dedicate.
-7. **Microfono rimodellato** (doppia griglia, capsula, nervature, smussi); **console** con cappucci sagomati, manopole con indicatore, serigrafie e scribble strip.
-8. **Interazione 3D:** hover e clic direttamente su microfono, schermo e mixer; la console cambia stato con il servizio scelto.
-9. **Su smartphone:** stessa regia di luce e stessi modelli, senza profondità di campo né bloom, con degradazione automatica se il dispositivo rallenta.
+**Fatto, gratis, senza crediti:**
 
-Il risultato va pubblicato su un indirizzo separato, così da confrontarlo con la versione FREE.
+1. **Titoli d'apertura** (reference 2): comete di luce convergono, disegnano l'anello e appare il simbolo GENKS originale (SVG, non ridisegnato); poi la camera attraversa il simbolo ed entra nello studio buio, che si sveglia mentre la camera avanza. Si salta con un clic o un tasto.
+2. **Microfono nel buio** (reference 1): focale lunga (~70 mm), fascio volumetrico con polvere, due rim blu, sweep di luce che scorre su tutti i cromi, parola «VOCE» nello spazio dietro il microfono, profondità di campo sulla griglia. Il microfono è cliccabile (mano, luce al passaggio) e apre la prenotazione.
+3. **Anatomia della voce** (references 1 e 3): allo scroll il microfono si scompone (griglia esterna, griglia interna, capsula dorata, corpo, sospensione, XLR) e ruota come su un giradischi; le didascalie seguono ogni parte; testo e pulsante «Prenota» a lato.
+4. **Rivelazione dello studio** (sequenza C): la camera arretra e sale mentre le luci si accendono legate allo scroll: linee LED, emblema, schermo DAW, rack riga per riga, nuvola, scrivania. Arriva un'inquadratura d'insieme con il titolo «Un unico spazio, tre servizi.».
+5. **Mixer** (sequenza D): macro radenti su fader e manopole, con scale serigrafate, scribble strip e cappucci sagomati. Fader motorizzati, meter e display seguono il servizio scelto (Mix / Master / Mix & Master), come un configuratore. La console è cliccabile.
+6. **Pipeline:**
+   - HDR con profondità di campo che segue il soggetto, bloom sulle sole sorgenti di luce, AgX + grading GENKS, grana;
+   - qualità adattiva: prima toglie la profondità di campo, poi il post-processing, poi la risoluzione;
+   - su telefono, regia e modelli identici con rendering leggero.
+7. **Estensione** (fase 5, gratis): schede del Beat Store con profondità (tilt e luce che segue il cursore); Beat su misura con «Il tuo beat, in una frase» (reference 2): la frase compila genere, BPM, mood e descrizione.
+
+**Resta da fare:**
+
+- **Gratis:** continuità della waveform display → Beat Store agganciata alla posizione 3D; bundle come «box» che si apre (reference 3); lineup in prospettiva dei beat (reference 1).
+- **Con crediti Higgsfield** (sezione 6), dopo il tuo acquisto e autorizzazione: still e clip per il confronto sulla stessa sequenza.
+- **Con budget:** modelli GLB professionali di microfono, mixer e monitor, per avvicinarsi alla resa fotografica delle reference 1 e 3.
+- **Verifica su dispositivi reali:** l'emulatore non misura la fluidità reale.

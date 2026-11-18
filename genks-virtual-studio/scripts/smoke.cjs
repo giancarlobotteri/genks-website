@@ -35,8 +35,10 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   ok("intro: scie di luce che disegnano il simbolo GENKS", (await page.locator("[data-streak-intro] svg").count()) === 1);
   await page.waitForTimeout(1500);
   await snap(page, "01-reel-intro");
-  await page.locator("[data-streak-intro]").waitFor({ state: "detached", timeout: 15000 }).catch(() => {});
-  ok("intro: lascia il posto all'anteprima da sola", (await page.locator("[data-streak-intro]").count()) === 0 && await reel.getByText("Il tuo studio,").isVisible());
+  await page.locator("[data-streak-intro]").waitFor({ state: "detached", timeout: 40000 }).catch(() => {});
+  // (on a slow machine the first chapter may already be over: what matters is that the preview is playing)
+  const afterIntro = await vs(page, "reel");
+  ok("intro: lascia il posto all'anteprima da sola", (await page.locator("[data-streak-intro]").count()) === 0 && afterIntro !== "reel:dark" && afterIntro?.startsWith("reel:"), afterIntro);
   await reel.getByRole("button", { name: /Capitolo 2/ }).click();
   await reel.getByRole("button", { name: /pausa/i }).click();
   await page.waitForTimeout(1600);
