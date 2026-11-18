@@ -120,3 +120,10 @@ Per passare alla produzione si sostituiscono le implementazioni locali in `src/a
 ## Costi
 
 Tutte le dipendenze sono gratuite e open source (MIT, ISC, Apache-2.0, OFL). Nessun servizio a pagamento, nessuna chiave API, nessuna carta richiesta. Hosting definitivo, dominio e commissioni di pagamento sono esterni al prototipo e possono avere costi.
+
+### Film introduttivo (Higgsfield Genjutsu)
+
+- `public/film/genks-intro-{1080,720}.mp4`: anteprima di 13 s in un'unica ripresa, generata con Higgsfield Genjutsu (motion transfer, 1080p) a partire dal movimento di camera del sito (`scripts/render-intro.cjs`, piano pulito `?film` senza loghi né scritte in 3D) e da quattro foto fotorealistiche di riferimento.
+- Nel sito parte dopo le scie di luce del simbolo GENKS (vettoriale originale), guida i capitoli dell'anteprima e sfuma sulla domanda finale. Senza video (riduzione movimento, risparmio dati, errore di rete) torna l'anteprima 3D dal vivo.
+- Costo: 12 crediti (prova 480p 4 s) + 260 crediti (finale 1080p 13 s).
+- Verifiche: `node scripts/smoke.cjs` 79/79.

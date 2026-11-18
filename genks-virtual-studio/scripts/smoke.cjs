@@ -42,16 +42,19 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await reel.getByRole("button", { name: /Capitolo 2/ }).click();
   await reel.getByRole("button", { name: /pausa/i }).click();
   await page.waitForTimeout(1600);
-  ok("anteprima: capitolo Registrazione, telecamera sul microfono", (await reel.getByText("Entra in sala.").isVisible()) && (await vs(page, "reel")) === "reel:rec");
+  // the preview is the opening film when the browser can play it (each chapter is a moment of the take),
+  // otherwise the live 3D preview (each chapter is a camera shot)
+  const filmT = () => page.evaluate(() => document.querySelector("video")?.currentTime ?? -1);
+  ok("anteprima: capitolo Registrazione, in sala", (await reel.getByText("Entra in sala.").isVisible()) && ((await vs(page, "reel")) === "reel:rec" || (await filmT()) >= 5.3), `film ${await filmT()}`);
   await snap(page, "02-reel-rec");
   const fill = () => page.evaluate(() => getComputedStyle(document.querySelectorAll('[aria-label^="Capitolo"] span')[1]).getPropertyValue("--fill"));
   const f1 = await fill(); await page.waitForTimeout(900); const f2 = await fill();
   ok("anteprima: la pausa ferma il video", f1 === f2, `${f1} → ${f2}`);
   await reel.getByRole("button", { name: /Capitolo 4/ }).click();
   await page.waitForTimeout(1600);
-  ok("anteprima: Mix & Master «Diamo equilibrio e vita al brano.»", await reel.getByText("Diamo equilibrio").isVisible() && (await vs(page, "reel")) === "reel:mix");
+  ok("anteprima: Mix & Master «equilibrio e vita al brano»", await reel.getByText(/equilibrio/i).isVisible() && ((await vs(page, "reel")) === "reel:mix" || (await filmT()) >= 9.1));
   await reel.getByRole("button", { name: /Riprendi/ }).click();
-  const advanced = await page.waitForFunction(() => window.__vs.reel() === "reel:store", null, { timeout: 40000 }).then(() => true, () => false);
+  const advanced = await page.waitForFunction(() => window.__vs.reel() === "reel:store" || document.querySelector('article[data-id="store"]'), null, { timeout: 40000 }).then(() => true, () => false);
   ok("anteprima: avanza da sola al capitolo Beat Store", advanced);
   await reel.locator("[data-skip]").click({ timeout: 5000 }).catch(() => {}); // on a slow machine the preview may already be over
   const chooseTitle = page.getByRole("heading", { name: "Di cosa hai bisogno?" });
@@ -274,8 +277,8 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await page.getByRole("button", { name: "Rivedi l’anteprima" }).click();
   await reel.waitFor();
   // the replay opens with the titles again (light streaks → symbol), then the first chapter
-  await page.waitForFunction(() => window.__vs.reel() === "reel:intro", null, { timeout: 15000 }).catch(() => {});
-  ok("l’anteprima si può rivedere dal primo capitolo", (await vs(page, "reel")) === "reel:intro");
+  await page.waitForFunction(() => window.__vs.reel() === "reel:intro" || document.querySelector('article[data-id="intro"]'), null, { timeout: 15000 }).catch(() => {});
+  ok("l’anteprima si può rivedere dal primo capitolo", (await vs(page, "reel")) === "reel:intro" || (await page.locator('article[data-id="intro"]').count()) === 1);
 
   // admin demo → the change shows up in the store
   await page.goto(url + "#/gestione");

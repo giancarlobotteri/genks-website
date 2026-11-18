@@ -925,6 +925,10 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 }
 
 /* ---------- Cinematic: opening titles (light streaks → GENKS symbol) ---------- */
+/* the opening film fills the screen under the shade and the titles; it fades out onto the 3D studio */
+.reelFilm, .reel > .reelFilm { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; background: #02040a; pointer-events: none; }
+.reel[data-film] .reelChips li { animation-delay: calc(3.1s + var(--c) * 110ms); }
+.reel[data-film] .reelShade { background: linear-gradient(0deg, rgba(4, 8, 18, 0.82) 0%, rgba(4, 8, 18, 0.35) 34%, transparent 52%), linear-gradient(90deg, rgba(4, 8, 18, 0.45), transparent 46%), linear-gradient(180deg, rgba(4, 8, 18, 0.55), transparent 18%); }
 .streakIntro, .reel > .streakIntro { --fade: 1; position: fixed; inset: 0; z-index: 60; background: rgba(2, 4, 10, var(--fade)); }
 .streakIntro canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: var(--fade); }
 .streakSymbol { position: absolute; opacity: 0; will-change: transform, opacity, filter; }

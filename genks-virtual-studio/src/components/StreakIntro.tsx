@@ -10,12 +10,13 @@ import { GenksSymbol } from "./brand.tsx";
 const N = 7;
 const DUR = 2.4; // seconds
 
-export function StreakIntro({ onDone }: { onDone: () => void }) {
+export function StreakIntro({ onDone, onReveal }: { onDone: () => void; onReveal?: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const symRef = useRef<HTMLDivElement>(null);
   const doneRef = useRef(onDone);
-  useEffect(() => { doneRef.current = onDone; });
+  const revealRef = useRef(onReveal);
+  useEffect(() => { doneRef.current = onDone; revealRef.current = onReveal; });
 
   useEffect(() => {
     const canvas = canvasRef.current!, root = rootRef.current!, sym = symRef.current!;
@@ -38,12 +39,14 @@ export function StreakIntro({ onDone }: { onDone: () => void }) {
     const sweep = (2 * Math.PI) / N, sweepT = 0.36;
     const rays = Array.from({ length: 56 }, (_, k) => ({ a: (k / 56) * Math.PI * 2 + (k % 3) * 0.02, sp: 0.7 + ((k * 37) % 10) / 10, w: 0.6 + ((k * 13) % 7) / 4 }));
     const ease = (u: number) => 1 - Math.pow(1 - u, 3);
-    let raf = 0, finished = false;
+    let raf = 0, finished = false, revealed = false;
     const t0 = performance.now();
     const finish = () => { if (finished) return; finished = true; doneRef.current(); };
     const frame = (now: number) => {
       const t = (now - t0) / 1000;
       if (t >= DUR) { finish(); return; }
+      // the picture underneath starts moving as the overlay begins to fade
+      if (!revealed && t >= 1.85) { revealed = true; revealRef.current?.(); }
       raf = requestAnimationFrame(frame);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
