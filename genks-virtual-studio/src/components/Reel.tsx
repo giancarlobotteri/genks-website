@@ -6,6 +6,7 @@ import { enterStore, goService, goStudio } from "../lib/nav.ts";
 import { useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
 import { GenksSymbol } from "./brand.tsx";
+import { FILM, pickFilm } from "../lib/film-media.ts";
 import { StreakIntro } from "./StreakIntro.tsx";
 import { DemoBadge, prefersReducedMotion } from "./ui.tsx";
 import { KineticWords } from "./Wizard.tsx";
@@ -23,15 +24,6 @@ type Chapter = {
  * original vector of the titles. Played when the device can (not with reduced motion or data saver);
  * otherwise, or if it fails to load, the preview runs live over the 3D studio as before.
  */
-const FILM = { hd: "/film/genks-intro-1080.mp4", sd: "/film/genks-intro-720.mp4", poster: "/film/genks-intro-poster.jpg" };
-function pickFilm(): string | null {
-  if (typeof window === "undefined" || prefersReducedMotion()) return null;
-  const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
-  if (c?.saveData || /(^|-)2g$/.test(c?.effectiveType ?? "")) return null;
-  // phones crop the 16:9 picture to fill the portrait screen, so they need the sharper file too
-  const px = Math.max(window.screen.width, window.screen.height) * Math.min(2, window.devicePixelRatio || 1);
-  return px >= 1600 ? FILM.hd : FILM.sd;
-}
 /** Portrait screens: where the subject is across the film (horizontal position of the crop, %). */
 // (the four services stand across the whole width at 2.4–4.8 s: the crop travels along them)
 const FILM_PAN: [number, number][] = [[0, 50], [2.4, 50], [2.7, 24], [4.6, 76], [5.1, 50], [13, 50]];

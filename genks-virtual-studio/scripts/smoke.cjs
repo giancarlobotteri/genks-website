@@ -44,7 +44,7 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await page.waitForTimeout(1600);
   // the preview is the opening film when the browser can play it (each chapter is a moment of the take),
   // otherwise the live 3D preview (each chapter is a camera shot)
-  const filmT = () => page.evaluate(() => document.querySelector("video")?.currentTime ?? -1);
+  const filmT = () => page.evaluate(() => document.querySelector("[aria-roledescription=anteprima] video")?.currentTime ?? -1);
   ok("anteprima: capitolo Registrazione, in sala", (await reel.getByText("Entra in sala.").isVisible()) && ((await vs(page, "reel")) === "reel:rec" || (await filmT()) >= 5.3), `film ${await filmT()}`);
   await snap(page, "02-reel-rec");
   const fill = () => page.evaluate(() => getComputedStyle(document.querySelectorAll('[aria-label^="Capitolo"] span')[1]).getPropertyValue("--fill"));
@@ -296,22 +296,27 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   ok("admin demo: modifica visibile nel catalogo", await page.getByRole("heading", { name: "Notte Cobalto MOD" }).isVisible());
   await ctx.close();
 
-  /* ---------- 3D scene actually visible in both quality levels ---------- */
-  for (const q of ["high", "low"]) {
+  /* ---------- the studio is actually visible: photographic plate (both quality levels) and the 3D fallback ---------- */
+  for (const q of ["high", "low", "3d"]) {
     ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     page = await ctx.newPage();
     await page.addInitScript(SEEN);
-    await page.goto(url + "?quality=" + q);
+    // "3d": the film can't load, the live 3D studio takes over
+    if (q === "3d") await page.route("**/film/**", r => r.fulfill({ status: 404, body: "" }));
+    await page.goto(url + "?quality=" + (q === "3d" ? "high" : q));
     await page.waitForTimeout(5000);
     const lit = await page.evaluate(() => new Promise(res => requestAnimationFrame(() => {
-      const src = document.querySelector("#studio canvas");
+      const photo = document.querySelector("#studio[data-photo] video");
+      const src = photo || document.querySelector("#studio canvas");
       const c = document.createElement("canvas"); c.width = 160; c.height = 100;
       const g = c.getContext("2d"); g.drawImage(src, 0, 0, 160, 100);
       const d = g.getImageData(0, 0, 160, 100).data; let n = 0;
       for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] > 120) n++;
       res(n / (d.length / 4));
     })));
-    ok(`scena 3D visibile (qualità ${q})`, lit > 0.03, `${(lit * 100).toFixed(1)}% pixel illuminati`);
+    const photo = await page.evaluate(() => Boolean(document.querySelector("#studio[data-photo]")));
+    ok(`studio fotografico ${q === "3d" ? "assente → scena 3D" : "attivo"} (${q})`, q === "3d" ? !photo : photo);
+    ok(`studio visibile (${q})`, lit > 0.03, `${(lit * 100).toFixed(1)}% pixel illuminati`);
     await ctx.close();
   }
 

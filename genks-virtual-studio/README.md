@@ -126,4 +126,5 @@ Tutte le dipendenze sono gratuite e open source (MIT, ISC, Apache-2.0, OFL). Nes
 - `public/film/genks-intro-{1080,720}.mp4`: anteprima di 13 s in un'unica ripresa, generata con Higgsfield Genjutsu (motion transfer, 1080p) a partire dal movimento di camera del sito (`scripts/render-intro.cjs`, piano pulito `?film` senza loghi né scritte in 3D) e da quattro foto fotorealistiche di riferimento.
 - Nel sito parte dopo le scie di luce del simbolo GENKS (vettoriale originale), guida i capitoli dell'anteprima e sfuma sulla domanda finale. Senza video (riduzione movimento, risparmio dati, errore di rete) torna l'anteprima 3D dal vivo.
 - Costo: 12 crediti (prova 480p 4 s) + 260 crediti (finale 1080p 13 s).
-- Verifiche: `node scripts/smoke.cjs` 79/79.
+- Lo studio è fotografico: il tour stop per stop scorre gli stessi fotogrammi del film (`src/lib/film-media.ts`, un fotogramma chiave ogni 4), con stacchi in dissolvenza tra schermate lontane, motion blur sui movimenti veloci e grana pellicola. Il Beat Store ha la sua cripta dei vinili fotorealistica con fasci di luce e polvere. Il 3D dal vivo resta sotto, come riserva se il video non si carica.
+- Verifiche: `node scripts/smoke.cjs` 83/83, `npx vitest run` 29/29.

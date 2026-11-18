@@ -5,6 +5,7 @@ import { formatEuro } from "../lib/catalog.ts";
 import { getDirector, useDirector } from "../lib/director.ts";
 import { musicLevel } from "../lib/level.ts";
 import { enterStore, goService, replayReel } from "../lib/nav.ts";
+import { FILM, SHOT_T, SPOTS, STOP_T, filmTimeAt, frameToScreen, panAtPos, pickFilm } from "../lib/film-media.ts";
 import { getDive, getSubShot, setSubShot } from "../lib/shots.ts";
 import { goToStop, installStepper, isMoving, overshoot, stopPos, tickStepper } from "../lib/stepper.ts";
 import { arcFor, drift, durFor, orbitPose, SHOTS } from "../scene/shot-table.ts";
@@ -60,6 +61,11 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   const anatomyRef = useRef<HTMLDivElement>(null);
   const calloutRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const railRef = useRef<HTMLOListElement>(null);
+  // the photographic studio: the film's frames (lib/film-media), with the live 3D underneath as fallback
+  const plateRef = useRef<HTMLVideoElement>(null);
+  const vaultRef = useRef<HTMLDivElement>(null);
+  const cutRef = useRef<HTMLDivElement>(null);
+  const [plateSrc] = useState(() => pickFilm({ motion: false }));
   const live = useRef({ base: null as string | null, framed: false });
   const [ready, setReady] = useState(false);
   // bumped when the phone gives the WebGL context back after a memory-pressure loss: the scene is rebuilt
@@ -182,8 +188,18 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     // The objects of the studio are clickable themselves: hover lights them up, a click opens their service.
     const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), sph = new THREE.Sphere();
     let hoverId: HitId | null = null, canHit = false, curPos = 0;
+    const LINE_IDS: HitId[] = ["svc:recording", "svc:custom", "svc:mix", "svc:store"];
     const hitAt = (cx: number, cy: number): HitId | null => {
       if (!canHit) return null;
+      if (photo) {
+        // the objects of the footage: a circle around each one, only at its own stop
+        const r = canvas.getBoundingClientRect(), x = cx - r.left, y = cy - r.top;
+        const cand: [HitId, { x: number; y: number; r: number }][] = curPos < 0.5 ? [["mic", SPOTS.mic]]
+          : curPos > 0.5 && curPos < 1.5 ? LINE_IDS.map((id, i) => [id, { ...SPOTS.lineupObj[i], r: 0.075 }] as [HitId, { x: number; y: number; r: number }])
+          : curPos > 2.5 && curPos < 3.5 ? [["screen", SPOTS.screen]] : curPos > 3.5 && curPos < 6.5 ? [["mixer", SPOTS.mixer]] : [];
+        for (const [id, c] of cand) { const q = spot(c.x, c.y); if (Math.hypot(x - q.x, y - q.y) < c.r * q.unit) return id; }
+        return null;
+      }
       const r = canvas.getBoundingClientRect();
       ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
       ray.setFromCamera(ndc, camera);
@@ -235,6 +251,64 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     // light direction values, eased so a change of screen never pops
     const look = { reveal: 0, hero: 0, title: 0 };
 
+    // ---- the photographic studio: the film's own frames, scrubbed by the tour ----
+    const plate = plateRef.current, vault = vaultRef.current, stageEl = canvas.parentElement!;
+    let photo = false, plateT = -1, plateK = 1, plateTx = 0, plateTy = 0, plateOx = 0.5;
+    // a change of screen far away in the footage is a cut (a quick dip through the dark), not a rewind
+    let cutT0 = -1, cutTo = 0, cutDone = false, blurNow = 0;
+    const cutEl = cutRef.current;
+    const onPlateReady = () => { if (!photo) { photo = true; stageEl.dataset.photo = "1"; } };
+    const onPlateFail = () => { photo = false; delete stageEl.dataset.photo; };
+    plate?.addEventListener("loadeddata", onPlateReady);
+    plate?.addEventListener("error", onPlateFail);
+    if (plate && plate.readyState >= 2) onPlateReady();
+    const spot = (nx: number, ny: number) => frameToScreen(nx, ny, w, h, plateOx, plateK, plateTx, plateTy);
+    const paintPlate = (now: number, dt: number, screenNow: string, reelShot: string | null, pos: number, dv: number) => {
+      if (!plate) return;
+      const t = now / 1000;
+      const base = live.current.base, sub = getSubShot();
+      let want = screenNow === "reel" ? (SHOT_T[reelShot ?? ""] ?? 5.8) : base ? (SHOT_T[sub ?? base] ?? SHOT_T[base] ?? filmTimeAt(pos)) : filmTimeAt(pos);
+      // the dive into the mixer display (towards the Beat Store)
+      if (dv > 0) want += (STOP_T[STOP_T.length - 1] - want) * ease(dv);
+      // the tour is already smooth; a change of screen glides through the footage like a camera move
+      const touringNow = screenNow === "studio" && !base;
+      const prevT = plateT;
+      if (plateT >= 0 && cutT0 < 0 && !touringNow && dv === 0 && Math.abs(want - plateT) > 1.6) { cutT0 = now; cutTo = want; cutDone = false; }
+      if (cutT0 >= 0) {
+        const u = (now - cutT0) / 1000;
+        if (u >= 0.26 && !cutDone) { cutDone = true; plateT = cutTo; }
+        if (cutDone) plateT += (want - plateT) * (1 - Math.exp(-dt * 3.2));
+        if (cutEl) cutEl.style.opacity = (u < 0.26 ? u / 0.26 : Math.max(0, 1 - (u - 0.26) / 0.5)).toFixed(3);
+        if (u > 0.8) { cutT0 = -1; if (cutEl) cutEl.style.opacity = "0"; }
+      } else {
+        const kk = touringNow ? 1 - Math.exp(-dt * 14) : 1 - Math.exp(-dt * 3.2);
+        plateT = plateT < 0 ? want : plateT + (want - plateT) * kk;
+      }
+      if (Math.abs(plate.currentTime - plateT) > 0.03 && !plate.seeking) plate.currentTime = Math.max(0, Math.min((plate.duration || 13) - 0.05, plateT));
+      // fast moves through the footage get the motion blur of a real camera
+      const speed = prevT < 0 || dt <= 0 ? 0 : Math.abs(plateT - prevT) / dt;
+      const wantBlur = reduced || quality !== "high" || cutT0 >= 0 ? 0 : Math.min(3.5, Math.max(0, (speed - 1.4) * 0.9));
+      blurNow += (wantBlur - blurNow) * (1 - Math.exp(-dt * 10));
+      plate.style.filter = blurNow > 0.15 ? `blur(${blurNow.toFixed(2)}px)` : "";
+      // a camera that breathes, the framing of the screen, and the push into the display
+      const breathe = reduced ? 0 : Math.sin(t * 0.13) * 0.012;
+      plateK = 1.06 + breathe + (base ? 0.08 : 0) + ease(dv) * 1.4;
+      const slack = (plateK - 1) / 2;
+      plateTx = Math.max(-slack, Math.min(slack, -fx)) * w + (reduced ? 0 : Math.sin(t * 0.07) * 0.006 * w) - sp.x * 0.012 * w;
+      plateTy = Math.max(-slack, Math.min(slack, -fy)) * h - sp.y * 0.01 * h;
+      plateOx = portrait ? panAtPos(pos) : 0.5;
+      plate.style.objectPosition = `${(plateOx * 100).toFixed(1)}% 50%`;
+      plate.style.transform = `translate3d(${plateTx.toFixed(1)}px, ${plateTy.toFixed(1)}px, 0) scale(${plateK.toFixed(4)})`;
+    };
+    // the Beat Store's own place: the photographic record vault, moving with the catalogue
+    const paintVault = (now: number, page: number, bundles: boolean) => {
+      if (!vault) return;
+      const t = now / 1000, pg = Math.min(page, 6);
+      sp.x += (pointer.x - sp.x) * 0.05; sp.y += (pointer.y - sp.y) * 0.05;
+      const sc = 1.06 + (reduced ? 0 : 0.025 * Math.sin(t * 0.07)) + pg * 0.035 + (bundles ? 0.06 : 0);
+      vault.style.transform = `translate3d(${(-sp.x * 26 + (pg % 2 ? -16 : 16) * Math.min(1, pg)).toFixed(1)}px, ${(-sp.y * 16 + (bundles ? 24 : 0)).toFixed(1)}px, 0) scale(${sc.toFixed(4)})`;
+    };
+
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       const dt = last < 0 ? 1 / 60 : Math.min((now - last) / 1000, 0.25);
@@ -244,6 +318,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       if (!running) return;
       // inside the Beat Store: its own place (the record vault), with its own camera
       if (dir.screen === "store" && getDive() >= 0.98 && !first) {
+        if (photo) { paintVault(now, dir.storePage, dir.storeTab === "bundles"); return; }
         if (!storeEnv) storeEnv = buildStoreEnv(quality === "high");
         if (storeVisit !== dir.storeVisit) { storeVisit = dir.storeVisit; storeEnv.enter(now); }
         storeEnv.aim(dir.storeTab, dir.storePage);
@@ -259,7 +334,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         return;
       }
       const t = now / 1000;
-      if (!first && frames < 90) { minDt = Math.min(minDt, dt); refresh = Math.max(1 / 240, minDt); }
+      if (photo) { /* the photographic plate costs nothing to draw: nothing to adapt */ }
+      else if (!first && frames < 90) { minDt = Math.min(minDt, dt); refresh = Math.max(1 / 240, minDt); }
       else if (!first) {
         sum += dt; n++;
         if (n >= 90) {
@@ -370,10 +446,11 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       // rack focus on the subject of the shot
       focusV.set(pose.target[0], pose.target[1], pose.target[2]);
       composer?.focus(focusV, pose.lens ?? 1);
-      if (composer) composer.render(dt); else renderer.render(rig.scene, camera);
+      if (photo) paintPlate(now, dt, dir.screen, dir.reelShot, pos, dv);
+      else if (composer) composer.render(dt); else renderer.render(rig.scene, camera);
       first = false;
       // Safety net: if post-processing ever outputs a fully black frame on this GPU, drop it and render directly.
-      if (composer && frames === 6) {
+      if (!photo && composer && frames === 6) {
         const gl = renderer.getContext();
         const pxl = new Uint8Array(4);
         let lit = 0;
@@ -389,8 +466,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       HOTSPOTS.forEach(hs => {
         const el = hotRefs.current[hs.id];
         if (!el) return;
-        rig.anchors[hs.anchor].getWorldPosition(tmp);
-        tmp.project(camera);
+        if (photo) { const q = spot(SPOTS[hs.id].x, SPOTS[hs.id].y); tmp.set((q.x / w) * 2 - 1, 1 - (q.y / h) * 2, 0); }
+        else { rig.anchors[hs.anchor].getWorldPosition(tmp); tmp.project(camera); }
         const v = tmp.z > 1 || !touring || dv > 0.02 ? 0 : band(pos, hs.stop, hs.stop, 0.3);
         // keep the button and its label inside the screen on narrow phones
         const sx = Math.min(w - 90, Math.max(90, ((tmp.x + 1) / 2) * w));
@@ -411,8 +488,10 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         rig.lineup.forEach((c, i) => {
           const el = calloutRefs.current[i];
           if (!el) return;
-          c.anchor.getWorldPosition(tmp);
-          tmp.project(camera);
+          // phones see only part of the line-up: the four captions sit in an even row above the dock
+          if (photo && portrait) tmp.set(((0.13 + i * 0.247) * 2 - 1), 1 - 0.74 * 2, 0);
+          else if (photo) { const q = spot(SPOTS.lineup[i].x, SPOTS.lineup[i].y); tmp.set((q.x / w) * 2 - 1, 1 - (q.y / h) * 2, 0); }
+          else { c.anchor.getWorldPosition(tmp); tmp.project(camera); }
           // kept inside the screen on narrow phones
           const x = Math.min(w - 44, Math.max(44, ((tmp.x + 1) / 2) * w)), y = ((1 - tmp.y) / 2) * h;
           // the camera always breathes: the captions follow it only past 2 px, so the text stays still and easy to hit
@@ -481,6 +560,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       canvas.removeEventListener("pointerleave", onCanvasLeave);
       canvas.removeEventListener("click", onCanvasClick);
       delete document.documentElement.dataset.gl;
+      plate?.removeEventListener("loadeddata", onPlateReady);
+      plate?.removeEventListener("error", onPlateFail);
+      delete stageEl.dataset.photo;
       composer?.dispose();
       storeEnv?.dispose();
       rig.dispose();
@@ -494,6 +576,14 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   return (
     <section id="studio" className={s.stage} data-screen={screen} aria-label="Studio virtuale GENKS">
       {noGl ? <div className={s.stageNoGl} aria-hidden="true" /> : <canvas ref={canvasRef} className={s.stageCanvas} data-ready={ready || undefined} aria-hidden="true" />}
+      {!noGl && plateSrc && <video ref={plateRef} className={s.stagePlate} src={plateSrc} muted playsInline preload="auto" disablePictureInPicture aria-hidden="true" />}
+      {!noGl && <div ref={cutRef} className={s.stageCut} aria-hidden="true" />}
+      {!noGl && plateSrc && <div className={s.stageGrain} aria-hidden="true" />}
+      {!noGl && (
+        <div ref={vaultRef} className={s.stageVault} style={{ backgroundImage: `url(${FILM.vault})` }} aria-hidden="true">
+          <span className={s.vaultBeam} /><span className={s.vaultBeam} /><span className={s.vaultDust} />
+        </div>
+      )}
       <div className={s.stageVignette} aria-hidden="true" />
       {!noGl && HOTSPOTS.map(hs => (
         <button key={hs.id} ref={el => { hotRefs.current[hs.id] = el; }} type="button" className={s.hotspot} data-id={hs.id} onClick={() => activate(hs.id)} tabIndex={touringUi ? 0 : -1}>
