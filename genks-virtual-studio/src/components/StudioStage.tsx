@@ -397,7 +397,12 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
           tmp.project(camera);
           // kept inside the screen on narrow phones
           const x = Math.min(w - 44, Math.max(44, ((tmp.x + 1) / 2) * w)), y = ((1 - tmp.y) / 2) * h;
-          el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, 0)`;
+          // the camera always breathes: the captions follow it only past 2 px, so the text stays still and easy to hit
+          const lx = Number(el.dataset.x ?? -1e4), ly = Number(el.dataset.y ?? -1e4);
+          if (Math.abs(x - lx) > 2 || Math.abs(y - ly) > 2) {
+            el.dataset.x = String(Math.round(x)); el.dataset.y = String(Math.round(y));
+            el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0) translate(-50%, 0)`;
+          }
           el.style.opacity = clamp01((av - 0.35 - i * 0.1) / 0.35).toFixed(3);
         });
       }
