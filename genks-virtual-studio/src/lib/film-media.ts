@@ -6,7 +6,29 @@
  */
 import { prefersReducedMotion } from "../components/ui.tsx";
 
-export const FILM = { hd: "/film/genks-intro-1080.mp4", sd: "/film/genks-intro-720.mp4", poster: "/film/genks-intro-poster.jpg", vault: "/film/vault.webp" };
+/** Colour on top, depth (Depth Anything V2) below, in one video: the studio is drawn as a living photograph (scene/living-plate). */
+export const FILM = { hd: "/film/genks-live-1080.mp4", sd: "/film/genks-live-720.mp4", vault: "/film/vault.webp", vaultDepth: "/film/vault-depth.webp" };
+
+// The film has one video element, owned by the studio stage; the preview plays it, the tour scrubs it.
+let filmVideo: HTMLVideoElement | null = null;
+let reelFilm = false;
+const videoSubs = new Set<(v: HTMLVideoElement | null) => void>();
+export const setFilmVideo = (v: HTMLVideoElement | null) => { if (v !== filmVideo) { filmVideo = v; videoSubs.forEach(f => f(v)); } };
+/** The studio (and its video) may mount after the preview: be told when the video is there. */
+export const onFilmVideo = (f: (v: HTMLVideoElement | null) => void) => { videoSubs.add(f); return () => { videoSubs.delete(f); }; };
+export const getFilmVideo = () => filmVideo;
+/** The preview is playing the film: the studio shows it as it plays (no seeking). */
+export const setReelFilm = (on: boolean) => { reelFilm = on; };
+export const isReelFilm = () => reelFilm;
+/** Portrait screens during the preview: where the subject is across the film (crop position, %). */
+const FILM_PAN: [number, number][] = [[0, 50], [2.4, 50], [2.7, 24], [4.6, 76], [5.1, 50], [13, 50]];
+export const panAt = (t: number) => {
+  for (let k = 0; k < FILM_PAN.length - 1; k++) {
+    const [t0, x0] = FILM_PAN[k], [t1, x1] = FILM_PAN[k + 1];
+    if (t <= t1) { const u = Math.max(0, (t - t0) / (t1 - t0)); return x0 + (x1 - x0) * (0.5 - 0.5 * Math.cos(Math.PI * u)); }
+  }
+  return 50;
+};
 export const FILM_W = 1920, FILM_H = 1080;
 
 /** Which file this device should play (null: no film at all, e.g. data saver). */

@@ -57,12 +57,10 @@
 .stageCanvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1.2s var(--ease); }
 .stageCanvas[data-ready] { opacity: 1; }
 /* the photographic studio: the film's frames over the (hidden) 3D, the record vault for the Beat Store */
-.stagePlate { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #02040a; opacity: 0; pointer-events: none; transform-origin: 50% 50%; will-change: transform; transition: opacity 0.8s var(--ease); }
-.stage[data-photo] .stagePlate { opacity: 1; }
-.stage[data-photo] .stageCanvas { opacity: 0; }
-.stageVault { position: absolute; inset: -4%; background: #02040a 50% 50% / cover no-repeat; opacity: 0; pointer-events: none; will-change: transform; transition: opacity 0.9s var(--ease); }
+/* the film's video only feeds the living photograph drawn in the canvas (scene/living-plate) */
+.stagePlate { position: absolute; left: 0; top: 0; width: 4px; height: 4px; opacity: 0.01; pointer-events: none; }
+.stageVault { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.9s var(--ease); }
 .stage[data-photo][data-screen="store"] .stageVault { opacity: 1; }
-.stage[data-photo][data-screen="store"] .stagePlate { opacity: 0; }
 /* film grain over the photographic studio and the vault: one filmed world */
 .stageGrain { position: absolute; inset: -50%; pointer-events: none; opacity: 0; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E"); animation: grain 0.9s steps(6) infinite; transition: opacity 0.8s; }
 .stage[data-photo] .stageGrain { opacity: 0.22; }
@@ -994,8 +992,8 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 :global(html[data-gl]) .beatCard { background: linear-gradient(180deg, rgba(14, 22, 44, 0.86), rgba(6, 10, 22, 0.92)); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 
 /* ---------- Beat Store: a crate of records (one vinyl per beat) ---------- */
-.crate { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
-.vinylRow { --size: min(36vh, 28vw, 380px); position: relative; flex: 1; min-height: 0; margin: 0; padding: 0; list-style: none; perspective: 1500px; outline: none; touch-action: pan-y; user-select: none; }
+.crate { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; perspective: 1600px; }
+.vinylRow { --size: min(36vh, 28vw, 380px); position: relative; flex: 1; min-height: 0; margin: 0; padding: 0; list-style: none; outline: none; touch-action: pan-y; user-select: none; transform-style: preserve-3d; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.5s var(--ease); }
 .vinylRow:focus-visible { box-shadow: inset 0 0 0 2px var(--blue); border-radius: var(--radius-lg); }
 .vinylItem { position: absolute; left: 50%; top: 47%; width: var(--size); height: var(--size); transform-style: preserve-3d; transition: transform 0.7s var(--ease), opacity 0.5s var(--ease); }
 .vinylHit { position: absolute; inset: 0; padding: 0; border: 0; background: none; cursor: pointer; transform-style: preserve-3d; }
@@ -1006,6 +1004,8 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 /* the record slides out of its sleeve when chosen */
 .vinylDisc { position: absolute; inset: 1.5%; z-index: 1; border-radius: 50%; transform: translateX(4%); transition: transform 0.9s var(--ease); box-shadow: 0 26px 50px -18px rgba(0, 0, 0, 0.95); }
 .vinylItem[data-on] .vinylDisc { transform: translateX(52%); }
+.vinylScratch { position: absolute; inset: 0; border-radius: 50%; cursor: grab; }
+.vinylScratch:active { cursor: grabbing; }
 .vinylSpin { position: absolute; inset: 0; border-radius: 50%; animation: vinylTurn 14s linear infinite; animation-play-state: paused; }
 .vinylItem[data-on] .vinylSpin { animation-play-state: running; }
 .vinylItem[data-playing] .vinylSpin { animation-duration: 1.8s; }
@@ -1016,7 +1016,7 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 .vinylLabel i { font: 600 calc(var(--size) * 0.02) var(--font-head); font-style: normal; opacity: 0.85; }
 .vinylLabel em { font: 700 calc(var(--size) * 0.017) var(--font-head); font-style: normal; letter-spacing: 0.18em; opacity: 0.7; }
 /* light on vinyl stays still while the record turns: that's what makes it look real */
-.vinylSheen { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; mix-blend-mode: screen; background: conic-gradient(from 25deg, transparent 0deg, rgba(255, 255, 255, 0.2) 18deg, transparent 40deg, transparent 180deg, rgba(160, 190, 255, 0.16) 200deg, transparent 224deg); -webkit-mask: radial-gradient(circle, transparent 0 34%, #000 35%); mask: radial-gradient(circle, transparent 0 34%, #000 35%); }
+.vinylSheen { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; mix-blend-mode: screen; transform: rotate(var(--sheen, 0deg)); transition: transform 0.4s var(--ease); background: conic-gradient(from 25deg, transparent 0deg, rgba(255, 255, 255, 0.2) 18deg, transparent 40deg, transparent 180deg, rgba(160, 190, 255, 0.16) 200deg, transparent 224deg); -webkit-mask: radial-gradient(circle, transparent 0 34%, #000 35%); mask: radial-gradient(circle, transparent 0 34%, #000 35%); }
 .vinylCaption { position: absolute; left: 50%; top: calc(100% + 12px); transform: translateX(-50%); white-space: nowrap; font: 600 0.9rem var(--font-head); color: var(--silver); transition: opacity 0.4s; }
 .vinylItem[data-on] .vinylCaption { opacity: 0; }
 .vinylItem:not([data-on]) .vinylHit:hover .vinylSleeve { box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.95), 0 0 0 1px var(--blue), 0 0 30px -6px var(--blue); }

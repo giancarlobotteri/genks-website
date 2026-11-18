@@ -44,7 +44,7 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await page.waitForTimeout(1600);
   // the preview is the opening film when the browser can play it (each chapter is a moment of the take),
   // otherwise the live 3D preview (each chapter is a camera shot)
-  const filmT = () => page.evaluate(() => document.querySelector("[aria-roledescription=anteprima] video")?.currentTime ?? -1);
+  const filmT = () => page.evaluate(() => document.querySelector("#studio video")?.currentTime ?? -1);
   ok("anteprima: capitolo Registrazione, in sala", (await reel.getByText("Entra in sala.").isVisible()) && ((await vs(page, "reel")) === "reel:rec" || (await filmT()) >= 5.3), `film ${await filmT()}`);
   await snap(page, "02-reel-rec");
   const fill = () => page.evaluate(() => getComputedStyle(document.querySelectorAll('[aria-label^="Capitolo"] span')[1]).getPropertyValue("--fill"));

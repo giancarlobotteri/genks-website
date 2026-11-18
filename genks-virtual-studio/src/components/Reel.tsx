@@ -6,7 +6,7 @@ import { enterStore, goService, goStudio } from "../lib/nav.ts";
 import { useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
 import { GenksSymbol } from "./brand.tsx";
-import { FILM, pickFilm } from "../lib/film-media.ts";
+import { getFilmVideo, onFilmVideo, pickFilm, setReelFilm } from "../lib/film-media.ts";
 import { StreakIntro } from "./StreakIntro.tsx";
 import { DemoBadge, prefersReducedMotion } from "./ui.tsx";
 import { KineticWords } from "./Wizard.tsx";
@@ -24,16 +24,6 @@ type Chapter = {
  * original vector of the titles. Played when the device can (not with reduced motion or data saver);
  * otherwise, or if it fails to load, the preview runs live over the 3D studio as before.
  */
-/** Portrait screens: where the subject is across the film (horizontal position of the crop, %). */
-// (the four services stand across the whole width at 2.4–4.8 s: the crop travels along them)
-const FILM_PAN: [number, number][] = [[0, 50], [2.4, 50], [2.7, 24], [4.6, 76], [5.1, 50], [13, 50]];
-const panAt = (t: number) => {
-  for (let k = 0; k < FILM_PAN.length - 1; k++) {
-    const [t0, x0] = FILM_PAN[k], [t1, x1] = FILM_PAN[k + 1];
-    if (t <= t1) { const u = Math.max(0, (t - t0) / (t1 - t0)); return x0 + (x1 - x0) * (0.5 - 0.5 * Math.cos(Math.PI * u)); }
-  }
-  return 50;
-};
 
 const SEEN = "genks:vs:reel";
 const wasSeen = () => { try { return sessionStorage.getItem(SEEN) === "1"; } catch { return false; } };
@@ -81,16 +71,31 @@ export function Reel() {
   const choosing = i >= chapters.length;
   const barRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const elapsed = useRef(0);
-  const [filmSrc] = useState(pickFilm);
-  const [film, setFilm] = useState(Boolean(filmSrc));
-  const videoRef = useRef<HTMLVideoElement>(null);
+  // the film is the studio's own video (living photograph, see StudioStage): the preview plays it
+  const [film, setFilm] = useState(() => Boolean(pickFilm()));
   const filmOn = film && !choosing;
+  // the studio (with the video) can mount a moment after the preview: wait for it, a few seconds at most
+  const [vid, setVid] = useState(getFilmVideo);
+  useEffect(() => onFilmVideo(v => { if (v) setVid(v); }), []);
+  useEffect(() => {
+    if (!film || vid) return;
+    const t = window.setTimeout(() => { if (!getFilmVideo()) setFilm(false); }, 6000);
+    return () => window.clearTimeout(t);
+  }, [film, vid]);
+  useEffect(() => {
+    if (!vid) return;
+    const fail = () => setFilm(false);
+    vid.addEventListener("error", fail);
+    return () => vid.removeEventListener("error", fail);
+  }, [vid]);
+  useEffect(() => { setReelFilm(filmOn); return () => setReelFilm(false); }, [filmOn]);
 
   const go = useCallback((n: number) => {
     elapsed.current = 0;
     const k = Math.max(0, Math.min(chapters.length, n));
     // in the film, a chapter is a moment of the take: jump there
-    const v = videoRef.current;
+    const v = getFilmVideo();
+    if (v && film && k < chapters.length) { setReelFilm(true); fromTop.current = false; }
     if (v && film && k < chapters.length) { try { v.currentTime = chapters[k].at + 0.01; } catch { /* not seekable yet */ } }
     setI(k);
   }, [chapters, film]);
@@ -104,23 +109,36 @@ export function Reel() {
   }, [i, choosing, chapters, intro, film]);
 
   // the film: its own clock drives the chapters, the bars and (on portrait screens) the crop
+  // the first start of this preview plays the take from the top (the tour may have left it anywhere)
+  const fromTop = useRef(true);
   const startFilm = useCallback(() => {
-    const v = videoRef.current;
+    const v = getFilmVideo();
     if (!v) return;
     v.muted = true;
+    setReelFilm(true);
+    if (fromTop.current || v.ended || v.currentTime > 12.5) { fromTop.current = false; try { v.currentTime = 0; } catch { /* not seekable yet */ } }
     v.play().catch(() => setFilm(false));
   }, []);
+  // a fresh preview: back to the top of the take straight away, still, under the titles
   useEffect(() => {
-    const v = videoRef.current;
+    if (!filmOn || !vid || !fromTop.current || i !== 0) return;
+    setReelFilm(true);
+    vid.pause();
+    try { vid.currentTime = 0; } catch { /* not seekable yet */ }
+  }, [filmOn, vid, i]);
+  useEffect(() => {
+    const v = vid;
     if (!filmOn || !v) return;
     if (paused) v.pause();
     else if (!intro) startFilm();
-  }, [filmOn, paused, intro, startFilm]);
+  }, [filmOn, paused, intro, startFilm, vid]);
   useEffect(() => {
-    const v = videoRef.current;
+    const v = vid;
     if (!filmOn || !v) return;
     let raf = 0, lastT = -1, still = performance.now();
     const tick = (now: number) => {
+      // the take hasn't started yet (titles on screen): nothing to follow
+      if (intro || fromTop.current) { raf = requestAnimationFrame(tick); return; }
       const t = v.currentTime, d = v.duration || 13;
       if (t !== lastT) { lastT = t; still = now; }
       // stuck for a while (network): carry on live over the 3D studio
@@ -132,14 +150,12 @@ export function Reel() {
         const a = chapters[j].at, z = chapters[j + 1]?.at ?? d;
         b?.style.setProperty("--fill", Math.min(1, Math.max(0, (t - a) / (z - a))).toFixed(4));
       });
-      v.style.opacity = String(Math.min(1, Math.max(0, (d - t) / 0.6)));
-      if (window.innerWidth < window.innerHeight) v.style.objectPosition = `${panAt(t).toFixed(2)}% 50%`;
-      if (v.ended || t >= d - 0.03) { go(chapters.length); return; }
+      if (v.ended || t >= d - 0.03) { v.pause(); go(chapters.length); return; }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [filmOn, i, chapters, paused, intro, go]);
+  }, [filmOn, i, chapters, paused, intro, go, vid]);
 
   // timeline: one rAF, progress written straight to the bars (no React work per frame)
   useEffect(() => {
@@ -178,9 +194,6 @@ export function Reel() {
 
   return (
     <div className={s.reel} data-choosing={choosing || undefined} data-film={filmOn || undefined} role="region" aria-roledescription="anteprima" aria-label="Anteprima dei servizi GENKS">
-      {filmOn && filmSrc && (
-        <video ref={videoRef} className={s.reelFilm} src={filmSrc} poster={FILM.poster} muted playsInline preload="auto" disablePictureInPicture aria-hidden="true" onError={() => setFilm(false)} />
-      )}
       <div className={s.reelShade} aria-hidden="true" />
       <header className={s.reelTop}>
         <span className={s.reelBrand}><GenksSymbol size={34} /><span>GENKS</span><DemoBadge>FREE · DEMO</DemoBadge></span>

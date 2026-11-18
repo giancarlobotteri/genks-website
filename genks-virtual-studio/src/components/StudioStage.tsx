@@ -5,7 +5,8 @@ import { formatEuro } from "../lib/catalog.ts";
 import { getDirector, useDirector } from "../lib/director.ts";
 import { musicLevel } from "../lib/level.ts";
 import { enterStore, goService, replayReel } from "../lib/nav.ts";
-import { FILM, SHOT_T, SPOTS, STOP_T, filmTimeAt, frameToScreen, panAtPos, pickFilm } from "../lib/film-media.ts";
+import { FILM, SHOT_T, SPOTS, STOP_T, filmTimeAt, frameToScreen, isReelFilm, panAt, panAtPos, pickFilm, setFilmVideo } from "../lib/film-media.ts";
+import { createLivingPlate } from "../scene/living-plate.ts";
 import { getDive, getSubShot, setSubShot } from "../lib/shots.ts";
 import { goToStop, installStepper, isMoving, overshoot, stopPos, tickStepper } from "../lib/stepper.ts";
 import { arcFor, drift, durFor, orbitPose, SHOTS } from "../scene/shot-table.ts";
@@ -182,7 +183,29 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     const onVis = () => { running = !document.hidden; };
     document.addEventListener("visibilitychange", onVis);
     const pointer = { x: 0, y: 0 }, sp = { x: 0, y: 0 };
-    const onMove = (e: PointerEvent) => { if (e.pointerType === "mouse") { pointer.x = e.clientX / window.innerWidth - 0.5; pointer.y = e.clientY / window.innerHeight - 0.5; } };
+    // mouse, finger and the tilt of the phone all move the camera (and the light); idle, it drifts by itself
+    let lastInput = -1e9, touchLight = 0;
+    const onMove = (e: PointerEvent) => {
+      pointer.x = e.clientX / window.innerWidth - 0.5; pointer.y = e.clientY / window.innerHeight - 0.5;
+      lastInput = performance.now();
+      if (e.pointerType !== "mouse") touchLight = 1;
+    };
+    let tilt0: [number, number] | null = null;
+    const onTilt = (e: DeviceOrientationEvent) => {
+      if (e.gamma == null || e.beta == null) return;
+      if (!tilt0) tilt0 = [e.gamma, e.beta];
+      pointer.x = Math.max(-0.5, Math.min(0.5, (e.gamma - tilt0[0]) / 40));
+      pointer.y = Math.max(-0.5, Math.min(0.5, (e.beta - tilt0[1]) / 40));
+      lastInput = performance.now();
+    };
+    window.addEventListener("deviceorientation", onTilt, { passive: true });
+    // iPhone asks once, on the first touch
+    const askTilt = () => {
+      const D = window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> } | undefined;
+      if (D?.requestPermission) D.requestPermission().catch(() => {});
+      window.removeEventListener("touchend", askTilt);
+    };
+    window.addEventListener("touchend", askTilt, { passive: true });
     window.addEventListener("pointermove", onMove, { passive: true });
 
     // The objects of the studio are clickable themselves: hover lights them up, a click opens their service.
@@ -253,6 +276,27 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
 
     // ---- the photographic studio: the film's own frames, scrubbed by the tour ----
     const plate = plateRef.current, vault = vaultRef.current, stageEl = canvas.parentElement!;
+    const living = plate ? createLivingPlate(renderer, plate, { color: FILM.vault, depth: FILM.vaultDepth }, quality === "high") : null;
+    let hoverAmt = 0, hoverAt: [number, number] = [0.5, 0.5], lightAmt = 0;
+    const LINE_SPOTS = ["svc:recording", "svc:custom", "svc:mix", "svc:store"];
+    /** camera parallax, light and hover for the living photograph, from the pointer */
+    const lifeInputs = (now: number, dt: number) => {
+      const t = now / 1000;
+      const idle = now - lastInput > 2600 && !reduced;
+      if (idle) { pointer.x = Math.sin(t * 0.31) * 0.22; pointer.y = Math.cos(t * 0.23) * 0.14; }
+      const k = 1 - Math.exp(-dt * (idle ? 1.2 : 5));
+      sp.x += (pointer.x - sp.x) * k; sp.y += (pointer.y - sp.y) * k;
+      const wantLight = reduced ? 0.35 : idle ? 0.55 : 1;
+      lightAmt += (wantLight - lightAmt) * (1 - Math.exp(-dt * 3));
+      if (touchLight > 0) touchLight = Math.max(0, touchLight - dt * 0.4);
+      const hid = hoverId as string | null;
+      const at = hid == null ? null : hid.startsWith("svc:") ? SPOTS.lineupObj[LINE_SPOTS.indexOf(hid)] : (SPOTS as unknown as Record<string, { x: number; y: number }>)[hid];
+      if (at) hoverAt = [at.x, at.y];
+      hoverAmt += ((at ? 1 : 0) - hoverAmt) * (1 - Math.exp(-dt * 8));
+      const par: [number, number] = reduced ? [0, 0] : [-sp.x * 0.11, -sp.y * 0.07];
+      const light: [number, number, number] = [sp.x + 0.5, sp.y + 0.5, lightAmt];
+      return { par, light, mouse: [pointer.x + 0.5, pointer.y + 0.5] as [number, number], time: t };
+    };
     let photo = false, plateT = -1, plateK = 1, plateTx = 0, plateTy = 0, plateOx = 0.5;
     // a change of screen far away in the footage is a cut (a quick dip through the dark), not a rewind
     let cutT0 = -1, cutTo = 0, cutDone = false, blurNow = 0;
@@ -267,13 +311,15 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       if (!plate) return;
       const t = now / 1000;
       const base = live.current.base, sub = getSubShot();
-      let want = screenNow === "reel" ? (SHOT_T[reelShot ?? ""] ?? 5.8) : base ? (SHOT_T[sub ?? base] ?? SHOT_T[base] ?? filmTimeAt(pos)) : filmTimeAt(pos);
+      const playing = screenNow === "reel" && isReelFilm();
+      let want = playing ? plate.currentTime : screenNow === "reel" ? (SHOT_T[reelShot ?? ""] ?? 5.8) : base ? (SHOT_T[sub ?? base] ?? SHOT_T[base] ?? filmTimeAt(pos)) : filmTimeAt(pos);
       // the dive into the mixer display (towards the Beat Store)
       if (dv > 0) want += (STOP_T[STOP_T.length - 1] - want) * ease(dv);
       // the tour is already smooth; a change of screen glides through the footage like a camera move
       const touringNow = screenNow === "studio" && !base;
       const prevT = plateT;
-      if (plateT >= 0 && cutT0 < 0 && !touringNow && dv === 0 && Math.abs(want - plateT) > 1.6) { cutT0 = now; cutTo = want; cutDone = false; }
+      if (playing) { plateT = want; cutT0 = -1; if (cutEl) cutEl.style.opacity = "0"; }
+      else if (plateT >= 0 && cutT0 < 0 && !touringNow && dv === 0 && Math.abs(want - plateT) > 1.6) { cutT0 = now; cutTo = want; cutDone = false; }
       if (cutT0 >= 0) {
         const u = (now - cutT0) / 1000;
         if (u >= 0.26 && !cutDone) { cutDone = true; plateT = cutTo; }
@@ -284,29 +330,25 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         const kk = touringNow ? 1 - Math.exp(-dt * 14) : 1 - Math.exp(-dt * 3.2);
         plateT = plateT < 0 ? want : plateT + (want - plateT) * kk;
       }
-      if (Math.abs(plate.currentTime - plateT) > 0.03 && !plate.seeking) plate.currentTime = Math.max(0, Math.min((plate.duration || 13) - 0.05, plateT));
-      // fast moves through the footage get the motion blur of a real camera
-      const speed = prevT < 0 || dt <= 0 ? 0 : Math.abs(plateT - prevT) / dt;
-      const wantBlur = reduced || quality !== "high" || cutT0 >= 0 ? 0 : Math.min(3.5, Math.max(0, (speed - 1.4) * 0.9));
-      blurNow += (wantBlur - blurNow) * (1 - Math.exp(-dt * 10));
-      plate.style.filter = blurNow > 0.15 ? `blur(${blurNow.toFixed(2)}px)` : "";
+      if (!playing && Math.abs(plate.currentTime - plateT) > 0.03 && !plate.seeking) plate.currentTime = Math.max(0, Math.min((plate.duration || 13) - 0.05, plateT));
+      void prevT; void blurNow;
       // a camera that breathes, the framing of the screen, and the push into the display
       const breathe = reduced ? 0 : Math.sin(t * 0.13) * 0.012;
-      plateK = 1.06 + breathe + (base ? 0.08 : 0) + ease(dv) * 1.4;
+      plateK = (playing ? 1.04 : 1.06) + breathe + (base ? 0.08 : 0) + ease(dv) * 1.4;
       const slack = (plateK - 1) / 2;
-      plateTx = Math.max(-slack, Math.min(slack, -fx)) * w + (reduced ? 0 : Math.sin(t * 0.07) * 0.006 * w) - sp.x * 0.012 * w;
-      plateTy = Math.max(-slack, Math.min(slack, -fy)) * h - sp.y * 0.01 * h;
-      plateOx = portrait ? panAtPos(pos) : 0.5;
-      plate.style.objectPosition = `${(plateOx * 100).toFixed(1)}% 50%`;
-      plate.style.transform = `translate3d(${plateTx.toFixed(1)}px, ${plateTy.toFixed(1)}px, 0) scale(${plateK.toFixed(4)})`;
+      plateTx = playing ? 0 : Math.max(-slack, Math.min(slack, -fx)) * w + (reduced ? 0 : Math.sin(t * 0.07) * 0.006 * w);
+      plateTy = playing ? 0 : Math.max(-slack, Math.min(slack, -fy)) * h;
+      plateOx = portrait ? (playing ? panAt(plateT) / 100 : panAtPos(pos)) : 0.5;
+      const io = lifeInputs(now, dt);
+      living?.render({ source: "film", w, h, ox: plateOx, k: plateK, tx: plateTx, ty: plateTy, par: io.par, light: io.light, hover: hoverAmt > 0.01 ? [hoverAt[0], hoverAt[1], hoverAmt] : null, mouse: io.mouse, time: io.time, dust: 1 });
     };
     // the Beat Store's own place: the photographic record vault, moving with the catalogue
-    const paintVault = (now: number, page: number, bundles: boolean) => {
-      if (!vault) return;
+    const paintVault = (now: number, dt: number, page: number, bundles: boolean) => {
+      void vault;
       const t = now / 1000, pg = Math.min(page, 6);
-      sp.x += (pointer.x - sp.x) * 0.05; sp.y += (pointer.y - sp.y) * 0.05;
-      const sc = 1.06 + (reduced ? 0 : 0.025 * Math.sin(t * 0.07)) + pg * 0.035 + (bundles ? 0.06 : 0);
-      vault.style.transform = `translate3d(${(-sp.x * 26 + (pg % 2 ? -16 : 16) * Math.min(1, pg)).toFixed(1)}px, ${(-sp.y * 16 + (bundles ? 24 : 0)).toFixed(1)}px, 0) scale(${sc.toFixed(4)})`;
+      const k = 1.08 + (reduced ? 0 : 0.025 * Math.sin(t * 0.07)) + pg * 0.03 + (bundles ? 0.06 : 0);
+      const io = lifeInputs(now, dt);
+      living?.render({ source: "vault", w, h, ox: 0.5, k, tx: (pg % 2 ? -16 : 16) * Math.min(1, pg), ty: bundles ? 24 : 0, par: [io.par[0] * 1.3, io.par[1] * 1.3], light: io.light, hover: null, mouse: io.mouse, time: io.time, dust: 1 });
     };
 
     const frame = (now: number) => {
@@ -318,7 +360,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       if (!running) return;
       // inside the Beat Store: its own place (the record vault), with its own camera
       if (dir.screen === "store" && getDive() >= 0.98 && !first) {
-        if (photo) { paintVault(now, dir.storePage, dir.storeTab === "bundles"); return; }
+        if (photo) { paintVault(now, dt, dir.storePage, dir.storeTab === "bundles"); return; }
         if (!storeEnv) storeEnv = buildStoreEnv(quality === "high");
         if (storeVisit !== dir.storeVisit) { storeVisit = dir.storeVisit; storeEnv.enter(now); }
         storeEnv.aim(dir.storeTab, dir.storePage);
@@ -561,6 +603,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       canvas.removeEventListener("click", onCanvasClick);
       delete document.documentElement.dataset.gl;
       plate?.removeEventListener("loadeddata", onPlateReady);
+      living?.dispose();
+      window.removeEventListener("deviceorientation", onTilt);
+      window.removeEventListener("touchend", askTilt);
       plate?.removeEventListener("error", onPlateFail);
       delete stageEl.dataset.photo;
       composer?.dispose();
@@ -576,11 +621,11 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   return (
     <section id="studio" className={s.stage} data-screen={screen} aria-label="Studio virtuale GENKS">
       {noGl ? <div className={s.stageNoGl} aria-hidden="true" /> : <canvas ref={canvasRef} className={s.stageCanvas} data-ready={ready || undefined} aria-hidden="true" />}
-      {!noGl && plateSrc && <video ref={plateRef} className={s.stagePlate} src={plateSrc} muted playsInline preload="auto" disablePictureInPicture aria-hidden="true" />}
+      {!noGl && plateSrc && <video ref={el => { plateRef.current = el; setFilmVideo(el); }} className={s.stagePlate} src={plateSrc} muted playsInline preload="auto" disablePictureInPicture aria-hidden="true" />}
       {!noGl && <div ref={cutRef} className={s.stageCut} aria-hidden="true" />}
       {!noGl && plateSrc && <div className={s.stageGrain} aria-hidden="true" />}
       {!noGl && (
-        <div ref={vaultRef} className={s.stageVault} style={{ backgroundImage: `url(${FILM.vault})` }} aria-hidden="true">
+        <div ref={vaultRef} className={s.stageVault} aria-hidden="true">
           <span className={s.vaultBeam} /><span className={s.vaultBeam} /><span className={s.vaultDust} />
         </div>
       )}

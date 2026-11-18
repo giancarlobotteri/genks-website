@@ -61,6 +61,41 @@ export function BeatStore() {
     go(sel + (d > 0 ? 1 : -1));
   };
   const playingSel = selBeat && player.currentId === selBeat.id && player.playing;
+  // hands on the record: dragging the chosen vinyl turns it (scratch), a flick spins it faster,
+  // then it settles back to its own speed; the crate tilts towards the mouse and the light on the
+  // grooves moves with it
+  const rowRef = useRef<HTMLUListElement>(null);
+  const spin = useRef({ a: 0, v: 0, on: false, x: 0, t: 0, raf: 0 });
+  const scratchEl = () => rowRef.current?.querySelector<HTMLElement>("[data-on] [data-scratch]") ?? null;
+  const spinLoop = () => {
+    const st = spin.current;
+    cancelAnimationFrame(st.raf);
+    const step = () => {
+      if (!st.on) { st.a += st.v / 60; st.v *= 0.95; }
+      const el = scratchEl();
+      if (el) el.style.transform = `rotate(${st.a.toFixed(2)}deg)`;
+      if (st.on || Math.abs(st.v) > 2) st.raf = requestAnimationFrame(step);
+    };
+    st.raf = requestAnimationFrame(step);
+  };
+  useEffect(() => { spin.current.a = 0; spin.current.v = 0; const el = scratchEl(); if (el) el.style.transform = ""; }, [sel]);
+  useEffect(() => () => cancelAnimationFrame(spin.current.raf), []);
+  const onRowMove = (e: React.PointerEvent<HTMLUListElement>) => {
+    const st = spin.current, row = e.currentTarget;
+    if (st.on) {
+      const now = performance.now(), dx = e.clientX - st.x;
+      st.a += dx * 0.9;
+      st.v = (dx * 0.9) / Math.max(1, now - st.t) * 1000;
+      st.x = e.clientX; st.t = now;
+      return;
+    }
+    if (e.pointerType !== "mouse") return;
+    const r = row.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+    row.style.setProperty("--ry", `${(x * 10).toFixed(2)}deg`);
+    row.style.setProperty("--rx", `${(-y * 7).toFixed(2)}deg`);
+    row.style.setProperty("--sheen", `${(x * 70).toFixed(1)}deg`);
+  };
 
   return (
     <section id="beat-store" className={s.store} aria-labelledby="store-title">
@@ -123,10 +158,23 @@ export function BeatStore() {
           </div>
         ) : (
           <>
-            <ul className={s.vinylRow} aria-label="Dischi del catalogo" tabIndex={0} onWheel={onWheel}
+            <ul ref={rowRef} className={s.vinylRow} aria-label="Dischi del catalogo" tabIndex={0} onWheel={onWheel} onPointerMove={onRowMove}
+              onPointerLeave={e => { const r = e.currentTarget; r.style.setProperty("--rx", "0deg"); r.style.setProperty("--ry", "0deg"); }}
               onKeyDown={e => { if (e.key === "ArrowRight") { e.preventDefault(); go(sel + 1); } else if (e.key === "ArrowLeft") { e.preventDefault(); go(sel - 1); } }}
-              onPointerDown={e => { drag.current = { x: e.clientX }; }}
-              onPointerUp={e => { const d = drag.current; drag.current = null; dragged.current = Boolean(d && Math.abs(e.clientX - d.x) > 40); if (d && dragged.current) go(sel + (e.clientX < d.x ? 1 : -1)); }}>
+              onPointerDown={e => {
+                // on the chosen record: scratch it; anywhere else: swipe through the crate
+                if ((e.target as Element).closest("[data-on] [data-disc]")) {
+                  const st = spin.current; st.on = true; st.x = e.clientX; st.t = performance.now(); st.v = 0;
+                  e.currentTarget.setPointerCapture(e.pointerId); spinLoop(); dragged.current = false; drag.current = null;
+                  return;
+                }
+                drag.current = { x: e.clientX };
+              }}
+              onPointerUp={e => {
+                const st = spin.current;
+                if (st.on) { st.on = false; dragged.current = Math.abs(st.v) > 30; spinLoop(); return; }
+                const d = drag.current; drag.current = null; dragged.current = Boolean(d && Math.abs(e.clientX - d.x) > 40); if (d && dragged.current) go(sel + (e.clientX < d.x ? 1 : -1));
+              }}>
               {list.map((b, i) => {
                 const o = i - sel, ao = Math.abs(o);
                 if (ao > 4) return null;
@@ -143,10 +191,12 @@ export function BeatStore() {
                   <li key={b.id} className={s.vinylItem} data-on={on || undefined} data-playing={playing || undefined} style={style}>
                     <button type="button" className={s.vinylHit} aria-label={on ? `${b.title}: ${playing ? "metti in pausa" : "ascolta"}` : `Scegli il disco ${b.title}`} aria-current={on || undefined} tabIndex={on ? 0 : -1}
                       onClick={() => { if (dragged.current) { dragged.current = false; return; } if (on) player.toggle(b, queue); else setSel(i); }}>
-                      <span className={s.vinylDisc} aria-hidden="true">
+                      <span className={s.vinylDisc} data-disc aria-hidden="true">
+                        <span className={s.vinylScratch} data-scratch>
                         <span className={s.vinylSpin}>
                           <span className={s.vinylGrooves} />
                           <span className={s.vinylLabel}><b>{b.title}</b><i>{b.genre} · {b.bpm} BPM</i><em>GENKS · 33⅓</em></span>
+                        </span>
                         </span>
                         <span className={s.vinylSheen} />
                       </span>
