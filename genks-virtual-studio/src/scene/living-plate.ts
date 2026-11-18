@@ -29,14 +29,32 @@ vec2 parallax(vec2 f) {
 const FRAG = /* glsl */ `
 ${COMMON}
 uniform vec3 uLight;   // x, y in frame coordinates, amount
-uniform vec3 uHover;   // x, y in frame coordinates, amount
+uniform vec3 uHover;   // (unused, kept for compatibility)
+uniform vec4 uPick;    // what the pointer is on: x, y in frame coordinates, radius, amount
 uniform float uAspect, uTime, uExposure;
 varying vec2 vUv;
 void main() {
   vec2 s = vec2(vUv.x, 1.0 - vUv.y);
-  vec2 f = parallax(frameUv(s));
+  vec2 f0 = parallax(frameUv(s));
+  // the object under the pointer: the surface at the pointer's depth, around it
+  vec2 fc = uPick.xy;
+  float dC = depthAt(fc);
+  vec2 rv = (f0 - fc) * vec2(uAspect, 1.0);
+  float area = exp(-dot(rv, rv) / max(1e-4, uPick.z * uPick.z));
+  float same = 1.0 - smoothstep(0.05, 0.17, abs(depthAt(f0) - dC));
+  float m = area * same * uPick.w;
+  // it lifts out of the picture, towards the viewer
+  vec2 f = mix(f0, fc + (f0 - fc) * 0.92, m);
   vec3 col = colorAt(f);
   float d = depthAt(f);
+  // everything else falls out of focus, loses colour and goes darker
+  float rest = uPick.w * (1.0 - m);
+  if (rest > 0.01) {
+    float b = 0.004 * rest;
+    col = (col * 2.0 + colorAt(f + vec2(b, 0.0)) + colorAt(f - vec2(b, 0.0)) + colorAt(f + vec2(0.0, b * 1.7)) + colorAt(f - vec2(0.0, b * 1.7))) / 6.0;
+    float g = dot(col, vec3(0.299, 0.587, 0.114));
+    col = mix(col, vec3(g) * vec3(0.78, 0.86, 1.0), 0.4 * rest) * (1.0 - 0.45 * rest);
+  }
   // shape from depth: the light models the real objects
   float e = 0.0025;
   float dx = depthAt(f + vec2(e, 0.0)) - depthAt(f - vec2(e, 0.0));
@@ -53,9 +71,12 @@ void main() {
   col *= 1.0 - 0.22 * uLight.z * (1.0 - fall);
   col += col * tint * lam * fall * uLight.z * (0.9 + 1.4 * near);
   col += tint * spec * fall * uLight.z * 0.35 * near;
-  // the object under the pointer lights up
-  vec2 hv = (uHover.xy - f) * vec2(uAspect, 1.0);
-  col *= 1.0 + uHover.z * 0.45 * exp(-dot(hv, hv) * 18.0) * (0.4 + near);
+  // the object shines: brighter, crisper, and a pulsing rim of blue light runs along its silhouette
+  col = mix(col, (col - 0.5) * 1.15 + 0.5, m) * (1.0 + 0.4 * m);
+  float edge = smoothstep(0.012, 0.05, length(vec2(dx, dy)));
+  float rim = edge * area * (1.0 - smoothstep(0.06, 0.2, abs(d - dC))) * uPick.w;
+  float pulse = 0.7 + 0.3 * sin(uTime * 4.2 - length(rv) * 30.0);
+  col += vec3(0.32, 0.58, 1.0) * rim * pulse * 1.4;
   // the picture stays in its own (display) colour space from texture to screen: no double conversion
   gl_FragColor = vec4(col * uExposure, 1.0);
 }`;
@@ -112,7 +133,7 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, video: HTMLVide
   };
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT, fragmentShader: FRAG, depthTest: false, depthWrite: false,
-    uniforms: { ...shared, uLight: { value: new THREE.Vector3(0.5, 0.4, 0) }, uHover: { value: new THREE.Vector3(0.5, 0.5, 0) }, uAspect: { value: 16 / 9 }, uExposure: { value: 1 } },
+    uniforms: { ...shared, uLight: { value: new THREE.Vector3(0.5, 0.4, 0) }, uHover: { value: new THREE.Vector3(0.5, 0.5, 0) }, uPick: { value: new THREE.Vector4(0.5, 0.5, 0.15, 0) }, uAspect: { value: 16 / 9 }, uExposure: { value: 1 } },
   });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
   quad.frustumCulled = false;
@@ -141,6 +162,8 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, video: HTMLVide
     render(o: {
       source: "film" | "vault"; w: number; h: number; ox: number; k: number; tx: number; ty: number;
       par: [number, number]; light: [number, number, number]; hover: [number, number, number] | null; mouse: [number, number]; time: number; dust: number;
+      /** what the pointer is on: x, y (frame coordinates if `frame`, else screen fractions), radius, amount */
+      focus?: { x: number; y: number; frame: boolean; r: number; a: number };
     }) {
       if (o.source !== src) {
         src = o.source;
@@ -159,8 +182,10 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, video: HTMLVide
       shared.uTime.value = o.time;
       const lf = toFrame(o.light[0], o.light[1]);
       mat.uniforms.uLight.value.set(lf[0], lf[1], o.light[2]);
-      if (o.hover) mat.uniforms.uHover.value.set(o.hover[0], o.hover[1], o.hover[2]);
-      else mat.uniforms.uHover.value.z *= 0.9;
+      if (o.focus) {
+        const fp = o.focus.frame ? [o.focus.x, o.focus.y] : toFrame(o.focus.x, o.focus.y);
+        mat.uniforms.uPick.value.set(fp[0], fp[1], o.focus.r, o.focus.a);
+      } else mat.uniforms.uPick.value.w = 0;
       mat.uniforms.uAspect.value = W / H;
       dustMat.uniforms.uMouse.value.set(o.mouse[0], o.mouse[1]);
       dustMat.uniforms.uPx.value = 1.4 * renderer.getPixelRatio() * (o.h / 900 + 0.4);

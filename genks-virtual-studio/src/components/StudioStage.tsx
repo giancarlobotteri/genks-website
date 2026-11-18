@@ -66,6 +66,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   const plateRef = useRef<HTMLVideoElement>(null);
   const vaultRef = useRef<HTMLDivElement>(null);
   const cutRef = useRef<HTMLDivElement>(null);
+  // the pointer on a hotspot or a service caption also puts that object in the spotlight
+  const domHover = useRef<string | null>(null);
   const [plateSrc] = useState(() => pickFilm({ motion: false }));
   const live = useRef({ base: null as string | null, framed: false });
   const [ready, setReady] = useState(false);
@@ -186,6 +188,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     // mouse, finger and the tilt of the phone all move the camera (and the light); idle, it drifts by itself
     let lastInput = -1e9, touchLight = 0;
     const onMove = (e: PointerEvent) => {
+      mouseOn = e.pointerType === "mouse";
       pointer.x = e.clientX / window.innerWidth - 0.5; pointer.y = e.clientY / window.innerHeight - 0.5;
       lastInput = performance.now();
       if (e.pointerType !== "mouse") touchLight = 1;
@@ -278,6 +281,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     const plate = plateRef.current, vault = vaultRef.current, stageEl = canvas.parentElement!;
     const living = plate ? createLivingPlate(renderer, plate, { color: FILM.vault, depth: FILM.vaultDepth }, quality === "high") : null;
     let hoverAmt = 0, hoverAt: [number, number] = [0.5, 0.5], lightAmt = 0;
+    // the focus pull: on the object under the pointer (or wherever a mouse points), eased like a camera
+    const focus = { x: 0.5, y: 0.5, frame: false, r: 0.12, a: 0 };
+    let mouseOn = false;
     const LINE_SPOTS = ["svc:recording", "svc:custom", "svc:mix", "svc:store"];
     /** camera parallax, light and hover for the living photograph, from the pointer */
     const lifeInputs = (now: number, dt: number) => {
@@ -289,13 +295,25 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const wantLight = reduced ? 0.35 : idle ? 0.55 : 1;
       lightAmt += (wantLight - lightAmt) * (1 - Math.exp(-dt * 3));
       if (touchLight > 0) touchLight = Math.max(0, touchLight - dt * 0.4);
-      const hid = hoverId as string | null;
+      const hid = (hoverId as string | null) ?? domHover.current;
       const at = hid == null ? null : hid.startsWith("svc:") ? SPOTS.lineupObj[LINE_SPOTS.indexOf(hid)] : (SPOTS as unknown as Record<string, { x: number; y: number }>)[hid];
       if (at) hoverAt = [at.x, at.y];
       hoverAmt += ((at ? 1 : 0) - hoverAmt) * (1 - Math.exp(-dt * 8));
       const par: [number, number] = reduced ? [0, 0] : [-sp.x * 0.11, -sp.y * 0.07];
+      // focus: a known object (hotspot / service) when hovered, otherwise whatever the mouse is on
+      const fk = 1 - Math.exp(-dt * 7);
+      const pointing = mouseOn && !idle;
+      const wantA = at ? 1 : pointing ? 0.5 : 0;
+      if (at) {
+        if (!focus.frame) { focus.frame = true; focus.x = at.x; focus.y = at.y; }
+        focus.x += (at.x - focus.x) * fk; focus.y += (at.y - focus.y) * fk; focus.r += (0.17 - focus.r) * fk;
+      } else if (pointing) {
+        if (focus.frame) { focus.frame = false; focus.x = pointer.x + 0.5; focus.y = pointer.y + 0.5; }
+        focus.x += (pointer.x + 0.5 - focus.x) * fk * 1.6; focus.y += (pointer.y + 0.5 - focus.y) * fk * 1.6; focus.r += (0.11 - focus.r) * fk;
+      }
+      focus.a += (wantA - focus.a) * fk;
       const light: [number, number, number] = [sp.x + 0.5, sp.y + 0.5, lightAmt];
-      return { par, light, mouse: [pointer.x + 0.5, pointer.y + 0.5] as [number, number], time: t };
+      return { par, light, mouse: [pointer.x + 0.5, pointer.y + 0.5] as [number, number], time: t, focus: { ...focus } };
     };
     let photo = false, plateT = -1, plateK = 1, plateTx = 0, plateTy = 0, plateOx = 0.5;
     // a change of screen far away in the footage is a cut (a quick dip through the dark), not a rewind
@@ -340,7 +358,15 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       plateTy = playing ? 0 : Math.max(-slack, Math.min(slack, -fy)) * h;
       plateOx = portrait ? (playing ? panAt(plateT) / 100 : panAtPos(pos)) : 0.5;
       const io = lifeInputs(now, dt);
-      living?.render({ source: "film", w, h, ox: plateOx, k: plateK, tx: plateTx, ty: plateTy, par: io.par, light: io.light, hover: hoverAmt > 0.01 ? [hoverAt[0], hoverAt[1], hoverAmt] : null, mouse: io.mouse, time: io.time, dust: 1 });
+      // the camera leans in towards the object under the pointer
+      if (hoverAmt > 0.01 && !playing) {
+        const q = spot(hoverAt[0], hoverAt[1]);
+        const e = ease(Math.min(1, hoverAmt));
+        plateK += 0.08 * e;
+        plateTx += (w / 2 - q.x) * 0.22 * e;
+        plateTy += (h / 2 - q.y) * 0.18 * e;
+      }
+      living?.render({ focus: io.focus, source: "film", w, h, ox: plateOx, k: plateK, tx: plateTx, ty: plateTy, par: io.par, light: io.light, hover: hoverAmt > 0.01 ? [hoverAt[0], hoverAt[1], hoverAmt] : null, mouse: io.mouse, time: io.time, dust: 1 });
     };
     // the Beat Store's own place: the photographic record vault, moving with the catalogue
     const paintVault = (now: number, dt: number, page: number, bundles: boolean) => {
@@ -348,7 +374,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const t = now / 1000, pg = Math.min(page, 6);
       const k = 1.08 + (reduced ? 0 : 0.025 * Math.sin(t * 0.07)) + pg * 0.03 + (bundles ? 0.06 : 0);
       const io = lifeInputs(now, dt);
-      living?.render({ source: "vault", w, h, ox: 0.5, k, tx: (pg % 2 ? -16 : 16) * Math.min(1, pg), ty: bundles ? 24 : 0, par: [io.par[0] * 1.3, io.par[1] * 1.3], light: io.light, hover: null, mouse: io.mouse, time: io.time, dust: 1 });
+      living?.render({ focus: io.focus, source: "vault", w, h, ox: 0.5, k, tx: (pg % 2 ? -16 : 16) * Math.min(1, pg), ty: bundles ? 24 : 0, par: [io.par[0] * 1.3, io.par[1] * 1.3], light: io.light, hover: null, mouse: io.mouse, time: io.time, dust: 1 });
     };
 
     const frame = (now: number) => {
@@ -631,7 +657,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       )}
       <div className={s.stageVignette} aria-hidden="true" />
       {!noGl && HOTSPOTS.map(hs => (
-        <button key={hs.id} ref={el => { hotRefs.current[hs.id] = el; }} type="button" className={s.hotspot} data-id={hs.id} onClick={() => activate(hs.id)} tabIndex={touringUi ? 0 : -1}>
+        <button key={hs.id} ref={el => { hotRefs.current[hs.id] = el; }} type="button" className={s.hotspot} data-id={hs.id} onClick={() => activate(hs.id)}
+          onPointerEnter={() => { domHover.current = hs.id; }} onPointerLeave={() => { domHover.current = null; }} onFocus={() => { domHover.current = hs.id; }} onBlur={() => { domHover.current = null; }} tabIndex={touringUi ? 0 : -1}>
           <span className={s.hotPulse} aria-hidden="true"><hs.Icon size={20} /></span>
           <span className={s.hotLabel}>{hs.label}</span>
         </button>
@@ -682,7 +709,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
             <p>Scegli da dove partire: ogni servizio ha la sua schermata, e puoi cambiare idea in ogni momento.</p>
           </div>
           {lineupItems.map((c, i) => (
-            <button key={c.id} type="button" ref={el => { calloutRefs.current[i] = el; }} className={s.lineCap} onClick={c.go}>
+            <button key={c.id} type="button" ref={el => { calloutRefs.current[i] = el; }} className={s.lineCap} onClick={c.go}
+              onPointerEnter={() => { domHover.current = `svc:${c.id}`; }} onPointerLeave={() => { domHover.current = null; }} onFocus={() => { domHover.current = `svc:${c.id}`; }} onBlur={() => { domHover.current = null; }}>
               <strong>{c.title}</strong><small>{c.meta}</small>
             </button>
           ))}
