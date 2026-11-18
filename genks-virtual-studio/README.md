@@ -53,7 +53,7 @@ npm run preview &
 npm run smoke      # opzionale: node scripts/smoke.cjs <url> <cartella-screenshot>
 ```
 
-Ultima esecuzione: build, typecheck, lint, 24/24 test unitari e 69/69 controlli end-to-end superati.
+Ultima esecuzione (branch cinematografico): build, typecheck, lint, 29/29 test unitari e 79/79 controlli end-to-end superati.
 
 ## Percorsi funzionanti
 
