@@ -70,5 +70,7 @@ if (typeof window !== "undefined") {
   (window as unknown as { __vs: unknown }).__vs = {
     pos: () => stopPos(), moving: () => isMoving(), screen: () => getDirector().screen,
     reel: () => getDirector().reelShot, shot: () => getSubShot(),
+    /** jump the virtual scroll to any position, fractional too (screenshots / checks) */
+    go: (p: number) => goToStop(p, true),
   };
 }
