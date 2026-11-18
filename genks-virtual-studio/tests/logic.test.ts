@@ -108,8 +108,8 @@ describe("percorso camera", () => {
     expect(poseAt(1, end)).toEqual({ ...end, lens: 1 });
     expect(poseAt(2, end)).toEqual({ ...end, lens: 1 });
   });
-  it("si ferma esattamente su ogni tappa: microfono, anatomia, studio, DAW, tre servizi, display", () => {
-    expect(STOPS.map(x => x.id)).toEqual(["mic", "anatomy", "studio", "daw", "mix", "master", "mixmaster", "display"]);
+  it("si ferma esattamente su ogni tappa: microfono, servizi, studio, DAW, tre servizi, display", () => {
+    expect(STOPS.map(x => x.id)).toEqual(["mic", "services", "studio", "daw", "mix", "master", "mixmaster", "display"]);
     for (const st of STOPS.slice(0, -1)) {
       const k = KEYS.find(x => x.p === st.p)!;
       expect(k).toBeTruthy();
@@ -137,8 +137,8 @@ describe("percorso camera", () => {
     expect(STOPS[1].glide).toBeGreaterThan(STOPS[4].glide);
   });
   it("motion ridotto: nessun movimento continuo, solo pose chiave", () => {
-    expect(poseAt(0.27, end, true).pos).toEqual(KEYS[4].pos);
-    expect(poseAt(0.3, end, true).pos).toEqual(KEYS[4].pos);
+    expect(poseAt(0.27, end, true).pos).toEqual(KEYS[3].pos);
+    expect(poseAt(0.3, end, true).pos).toEqual(KEYS[3].pos);
   });
   it("visibilità degli hotspot per fascia di scroll", () => {
     expect(band(0.1, 0, 0.2)).toBe(1);

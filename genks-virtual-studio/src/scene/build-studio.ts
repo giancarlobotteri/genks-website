@@ -9,22 +9,23 @@ import { KEYS } from "./camera-path.ts";
 import { addSweep, beamMaterial, createSweepUniforms, dustPoints, wordTexture } from "./cinema-shaders.ts";
 import { CONSOLE, chX, consoleSilkscreen, faderCap, flutedKnob, scribbleTexture, wireTexture } from "./console-art.ts";
 import { loadPhotoAssets } from "./photo-assets.ts";
+import { buildLineup, type LineupId } from "./service-lineup.ts";
 import { brushedTexture, dawTexture, fabricTexture, noiseTexture, shadowBlob, streakRoughness, woodTexture } from "./textures.ts";
 
 export type Quality = "high" | "low";
 /** What the console is showing: it follows the chosen service, like a car configurator. */
 export type ConsoleMode = "idle" | "mix" | "master" | "mixmaster";
-export type HitId = "mic" | "screen" | "mixer";
+export type HitId = "mic" | "screen" | "mixer" | `svc:${LineupId}`;
 
 export type StudioRig = {
   scene: THREE.Scene;
   anchors: { mic: THREE.Object3D; micHot: THREE.Object3D; mixer: THREE.Object3D; screen: THREE.Object3D; display: THREE.Object3D; monitors: THREE.Object3D; rack: THREE.Object3D };
   /** Clickable objects of the 3D scene: a sphere around each (world centre from `obj`, radius in metres). */
   hits: { id: HitId; obj: THREE.Object3D; r: number }[];
-  /** Anchors of the exploded-view callouts of the microphone. */
-  callouts: { id: "grille" | "capsule" | "mount" | "xlr"; obj: THREE.Object3D }[];
-  /** 0..1 exploded view of the microphone. */
-  setExplode: (e: number) => void;
+  /** The services under the spotlights: caption anchor of each capsule. */
+  lineup: { id: LineupId; anchor: THREE.Object3D }[];
+  /** 0..1 the line-up of the services rises into its spotlights. */
+  setLineup: (a: number) => void;
   /** 0..1 progressive reveal of the studio lights (scroll-driven: each light has its own moment). */
   setReveal: (v: number) => void;
   /** 0..1 the microphone as the hero: beam, dust, rim lights, sweep. */
@@ -520,7 +521,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
 
   // head: original large-diaphragm condenser in a shock mount (origin = grille centre region)
   const head = new THREE.Group(); head.position.set(0.36, 1.44, 0); mic.add(head);
-  // every part lives in its own group, so the microphone can open up into an exploded view ("anatomy")
+  // every part lives in its own group (body, XLR, grilles, shock mount)
   const part = () => { const g = new THREE.Group(); head.add(g); return g; };
   const gBody = part(), gXlr = part(), gOuter = part(), gInner = part(), gMount = part();
   const V = (r: number, y: number) => new THREE.Vector2(r, y);
@@ -648,35 +649,17 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
     monitors: anchorAt(monitors.children[1], 0, 0.3, 0),
     rack: anchorAt(rack, 0, 1.6, 0.3),
   };
-  /** callouts of the exploded microphone: each follows its own part */
-  const callouts: StudioRig["callouts"] = [
-    { id: "grille", obj: anchorAt(gOuter, 0.029, 0.035, 0) },
-    { id: "capsule", obj: anchorAt(capsule, 0.019, 0, 0) },
-    { id: "mount", obj: anchorAt(gMount, 0.068, -0.045, 0) },
-    { id: "xlr", obj: anchorAt(gXlr, 0.013, -0.169, 0) },
-  ];
-  let explode = 0;
-  /** 0 = assembled, 1 = every part separated along the axis, the head turning like on a turntable */
-  const setExplode = (e: number) => {
-    e = THREE.MathUtils.clamp(e, 0, 1);
-    if (Math.abs(e - explode) < 1e-4) return;
-    explode = e;
-    const k = e * e * (3 - 2 * e);
-    gOuter.position.y = 0.15 * k;
-    gInner.position.y = 0.075 * k;
-    capsule.position.y = 0.012 + 0.02 * k;
-    gXlr.position.y = -0.05 * k;
-    gMount.scale.set(1 + 0.5 * k, 1, 1 + 0.5 * k);
-    if (hi) renderer.shadowMap.needsUpdate = true;
-  };
+  // the services under the spotlights (stop 2 of the tour), in the dark part of the room
+  const lineupRig = buildLineup(scene, { envMap: envTex, metal: mSatin, sweep: sweepU, track, hi });
   const hits: StudioRig["hits"] = [
     { id: "mic", obj: anchorAt(head, 0, -0.05, 0), r: 0.15 },
     { id: "screen", obj: anchorAt(scr, 0, 0, 0), r: 0.42 },
     { id: "mixer", obj: anchorAt(mixer, 0, 0.06, 0.02), r: 0.6 },
+    ...lineupRig.items.map(it => ({ id: `svc:${it.id}` as HitId, obj: it.hit, r: 0.13 })),
   ];
 
   /* ---------- direction of light ---------- */
-  let reveal = -1, washBase = 0, stripBase = 0.12, rackOn = 1, screenOn = 1;
+  let reveal = -1, washBase = 0, stripBase = 0.12, rackOn = 1, screenOn = 1, consoleOn = 1;
   let hero = 0;
   const hov = { mic: 0, screen: 0, mixer: 0 };
   let hover: HitId | null = null;
@@ -694,6 +677,9 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
     screenOn = 0.035 + 0.965 * k(0.12, 0.32);
     screenMat.color.copy(screenBase).multiplyScalar(screenOn * (1 + 0.25 * hov.screen));
     rackOn = k(0.16, 0.5);
+    // the console wakes up with the desk light (dark behind the microphone and the services line-up)
+    consoleOn = 0.06 + 0.94 * k(0.3, 0.7);
+    dispMat.color.setScalar(consoleOn);
     // 5 · ceiling cloud, 6 · desk key, sides, under-desk glow
     cloudGlowMat.color.set("#cdd9ff").multiplyScalar((0.03 + 0.97 * k(0.28, 0.6)) * (glow > 1 ? 1.6 : 1));
     deskKey.intensity = 26 * k(0.34, 0.72);
@@ -748,7 +734,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
     // a wave across the console: each fader starts a moment after its neighbour
     for (let i = 0; i < FADERS; i++) fStart[i] = lastT + (i < CH ? i : CH + 2) * 0.035;
   };
-  const setHover = (id: HitId | null) => { hover = id; };
+  const setHover = (id: HitId | null) => { hover = id; lineupRig.setHover(id?.startsWith("svc:") ? (id.slice(4) as LineupId) : null); };
 
   const col = new THREE.Color();
   const OFF = new THREE.Color("#0a1430");
@@ -761,8 +747,8 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
       const lv = level > 0.02 ? 0.1 + level * (0.75 + 0.25 * Math.abs(Math.sin(c * 1.7 + t * 9))) : dense;
       for (let k = 0; k < SEG; k++) {
         const on = k / SEG < lv;
-        if (!on) col.copy(OFF);
-        else col.copy(k >= SEG - 1 ? HOT : k >= SEG - 3 ? BLUE_LIGHT : BLUE).multiplyScalar(glow);
+        if (!on) col.copy(OFF).multiplyScalar(consoleOn);
+        else col.copy(k >= SEG - 1 ? HOT : k >= SEG - 3 ? BLUE_LIGHT : BLUE).multiplyScalar(glow * consoleOn);
         meters.setColorAt(c * SEG + k, col);
       }
     }
@@ -774,7 +760,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   let lastLevel = 0;
   const tick = (t: number, active: boolean, level = 0, dt = 1 / 60) => {
     lastT = t;
-    if (explode > 0.001 || head.rotation.y !== 0) head.rotation.y = explode > 0.001 ? (-0.35 + Math.sin(t * 0.35) * 0.3) * explode * explode * (3 - 2 * explode) : 0;
+    lineupRig.tick(t, dt, active);
     // the light sweep: a bar of blue light passes over every chrome surface every few seconds
     const u = (t % 5.2) / 1.8;
     sweepU.sweepPhase.value = u < 1 ? -1.35 + 2.7 * u : 9;
@@ -818,7 +804,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
         rackLedsA.setColorAt(i, col); rackLedsB.setColorAt((i * 7) % rackLedItems.length, col);
       }
       rackLedsA.instanceColor!.needsUpdate = true; rackLedsB.instanceColor!.needsUpdate = true;
-      for (let i = 0; i < CH; i++) chLeds.setColorAt(i, col.copy(i % 5 === 0 ? BLUE_LIGHT : BLUE).multiplyScalar((Math.sin(t * 3 + i * 2.3) > 0 ? 1 : 0.2) * glow * (1 + hov.mixer)));
+      for (let i = 0; i < CH; i++) chLeds.setColorAt(i, col.copy(i % 5 === 0 ? BLUE_LIGHT : BLUE).multiplyScalar((Math.sin(t * 3 + i * 2.3) > 0 ? 1 : 0.2) * glow * consoleOn * (1 + hov.mixer)));
       chLeds.instanceColor!.needsUpdate = true;
     }
   };
@@ -848,7 +834,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   ], hi, () => alive, d => disposables.push(d));
 
   return {
-    scene, anchors, hits, callouts, setExplode, setReveal, setHero, setTitle, setHover, setMode, setHdr, tick,
+    scene, anchors, hits, lineup: lineupRig.items.map(it => ({ id: it.id, anchor: it.anchor })), setLineup: lineupRig.setAmount, setReveal, setHero, setTitle, setHover, setMode, setHdr, tick,
     dispose() { alive = false; disposables.forEach(d => d.dispose()); },
   };
 }

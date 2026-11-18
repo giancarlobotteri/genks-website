@@ -43,13 +43,6 @@ const HOTSPOTS = [
 ] as const;
 
 const SERVICE_STOPS: Record<string, number> = { mix: 4, master: 5, mixmaster: 6 };
-/** The exploded microphone: one caption per part (anchors in scene/build-studio). */
-const CALLOUTS = [
-  { id: "grille", title: "Doppia griglia", text: "Protegge la capsula, lascia passare ogni dettaglio" },
-  { id: "capsule", title: "Capsula a diaframma largo", text: "Voce piena, calda e presente" },
-  { id: "mount", title: "Sospensione elastica", text: "Nessuna vibrazione arriva al segnale" },
-  { id: "xlr", title: "Uscita XLR bilanciata", text: "Segnale pulito fino al preamplificatore" },
-] as const;
 /** Reveal of the studio lights for each shot of the preview (0 = the microphone alone in the dark). */
 const REEL_REVEAL: Record<string, number> = { "reel:dark": 0.02, "reel:intro": 0.45, "reel:rec": 0.03, "reel:custom": 0.8, "reel:mix": 1, "reel:store": 1, "reel:choose": 0.9 };
 
@@ -64,13 +57,21 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   const hintRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
   const anatomyRef = useRef<HTMLDivElement>(null);
-  const calloutRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const calloutRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const railRef = useRef<HTMLOListElement>(null);
   const live = useRef({ base: null as string | null, framed: false });
   const [ready, setReady] = useState(false);
   // bumped when the phone gives the WebGL context back after a memory-pressure loss: the scene is rebuilt
   const [glGen, setGlGen] = useState(0);
   const services = content.mix;
+  const minPrice = (xs: { price: number | null }[]) => xs.reduce<number | null>((m, p) => (p.price == null ? m : m == null ? p.price : Math.min(m, p.price)), null);
+  const fromRec = minPrice(content.recording), fromMix = minPrice(content.mix);
+  const lineupItems = [
+    { id: "recording", title: "Registrazione", meta: fromRec != null ? `da ${formatEuro(fromRec)}` : "su richiesta", go: () => void goService("recording") },
+    { id: "custom", title: "Beat su misura", meta: content.customBeat.priceFrom != null ? `da ${formatEuro(content.customBeat.priceFrom)}` : "su preventivo", go: () => void goService("custom") },
+    { id: "mix", title: "Mix & Master", meta: fromMix != null ? `da ${formatEuro(fromMix)}` : "su preventivo", go: () => void goService("mix") },
+    { id: "store", title: "Beat Store", meta: `${content.beats.filter(b => b.status === "published").length} beat pronti`, go: () => void enterStore() },
+  ];
 
   // Opening a service = the camera flies to its object; inner steps refine the framing (see lib/shots).
   useEffect(() => {
@@ -86,7 +87,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   const activate = (id: string) => {
     if (id === "mic") void goService("recording");
     else if (id === "screen") void goService("custom");
-    else if (id === "mixer") void goService("mix");
+    else if (id === "mixer" || id === "svc:mix") void goService("mix");
+    else if (id === "svc:recording") void goService("recording");
+    else if (id === "svc:custom") void goService("custom");
     else void enterStore();
   };
   const activateRef = useRef(activate);
@@ -184,7 +187,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       let best: HitId | null = null, bestD = Infinity;
       for (const hz of rig.hits) {
         // only what the current shot is about
-        const allowed = hz.id === "mic" ? curPos < 1.5 : hz.id === "screen" ? curPos > 2.5 && curPos < 3.5 : curPos > 3.5 && curPos < 6.5;
+        const allowed = hz.id === "mic" ? curPos < 0.5 : hz.id.startsWith("svc:") ? curPos > 0.5 && curPos < 1.5 : hz.id === "screen" ? curPos > 2.5 && curPos < 3.5 : curPos > 3.5 && curPos < 6.5;
         if (!allowed) continue;
         hz.obj.getWorldPosition(sph.center); sph.radius = hz.r;
         const hit = ray.ray.intersectSphere(sph, tmp);
@@ -278,7 +281,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const dv = Math.max(getDive(), Math.min(0.45, overshoot() * 1.2));
       if (dv > 0) pose = lerpPose(pose, { ...displayAt(0.03), lens: 1 }, ease(dv));
       camNow.pos = pose.pos; camNow.target = pose.target; camNow.lens = pose.lens ?? 1;
-      if (Math.abs((pose.lens ?? 1) - lensNow) > 1e-4) applyFov(pose.lens ?? 1);
+      const lineBand = dir.screen === "studio" && !live.current.framed ? band(pos, 1, 1, 0.6) : 0;
+      const lensWant = (pose.lens ?? 1) * (portrait ? 1 + 0.04 * lineBand : 1);
+      if (Math.abs(lensWant - lensNow) > 1e-4) applyFov(lensWant);
 
       // always alive: a slow orbit + breathing dolly around the subject, wider inside a service
       const inShot = shotId != null;
@@ -287,7 +292,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       sp.x += (pointer.x - sp.x) * k; sp.y += (pointer.y - sp.y) * k;
       const yaw = (Math.sin(t * 0.19) * 0.07 + Math.sin(t * 0.07) * 0.04) * amp * (1 - dv) + sp.x * -0.12 * (reduced ? 0 : 1);
       const bob = (Math.sin(t * 0.23) * 0.02) * amp - sp.y * 0.06 * (reduced ? 0 : 1);
-      const dolly = 1 + Math.sin(t * 0.13) * 0.045 * amp;
+      // phones: the camera moves closer to the line-up so the four capsules fill the width
+      const dolly = (1 + Math.sin(t * 0.13) * 0.045 * amp) * (portrait ? 1 - 0.18 * lineBand : 1);
       off.set(pose.pos[0] - pose.target[0], pose.pos[1] - pose.target[1], pose.pos[2] - pose.target[2]).multiplyScalar(dolly).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
       camera.position.set(pose.target[0] + off.x, pose.target[1] + off.y + bob, pose.target[2] + off.z);
       camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
@@ -302,8 +308,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         if (dir.reelChoosing) { gx = 0; gy = 0; }
         else { gx = portrait ? 0 : -Math.min(0.2, (Math.min(660, w * 0.92) + Math.min(56, Math.max(16, w * 0.04))) / 2 / w); gy = portrait ? 0.12 : 0; }
       } else if (live.current.framed) { gx = portrait ? 0 : Math.min(0.24, (Math.min(600, w * 0.47) + 28) / 2 / w + 20 / w); gy = portrait ? 0.17 : 0; }
-      // anatomy: text on the left (desktop) or on top (phone); on phones the microphone moves left so the captions fit on its right
-      else if (anaBand > 0) { gx = (portrait ? 0.17 : -Math.min(0.2, (Math.min(470, w * 0.38) + 40) / 2 / w)) * anaBand; gy = portrait ? -0.07 * anaBand : 0; }
+      // services: text on the left (desktop) or on top (phone)
+      else if (anaBand > 0) { gx = (portrait ? 0 : -Math.min(0.2, (Math.min(470, w * 0.38) + 40) / 2 / w)) * anaBand; gy = portrait ? -0.1 * anaBand : 0; }
       else if (svcBand > 0) { gx = portrait ? 0 : Math.min(0.24, (Math.min(500, w * 0.44) + Math.max(16, w * 0.05)) / 2 / w + 10 / w) * svcBand; gy = portrait ? 0.2 * svcBand : 0; }
       const kf = reduced ? 1 : 1 - Math.exp(-dt * 2.6);
       fx += (gx - fx) * kf; fy += (gy - fy) * kf;
@@ -323,8 +329,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       else if (dir.screen === "studio") {
         if (base?.startsWith("rec")) { wantReveal = 0.05; wantHero = 0.85; }
         else if (base === "custom") wantReveal = 0.85;
-        // stop 0 microphone · stop 1 anatomy (still in the dark) · stop 2 the studio lights up
-        else if (!base) { wantReveal = clamp01(pos - 1); wantHero = 1 - clamp01((pos - 1) / 0.65); wantTitle = 1 - clamp01(pos / 0.3); }
+        // stop 0 microphone · stop 1 the services under the spotlights (still dark) · stop 2 the studio lights up
+        else if (!base) { wantReveal = clamp01(pos - 1); wantHero = 1 - clamp01(pos / 0.7); wantTitle = 1 - clamp01(pos / 0.3); }
       }
       // scroll-driven values follow the scroll closely, state changes fade like a lighting cue
       const kl = reduced ? 1 : 1 - Math.exp(-dt * (touringNow ? 9 : 1.6));
@@ -339,8 +345,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         : dir.screen === "reel" && dir.reelShot === "reel:mix" ? "mix"
         : touringNow && pos > 3.5 && pos < 6.5 ? (["mix", "master", "mixmaster"] as const)[Math.min(2, Math.max(0, Math.round(pos) - 4))] : "idle";
       rig.setMode(mode);
-      // anatomy: the microphone opens up on the way to stop 1 and closes again while the camera pulls back
-      rig.setExplode(dir.screen === "studio" && !base ? (pos <= 1 ? clamp01((pos - 0.08) / 0.84) : 1 - clamp01((pos - 1.06) / 0.5)) : 0);
+      // the line-up of the services rises into its spotlights around stop 1
+      rig.setLineup(dir.screen === "studio" && !base ? 1 - clamp01(Math.abs(pos - 1) / 0.8) : 0);
       curPos = pos; canHit = touringNow && dv === 0;
       rig.tick(t, !reduced, musicLevel(now), dt);
       // rack focus on the subject of the shot
@@ -377,22 +383,21 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       paintServices(pos, touring);
       // the establishing shot has its own title, like the opening of a film
       const tv = touring && dv === 0 ? band(pos, 2, 2, 0.45) : 0;
-      // anatomy captions: each one follows its part of the exploded microphone
+      // captions of the services: one under each capsule (they are also the keyboard-accessible buttons)
       const av = touring && dv === 0 ? band(pos, 1, 1, 0.55) : 0;
       const ana = anatomyRef.current;
       if (ana) {
         ana.style.setProperty("--av", av.toFixed(3));
         ana.style.visibility = av < 0.02 ? "hidden" : "visible";
         ana.toggleAttribute("inert", av < 0.6);
-        rig.callouts.forEach((c, i) => {
+        rig.lineup.forEach((c, i) => {
           const el = calloutRefs.current[i];
           if (!el) return;
-          c.obj.getWorldPosition(tmp);
+          c.anchor.getWorldPosition(tmp);
           tmp.project(camera);
-          const x = ((tmp.x + 1) / 2) * w, y = ((1 - tmp.y) / 2) * h;
-          const left = x > w - 175 && x > w * 0.5;
-          el.dataset.side = left ? "left" : "right";
-          el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(${left ? "-100%" : "0"}, -50%)`;
+          // kept inside the screen on narrow phones
+          const x = Math.min(w - 44, Math.max(44, ((tmp.x + 1) / 2) * w)), y = ((1 - tmp.y) / 2) * h;
+          el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, 0)`;
           el.style.opacity = clamp01((av - 0.35 - i * 0.1) / 0.35).toFixed(3);
         });
       }
@@ -510,18 +515,16 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       )}
 
       {!noGl && (
-        <div ref={anatomyRef} className={s.anatomy} role="region" aria-label="Anatomia della voce">
+        <div ref={anatomyRef} className={s.anatomy} role="region" aria-label="I servizi GENKS">
           <div className={s.anatomyText}>
-            <p className={s.kicker}>Anatomia della voce</p>
-            <h2>Ogni dettaglio,<br />al servizio della tua voce.</h2>
-            <p>Registri in cabina trattata, con un microfono a condensatore a diaframma largo e un engineer che segue la sessione.</p>
-            <button type="button" className={s.btnPrimary} onClick={() => void goService("recording")}><Mic size={16} /> Prenota una sessione</button>
+            <p className={s.kicker}>I servizi GENKS</p>
+            <h2>Quattro servizi,<br />sotto i riflettori.</h2>
+            <p>Scegli da dove partire: ogni servizio ha la sua schermata, e puoi cambiare idea in ogni momento.</p>
           </div>
-          {CALLOUTS.map((c, i) => (
-            <div key={c.id} ref={el => { calloutRefs.current[i] = el; }} className={s.callout} data-side="right" aria-hidden="true">
-              <span className={s.calloutDot} /><span className={s.calloutLine} />
-              <span className={s.calloutBox}><strong>{c.title}</strong><small>{c.text}</small></span>
-            </div>
+          {lineupItems.map((c, i) => (
+            <button key={c.id} type="button" ref={el => { calloutRefs.current[i] = el; }} className={s.lineCap} onClick={c.go}>
+              <strong>{c.title}</strong><small>{c.meta}</small>
+            </button>
           ))}
         </div>
       )}
@@ -546,7 +549,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   );
 }
 
-const STOP_LABELS = ["Microfono", "Anatomia", "Studio", "Monitor DAW", "Mix", "Master", "Mix & Master", "Beat Store"];
+const STOP_LABELS = ["Microfono", "Servizi", "Studio", "Monitor DAW", "Mix", "Master", "Mix & Master", "Beat Store"];
 
 /** Always on screen in the studio: jump to any service, or watch the preview again. */
 export function StudioDock() {

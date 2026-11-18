@@ -92,7 +92,7 @@ export function Reel() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as Element | null)?.closest("input, textarea, select, dialog")) return;
+      if (intro || (e.target as Element | null)?.closest("input, textarea, select, dialog")) return;
       if (e.key === "ArrowRight") go(i + 1);
       else if (e.key === "ArrowLeft") go(i - 1);
       else if (e.key === "Escape") go(chapters.length);
@@ -100,7 +100,7 @@ export function Reel() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [i, choosing, chapters.length, go]);
+  }, [i, choosing, chapters.length, go, intro]);
 
   const ch = chapters[i];
   // tap zones on the picture: left half = back, right half = forward (like stories)

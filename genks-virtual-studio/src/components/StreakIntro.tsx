@@ -5,10 +5,10 @@ import { GenksSymbol } from "./brand.tsx";
 /**
  * Opening titles: comets of blue light fly in from the dark, converge and draw a ring; the ring is the
  * outline of the GENKS symbol, which then appears exactly as designed (original vector, never redrawn).
- * Then the picture passes through the symbol into the studio. Click, tap or any key skips it.
+ * Then the picture passes through it in a burst of light, into the studio. Short (~2.4 s), not skippable.
  */
 const N = 7;
-const DUR = 3.7; // seconds
+const DUR = 2.4; // seconds
 
 export function StreakIntro({ onDone }: { onDone: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -33,9 +33,10 @@ export function StreakIntro({ onDone }: { onDone: () => void }) {
     window.addEventListener("resize", size);
     const comets = Array.from({ length: N }, (_, k) => {
       const th = -Math.PI / 2 + (k * 2 * Math.PI) / N;
-      return { th, ts: 0.12 + k * 0.07, ta: 1.15 + k * 0.05, trail: [] as { x: number; y: number }[], hue: k % 3 === 0 ? "#ffffff" : k % 2 ? "#9CBFFF" : "#4C83FF" };
+      return { th, ts: 0.04 + k * 0.035, ta: 0.6 + k * 0.03, trail: [] as { x: number; y: number }[], hue: k % 3 === 0 ? "#ffffff" : k % 2 ? "#9CBFFF" : "#4C83FF" };
     });
-    const sweep = (2 * Math.PI) / N, sweepT = 0.62;
+    const sweep = (2 * Math.PI) / N, sweepT = 0.36;
+    const rays = Array.from({ length: 56 }, (_, k) => ({ a: (k / 56) * Math.PI * 2 + (k % 3) * 0.02, sp: 0.7 + ((k * 37) % 10) / 10, w: 0.6 + ((k * 13) % 7) / 4 }));
     const ease = (u: number) => 1 - Math.pow(1 - u, 3);
     let raf = 0, finished = false;
     const t0 = performance.now();
@@ -48,7 +49,7 @@ export function StreakIntro({ onDone }: { onDone: () => void }) {
       ctx.clearRect(0, 0, w, h);
       ctx.globalCompositeOperation = "lighter";
       const far = Math.max(w, h) * 0.95;
-      const fadeComets = 1 - Math.min(1, Math.max(0, (t - 2.15) / 0.5));
+      const fadeComets = 1 - Math.min(1, Math.max(0, (t - 1.25) / 0.3));
       for (const c of comets) {
         let x: number, y: number;
         if (t < c.ts) continue;
@@ -71,7 +72,7 @@ export function StreakIntro({ onDone }: { onDone: () => void }) {
           ctx.beginPath(); ctx.arc(cx, cy, R, c.th, a); ctx.stroke();
         }
         c.trail.push({ x, y });
-        if (c.trail.length > 22) c.trail.shift();
+        if (c.trail.length > 30) c.trail.shift();
         // trail: thinner and fainter towards the tail
         for (let k = 1; k < c.trail.length; k++) {
           const q = k / c.trail.length;
@@ -86,30 +87,37 @@ export function StreakIntro({ onDone }: { onDone: () => void }) {
         ctx.globalAlpha = 1;
       }
       // the ring flashes when it closes
-      const flash = Math.max(0, 1 - Math.abs(t - 2.0) / 0.35);
+      const flash = Math.max(0, 1 - Math.abs(t - 1.12) / 0.22);
       if (flash > 0) {
         const g = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.6);
         g.addColorStop(0, `rgba(76,131,255,${0.5 * flash})`); g.addColorStop(1, "rgba(76,131,255,0)");
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.6, 0, Math.PI * 2); ctx.fill();
       }
+      // passing through the symbol: a burst of light rays, like a jump at speed (motion blur)
+      const burst = Math.max(0, (t - 1.62) / 0.7);
+      if (burst > 0 && burst < 1) {
+        const fade = Math.sin(Math.PI * burst);
+        for (const r of rays) {
+          const r0 = R * (0.9 + burst * 3.2 * r.sp), r1 = r0 + R * (0.4 + burst * 2.6 * r.sp);
+          const gx = ctx.createLinearGradient(cx + Math.cos(r.a) * r0, cy + Math.sin(r.a) * r0, cx + Math.cos(r.a) * r1, cy + Math.sin(r.a) * r1);
+          gx.addColorStop(0, "rgba(156,191,255,0)"); gx.addColorStop(1, `rgba(156,191,255,${0.75 * fade})`);
+          ctx.strokeStyle = gx; ctx.lineWidth = r.w * (1 + burst * 2);
+          ctx.beginPath(); ctx.moveTo(cx + Math.cos(r.a) * r0, cy + Math.sin(r.a) * r0); ctx.lineTo(cx + Math.cos(r.a) * r1, cy + Math.sin(r.a) * r1); ctx.stroke();
+        }
+      }
       ctx.globalCompositeOperation = "source-over";
       // the symbol appears inside the ring, then the camera passes through it
-      const sIn = Math.min(1, Math.max(0, (t - 1.9) / 0.6));
-      const sOut = Math.min(1, Math.max(0, (t - 3.0) / 0.7));
+      const sIn = Math.min(1, Math.max(0, (t - 1.02) / 0.32));
+      const sOut = Math.min(1, Math.max(0, (t - 1.72) / 0.6));
       sym.style.opacity = String(ease(sIn) * (1 - sOut));
       sym.style.transform = `scale(${(0.9 + 0.1 * ease(sIn)) * (1 + 1.4 * sOut * sOut)})`;
       sym.style.filter = `blur(${(sOut * 10).toFixed(1)}px) drop-shadow(0 0 ${(18 + 30 * flash).toFixed(0)}px rgba(76,131,255,0.75))`;
-      root.style.setProperty("--fade", String(1 - Math.min(1, Math.max(0, (t - 3.05) / 0.6))));
+      root.style.setProperty("--fade", String(1 - Math.min(1, Math.max(0, (t - 1.85) / 0.55))));
     };
     raf = requestAnimationFrame(frame);
-    const skip = () => { cancelAnimationFrame(raf); finish(); };
-    root.addEventListener("pointerup", skip);
-    window.addEventListener("keydown", skip);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", size);
-      root.removeEventListener("pointerup", skip);
-      window.removeEventListener("keydown", skip);
     };
   }, []);
 
