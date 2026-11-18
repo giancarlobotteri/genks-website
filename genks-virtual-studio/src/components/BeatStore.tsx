@@ -5,24 +5,7 @@ import { setStorePage } from "../lib/director.ts";
 import { usePlayer, useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
 import type { Beat } from "../types.ts";
-import { BeatCover, DemoBadge, prefersReducedMotion } from "./ui.tsx";
-
-/** Product-card depth: the card under the mouse tilts towards it and a soft light follows the cursor. */
-const tiltOn = (e: React.PointerEvent<HTMLElement>) => {
-  if (e.pointerType !== "mouse" || prefersReducedMotion()) return;
-  const card = (e.target as Element).closest<HTMLElement>("[data-card]");
-  const grid = e.currentTarget;
-  grid.querySelectorAll<HTMLElement>("[data-tilt]").forEach(c => { if (c !== card) c.removeAttribute("data-tilt"); });
-  if (!card) return;
-  const r = card.getBoundingClientRect();
-  const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-  card.setAttribute("data-tilt", "");
-  card.style.setProperty("--rx", `${((0.5 - y) * 9).toFixed(2)}deg`);
-  card.style.setProperty("--ry", `${((x - 0.5) * 11).toFixed(2)}deg`);
-  card.style.setProperty("--gx", `${(x * 100).toFixed(1)}%`);
-  card.style.setProperty("--gy", `${(y * 100).toFixed(1)}%`);
-};
-const tiltOff = (e: React.PointerEvent<HTMLElement>) => e.currentTarget.querySelectorAll<HTMLElement>("[data-tilt]").forEach(c => c.removeAttribute("data-tilt"));
+import { BeatCover, DemoBadge } from "./ui.tsx";
 
 export function PlayButton({ beat, queue, size = 18, className }: { beat: Beat; queue?: string[]; size?: number; className?: string }) {
   const player = usePlayer();
@@ -59,43 +42,25 @@ export function BeatStore() {
   const active = JSON.stringify({ ...f, sort: "recommended" }) !== JSON.stringify({ ...emptyFilters });
   const licName = (id: string) => content.licenses.find(l => l.id === id)?.name ?? id;
 
-  // Paged catalogue sized to the screen: the grid measures its own free space and shows exactly
-  // as many beats as fit (no cut-off cards, no page scrolling to see a page).
-  const area = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState({ cols: 3, rows: 2, compact: false, narrow: false });
-  useEffect(() => {
-    const el = area.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([e]) => {
-      const { width, height } = e.contentRect;
-      const cols = width < 560 ? 1 : width < 980 ? 2 : 3;
-      const gap = cols === 1 ? 10 : 16, minH = cols === 1 ? 88 : 190;
-      const rows = Math.max(1, Math.min(cols === 1 ? 5 : 2, Math.floor((height + gap) / (minH + gap))));
-      // short cards switch to a side-by-side layout so the cover never gets squashed
-      const compact = cols === 1 || (height - gap * (rows - 1)) / rows < 300;
-      // very narrow phones: page numbers become "1 / 4" so the bar never overflows
-      const narrow = width < 380;
-      setFit(f => (f.cols === cols && f.rows === rows && f.compact === compact && f.narrow === narrow ? f : { cols, rows, compact, narrow }));
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  const per = fit.cols * fit.rows;
-  const pages = Math.max(1, Math.ceil(list.length / per));
-  const [pageWanted, setPage] = useState(0);
-  const [dir, setDir] = useState(0);
-  const page = Math.min(pageWanted, pages - 1);
-  // the store's camera travels through the vault with the pages (scene/store-env)
-  useEffect(() => { setStorePage(Math.max(0, page)); }, [page]);
-  const shown = list.slice(page * per, page * per + per);
-  const goPage = (n: number) => {
-    const next = (n + pages) % pages;
-    if (next === page) return;
-    setDir(next > page || (page === pages - 1 && next === 0) ? 1 : -1);
-    setPage(next);
+  // The catalogue is a crate of records: one vinyl per beat, browsed like a carousel. The chosen
+  // record slides out of its sleeve and turns (33⅓ rpm while its preview plays, the tonearm drops).
+  const [selWanted, setSel] = useState(0);
+  const sel = Math.max(0, Math.min(selWanted, list.length - 1));
+  const selBeat = list[sel];
+  // the vault behind travels with the crate (scene → film-media vault)
+  useEffect(() => { setStorePage(Math.floor(sel / 2)); }, [sel]);
+  const go = (n: number) => { if (list.length) setSel(((n % list.length) + list.length) % list.length); };
+  const setFilter: typeof set = (k, v) => { setSel(0); set(k, v); };
+  const drag = useRef<{ x: number } | null>(null);
+  const dragged = useRef(false);
+  const wheelT = useRef(0);
+  const onWheel = (e: React.WheelEvent) => {
+    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    if (Math.abs(d) < 8 || performance.now() - wheelT.current < 260) return;
+    wheelT.current = performance.now();
+    go(sel + (d > 0 ? 1 : -1));
   };
-  const setFilter: typeof set = (k, v) => { setPage(0); set(k, v); };
-  const touch = useRef<number | null>(null);
+  const playingSel = selBeat && player.currentId === selBeat.id && player.playing;
 
   return (
     <section id="beat-store" className={s.store} aria-labelledby="store-title">
@@ -136,62 +101,78 @@ export function BeatStore() {
             {[3000, 5000, 10000].map(v => <option key={v} value={v}>{formatEuro(v)}</option>)}
           </select>
         </label>
-        <button type="button" className={s.btnText} onClick={() => { setPage(0); setF(emptyFilters); }} disabled={!active}><RotateCcw size={14} /> Azzera filtri</button>
+        <button type="button" className={s.btnText} onClick={() => { setSel(0); setF(emptyFilters); }} disabled={!active}><RotateCcw size={14} /> Azzera filtri</button>
       </div>
       </div>
 
       <div className={s.storeBar}>
-        <p className={s.resultCount} role="status" aria-live="polite">{list.length === 1 ? "1 beat" : `${list.length} beat`}<span className={s.hideXs}>{pages > 1 ? ` · pagina ${page + 1} di ${pages}` : ""}</span></p>
-        {pages > 1 && (
-          <nav className={s.pager} aria-label="Pagine del catalogo">
-            <button type="button" className={s.iconBtn} onClick={() => goPage(page - 1)} aria-label="Pagina precedente"><ChevronLeft size={20} /></button>
-            {pages <= (fit.narrow ? 3 : 5) ? (
-              <ol>
-                {Array.from({ length: pages }, (_, n) => (
-                  <li key={n}><button type="button" aria-current={n === page ? "page" : undefined} aria-label={`Pagina ${n + 1}`} onClick={() => goPage(n)}><span>{n + 1}</span></button></li>
-                ))}
-              </ol>
-            ) : <span className={s.pageOf} aria-hidden="true"><strong key={page}>{page + 1}</strong> / {pages}</span>}
-            <button type="button" className={s.iconBtn} onClick={() => goPage(page + 1)} aria-label="Pagina successiva"><ChevronRight size={20} /></button>
+        <p className={s.resultCount} role="status" aria-live="polite">{list.length === 1 ? "1 beat" : `${list.length} beat`}{list.length > 0 && <span> · disco {sel + 1} di {list.length}</span>}</p>
+        {list.length > 1 && (
+          <nav className={s.pager} aria-label="Scorri i dischi">
+            <button type="button" className={s.iconBtn} onClick={() => go(sel - 1)} aria-label="Disco precedente"><ChevronLeft size={20} /></button>
+            <button type="button" className={s.iconBtn} onClick={() => go(sel + 1)} aria-label="Disco successivo"><ChevronRight size={20} /></button>
           </nav>
         )}
       </div>
 
-      <div ref={area} className={s.crate}
-        onTouchStart={e => { touch.current = e.touches[0].clientX; }}
-        onTouchEnd={e => { if (touch.current == null) return; const dx = e.changedTouches[0].clientX - touch.current; touch.current = null; if (Math.abs(dx) > 50) goPage(page + (dx < 0 ? 1 : -1)); }}>
-        {list.length === 0 ? (
+      <div className={s.crate}>
+        {list.length === 0 || !selBeat ? (
           <div className={s.empty}>
             <p>Nessun beat corrisponde ai filtri scelti.</p>
             <button type="button" className={s.btnPrimary} onClick={() => setF(emptyFilters)}>Mostra tutto il catalogo</button>
           </div>
         ) : (
-          <ul key={`${page}-${per}-${list.length}`} className={s.beatGrid} data-dir={dir} data-anim={dir ? "page" : undefined} data-compact={fit.compact || undefined} aria-label={`Beat, pagina ${page + 1} di ${pages}`} onPointerMove={tiltOn} onPointerLeave={tiltOff}
-            style={{ gridTemplateColumns: `repeat(${fit.cols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${fit.rows}, minmax(0, 1fr))` }}>
-            {shown.map((b, i) => {
-              const from = priceFrom(b, content.licenses);
-              return (
-                <li key={b.id} data-card className={s.beatCard} style={{ ["--i" as string]: i }}>
-                  <div className={s.beatCoverWrap}>
-                    <BeatCover beat={b} />
-                    <PlayButton beat={b} queue={queue} size={22} className={s.coverPlay} />
-                    {player.currentId === b.id && player.playing && <span className={s.coverEq} aria-hidden="true">{[0, 1, 2, 3].map(k => <i key={k} style={{ ["--i" as string]: k }} />)}</span>}
-                    <span className={s.coverBadge}><DemoBadge /></span>
-                  </div>
-                  <div className={s.beatInfo}>
-                    <h3>{b.title}</h3>
-                    <p className={s.beatMeta}>{b.genre} · {b.bpm} BPM · {b.key}</p>
-                    <p className={s.tags}>{b.mood.map(m => <span key={m}>{m}</span>)}</p>
-                    <p className={s.licBadges} aria-label="Licenze disponibili">{b.licenses.map(id => <span key={id}>{licName(id)}</span>)}</p>
-                    <div className={s.beatFoot}>
-                      <span className={s.price}>{from != null ? <>da <strong>{formatEuro(from)}</strong></> : "Su richiesta"}</span>
-                      <button type="button" className={s.btnSmall} onClick={() => open({ type: "beat", id: b.id })}>Licenze<span className={s.srOnly}> per {b.title}</span></button>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            <ul className={s.vinylRow} aria-label="Dischi del catalogo" tabIndex={0} onWheel={onWheel}
+              onKeyDown={e => { if (e.key === "ArrowRight") { e.preventDefault(); go(sel + 1); } else if (e.key === "ArrowLeft") { e.preventDefault(); go(sel - 1); } }}
+              onPointerDown={e => { drag.current = { x: e.clientX }; }}
+              onPointerUp={e => { const d = drag.current; drag.current = null; dragged.current = Boolean(d && Math.abs(e.clientX - d.x) > 40); if (d && dragged.current) go(sel + (e.clientX < d.x ? 1 : -1)); }}>
+              {list.map((b, i) => {
+                const o = i - sel, ao = Math.abs(o);
+                if (ao > 4) return null;
+                const on = o === 0;
+                const playing = player.currentId === b.id && player.playing;
+                // coverflow: the chosen record in front, the others turned towards it on each side
+                const sg = Math.sign(o);
+                const tx = on ? -0.24 : sg * (0.5 + ao * 0.46), sc = on ? 1 : Math.max(0.46, 0.7 - (ao - 1) * 0.08);
+                const style = {
+                  ["--h" as string]: 222 + b.hue * 0.4, zIndex: 10 - ao, opacity: ao > 3 ? 0 : 1 - ao * 0.16,
+                  transform: `translate(-50%, -50%) translateX(calc(${tx.toFixed(3)} * var(--size))) rotateY(${(-sg * 42).toFixed(0)}deg) scale(${sc.toFixed(3)})`,
+                } as React.CSSProperties;
+                return (
+                  <li key={b.id} className={s.vinylItem} data-on={on || undefined} data-playing={playing || undefined} style={style}>
+                    <button type="button" className={s.vinylHit} aria-label={on ? `${b.title}: ${playing ? "metti in pausa" : "ascolta"}` : `Scegli il disco ${b.title}`} aria-current={on || undefined} tabIndex={on ? 0 : -1}
+                      onClick={() => { if (dragged.current) { dragged.current = false; return; } if (on) player.toggle(b, queue); else setSel(i); }}>
+                      <span className={s.vinylDisc} aria-hidden="true">
+                        <span className={s.vinylSpin}>
+                          <span className={s.vinylGrooves} />
+                          <span className={s.vinylLabel}><b>{b.title}</b><i>{b.genre} · {b.bpm} BPM</i><em>GENKS · 33⅓</em></span>
+                        </span>
+                        <span className={s.vinylSheen} />
+                      </span>
+                      <span className={s.vinylSleeve} aria-hidden="true"><BeatCover beat={b} /></span>
+                    </button>
+                    <span className={s.vinylCaption} data-title>{b.title}</span>
+                  </li>
+                );
+              })}
+              <span className={s.tonearm} data-down={playingSel || undefined} aria-hidden="true"><i /></span>
+            </ul>
+            <article className={s.vinylInfo} key={selBeat.id}>
+              <div>
+                <h3>{selBeat.title}</h3>
+                <p className={s.beatMeta}>{selBeat.genre} · {selBeat.bpm} BPM · {selBeat.key}</p>
+                <p className={s.tags}>{selBeat.mood.map(m => <span key={m}>{m}</span>)}</p>
+                <p className={s.licBadges} aria-label="Licenze disponibili">{selBeat.licenses.map(id => <span key={id}>{licName(id)}</span>)}</p>
+              </div>
+              <div className={s.vinylBuy}>
+                <span className={s.price}>{priceFrom(selBeat, content.licenses) != null ? <>da <strong>{formatEuro(priceFrom(selBeat, content.licenses)!)}</strong></> : "Su richiesta"}</span>
+                <PlayButton beat={selBeat} queue={queue} size={20} className={s.vinylPlay} />
+                <button type="button" className={s.btnPrimary} onClick={() => open({ type: "beat", id: selBeat.id })}>Licenze<span className={s.srOnly}> per {selBeat.title}</span></button>
+                <DemoBadge />
+              </div>
+            </article>
+          </>
         )}
       </div>
     </section>

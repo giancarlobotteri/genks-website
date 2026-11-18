@@ -992,3 +992,52 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 :global(html[data-gl]) .storeScreen { background: transparent; }
 :global(html[data-gl]) .storeBg { background: radial-gradient(ellipse at 50% 120%, transparent 30%, rgba(2, 4, 10, 0.55) 80%), linear-gradient(180deg, rgba(2, 4, 10, 0.78) 0%, rgba(2, 4, 10, 0.15) 26%, rgba(2, 4, 10, 0.1) 70%, rgba(2, 4, 10, 0.7) 100%); animation: none; }
 :global(html[data-gl]) .beatCard { background: linear-gradient(180deg, rgba(14, 22, 44, 0.86), rgba(6, 10, 22, 0.92)); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+
+/* ---------- Beat Store: a crate of records (one vinyl per beat) ---------- */
+.crate { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.vinylRow { --size: min(36vh, 28vw, 380px); position: relative; flex: 1; min-height: 0; margin: 0; padding: 0; list-style: none; perspective: 1500px; outline: none; touch-action: pan-y; user-select: none; }
+.vinylRow:focus-visible { box-shadow: inset 0 0 0 2px var(--blue); border-radius: var(--radius-lg); }
+.vinylItem { position: absolute; left: 50%; top: 47%; width: var(--size); height: var(--size); transform-style: preserve-3d; transition: transform 0.7s var(--ease), opacity 0.5s var(--ease); }
+.vinylHit { position: absolute; inset: 0; padding: 0; border: 0; background: none; cursor: pointer; transform-style: preserve-3d; }
+/* the sleeve: the beat's artwork printed on card, with the soft sheen of real paper */
+.vinylSleeve { position: absolute; inset: 0; z-index: 2; border-radius: 3px; overflow: hidden; box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.06); }
+.vinylSleeve > div { width: 100%; height: 100%; }
+.vinylSleeve::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255, 255, 255, 0.14), transparent 32%, transparent 70%, rgba(255, 255, 255, 0.05)), radial-gradient(ellipse at 100% 50%, rgba(0, 0, 0, 0.45), transparent 40%); pointer-events: none; }
+/* the record slides out of its sleeve when chosen */
+.vinylDisc { position: absolute; inset: 1.5%; z-index: 1; border-radius: 50%; transform: translateX(4%); transition: transform 0.9s var(--ease); box-shadow: 0 26px 50px -18px rgba(0, 0, 0, 0.95); }
+.vinylItem[data-on] .vinylDisc { transform: translateX(52%); }
+.vinylSpin { position: absolute; inset: 0; border-radius: 50%; animation: vinylTurn 14s linear infinite; animation-play-state: paused; }
+.vinylItem[data-on] .vinylSpin { animation-play-state: running; }
+.vinylItem[data-playing] .vinylSpin { animation-duration: 1.8s; }
+@keyframes vinylTurn { to { transform: rotate(360deg); } }
+.vinylGrooves { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, transparent 0 33%, #050608 33.4% 35.5%, transparent 36%), repeating-radial-gradient(circle, #0c0d11 0 1.1px, #16181f 1.5px 2.1px), radial-gradient(circle, #121318 0 60%, #07080a 100%); box-shadow: inset 0 0 0 3px #040506, inset 0 0 0 5px #15171c; }
+.vinylLabel { position: absolute; inset: 33.5%; display: grid; place-content: center; gap: 2px; padding: 8%; border-radius: 50%; text-align: center; background: radial-gradient(circle, #020304 0 3.5%, transparent 4%), radial-gradient(circle at 35% 30%, hsl(var(--h) 85% 62%), hsl(var(--h) 80% 34%) 70%, hsl(var(--h) 85% 22%)); color: #f2f6ff; line-height: 1.05; }
+.vinylLabel b { font: 700 calc(var(--size) * 0.032) var(--font-head); letter-spacing: 0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: calc(var(--size) * 0.24); }
+.vinylLabel i { font: 600 calc(var(--size) * 0.02) var(--font-head); font-style: normal; opacity: 0.85; }
+.vinylLabel em { font: 700 calc(var(--size) * 0.017) var(--font-head); font-style: normal; letter-spacing: 0.18em; opacity: 0.7; }
+/* light on vinyl stays still while the record turns: that's what makes it look real */
+.vinylSheen { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; mix-blend-mode: screen; background: conic-gradient(from 25deg, transparent 0deg, rgba(255, 255, 255, 0.2) 18deg, transparent 40deg, transparent 180deg, rgba(160, 190, 255, 0.16) 200deg, transparent 224deg); -webkit-mask: radial-gradient(circle, transparent 0 34%, #000 35%); mask: radial-gradient(circle, transparent 0 34%, #000 35%); }
+.vinylCaption { position: absolute; left: 50%; top: calc(100% + 12px); transform: translateX(-50%); white-space: nowrap; font: 600 0.9rem var(--font-head); color: var(--silver); transition: opacity 0.4s; }
+.vinylItem[data-on] .vinylCaption { opacity: 0; }
+.vinylItem:not([data-on]) .vinylHit:hover .vinylSleeve { box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.95), 0 0 0 1px var(--blue), 0 0 30px -6px var(--blue); }
+/* the tonearm drops on the record while its preview plays */
+.tonearm { position: absolute; left: calc(50% + var(--size) * 0.74); top: calc(47% - var(--size) * 0.52); width: calc(var(--size) * 0.07); height: calc(var(--size) * 0.07); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #d9dee8, #6b7280 60%, #2b2f36); box-shadow: 0 6px 14px rgba(0, 0, 0, 0.7); z-index: 20; pointer-events: none; }
+.tonearm i { position: absolute; left: 50%; top: 50%; width: calc(var(--size) * 0.012); height: calc(var(--size) * 0.62); transform-origin: 50% 0; transform: translateX(-50%) rotate(14deg); transition: transform 1s var(--ease); border-radius: 4px; background: linear-gradient(90deg, #8b93a1, #e6eaf2 45%, #7d8593); box-shadow: 0 8px 14px rgba(0, 0, 0, 0.6); }
+.tonearm i::after { content: ""; position: absolute; left: 50%; bottom: -4%; width: 380%; height: 11%; transform: translateX(-50%); border-radius: 2px; background: linear-gradient(180deg, #c8ced8, #5c636e); }
+.tonearm[data-down] i { transform: translateX(-50%) rotate(31deg); }
+.vinylInfo { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; padding: 14px 18px; border-radius: var(--radius-lg); border: 1px solid var(--line); background: linear-gradient(180deg, rgba(14, 22, 44, 0.7), rgba(6, 10, 22, 0.85)); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); animation: fadeUp 0.5s var(--ease) both; }
+.vinylInfo h3 { margin: 0 0 4px; font-size: clamp(1.3rem, 2.4vw, 1.9rem); }
+.vinylInfo .tags, .vinylInfo .licBadges { margin: 6px 0 0; }
+.vinylBuy { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.vinylPlay { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; border: 0; background: linear-gradient(180deg, var(--blue-light), var(--blue)); color: #fff; box-shadow: 0 10px 30px -8px var(--blue); cursor: pointer; }
+@media (max-width: 760px) {
+  .vinylRow { --size: min(46vw, 25vh); }
+  .vinylItem { top: 50%; }
+  .tonearm { top: calc(50% - var(--size) * 0.52); }
+  .vinylInfo { flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; }
+  .vinylInfo .licBadges { display: none; }
+  .vinylInfo h3 { font-size: 1.25rem; }
+  .vinylPlay { width: 46px; height: 46px; }
+  .vinylBuy { justify-content: space-between; }
+}
+@media (prefers-reduced-motion: reduce) { .vinylSpin { animation: none; } .vinylItem, .vinylDisc, .tonearm i { transition: none; } }
