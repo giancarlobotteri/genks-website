@@ -1,5 +1,6 @@
 // Procedural PBR textures drawn on canvases at runtime: original, no downloads, no licences.
 import * as THREE from "three";
+import { FILM } from "../lib/film.ts";
 import { rng } from "../lib/music.ts";
 
 type Draw = (ctx: CanvasRenderingContext2D, size: number, r: () => number) => void;
@@ -166,7 +167,7 @@ export function dawTexture() {
   const r = rng(91);
   ctx.fillStyle = "#070c1a"; ctx.fillRect(0, 0, 1024, 512);
   ctx.fillStyle = "#0e1730"; ctx.fillRect(0, 0, 1024, 30);
-  ctx.fillStyle = "#9CBFFF"; ctx.font = "600 13px sans-serif"; ctx.fillText("GENKS · Sessione demo", 12, 20);
+  ctx.fillStyle = "#9CBFFF"; ctx.font = "600 13px sans-serif"; ctx.fillText(FILM ? "Sessione demo" : "GENKS · Sessione demo", 12, 20);
   for (let i = 0; i < 5; i++) { ctx.fillStyle = i === 1 ? "#4C83FF" : "#22335e"; ctx.fillRect(470 + i * 26, 8, 18, 14); }
   ctx.fillStyle = "#b7c5de"; ctx.font = "12px monospace"; ctx.fillText("142.00 BPM   4/4   F#m   00:01:24.310", 700, 20);
   // ruler

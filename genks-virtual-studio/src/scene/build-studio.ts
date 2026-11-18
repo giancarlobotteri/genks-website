@@ -5,6 +5,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLightUniformsLib.js";
+import { FILM } from "../lib/film.ts";
 import { KEYS } from "./camera-path.ts";
 import { addSweep, beamMaterial, createSweepUniforms, dustPoints, wordTexture } from "./cinema-shaders.ts";
 import { CONSOLE, chX, consoleSilkscreen, faderCap, flutedKnob, scribbleTexture, wireTexture } from "./console-art.ts";
@@ -56,7 +57,7 @@ function symbolTexture() {
   tex.anisotropy = 8;
   const img = new Image();
   img.onload = () => { canvas.getContext("2d")!.drawImage(img, 0, 0, 512, 512); tex.needsUpdate = true; };
-  img.src = "/brand/genks-symbol.svg";
+  if (!FILM) img.src = "/brand/genks-symbol.svg"; // film plate: plain discs, the real logo is added over the video
   return tex;
 }
 
@@ -712,7 +713,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   };
   const setTitle = (v: number) => {
     wordMat.opacity = THREE.MathUtils.clamp(v, 0, 1) * 0.85;
-    word.visible = v > 0.01;
+    word.visible = !FILM && v > 0.01;
   };
   setReveal(0);
   applyHero();

@@ -3,6 +3,7 @@
 // a microphone (recording), a pad controller playing a pattern (custom beat), a fader module whose
 // faders move (mix & master), a spinning vinyl record (Beat Store). Original geometry, drawn by code.
 import * as THREE from "three";
+import { FILM } from "../lib/film.ts";
 import { addSweep, beamMaterial, type SweepUniforms } from "./cinema-shaders.ts";
 
 export type LineupId = "recording" | "custom" | "mix" | "store";
@@ -37,8 +38,10 @@ function vinylTexture() {
   g.addColorStop(0, "#9CBFFF"); g.addColorStop(0.5, "#4C83FF"); g.addColorStop(1, "#1d3a8f");
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s / 2, s / 2, s * 0.16, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#e8efff"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.font = `700 ${s * 0.04}px "Space Grotesk", sans-serif`; ctx.fillText("GENKS", s / 2, s / 2 - s * 0.06);
-  ctx.font = `600 ${s * 0.022}px "Space Grotesk", sans-serif`; ctx.fillText("BEAT STORE · 33⅓", s / 2, s / 2 + s * 0.065);
+  if (!FILM) {
+    ctx.font = `700 ${s * 0.04}px "Space Grotesk", sans-serif`; ctx.fillText("GENKS", s / 2, s / 2 - s * 0.06);
+    ctx.font = `600 ${s * 0.022}px "Space Grotesk", sans-serif`; ctx.fillText("BEAT STORE · 33⅓", s / 2, s / 2 + s * 0.065);
+  }
   ctx.fillStyle = "#050608"; ctx.beginPath(); ctx.arc(s / 2, s / 2, s * 0.008, 0, Math.PI * 2); ctx.fill();
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
   return t;
