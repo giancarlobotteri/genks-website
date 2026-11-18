@@ -67,7 +67,7 @@ Stato crediti: **nessun credito Higgsfield consumato, nessun servizio a pagament
 | Principio | Reference | GENKS |
 | --- | --- | --- |
 | Prodotto che ruota sincronizzato allo scroll + caratteristiche a sezioni | 1 | Il microfono ruota mentre lo scroll lo apre, con le sue parti spiegate |
-| Fila di prodotti sotto i riflettori | 1 | **«Quattro servizi, sotto i riflettori»**: capsule sospese con il nome del servizio, ognuna nel suo cono di luce, cliccabili |
+| Fila di prodotti sotto i riflettori | 1 | **«Quattro servizi, sotto i riflettori»**: showroom con piedistalli e l'oggetto di ogni servizio (microfono, pad, fader, vinile), ognuno nel suo cono di luce, cliccabili |
 | Parola gigante dietro il prodotto | 1 | «VOCE» dietro il microfono, occlusa davvero dall'oggetto 3D |
 | Scie di luce che disegnano una forma | 2 | **Intro**: comete blu che convergono e disegnano l'anello del simbolo GENKS, che appare intatto (SVG originale) |
 | Configuratore con stato visibile sull'oggetto | 2 | La console cambia stato col servizio scelto (fader motorizzati, meter, display) |
@@ -238,7 +238,7 @@ Confronto prima/dopo: `docs/cinematic/before-after.jpg`; schermate in `docs/cine
 
 1. **Titoli d'apertura** (reference 2): in circa 2,4 secondi, non saltabili, le comete di luce convergono e disegnano l'anello, e appare il simbolo GENKS originale (SVG, non ridisegnato). Poi un'esplosione di raggi, con effetto velocità, porta la camera attraverso il simbolo, dentro lo studio buio.
 2. **Microfono nel buio** (reference 1): focale lunga (~70 mm), fascio volumetrico con polvere, due rim blu, sweep di luce che scorre su tutti i cromi, parola «VOCE» nello spazio dietro il microfono, profondità di campo sulla griglia. Il microfono è cliccabile (mano, luce al passaggio) e apre la prenotazione.
-3. **I servizi sotto i riflettori** (reference 1, la fila di lattine): quattro capsule sospese (VOCE, BEAT, MIX, STORE), ognuna nel suo cono di luce, salgono una dopo l'altra nel buio, inclinate e in lenta rotazione. Al passaggio del mouse la capsula si raddrizza e la sua luce si intensifica. Le didascalie con prezzo sotto ogni capsula sono pulsanti, e un clic apre il servizio.
+3. **I servizi sotto i riflettori** (il principio della fila di prodotti della reference 1, senza copiarne la forma): uno showroom nel buio con quattro piedistalli neri lucidi con anello LED, ognuno nel suo cono di luce. Sopra ognuno ruota l'oggetto del servizio: microfono (Registrazione), pad controller che suona un pattern (Beat su misura), modulo fader che si muove (Mix & Master), vinile che gira (Beat Store). Salgono uno dopo l'altro; al passaggio del mouse l'oggetto si gira verso la camera e la luce si intensifica; didascalie con prezzo e clic aprono il servizio.
 4. **Rivelazione dello studio** (sequenza C): la camera arretra e sale mentre le luci si accendono legate allo scroll: linee LED, emblema, schermo DAW, rack riga per riga, nuvola, scrivania. Arriva un'inquadratura d'insieme con il titolo «Un unico spazio, tre servizi.».
 5. **Mixer** (sequenza D): macro radenti su fader e manopole, con scale serigrafate, scribble strip e cappucci sagomati. Fader motorizzati, meter e display seguono il servizio scelto (Mix / Master / Mix & Master), come un configuratore. La console è cliccabile.
 6. **Pipeline:**

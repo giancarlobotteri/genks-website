@@ -293,7 +293,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const yaw = (Math.sin(t * 0.19) * 0.07 + Math.sin(t * 0.07) * 0.04) * amp * (1 - dv) + sp.x * -0.12 * (reduced ? 0 : 1);
       const bob = (Math.sin(t * 0.23) * 0.02) * amp - sp.y * 0.06 * (reduced ? 0 : 1);
       // phones: the camera moves closer to the line-up so the four capsules fill the width
-      const dolly = (1 + Math.sin(t * 0.13) * 0.045 * amp) * (portrait ? 1 - 0.18 * lineBand : 1);
+      const dolly = (1 + Math.sin(t * 0.13) * 0.045 * amp) * (portrait ? 1 - 0.1 * lineBand : 1);
       off.set(pose.pos[0] - pose.target[0], pose.pos[1] - pose.target[1], pose.pos[2] - pose.target[2]).multiplyScalar(dolly).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
       camera.position.set(pose.target[0] + off.x, pose.target[1] + off.y + bob, pose.target[2] + off.z);
       camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);

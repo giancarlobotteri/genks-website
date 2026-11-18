@@ -655,7 +655,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
     { id: "mic", obj: anchorAt(head, 0, -0.05, 0), r: 0.15 },
     { id: "screen", obj: anchorAt(scr, 0, 0, 0), r: 0.42 },
     { id: "mixer", obj: anchorAt(mixer, 0, 0.06, 0.02), r: 0.6 },
-    ...lineupRig.items.map(it => ({ id: `svc:${it.id}` as HitId, obj: it.hit, r: 0.13 })),
+    ...lineupRig.items.map(it => ({ id: `svc:${it.id}` as HitId, obj: it.hit, r: 0.16 })),
   ];
 
   /* ---------- direction of light ---------- */

@@ -10,7 +10,7 @@ Il progetto è autonomo: vive interamente in questa cartella e non usa né modif
 >
 > - titoli d'apertura rapidi (circa 2,4 s, non saltabili) con scie di luce che disegnano il simbolo GENKS originale e un'esplosione di luce verso lo studio;
 > - microfono solo nel buio con fascio di luce, polvere e parola «VOCE» nello spazio;
-> - **i quattro servizi in fila sotto i riflettori**, come capsule sospese (ispirato alla fila di lattine CIRO), cliccabili;
+> - **i quattro servizi in fila sotto i riflettori**, come in uno showroom: quattro piedistalli con microfono, pad controller che suona, modulo fader in movimento e vinile che gira, cliccabili;
 > - studio che si accende tappa dopo tappa con lo scroll;
 > - macro sulla console con fader motorizzati che seguono il servizio scelto;
 > - oggetti 3D cliccabili;
