@@ -14,22 +14,24 @@ const MIXER_T: V3 = [0, 0.86, -1.48];
  * lights up (the lens opens) → establishing shot → DAW → crane over the desk → macro shots of the console.
  */
 export const KEYS: Key[] = [
-  { p: 0, pos: [-0.67, 1.355, 1.9], target: MIC, lens: 0.6 },                     // microphone · hero, ~70 mm
-  { p: 0.07, pos: [-0.02, 1.52, 2.62], target: [-0.66, 1.3, 0.22], lens: 0.8 },    // pull back + crane up: lights ignite
-  { p: 0.14, pos: [0.55, 1.52, 3.0], target: [-0.3, 1.3, -1.05], lens: 1 },      // the studio · establishing, ~40 mm
-  { p: 0.27, pos: [0.1, 1.5, -0.9], target: [0, 1.43, -2.02], lens: 0.95 },       // DAW monitor: custom production
-  { p: 0.38, pos: [0.85, 1.95, 0.35], target: [0, 0.95, -1.5], lens: 1 },         // crane over the desk
+  { p: 0, pos: [-0.67, 1.355, 1.9], target: MIC, lens: 0.6 },                    // microphone · hero, ~70 mm
+  { p: 0.06, pos: [-0.5, 1.4, 2.06], target: [-0.94, 1.43, 0.95], lens: 0.7 },    // anatomy: the microphone opens up
+  { p: 0.105, pos: [-0.02, 1.52, 2.62], target: [-0.66, 1.3, 0.22], lens: 0.8 }, // pull back + crane up: lights ignite
+  { p: 0.15, pos: [0.55, 1.52, 3.0], target: [-0.3, 1.3, -1.05], lens: 1 },     // the studio · establishing, ~40 mm
+  { p: 0.28, pos: [0.1, 1.5, -0.9], target: [0, 1.43, -2.02], lens: 0.95 },      // DAW monitor: custom production
+  { p: 0.39, pos: [0.85, 1.95, 0.35], target: [0, 0.95, -1.5], lens: 1 },        // crane over the desk
   { p: 0.5, pos: [0.37, 0.995, -0.96], target: [-0.12, 0.848, -1.27], lens: 0.72 }, // mixer · Mix: fader macro, ~85 mm
   { p: 0.62, pos: [-0.47, 1.14, -1.0], target: [-0.04, 0.93, -1.62], lens: 0.82 },  // mixer · Master: knobs → meters
-  { p: 0.74, pos: [0.06, 1.56, -0.42], target: MIXER_T, lens: 1 },        // mixer · Mix & Master: the whole console
+  { p: 0.74, pos: [0.06, 1.56, -0.42], target: MIXER_T, lens: 1 },               // mixer · Mix & Master: the whole console
   // p = 1 is resolved at runtime: square in front of the mixer display (see endPose)
 ];
 
 /** Where the camera rests, in scroll order. `glide` = seconds of the spring towards the next stop. */
 export const STOPS = [
-  { id: "mic", p: 0, glide: 0.95 },
-  { id: "studio", p: 0.14, glide: 0.62 },
-  { id: "daw", p: 0.27, glide: 0.6 },
+  { id: "mic", p: 0, glide: 0.75 },
+  { id: "anatomy", p: 0.06, glide: 0.95 },
+  { id: "studio", p: 0.15, glide: 0.62 },
+  { id: "daw", p: 0.28, glide: 0.6 },
   { id: "mix", p: 0.5, glide: 0.5 },
   { id: "master", p: 0.62, glide: 0.5 },
   { id: "mixmaster", p: 0.74, glide: 0.55 },

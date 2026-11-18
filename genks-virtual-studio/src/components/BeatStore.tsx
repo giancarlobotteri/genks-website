@@ -4,7 +4,24 @@ import { emptyFilters, filterBeats, filterOptions, formatEuro, priceFrom, type B
 import { usePlayer, useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
 import type { Beat } from "../types.ts";
-import { BeatCover, DemoBadge } from "./ui.tsx";
+import { BeatCover, DemoBadge, prefersReducedMotion } from "./ui.tsx";
+
+/** Product-card depth: the card under the mouse tilts towards it and a soft light follows the cursor. */
+const tiltOn = (e: React.PointerEvent<HTMLElement>) => {
+  if (e.pointerType !== "mouse" || prefersReducedMotion()) return;
+  const card = (e.target as Element).closest<HTMLElement>("[data-card]");
+  const grid = e.currentTarget;
+  grid.querySelectorAll<HTMLElement>("[data-tilt]").forEach(c => { if (c !== card) c.removeAttribute("data-tilt"); });
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+  card.setAttribute("data-tilt", "");
+  card.style.setProperty("--rx", `${((0.5 - y) * 9).toFixed(2)}deg`);
+  card.style.setProperty("--ry", `${((x - 0.5) * 11).toFixed(2)}deg`);
+  card.style.setProperty("--gx", `${(x * 100).toFixed(1)}%`);
+  card.style.setProperty("--gy", `${(y * 100).toFixed(1)}%`);
+};
+const tiltOff = (e: React.PointerEvent<HTMLElement>) => e.currentTarget.querySelectorAll<HTMLElement>("[data-tilt]").forEach(c => c.removeAttribute("data-tilt"));
 
 export function PlayButton({ beat, queue, size = 18, className }: { beat: Beat; queue?: string[]; size?: number; className?: string }) {
   const player = usePlayer();
@@ -146,7 +163,7 @@ export function BeatStore() {
             <button type="button" className={s.btnPrimary} onClick={() => setF(emptyFilters)}>Mostra tutto il catalogo</button>
           </div>
         ) : (
-          <ul key={`${page}-${per}-${list.length}`} className={s.beatGrid} data-dir={dir} data-anim={dir ? "page" : undefined} data-compact={fit.compact || undefined} aria-label={`Beat, pagina ${page + 1} di ${pages}`}
+          <ul key={`${page}-${per}-${list.length}`} className={s.beatGrid} data-dir={dir} data-anim={dir ? "page" : undefined} data-compact={fit.compact || undefined} aria-label={`Beat, pagina ${page + 1} di ${pages}`} onPointerMove={tiltOn} onPointerLeave={tiltOff}
             style={{ gridTemplateColumns: `repeat(${fit.cols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${fit.rows}, minmax(0, 1fr))` }}>
             {shown.map((b, i) => {
               const from = priceFrom(b, content.licenses);

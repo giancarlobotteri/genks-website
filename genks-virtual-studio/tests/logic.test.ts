@@ -108,8 +108,8 @@ describe("percorso camera", () => {
     expect(poseAt(1, end)).toEqual({ ...end, lens: 1 });
     expect(poseAt(2, end)).toEqual({ ...end, lens: 1 });
   });
-  it("si ferma esattamente su ogni tappa: microfono, studio, DAW, tre servizi, display", () => {
-    expect(STOPS.map(x => x.id)).toEqual(["mic", "studio", "daw", "mix", "master", "mixmaster", "display"]);
+  it("si ferma esattamente su ogni tappa: microfono, anatomia, studio, DAW, tre servizi, display", () => {
+    expect(STOPS.map(x => x.id)).toEqual(["mic", "anatomy", "studio", "daw", "mix", "master", "mixmaster", "display"]);
     for (const st of STOPS.slice(0, -1)) {
       const k = KEYS.find(x => x.p === st.p)!;
       expect(k).toBeTruthy();
@@ -117,16 +117,16 @@ describe("percorso camera", () => {
     }
   });
   it("rivelazione: dal microfono la camera arretra e sale, poi va verso la DAW", () => {
-    const mic = poseAt(0, end), studio = poseAt(0.14, end);
+    const mic = poseAt(0, end), studio = poseAt(0.15, end);
     expect(studio.pos[2]).toBeGreaterThan(mic.pos[2]);
     expect(studio.pos[1]).toBeGreaterThan(mic.pos[1]);
-    expect(poseAt(0.27, end).pos[2]).toBeLessThan(0);
+    expect(poseAt(0.28, end).pos[2]).toBeLessThan(0);
   });
   it("focale: lunga sul microfono, aperta sullo studio, cambia senza scatti", () => {
     expect(poseAt(0, end).lens).toBeLessThan(0.7);
-    expect(poseAt(0.14, end).lens).toBe(1);
+    expect(poseAt(0.15, end).lens).toBe(1);
     let prev = poseAt(0, end).lens!;
-    for (let p = 0.002; p <= 0.14; p += 0.002) {
+    for (let p = 0.002; p <= 0.15; p += 0.002) {
       const l = poseAt(p, end).lens!;
       expect(l).toBeGreaterThanOrEqual(prev - 1e-9);
       expect(l - prev).toBeLessThan(0.03);
@@ -134,11 +134,11 @@ describe("percorso camera", () => {
     }
   });
   it("le transizioni narrative hanno tempi propri (la rivelazione è la più lenta)", () => {
-    expect(STOPS[0].glide).toBeGreaterThan(STOPS[3].glide);
+    expect(STOPS[1].glide).toBeGreaterThan(STOPS[4].glide);
   });
   it("motion ridotto: nessun movimento continuo, solo pose chiave", () => {
-    expect(poseAt(0.26, end, true).pos).toEqual(KEYS[3].pos);
-    expect(poseAt(0.29, end, true).pos).toEqual(KEYS[3].pos);
+    expect(poseAt(0.27, end, true).pos).toEqual(KEYS[4].pos);
+    expect(poseAt(0.3, end, true).pos).toEqual(KEYS[4].pos);
   });
   it("visibilità degli hotspot per fascia di scroll", () => {
     expect(band(0.1, 0, 0.2)).toBe(1);
@@ -201,5 +201,21 @@ describe("virtual scroll timing", () => {
       for (let t = 0; t < 2.5; t += 1 / fps) tickStepper(1 / fps);
       expect(stopPos()).toBeGreaterThan(0.999);
     }
+  });
+});
+
+import { parseBrief } from "../src/lib/brief.ts";
+
+describe("beat su misura: il brief in una frase", () => {
+  const MOODS = ["Notturno", "Energico", "Malinconico", "Solare", "Cupo", "Morbido"];
+  it("legge genere, BPM e mood", () => {
+    expect(parseBrief("trap cupa a 140 BPM, 808 pesanti, atmosfera notturna", MOODS)).toEqual({ genre: "Trap", bpm: 140, moods: ["Notturno", "Cupo"] });
+  });
+  it("non scambia l'808 per i BPM", () => {
+    expect(parseBrief("808 pesanti, drill a 142 bpm", MOODS).bpm).toBe(142);
+    expect(parseBrief("808 pesanti e basta", MOODS).bpm).toBeNull();
+  });
+  it("frase senza indicazioni: nessun campo inventato", () => {
+    expect(parseBrief("qualcosa di bello", MOODS)).toEqual({ genre: null, bpm: null, moods: [] });
   });
 });

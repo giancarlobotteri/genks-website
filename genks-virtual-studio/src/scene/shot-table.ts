@@ -39,6 +39,8 @@ export const SHOTS: Record<string, Orbit> = {
   "mix:done": { t: [0, 1.0, -1.6], yaw: -0.3, pitch: 0.3, dist: 2.7 },
   // The preview "video": one slow, moving shot per service
   "reel:intro": { t: [-0.3, 1.15, -0.8], yaw: -0.55, pitch: 0.32, dist: 5.2, spin: 0.05, push: -0.07 },
+  // behind the opening titles: the dark studio, far away; the first chapter then pushes in
+  "reel:dark": { t: [-0.3, 1.25, -0.8], yaw: -0.85, pitch: 0.2, dist: 6.6, spin: 0.03 },
   "reel:rec": { t: [-0.94, 1.42, 0.95], yaw: 1.05, pitch: 0.06, dist: 1.3, spin: -0.09, push: -0.035, lens: 0.7 },
   "reel:custom": { t: [0, 1.4, -2.0], yaw: 0.42, pitch: 0.05, dist: 1.45, spin: -0.07, push: -0.05 },
   "reel:mix": { t: [-0.45, 0.86, -1.45], yaw: -0.2, pitch: 0.62, dist: 1.0, slide: 0.16, spin: 0.03 },

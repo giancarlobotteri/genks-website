@@ -21,6 +21,10 @@ export type StudioRig = {
   anchors: { mic: THREE.Object3D; micHot: THREE.Object3D; mixer: THREE.Object3D; screen: THREE.Object3D; display: THREE.Object3D; monitors: THREE.Object3D; rack: THREE.Object3D };
   /** Clickable objects of the 3D scene: a sphere around each (world centre from `obj`, radius in metres). */
   hits: { id: HitId; obj: THREE.Object3D; r: number }[];
+  /** Anchors of the exploded-view callouts of the microphone. */
+  callouts: { id: "grille" | "capsule" | "mount" | "xlr"; obj: THREE.Object3D }[];
+  /** 0..1 exploded view of the microphone. */
+  setExplode: (e: number) => void;
   /** 0..1 progressive reveal of the studio lights (scroll-driven: each light has its own moment). */
   setReveal: (v: number) => void;
   /** 0..1 the microphone as the hero: beam, dust, rim lights, sweep. */
@@ -516,40 +520,44 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
 
   // head: original large-diaphragm condenser in a shock mount (origin = grille centre region)
   const head = new THREE.Group(); head.position.set(0.36, 1.44, 0); mic.add(head);
+  // every part lives in its own group, so the microphone can open up into an exploded view ("anatomy")
+  const part = () => { const g = new THREE.Group(); head.add(g); return g; };
+  const gBody = part(), gXlr = part(), gOuter = part(), gInner = part(), gMount = part();
   const V = (r: number, y: number) => new THREE.Vector2(r, y);
-  // body turned on a lathe: XLR base, chamfers, long satin-nickel barrel
-  const bodyProfile = [V(0, -0.176), V(0.0118, -0.176), V(0.0128, -0.1735), V(0.0128, -0.163), V(0.0175, -0.1605), V(0.0232, -0.154), V(0.0262, -0.146), V(0.0272, -0.137), V(0.0272, -0.0245), V(0.0262, -0.0215), V(0, -0.0215)];
-  const bodyM = mesh(new THREE.LatheGeometry(bodyProfile, 72), mSatin, head); bodyM.castShadow = true;
-  mesh(new THREE.TorusGeometry(0.0268, 0.0017, 12, 72), mChrome, head, 0, -0.0218, 0).rotation.x = Math.PI / 2;     // trim under the basket
-  mesh(new THREE.TorusGeometry(0.0272, 0.0012, 10, 72), mChrome, head, 0, -0.137, 0).rotation.x = Math.PI / 2;      // lower trim
-  instanced(box(0.0016, 0.004, 0.002), mGunmetal, head, Array.from({ length: 24 }, (_, i) => { const a = (i / 24) * Math.PI * 2; return { p: v3(Math.cos(a) * 0.0129, -0.168, Math.sin(a) * 0.0129), r: new THREE.Euler(0, -a, 0) }; })); // knurled XLR ring
+  // body turned on a lathe: chamfers, long satin-nickel barrel; the XLR base is a separate part
+  const bodyProfile = [V(0, -0.1625), V(0.0175, -0.1605), V(0.0232, -0.154), V(0.0262, -0.146), V(0.0272, -0.137), V(0.0272, -0.0245), V(0.0262, -0.0215), V(0, -0.0215)];
+  const bodyM = mesh(new THREE.LatheGeometry(bodyProfile, 72), mSatin, gBody); bodyM.castShadow = true;
+  mesh(new THREE.LatheGeometry([V(0, -0.176), V(0.0118, -0.176), V(0.0128, -0.1735), V(0.0128, -0.1615), V(0, -0.1615)], 48), mSatin, gXlr);
+  mesh(new THREE.TorusGeometry(0.0268, 0.0017, 12, 72), mChrome, gBody, 0, -0.0218, 0).rotation.x = Math.PI / 2;     // trim under the basket
+  mesh(new THREE.TorusGeometry(0.0272, 0.0012, 10, 72), mChrome, gBody, 0, -0.137, 0).rotation.x = Math.PI / 2;      // lower trim
+  instanced(box(0.0016, 0.004, 0.002), mGunmetal, gXlr, Array.from({ length: 24 }, (_, i) => { const a = (i / 24) * Math.PI * 2; return { p: v3(Math.cos(a) * 0.0129, -0.168, Math.sin(a) * 0.0129), r: new THREE.Euler(0, -a, 0) }; })); // knurled XLR ring
   // headbasket: outer woven grille, inner finer grille, gold capsule visible between the wires
   const basketProfile: THREE.Vector2[] = [V(0.0262, -0.021), V(0.0284, -0.0185), V(0.0286, 0.022)];
   for (let i = 1; i <= 14; i++) { const a = (i / 14) * Math.PI / 2; basketProfile.push(V(0.0286 * Math.cos(a), 0.022 + 0.034 * Math.sin(a))); }
-  const basket = mesh(new THREE.LatheGeometry(basketProfile, 96), mGrille, head); basket.castShadow = true;
-  const inner = mesh(new THREE.LatheGeometry(basketProfile.map(p => V(p.x * 0.9, p.y * 0.94 - 0.001)), 72), mGrilleIn, head);
+  const basket = mesh(new THREE.LatheGeometry(basketProfile, 96), mGrille, gOuter); basket.castShadow = true;
+  const inner = mesh(new THREE.LatheGeometry(basketProfile.map(p => V(p.x * 0.9, p.y * 0.94 - 0.001)), 72), mGrilleIn, gInner);
   void inner;
   const capsule = new THREE.Group(); capsule.position.set(0, 0.012, 0); head.add(capsule);
   mesh(new THREE.TorusGeometry(0.0158, 0.0022, 12, 48), mGold, capsule);                       // capsule ring (faces the singer)
   mesh(new THREE.CircleGeometry(0.0152, 48), mMylar, capsule, 0, 0, 0.0005);
   mesh(new THREE.CircleGeometry(0.0152, 48), mMylar, capsule, 0, 0, -0.0005).rotation.y = Math.PI;
   mesh(cyl(0.0022, 0.0022, 0.03, 10), mGunmetal, capsule, 0, -0.024, 0);                      // capsule stem
-  mesh(new THREE.TorusGeometry(0.0287, 0.0014, 10, 96), mChrome, head, 0, 0.011, 0).rotation.x = Math.PI / 2;      // band across the basket
-  mesh(new THREE.SphereGeometry(0.0034, 16, 10), mChrome, head, 0, 0.0565, 0);                 // top finial
+  mesh(new THREE.TorusGeometry(0.0287, 0.0014, 10, 96), mChrome, gOuter, 0, 0.011, 0).rotation.x = Math.PI / 2;      // band across the basket
+  mesh(new THREE.SphereGeometry(0.0034, 16, 10), mChrome, gOuter, 0, 0.0565, 0);                 // top finial
   // front: badge with the GENKS symbol, pattern switch, power LED
-  mesh(new THREE.CircleGeometry(0.0125, 48), mSymbolMic, head, 0, -0.068, 0.0274);
-  mesh(new THREE.TorusGeometry(0.0128, 0.0011, 8, 48), mChrome, head, 0, -0.068, 0.0274);
-  mesh(rbox(0.008, 0.0035, 0.002, 0.0008, 1), mRubber, head, 0, -0.104, 0.0268);
-  mesh(new THREE.CircleGeometry(0.0013, 16), mBadgeLed, head, 0, -0.114, 0.0274);
-  instanced(box(0.006, 0.01, 0.003), mKnob, head, [{ p: v3(-0.012, -0.124, 0.0262) }, { p: v3(0.012, -0.124, 0.0262) }]);
+  mesh(new THREE.CircleGeometry(0.0125, 48), mSymbolMic, gBody, 0, -0.068, 0.0274);
+  mesh(new THREE.TorusGeometry(0.0128, 0.0011, 8, 48), mChrome, gBody, 0, -0.068, 0.0274);
+  mesh(rbox(0.008, 0.0035, 0.002, 0.0008, 1), mRubber, gBody, 0, -0.104, 0.0268);
+  mesh(new THREE.CircleGeometry(0.0013, 16), mBadgeLed, gBody, 0, -0.114, 0.0274);
+  instanced(box(0.006, 0.01, 0.003), mKnob, gBody, [{ p: v3(-0.012, -0.124, 0.0262) }, { p: v3(0.012, -0.124, 0.0262) }]);
   // shock mount: two rings, outer cage, elastic cords
   for (const y of [-0.045, -0.125]) {
-    mesh(new THREE.TorusGeometry(0.032, 0.0035, 10, 48), mBlackMetal, head, 0, y, 0).rotation.x = Math.PI / 2;
-    mesh(new THREE.TorusGeometry(0.066, 0.004, 10, 56), mBlackMetal, head, 0, y, 0).rotation.x = Math.PI / 2;
+    mesh(new THREE.TorusGeometry(0.032, 0.0035, 10, 48), mBlackMetal, gMount, 0, y, 0).rotation.x = Math.PI / 2;
+    mesh(new THREE.TorusGeometry(0.066, 0.004, 10, 56), mBlackMetal, gMount, 0, y, 0).rotation.x = Math.PI / 2;
   }
   const struts: { p: THREE.Vector3 }[] = [], cords: { p: THREE.Vector3; r: THREE.Euler; s: THREE.Vector3 }[] = [];
   for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4; struts.push({ p: v3(Math.cos(a) * 0.066, -0.085, Math.sin(a) * 0.066) }); }
-  instanced(cyl(0.0035, 0.0035, 0.08, 10), mBlackMetal, head, struts);
+  instanced(cyl(0.0035, 0.0035, 0.08, 10), mBlackMetal, gMount, struts);
   for (const y of [-0.045, -0.125]) for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2, b = a + (i % 2 ? 0.5 : -0.5);
     const p1 = v3(Math.cos(a) * 0.032, y, Math.sin(a) * 0.032), p2 = v3(Math.cos(b) * 0.066, y, Math.sin(b) * 0.066);
@@ -557,8 +565,8 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
     q4.setFromUnitVectors(v3(0, 1, 0), dir.clone().normalize());
     cords.push({ p: p1.clone().add(p2).multiplyScalar(0.5), r: new THREE.Euler().setFromQuaternion(q4), s: v3(1, dir.length(), 1) });
   }
-  instanced(cyl(0.0016, 0.0016, 1, 6), mRubber, head, cords);
-  mesh(cyl(0.008, 0.008, 0.04, 12), mBlackMetal, head, 0, -0.165, 0.066);
+  instanced(cyl(0.0016, 0.0016, 1, 6), mRubber, gMount, cords);
+  mesh(cyl(0.008, 0.008, 0.04, 12), mBlackMetal, gMount, 0, -0.165, 0.066);
   // XLR cable drooping along the boom to the floor
   const cable = new THREE.CatmullRomCurve3([v3(0.36, 1.265, 0), v3(0.35, 1.2, 0.01), v3(0.2, 1.24, 0.02), v3(0.03, 1.33, 0.02), v3(0.03, 0.9, 0.03), v3(0.05, 0.3, 0.05), v3(0.2, 0.02, 0.12), v3(0.7, 0.012, 0.0), v3(1.2, 0.012, -0.5)]);
   mesh(new THREE.TubeGeometry(cable, 64, 0.0035, 6), mRubber, mic);
@@ -639,6 +647,27 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
     display: anchorAt(mb, 0, 0, 0.0356),
     monitors: anchorAt(monitors.children[1], 0, 0.3, 0),
     rack: anchorAt(rack, 0, 1.6, 0.3),
+  };
+  /** callouts of the exploded microphone: each follows its own part */
+  const callouts: StudioRig["callouts"] = [
+    { id: "grille", obj: anchorAt(gOuter, 0.029, 0.035, 0) },
+    { id: "capsule", obj: anchorAt(capsule, 0.019, 0, 0) },
+    { id: "mount", obj: anchorAt(gMount, 0.068, -0.045, 0) },
+    { id: "xlr", obj: anchorAt(gXlr, 0.013, -0.169, 0) },
+  ];
+  let explode = 0;
+  /** 0 = assembled, 1 = every part separated along the axis, the head turning like on a turntable */
+  const setExplode = (e: number) => {
+    e = THREE.MathUtils.clamp(e, 0, 1);
+    if (Math.abs(e - explode) < 1e-4) return;
+    explode = e;
+    const k = e * e * (3 - 2 * e);
+    gOuter.position.y = 0.15 * k;
+    gInner.position.y = 0.075 * k;
+    capsule.position.y = 0.012 + 0.02 * k;
+    gXlr.position.y = -0.05 * k;
+    gMount.scale.set(1 + 0.5 * k, 1, 1 + 0.5 * k);
+    if (hi) renderer.shadowMap.needsUpdate = true;
   };
   const hits: StudioRig["hits"] = [
     { id: "mic", obj: anchorAt(head, 0, -0.05, 0), r: 0.15 },
@@ -745,6 +774,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   let lastLevel = 0;
   const tick = (t: number, active: boolean, level = 0, dt = 1 / 60) => {
     lastT = t;
+    if (explode > 0.001 || head.rotation.y !== 0) head.rotation.y = explode > 0.001 ? (-0.35 + Math.sin(t * 0.35) * 0.3) * explode * explode * (3 - 2 * explode) : 0;
     // the light sweep: a bar of blue light passes over every chrome surface every few seconds
     const u = (t % 5.2) / 1.8;
     sweepU.sweepPhase.value = u < 1 ? -1.35 + 2.7 * u : 9;
@@ -818,7 +848,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   ], hi, () => alive, d => disposables.push(d));
 
   return {
-    scene, anchors, hits, setReveal, setHero, setTitle, setHover, setMode, setHdr, tick,
+    scene, anchors, hits, callouts, setExplode, setReveal, setHero, setTitle, setHover, setMode, setHdr, tick,
     dispose() { alive = false; disposables.forEach(d => d.dispose()); },
   };
 }

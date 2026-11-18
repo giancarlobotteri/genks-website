@@ -38,13 +38,20 @@ type Props = { noGl: boolean; onWebglFail: () => void };
 
 const HOTSPOTS = [
   { id: "mic", anchor: "micHot", label: "Prenota una sessione", stop: 0, Icon: Mic },
-  { id: "screen", anchor: "screen", label: "Beat su misura", stop: 2, Icon: MonitorPlay },
-  { id: "display", anchor: "display", label: "Entra nel Beat Store", stop: 6, Icon: Disc3 },
+  { id: "screen", anchor: "screen", label: "Beat su misura", stop: 3, Icon: MonitorPlay },
+  { id: "display", anchor: "display", label: "Entra nel Beat Store", stop: 7, Icon: Disc3 },
 ] as const;
 
-const SERVICE_STOPS: Record<string, number> = { mix: 3, master: 4, mixmaster: 5 };
+const SERVICE_STOPS: Record<string, number> = { mix: 4, master: 5, mixmaster: 6 };
+/** The exploded microphone: one caption per part (anchors in scene/build-studio). */
+const CALLOUTS = [
+  { id: "grille", title: "Doppia griglia", text: "Protegge la capsula, lascia passare ogni dettaglio" },
+  { id: "capsule", title: "Capsula a diaframma largo", text: "Voce piena, calda e presente" },
+  { id: "mount", title: "Sospensione elastica", text: "Nessuna vibrazione arriva al segnale" },
+  { id: "xlr", title: "Uscita XLR bilanciata", text: "Segnale pulito fino al preamplificatore" },
+] as const;
 /** Reveal of the studio lights for each shot of the preview (0 = the microphone alone in the dark). */
-const REEL_REVEAL: Record<string, number> = { "reel:intro": 0.45, "reel:rec": 0.03, "reel:custom": 0.8, "reel:mix": 1, "reel:store": 1, "reel:choose": 0.9 };
+const REEL_REVEAL: Record<string, number> = { "reel:dark": 0.02, "reel:intro": 0.45, "reel:rec": 0.03, "reel:custom": 0.8, "reel:mix": 1, "reel:store": 1, "reel:choose": 0.9 };
 
 export function StudioStage({ noGl, onWebglFail }: Props) {
   const { panel, content } = useStudio();
@@ -56,6 +63,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   const showcaseRef = useRef<HTMLDivElement>(null);
   const hintRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
+  const anatomyRef = useRef<HTMLDivElement>(null);
+  const calloutRefs = useRef<(HTMLDivElement | null)[]>([]);
   const railRef = useRef<HTMLOListElement>(null);
   const live = useRef({ base: null as string | null, framed: false });
   const [ready, setReady] = useState(false);
@@ -175,7 +184,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       let best: HitId | null = null, bestD = Infinity;
       for (const hz of rig.hits) {
         // only what the current shot is about
-        const allowed = hz.id === "mic" ? curPos < 1.4 : hz.id === "screen" ? curPos > 1.5 && curPos < 2.5 : curPos > 2.5 && curPos < 5.5;
+        const allowed = hz.id === "mic" ? curPos < 1.5 : hz.id === "screen" ? curPos > 2.5 && curPos < 3.5 : curPos > 3.5 && curPos < 6.5;
         if (!allowed) continue;
         hz.obj.getWorldPosition(sph.center); sph.radius = hz.r;
         const hit = ray.ray.intersectSphere(sph, tmp);
@@ -284,7 +293,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
 
       // framing: slide the picture away from whatever covers part of the screen
-      const svcBand = dir.screen === "studio" && !live.current.framed ? band(pos, 3, 5, 0.5) : 0;
+      const svcBand = dir.screen === "studio" && !live.current.framed ? band(pos, 4, 6, 0.5) : 0;
+      const anaBand = dir.screen === "studio" && !live.current.framed ? band(pos, 1, 1, 0.6) : 0;
       let gx = 0, gy = 0;
       // the subject is centred in the free part of the screen, measured from the real widths of
       // the text / panel / card (so 16:9, 21:9, 32:9 and 4:3 monitors all frame it the same way)
@@ -292,6 +302,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         if (dir.reelChoosing) { gx = 0; gy = 0; }
         else { gx = portrait ? 0 : -Math.min(0.2, (Math.min(660, w * 0.92) + Math.min(56, Math.max(16, w * 0.04))) / 2 / w); gy = portrait ? 0.12 : 0; }
       } else if (live.current.framed) { gx = portrait ? 0 : Math.min(0.24, (Math.min(600, w * 0.47) + 28) / 2 / w + 20 / w); gy = portrait ? 0.17 : 0; }
+      // anatomy: text on the left (desktop) or on top (phone); on phones the microphone moves left so the captions fit on its right
+      else if (anaBand > 0) { gx = (portrait ? 0.17 : -Math.min(0.2, (Math.min(470, w * 0.38) + 40) / 2 / w)) * anaBand; gy = portrait ? -0.07 * anaBand : 0; }
       else if (svcBand > 0) { gx = portrait ? 0 : Math.min(0.24, (Math.min(500, w * 0.44) + Math.max(16, w * 0.05)) / 2 / w + 10 / w) * svcBand; gy = portrait ? 0.2 * svcBand : 0; }
       const kf = reduced ? 1 : 1 - Math.exp(-dt * 2.6);
       fx += (gx - fx) * kf; fy += (gy - fy) * kf;
@@ -311,7 +323,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       else if (dir.screen === "studio") {
         if (base?.startsWith("rec")) { wantReveal = 0.05; wantHero = 0.85; }
         else if (base === "custom") wantReveal = 0.85;
-        else if (!base) { wantReveal = clamp01(pos); wantHero = 1 - clamp01(pos / 0.65); wantTitle = 1 - clamp01(pos / 0.3); }
+        // stop 0 microphone · stop 1 anatomy (still in the dark) · stop 2 the studio lights up
+        else if (!base) { wantReveal = clamp01(pos - 1); wantHero = 1 - clamp01((pos - 1) / 0.65); wantTitle = 1 - clamp01(pos / 0.3); }
       }
       // scroll-driven values follow the scroll closely, state changes fade like a lighting cue
       const kl = reduced ? 1 : 1 - Math.exp(-dt * (touringNow ? 9 : 1.6));
@@ -324,8 +337,10 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const tab = base?.startsWith("mix") ? (getSubShot() ?? base) : null;
       const mode: ConsoleMode = tab ? (tab.includes("mixmaster") ? "mixmaster" : tab.includes("master") ? "master" : "mix")
         : dir.screen === "reel" && dir.reelShot === "reel:mix" ? "mix"
-        : touringNow && pos > 2.5 && pos < 5.5 ? (["mix", "master", "mixmaster"] as const)[Math.min(2, Math.max(0, Math.round(pos) - 3))] : "idle";
+        : touringNow && pos > 3.5 && pos < 6.5 ? (["mix", "master", "mixmaster"] as const)[Math.min(2, Math.max(0, Math.round(pos) - 4))] : "idle";
       rig.setMode(mode);
+      // anatomy: the microphone opens up on the way to stop 1 and closes again while the camera pulls back
+      rig.setExplode(dir.screen === "studio" && !base ? (pos <= 1 ? clamp01((pos - 0.08) / 0.84) : 1 - clamp01((pos - 1.06) / 0.5)) : 0);
       curPos = pos; canHit = touringNow && dv === 0;
       rig.tick(t, !reduced, musicLevel(now), dt);
       // rack focus on the subject of the shot
@@ -361,7 +376,26 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       });
       paintServices(pos, touring);
       // the establishing shot has its own title, like the opening of a film
-      const tv = touring && dv === 0 ? band(pos, 1, 1, 0.45) : 0;
+      const tv = touring && dv === 0 ? band(pos, 2, 2, 0.45) : 0;
+      // anatomy captions: each one follows its part of the exploded microphone
+      const av = touring && dv === 0 ? band(pos, 1, 1, 0.55) : 0;
+      const ana = anatomyRef.current;
+      if (ana) {
+        ana.style.setProperty("--av", av.toFixed(3));
+        ana.style.visibility = av < 0.02 ? "hidden" : "visible";
+        ana.toggleAttribute("inert", av < 0.6);
+        rig.callouts.forEach((c, i) => {
+          const el = calloutRefs.current[i];
+          if (!el) return;
+          c.obj.getWorldPosition(tmp);
+          tmp.project(camera);
+          const x = ((tmp.x + 1) / 2) * w, y = ((1 - tmp.y) / 2) * h;
+          const left = x > w - 175 && x > w * 0.5;
+          el.dataset.side = left ? "left" : "right";
+          el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(${left ? "-100%" : "0"}, -50%)`;
+          el.style.opacity = clamp01((av - 0.35 - i * 0.1) / 0.35).toFixed(3);
+        });
+      }
       if (titleRef.current) {
         titleRef.current.style.opacity = tv.toFixed(3);
         titleRef.current.style.setProperty("--tv", tv.toFixed(3));
@@ -383,12 +417,12 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     const paintServices = (pos: number, touring: boolean) => {
       const wrap = showcaseRef.current;
       if (!wrap) return;
-      const showing = touring ? band(pos, 3, 5, 0.5) : 0;
+      const showing = touring ? band(pos, 4, 6, 0.5) : 0;
       wrap.style.visibility = showing < 0.01 ? "hidden" : "visible";
       let best = -1, bestV = 0;
       svcRefs.current.forEach((el, i) => {
         if (!el) return;
-        const spos = SERVICE_STOPS[services[i]?.id] ?? 3;
+        const spos = SERVICE_STOPS[services[i]?.id] ?? 4;
         const d = Math.max(-1.2, Math.min(1.2, pos - spos));
         const a = clamp01(1 - Math.abs(d) * 2.1) * (touring ? 1 : 0);
         if (a > bestV) { bestV = a; best = i; }
@@ -476,6 +510,23 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       )}
 
       {!noGl && (
+        <div ref={anatomyRef} className={s.anatomy} role="region" aria-label="Anatomia della voce">
+          <div className={s.anatomyText}>
+            <p className={s.kicker}>Anatomia della voce</p>
+            <h2>Ogni dettaglio,<br />al servizio della tua voce.</h2>
+            <p>Registri in cabina trattata, con un microfono a condensatore a diaframma largo e un engineer che segue la sessione.</p>
+            <button type="button" className={s.btnPrimary} onClick={() => void goService("recording")}><Mic size={16} /> Prenota una sessione</button>
+          </div>
+          {CALLOUTS.map((c, i) => (
+            <div key={c.id} ref={el => { calloutRefs.current[i] = el; }} className={s.callout} data-side="right" aria-hidden="true">
+              <span className={s.calloutDot} /><span className={s.calloutLine} />
+              <span className={s.calloutBox}><strong>{c.title}</strong><small>{c.text}</small></span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!noGl && (
         <div ref={titleRef} className={s.studioTitle} aria-hidden="true">
           <span className={s.studioKicker}>GENKS · Studio</span>
           <span className={s.studioName}>Un unico spazio,<br />tre servizi.</span>
@@ -495,7 +546,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   );
 }
 
-const STOP_LABELS = ["Microfono", "Studio", "Monitor DAW", "Mix", "Master", "Mix & Master", "Beat Store"];
+const STOP_LABELS = ["Microfono", "Anatomia", "Studio", "Monitor DAW", "Mix", "Master", "Mix & Master", "Beat Store"];
 
 /** Always on screen in the studio: jump to any service, or watch the preview again. */
 export function StudioDock() {

@@ -6,6 +6,20 @@ Sito cinematografico e interattivo per lo studio GENKS: registrazione voce, Mix 
 
 Il progetto è autonomo: vive interamente in questa cartella e non usa né modifica altro codice del repository.
 
+> **Branch `claude/genks-cinematic` — versione cinematografica.** Stesse funzioni della versione FREE, con la regia ispirata alle tre reference (vedi [`CINEMATIC_PLAN.md`](CINEMATIC_PLAN.md)):
+>
+> - titoli d'apertura con scie di luce che disegnano il simbolo GENKS originale;
+> - microfono solo nel buio con fascio di luce, polvere e parola «VOCE» nello spazio;
+> - **anatomia** del microfono (esploso con didascalie);
+> - studio che si accende tappa dopo tappa con lo scroll;
+> - macro sulla console con fader motorizzati che seguono il servizio scelto;
+> - oggetti 3D cliccabili;
+> - post-processing HDR (profondità di campo, bloom sulle sole luci, grading, grana);
+> - schede del Beat Store con profondità;
+> - brief del beat su misura «in una frase».
+>
+> La versione FREE resta intatta sul branch `claude/eloquent-lamport-9y3y2f`.
+
 ## Avvio in locale
 
 Serve Node.js 20 o superiore.
@@ -49,7 +63,9 @@ Ultima esecuzione: build, typecheck, lint, 24/24 test unitari e 69/69 controlli 
 | «Di cosa hai bisogno?» | Alla fine dell'anteprima: quattro scelte (puntandole la telecamera si sposta sul servizio), più «Esplora lo studio liberamente» e «Rivedi l'anteprima». Nella stessa sessione si torna direttamente qui. |
 | Schermate di servizio a passaggi | Registrazione, beat su misura e Mix & Master si aprono come schermate nuove: un passaggio alla volta (ore e prezzi → giorno e orario → dati → riepilogo; brief, sequencer, sound, dettagli; servizio, dettagli, brano, file, contatti). Ogni passaggio ha la sua inquadratura e i suoi elementi entrano uno dopo l'altro; i prezzi contano fino al valore. |
 | Cambiare servizio | In ogni schermata di servizio, nella barra dello studio e dopo l'invio: un tocco porta a un altro servizio, con il movimento di telecamera relativo. |
-| Visita dello studio | Scroll virtuale: la pagina non scorre, la telecamera segue dito o trackpad e al rilascio scivola alla tappa successiva (microfono → monitor DAW → Mix → Master → Mix & Master → display). Indicatore delle tappe a destra, cliccabile. Oltre il display si entra nel Beat Store. |
+| Visita dello studio | Scroll virtuale: la pagina non scorre, la telecamera segue dito o trackpad e al rilascio scivola alla tappa successiva (microfono nel buio → anatomia del microfono → lo studio si accende → monitor DAW → Mix → Master → Mix & Master → display). Ogni tappa ha la sua focale e la sua luce. Indicatore delle tappe a destra, cliccabile. Oltre il display si entra nel Beat Store. |
+| Oggetti 3D cliccabili | Microfono, schermo DAW e console reagiscono al cursore (luce e mano) e al clic aprono il loro servizio. |
+| Beat in una frase | Nel Beat su misura: «trap cupa a 140 BPM…» compila genere, BPM, mood e descrizione e porta al passaggio del sound. |
 | Studio che reagisce alla musica | Casse, LED e misuratori seguono l'anteprima in riproduzione e il sequencer. |
 | Beat Store | Schermata propria con la sua intro animata (titolo, conteggio dei beat, licenze, poi l'onda si spezza e atterra sulle schede; completa la prima volta, breve le successive, «Intro» per rivederla). La griglia mostra esattamente i beat che entrano (6 su PC, 3–5 su telefono), pagine con transizioni e swipe; ricerca, filtri, ordinamento. Scheda «Pacchetti» accanto a «Beat». |
 | Player persistente | Play su un beat: resta attivo mentre si naviga e si aprono pannelli. Mai in autoplay. |

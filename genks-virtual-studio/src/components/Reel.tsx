@@ -6,6 +6,7 @@ import { enterStore, goService, goStudio } from "../lib/nav.ts";
 import { useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
 import { GenksSymbol } from "./brand.tsx";
+import { StreakIntro } from "./StreakIntro.tsx";
 import { DemoBadge, prefersReducedMotion } from "./ui.tsx";
 import { KineticWords } from "./Wizard.tsx";
 
@@ -55,6 +56,8 @@ export function Reel() {
 
   const [i, setI] = useState(() => (reduced || (wasSeen() && !getDirector().reelFromStart) ? chapters.length : 0));
   const [paused, setPaused] = useState(false);
+  // opening titles (light streaks → GENKS symbol) when the preview starts from its first chapter
+  const [intro, setIntro] = useState(() => !reduced && i === 0);
   const choosing = i >= chapters.length;
   const barRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const elapsed = useRef(0);
@@ -66,10 +69,10 @@ export function Reel() {
 
   // the camera follows the chapter
   useEffect(() => {
-    setReelShot(choosing ? "reel:choose" : chapters[i].shot);
+    setReelShot(choosing ? "reel:choose" : intro && i === 0 ? "reel:dark" : chapters[i].shot);
     setReelChoosing(choosing);
     if (choosing) markSeen();
-  }, [i, choosing, chapters]);
+  }, [i, choosing, chapters, intro]);
 
   // timeline: one rAF, progress written straight to the bars (no React work per frame)
   useEffect(() => {
@@ -77,7 +80,7 @@ export function Reel() {
     let raf = 0, last = performance.now();
     const step = (now: number) => {
       const dt = now - last; last = now;
-      if (!paused && !document.hidden) elapsed.current += dt;
+      if (!paused && !intro && !document.hidden) elapsed.current += dt;
       const u = Math.min(1, elapsed.current / chapters[i].ms);
       barRefs.current.forEach((b, k) => b?.style.setProperty("--fill", k < i ? "1" : k === i ? u.toFixed(4) : "0"));
       if (u >= 1) go(i + 1);
@@ -85,7 +88,7 @@ export function Reel() {
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [i, paused, choosing, chapters, go]);
+  }, [i, paused, choosing, chapters, go, intro]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -129,7 +132,7 @@ export function Reel() {
       {!choosing ? (
         <div className={s.reelStage} onPointerUp={onStageTap}>
           {/* keyed by chapter: every element plays its entrance again */}
-          <article key={ch.id} className={s.reelChapter} data-id={ch.id} aria-live="polite">
+          {!(intro && i === 0) && <article key={ch.id} className={s.reelChapter} data-id={ch.id} aria-live="polite">
             {ch.num && <span className={s.reelNum} aria-hidden="true">{ch.num}</span>}
             <div className={s.reelWipe} aria-hidden="true" />
             <p className={s.reelKicker}><span>{ch.kicker}</span></p>
@@ -137,7 +140,7 @@ export function Reel() {
             <p className={s.reelText}>{ch.text}</p>
             <ul className={s.reelChips}>{ch.chips.map((c, k) => <li key={c} style={{ ["--c" as string]: k } as CSSProperties}>{c}</li>)}</ul>
             {ch.cta && <button type="button" className={s.btnPrimary} data-reel-cta onClick={ch.cta.go}>{ch.cta.label} <ArrowRight size={16} /></button>}
-          </article>
+          </article>}
           <div className={s.reelNav}>
             <button type="button" className={s.iconBtn} onClick={() => go(i - 1)} disabled={i === 0} aria-label="Capitolo precedente"><ChevronLeft size={20} /></button>
             <button type="button" className={s.iconBtn} onClick={() => go(i + 1)} aria-label="Capitolo successivo"><ChevronRight size={20} /></button>
@@ -146,6 +149,7 @@ export function Reel() {
       ) : (
         <Choose fromRec={fromRec} fromMix={fromMix} fromCustom={content.customBeat.priceFrom} beats={beats} onReplay={() => go(0)} />
       )}
+      {intro && i === 0 && <StreakIntro onDone={() => setIntro(false)} />}
     </div>
   );
 }

@@ -4,7 +4,7 @@ Branch di lavoro: `claude/genks-cinematic` (la versione FREE resta intatta su `c
 
 Stato crediti: **nessun credito Higgsfield consumato, nessun servizio a pagamento attivato.** Ho usato solo interrogazioni in lettura (saldo, elenco modelli, preventivi).
 
-> **Nota sulle reference.** I tre video TikTok (CIRO/Higgsfield, configuratore BMW, All Star Burgers) non sono arrivati: non sono allegati al messaggio né presenti nella cronologia del progetto. L'analisi qui sotto si basa sulla tua descrizione e sui linguaggi tipici di queste produzioni. Mandami i link o i file e li analizzo fotogramma per fotogramma, aggiornando questo documento.
+> **Reference analizzate fotogramma per fotogramma** (registrazioni dei tre TikTok, 10–14 s ciascuna).
 
 ---
 
@@ -44,11 +44,40 @@ Stato crediti: **nessun credito Higgsfield consumato, nessun servizio a pagament
 
 ## 2. Differenze rispetto alle tre reference
 
-| Reference | Cosa la rende premium | Dove siamo | Come colmare il gap |
-| --- | --- | --- | --- |
-| **1 · CIRO / Higgsfield** (prodotto fotorealistico) | Prodotto isolato nel buio; luce che scorre sul metallo; rotazioni lente; macro con profondità di campo; tipografia dietro il soggetto; cambi d'ambiente | Soggetto immerso in una scena tutta illuminata; nessuna luce in movimento; niente profondità di campo | **Realtime:** buio iniziale, key + rim, sweep di luce animato sui cromi, profondità di campo, polvere nel fascio, tipografia 3D dietro il microfono (occlusa davvero dall'oggetto). **Video Higgsfield:** macro iperreali solo nell'anteprima. **Compositing:** grana, grading, aberrazione |
-| **2 · BMW** (configuratore) | Materiali fisici credibili; l'oggetto **cambia stato** quando scegli un'opzione; transizioni continue; interfaccia elegante sopra il 3D | Scegliendo un servizio cambia solo l'inquadratura | **Realtime:** il mixer reagisce alla scelta (fader motorizzati che si posizionano, meter e display che cambiano); il microfono reagisce al cursore. L'interfaccia esistente resta |
-| **3 · All Star Burgers** (storytelling a scroll) | Oggetti protagonisti; scene visivamente diverse legate allo scroll; tipografia enorme; offerta commerciale spettacolare | Un'unica luce per tutto il percorso; cambi di scena poco marcati | **Realtime:** ogni tappa ha la propria luce (buio → accensione progressiva → console). **Compositing:** parole giganti nello spazio, waveform che diventa il Beat Store. **Video:** loop per copertine e bundle |
+**Cosa contengono davvero i tre video:**
+
+- **Reference 1 · CIRO (Opus + Higgsfield).**
+  - Apertura: carosello di lattine sospese in arco su fondale grigio con riflessi.
+  - Allo scroll: una sola lattina inclinata, enorme, su gradiente caldo, che **ruota** mentre cambiano le sezioni di testo a sinistra («Pêche blanche», «Moins de sucre», «Arômes naturels»), con indice a puntini a destra.
+  - Finale: la lattina rimpicciolisce davanti a una **parola gigante sfocata** («ZERO BULLSHIT») e chiude con la **fila di tutte le varianti** in prospettiva.
+  - Tecnica: still e video generati con Higgsfield, montati come sequenza legata allo scroll.
+- **Reference 2 · BMW M (Claude Code + skills).**
+  - **Scie di luce** (comete) su fondo scuro convergono e disegnano il profilo luminoso.
+  - Il configuratore è un **prompt**: «Quelle M tu veux ?» → «Une M2 rouge Toronto, jantes noires…».
+  - Seguono: transizione con **motion blur** sull'auto, scheda con auto e **campioni colore**, dati che contano («480 ch», «0–100 km/h») con le bande M, **scheda di prenotazione test drive** (slider data, orario, luogo, pulsante luminoso), menu modelli, campo «Ta BMW M, en une phrase» con bagliore a gradiente, chiusura sul marchio.
+  - Tecnica: motion design di interfaccia (vetro, luce, blur), non 3D.
+- **Reference 3 · All Star Burgers.**
+  - Hero fotografico sul tavolo scuro.
+  - Allo scroll il burger **si solleva e si scompone** strato per strato («THE STACK») con didascalie per ogni ingrediente su fondo bianco: **cambio di scena**.
+  - Poi il box combo si apre e si chiude col marchio, e arriva «THE LINEUP»: griglia del menu con foto e prezzi.
+  - Tecnica: foto/still di prodotto e sequenze a fotogrammi legate allo scroll.
+
+**Applicazione a GENKS** (stessi principi, identità originale, nessun elemento copiato):
+
+| Principio | Reference | GENKS |
+| --- | --- | --- |
+| Prodotto che ruota sincronizzato allo scroll + caratteristiche a sezioni | 1 | Il microfono ruota mentre lo scroll lo apre, con le sue parti spiegate |
+| Esploso del prodotto con didascalie | 3 | **«Anatomia della voce»**: griglia, capsula, sospensione e uscita XLR si separano nello spazio con le didascalie, poi si ricompongono mentre la camera arretra sullo studio |
+| Parola gigante dietro il prodotto | 1 | «VOCE» dietro il microfono, occlusa davvero dall'oggetto 3D |
+| Scie di luce che disegnano una forma | 2 | **Intro**: comete blu che convergono e disegnano l'anello del simbolo GENKS, che appare intatto (SVG originale) |
+| Configuratore con stato visibile sull'oggetto | 2 | La console cambia stato col servizio scelto (fader motorizzati, meter, display) |
+| Scheda di prenotazione con slider | 2 | Wizard di Registrazione esistente (ore → giorni → campi) |
+| Cambio di scena | 3 | Buio totale sul microfono → studio che si accende → macro sulla console |
+| Lineup con prezzi | 3 | Beat Store e Pacchetti (griglia esistente, da portare in profondità nelle fasi successive) |
+
+**Dove siamo rispetto alle reference:**
+- Reference 1 e 3 usano **still e video pre-renderizzati** (fotorealismo da foto): in realtime 3D non si arriva alla stessa resa fotografica senza modelli professionali. Ci si avvicina con luce, materiali e post-processing, oppure, con i crediti, con le sequenze Higgsfield della sezione 6.
+- Reference 2 è motion design d'interfaccia: è riproducibile **interamente in codice, gratis**.
 
 ## 3. Tecnologie
 

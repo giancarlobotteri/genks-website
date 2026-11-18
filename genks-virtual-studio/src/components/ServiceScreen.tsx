@@ -1,6 +1,7 @@
 import { ArrowLeft, Check, Disc3, Mic, Minus, MonitorPlay, Plus, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { localAvailability } from "../adapters.ts";
+import { parseBrief } from "../lib/brief.ts";
 import { formatEuro } from "../lib/catalog.ts";
 import { enterStore, goService, goStudio, SERVICE_STOP, type ServiceKind } from "../lib/nav.ts";
 import { setSubShot } from "../lib/shots.ts";
@@ -157,6 +158,42 @@ const GENRES = ["Trap", "Drill", "R&B", "Boom bap", "Afro", "Lo-fi", "Pop", "Alt
 const MOODS = ["Notturno", "Energico", "Malinconico", "Solare", "Cupo", "Morbido"];
 const BUDGETS = ["Da definire", "Fino a 250 €", "250–500 €", "Oltre 500 €"];
 
+function BriefPrompt({ onBpm }: { onBpm: (n: number) => void }) {
+  const [text, setText] = useState("");
+  const [found, setFound] = useState<ReturnType<typeof parseBrief> | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const apply = () => {
+    const form = ref.current?.closest("form");
+    if (!form || !text.trim()) return;
+    const r = parseBrief(text, MOODS);
+    setFound(r);
+    if (r.genre) { const g = form.querySelector<HTMLInputElement>(`input[name="genre"][value="${r.genre}"]`); if (g) g.checked = true; }
+    if (r.bpm) onBpm(r.bpm);
+    form.querySelectorAll<HTMLInputElement>('input[name="mood"]').forEach(x => { x.checked = r.moods.includes(x.value); });
+    const d = form.querySelector<HTMLTextAreaElement>('textarea[name="description"]');
+    if (d && !d.value.trim()) d.value = text.trim();
+    // like a configurator: the answer appears, then the wizard moves on to the sound, already filled in
+    const next = form.querySelector<HTMLButtonElement>("[data-wz-next]");
+    window.setTimeout(() => { next?.click(); window.setTimeout(() => next?.click(), 450); }, 1100);
+  };
+  return (
+    <div ref={ref} className={`${s.briefPrompt} ${s.rise}`} style={st(8)}>
+      <label htmlFor="brief-prompt"><strong>Il tuo beat, in una frase</strong><small>Scrivilo come lo diresti a un produttore: compiliamo noi il brief.</small></label>
+      <div className={s.briefRow}>
+        <input id="brief-prompt" value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); apply(); } }} placeholder="Es. trap cupa a 140 BPM, 808 pesanti, atmosfera notturna" autoComplete="off" />
+        <button type="button" className={s.btnPrimary} onClick={apply} disabled={!text.trim()}>Prepara il brief</button>
+      </div>
+      {found && (
+        <ul className={s.briefFound} aria-live="polite">
+          <li style={st(0)}>Genere: <b>{found.genre ?? "da scegliere"}</b></li>
+          <li style={st(1)}>BPM: <b>{found.bpm ?? "da scegliere"}</b></li>
+          <li style={st(2)}>Mood: <b>{found.moods.length ? found.moods.join(", ") : "da scegliere"}</b></li>
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function CustomSteps({ active }: { active: boolean }) {
   const { content } = useStudio();
   const cfg = content.customBeat;
@@ -173,6 +210,7 @@ function CustomSteps({ active }: { active: boolean }) {
             <div className={s.rise} style={st(6)}><dt>Tempi</dt><dd>{cfg.turnaround}</dd></div>
             <div className={s.rise} style={st(7)}><dt>Revisioni</dt><dd>{cfg.revisions}</dd></div>
           </dl>
+          <BriefPrompt onBpm={setBpm} />
         </>
       ),
     },

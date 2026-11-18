@@ -32,8 +32,11 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   ok("anteprima: parte da sola prima dello studio", await reel.isVisible() && (await vs(page, "screen")) === "reel");
   ok("anteprima: 5 capitoli con barra di avanzamento", (await reel.getByRole("button", { name: /^Capitolo \d/ }).count()) === 5);
   ok("anteprima: niente scroll della pagina", await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1));
+  ok("intro: scie di luce che disegnano il simbolo GENKS", (await page.locator("[data-streak-intro] svg").count()) === 1);
   await page.waitForTimeout(1500);
   await snap(page, "01-reel-intro");
+  await page.locator("[data-streak-intro]").waitFor({ state: "detached", timeout: 15000 }).catch(() => {});
+  ok("intro: lascia il posto all'anteprima da sola", (await page.locator("[data-streak-intro]").count()) === 0 && await reel.getByText("Il tuo studio,").isVisible());
   await reel.getByRole("button", { name: /Capitolo 2/ }).click();
   await reel.getByRole("button", { name: /pausa/i }).click();
   await page.waitForTimeout(1600);
@@ -46,7 +49,7 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await page.waitForTimeout(1600);
   ok("anteprima: Mix & Master «Diamo equilibrio e vita al brano.»", await reel.getByText("Diamo equilibrio").isVisible() && (await vs(page, "reel")) === "reel:mix");
   await reel.getByRole("button", { name: /Riprendi/ }).click();
-  const advanced = await page.waitForFunction(() => window.__vs.reel() === "reel:store", null, { timeout: 25000 }).then(() => true, () => false);
+  const advanced = await page.waitForFunction(() => window.__vs.reel() === "reel:store", null, { timeout: 40000 }).then(() => true, () => false);
   ok("anteprima: avanza da sola al capitolo Beat Store", advanced);
   await reel.locator("[data-skip]").click({ timeout: 5000 }).catch(() => {}); // on a slow machine the preview may already be over
   const chooseTitle = page.getByRole("heading", { name: "Di cosa hai bisogno?" });
@@ -111,8 +114,9 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   ok("mix: contatore tracce interattivo", (await mix.getByLabel("Numero tracce").inputValue()) === "13");
   await next(mix);
   await mix.locator('input[type="file"]').setInputFiles({ name: "voce-lead.wav", mimeType: "audio/wav", buffer: Buffer.from("demo") });
-  await page.waitForTimeout(2600);
-  ok("mix: upload con progresso simulato e telecamera sullo schermo", await mix.getByText("pronto (demo)").isVisible() && (await vs(page, "shot")) === "mix:upload");
+  await mix.getByText("pronto (demo)").waitFor({ timeout: 15000 }).catch(() => {});
+  const upShot = await vs(page, "shot");
+  ok("mix: upload con progresso simulato e telecamera sullo schermo", await mix.getByText("pronto (demo)").isVisible() && upShot === "mix:upload", `shot=${upShot}`);
   await next(mix);
   await fillContact(mix);
   await mix.getByRole("button", { name: "Invia richiesta (demo)" }).click();
@@ -137,8 +141,8 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
     const pos = await settle(want);
     ok(`scroll fluido: una rotellina → ${label}`, Math.abs(pos - want) < 0.01, `pos=${pos.toFixed(3)}`);
   };
-  await settle(3);
-  ok("studio: si torna sul banco mixer dopo il servizio", Math.abs((await vs(page, "pos")) - 3) < 0.01);
+  await settle(4);
+  ok("studio: si torna sul banco mixer dopo il servizio", Math.abs((await vs(page, "pos")) - 4) < 0.01);
   await page.getByRole("list", { name: "Tappe dello studio" }).getByRole("button", { name: "Vai a: Microfono" }).click();
   await settle(0);
   ok("studio: indicazione «scorri» all'inizio", await page.getByText("Scorri per esplorare lo studio").isVisible());
@@ -155,15 +159,21 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await page.keyboard.press("Escape");
   await rec.waitFor({ state: "detached" }).catch(() => {});
   await settle(0);
-  await wheel(1, "rivelazione dello studio");
+  await wheel(1, "anatomia del microfono");
+  const ana = page.getByRole("region", { name: "Anatomia della voce" });
+  await page.waitForTimeout(800);
+  ok("anatomia: il microfono si apre con le didascalie delle sue parti", await ana.isVisible() && (await ana.locator('[class*="_callout_"]').count()) === 4);
+  ok("anatomia: dal testo si prenota la sessione", await ana.getByRole("button", { name: "Prenota una sessione" }).isVisible());
+  await snap(page, "08b-anatomy");
+  await wheel(2, "rivelazione dello studio");
   ok("rivelazione: titolo dell'inquadratura d'insieme", await page.evaluate(() => Number(getComputedStyle(document.querySelector('[class*="_studioTitle_"]')).opacity) > 0.5));
-  await wheel(2, "monitor DAW");
+  await wheel(3, "monitor DAW");
   const dawHot = page.locator('[data-id="screen"]');
   ok("hotspot «Beat su misura» sul monitor DAW", await dawHot.isVisible());
-  await wheel(3, "servizio Mix");
+  await wheel(4, "servizio Mix");
   ok("servizio Mix presentato allo scorrimento", await page.getByRole("heading", { name: "Mix", exact: true }).isVisible());
   await page.keyboard.press("ArrowDown");
-  await settle(4);
+  await settle(5);
   ok("tastiera: freccia giù → servizio Master", await page.getByRole("heading", { name: "Master", exact: true }).isVisible());
   await snap(page, "09-studio-master");
   await page.getByRole("button", { name: "Scegli Master" }).click();
@@ -171,10 +181,10 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   ok("dalla scheda Master si apre il servizio con Master già scelto", await mix.getByRole("radio", { name: /^Master/ }).isChecked());
   await page.keyboard.press("Escape");
   await mix.waitFor({ state: "detached" });
-  await settle(3);
-  await wheel(4, "Master");
-  await wheel(5, "Mix & Master");
-  await wheel(6, "display del mixer");
+  await settle(4);
+  await wheel(5, "Master");
+  await wheel(6, "Mix & Master");
+  await wheel(7, "display del mixer");
   ok("pulsante «Entra nel Beat Store» sul display", await page.locator('[data-id="display"]').isVisible());
 
   /* ---------- Beat Store screen with its own intro ---------- */
@@ -257,10 +267,12 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await bDlg.waitFor({ state: "hidden" });
   await page.locator("[data-store-back]").click();
   await page.waitForFunction(() => window.__vs.screen() === "studio", null, { timeout: 8000 });
-  ok("dal Beat Store si torna allo studio, sul display", Math.abs((await settle(6)) - 6) < 0.01);
+  ok("dal Beat Store si torna allo studio, sul display", Math.abs((await settle(7)) - 7) < 0.01);
   ok("il player resta disponibile tra le schermate", await player.isVisible());
   await page.getByRole("button", { name: "Rivedi l’anteprima" }).click();
   await reel.waitFor();
+  // the replay opens with the titles again (light streaks → symbol), then the first chapter
+  await page.waitForFunction(() => window.__vs.reel() === "reel:intro", null, { timeout: 15000 }).catch(() => {});
   ok("l’anteprima si può rivedere dal primo capitolo", (await vs(page, "reel")) === "reel:intro");
 
   // admin demo → the change shows up in the store
@@ -316,8 +328,20 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await snap(page, "14-phone-rec");
   await page.getByRole("button", { name: "Apri menu" }).tap();
   await page.getByRole("navigation", { name: "Sezioni" }).getByRole("button", { name: "Beat su misura" }).tap();
-  await page.getByRole("region", { name: "Un beat sul tuo brano" }).waitFor();
+  const cust = page.getByRole("region", { name: "Un beat sul tuo brano" });
+  await cust.waitFor();
   ok("telefono: beat su misura dal menu", true);
+  // "your beat in one sentence": the sentence fills the brief and the wizard moves to the sound
+  await cust.getByLabel(/Il tuo beat, in una frase/).fill("trap cupa a 140 BPM, atmosfera notturna");
+  await cust.getByRole("button", { name: "Prepara il brief" }).tap();
+  await cust.getByText("Che sound cerchi?").waitFor({ timeout: 15000 }).catch(() => {});
+  const brief = await page.evaluate(() => ({
+    genre: document.querySelector('input[name="genre"]:checked')?.value,
+    bpm: document.querySelector('input[name="bpm"]')?.value,
+    moods: [...document.querySelectorAll('input[name="mood"]:checked')].map(x => x.value).join(","),
+  }));
+  ok("beat in una frase: genere, BPM e mood compilati", brief.genre === "Trap" && brief.bpm === "140" && brief.moods === "Notturno,Cupo", JSON.stringify(brief));
+  await snap(page, "14b-phone-brief");
   ok("menu senza «modalità leggera»", (await page.getByText("Modalità leggera").count()) === 0);
   await ctx.close();
 
