@@ -15,6 +15,16 @@ let waiters: (() => void)[] = [];
 
 const FOLLOW_T = 0.085; // seconds: how tightly the camera follows a finger / trackpad
 const SNAP_T = 0.5; // seconds: the cinematic glide between stops
+/** Per-segment glide time (segment k = stop k → k+1): a story beat can take longer than a simple move. */
+let segTimes: number[] = [];
+let snapT = SNAP_T;
+/** The slowest segment the move crosses sets its pace, fixed for the whole move. */
+const snapTimeFor = (from: number, to: number) => {
+  const a = Math.max(0, Math.floor(Math.min(from, to) + 1e-3)), b = Math.min(count - 1, Math.ceil(Math.max(from, to) - 1e-3));
+  let t = 0;
+  for (let k = a; k < b; k++) t = Math.max(t, segTimes[k] ?? SNAP_T);
+  return t || SNAP_T;
+};
 
 export const stopCount = () => count;
 export const stopPos = () => pos;
@@ -46,7 +56,7 @@ export function tickStepper(dt: number) {
   let rem = Math.min(dt, 0.25);
   while (rem > 1e-6) {
     const h = Math.min(rem, 1 / 120);
-    [pos, vel] = smoothDamp(pos, target, vel, mode === "follow" ? FOLLOW_T : SNAP_T, h);
+    [pos, vel] = smoothDamp(pos, target, vel, mode === "follow" ? FOLLOW_T : snapT, h);
     rem -= h;
   }
   // landed: the last few thousandths of a stop are invisible, so the tour is "at rest" as soon as it looks it
@@ -64,6 +74,7 @@ export function goToStop(i: number, instant = false): Promise<void> {
     const w = waiters; waiters = []; w.forEach(f => f());
     return Promise.resolve();
   }
+  snapT = snapTimeFor(pos, target);
   mode = "snap";
   return new Promise(r => waiters.push(r));
 }
@@ -79,8 +90,9 @@ const blocked = (el: EventTarget | null) => {
  * Install the gesture handlers. `onPastEnd` runs when the user pushes beyond the last stop
  * (the mixer display → Beat Store transition).
  */
-export function installStepper(stops: number, onPastEnd: () => void) {
+export function installStepper(stops: number, onPastEnd: () => void, segmentTimes: number[] = []) {
   count = stops;
+  segTimes = segmentTimes;
   const H = () => window.innerHeight;
   let anchor = 0;
   const release = (dir: number, moved: number) => {

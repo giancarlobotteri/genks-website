@@ -9,8 +9,8 @@ import { goToStop, isMoving, stopPos } from "./stepper.ts";
 
 export type ServiceKind = "recording" | "custom" | "mix";
 /** Studio stop of each service (index into STOPS). */
-export const SERVICE_STOP: Record<ServiceKind, number> = { recording: 0, custom: 1, mix: 2 };
-export const STORE_STOP = 5;
+export const SERVICE_STOP: Record<ServiceKind, number> = { recording: 0, custom: 2, mix: 3 };
+export const STORE_STOP = 6;
 
 let openFn: ((p: Panel) => void) | null = null;
 let closeFn: (() => void) | null = null;

@@ -890,3 +890,10 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 }
 /* narrow desktop panels (4:3, 1024 px): the demo note stays at the top of the panel, the buttons keep their room */
 @media (max-width: 1180px) { .wzFootNote { display: none; } }
+
+/* ---------- Cinematic: title of the establishing shot ("Studio" stop) ---------- */
+.studioTitle { --tv: 0; position: absolute; left: clamp(16px, 5vw, 72px); bottom: calc(var(--player-h) + var(--dock-h, 0px) + 90px); z-index: 3; display: grid; gap: 10px; max-width: min(560px, calc(100vw - 32px)); pointer-events: none; opacity: 0; visibility: hidden; text-shadow: 0 6px 30px rgba(0, 0, 0, 0.8); }
+.studioKicker { font: 600 0.8rem var(--font-head); letter-spacing: 0.22em; text-transform: uppercase; color: var(--blue-light); transform: translate3d(calc((1 - var(--tv)) * -40px), 0, 0); }
+.studioName { font: 700 clamp(2rem, min(5.4vw, 8.5vh), 4.6rem)/0.98 var(--font-head); letter-spacing: -0.035em; color: #fff; transform: translate3d(calc((1 - var(--tv)) * -90px), 0, 0); }
+.studioSub { font: 600 0.95rem var(--font-head); letter-spacing: 0.04em; color: var(--muted, #b7c5de); transform: translate3d(calc((1 - var(--tv)) * -140px), 0, 0); }
+@media (max-width: 700px) { .studioTitle { top: calc(var(--nav-h) + 18px); bottom: auto; } }

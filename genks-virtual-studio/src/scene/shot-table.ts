@@ -6,6 +6,8 @@ export type Orbit = {
   t: V3; yaw: number; pitch: number; dist: number;
   /** slow movement while the shot is held: yaw rad/s, distance change per second (negative = push in), target slide m/s on X */
   spin?: number; push?: number; slide?: number;
+  /** field-of-view scale (< 1 = longer lens, see camera-path) */
+  lens?: number;
 };
 
 const MIC: V3 = [-0.94, 1.44, 0.95];
@@ -14,10 +16,10 @@ const MIXER: V3 = [0, 0.86, -1.46];
 
 export const SHOTS: Record<string, Orbit> = {
   // Registrazione
-  rec: { t: MIC, yaw: 0.7, pitch: 0.1, dist: 0.8 },
-  "rec:pkg": { t: MIC, yaw: -0.55, pitch: 0.16, dist: 0.85 },
+  rec: { t: MIC, yaw: 0.7, pitch: 0.1, dist: 1.05, lens: 0.75 },
+  "rec:pkg": { t: MIC, yaw: -0.55, pitch: 0.16, dist: 1.1, lens: 0.75 },
   "rec:cal": { t: [-0.94, 1.25, 0.95], yaw: 0.25, pitch: 0.42, dist: 1.7 },
-  "rec:contact": { t: [-0.94, 1.46, 0.95], yaw: 1.35, pitch: 0.02, dist: 0.6 },
+  "rec:contact": { t: [-0.94, 1.46, 0.95], yaw: 1.35, pitch: 0.02, dist: 0.85, lens: 0.7 },
   "rec:done": { t: [-0.6, 1.2, 0.2], yaw: 0.45, pitch: 0.25, dist: 2.7 },
   // Beat su misura
   custom: { t: SCREEN, yaw: -0.32, pitch: 0.05, dist: 1.05 },
@@ -27,7 +29,7 @@ export const SHOTS: Record<string, Orbit> = {
   "custom:done": { t: [0, 1.25, -1.9], yaw: 0.15, pitch: 0.24, dist: 2.4 },
   // Mix & Master
   mix: { t: MIXER, yaw: 0, pitch: 0.95, dist: 1.25 },
-  "mix:mix": { t: [-0.3, 0.86, -1.42], yaw: -0.3, pitch: 0.72, dist: 0.95 },
+  "mix:mix": { t: [-0.3, 0.86, -1.42], yaw: -0.3, pitch: 0.72, dist: 1.15, lens: 0.8 },
   "mix:master": { t: [0.38, 0.88, -1.45], yaw: 0.42, pitch: 0.6, dist: 0.9 },
   "mix:mixmaster": { t: MIXER, yaw: 0.05, pitch: 1.05, dist: 1.25 },
   "mix:compare": { t: [0, 0.95, -1.7], yaw: -0.6, pitch: 0.35, dist: 1.5 },
@@ -37,7 +39,7 @@ export const SHOTS: Record<string, Orbit> = {
   "mix:done": { t: [0, 1.0, -1.6], yaw: -0.3, pitch: 0.3, dist: 2.7 },
   // The preview "video": one slow, moving shot per service
   "reel:intro": { t: [-0.3, 1.15, -0.8], yaw: -0.55, pitch: 0.32, dist: 5.2, spin: 0.05, push: -0.07 },
-  "reel:rec": { t: [-0.94, 1.42, 0.95], yaw: 1.05, pitch: 0.06, dist: 0.95, spin: -0.09, push: -0.035 },
+  "reel:rec": { t: [-0.94, 1.42, 0.95], yaw: 1.05, pitch: 0.06, dist: 1.3, spin: -0.09, push: -0.035, lens: 0.7 },
   "reel:custom": { t: [0, 1.4, -2.0], yaw: 0.42, pitch: 0.05, dist: 1.45, spin: -0.07, push: -0.05 },
   "reel:mix": { t: [-0.45, 0.86, -1.45], yaw: -0.2, pitch: 0.62, dist: 1.0, slide: 0.16, spin: 0.03 },
   // "reel:store" is added at runtime: it frames the mixer display (see StudioStage)
@@ -71,5 +73,6 @@ export function orbitPose(o: Orbit, portrait = false): Pose {
   return {
     pos: [o.t[0] + dist * Math.sin(o.yaw) * cp, o.t[1] + dist * Math.sin(o.pitch), o.t[2] + dist * Math.cos(o.yaw) * cp],
     target: [...o.t] as V3,
+    lens: o.lens ?? 1,
   };
 }

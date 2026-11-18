@@ -105,23 +105,40 @@ describe("percorso camera", () => {
   const end: Pose = { pos: [0, 1, -1.2], target: [0, 0.95, -1.7] };
   it("parte dal microfono e arriva al display", () => {
     expect(poseAt(0, end).pos).toEqual(KEYS[0].pos);
-    expect(poseAt(1, end)).toEqual(end);
-    expect(poseAt(2, end)).toEqual(end);
+    expect(poseAt(1, end)).toEqual({ ...end, lens: 1 });
+    expect(poseAt(2, end)).toEqual({ ...end, lens: 1 });
   });
-  it("si ferma esattamente su ogni tappa: microfono, DAW, tre servizi, display", () => {
+  it("si ferma esattamente su ogni tappa: microfono, studio, DAW, tre servizi, display", () => {
+    expect(STOPS.map(x => x.id)).toEqual(["mic", "studio", "daw", "mix", "master", "mixmaster", "display"]);
     for (const st of STOPS.slice(0, -1)) {
       const k = KEYS.find(x => x.p === st.p)!;
       expect(k).toBeTruthy();
       poseAt(st.p, end).pos.forEach((v, i) => expect(v).toBeCloseTo(k.pos[i], 6));
     }
   });
-  it("arretra per rivelare lo studio tra microfono e monitor DAW", () => {
-    expect(poseAt(0.11, end).pos[2]).toBeGreaterThan(poseAt(0, end).pos[2]);
-    expect(poseAt(0.22, end).pos[2]).toBeLessThan(0);
+  it("rivelazione: dal microfono la camera arretra e sale, poi va verso la DAW", () => {
+    const mic = poseAt(0, end), studio = poseAt(0.14, end);
+    expect(studio.pos[2]).toBeGreaterThan(mic.pos[2]);
+    expect(studio.pos[1]).toBeGreaterThan(mic.pos[1]);
+    expect(poseAt(0.27, end).pos[2]).toBeLessThan(0);
+  });
+  it("focale: lunga sul microfono, aperta sullo studio, cambia senza scatti", () => {
+    expect(poseAt(0, end).lens).toBeLessThan(0.7);
+    expect(poseAt(0.14, end).lens).toBe(1);
+    let prev = poseAt(0, end).lens!;
+    for (let p = 0.002; p <= 0.14; p += 0.002) {
+      const l = poseAt(p, end).lens!;
+      expect(l).toBeGreaterThanOrEqual(prev - 1e-9);
+      expect(l - prev).toBeLessThan(0.03);
+      prev = l;
+    }
+  });
+  it("le transizioni narrative hanno tempi propri (la rivelazione è la più lenta)", () => {
+    expect(STOPS[0].glide).toBeGreaterThan(STOPS[3].glide);
   });
   it("motion ridotto: nessun movimento continuo, solo pose chiave", () => {
-    expect(poseAt(0.21, end, true).pos).toEqual(KEYS[2].pos);
-    expect(poseAt(0.24, end, true).pos).toEqual(KEYS[2].pos);
+    expect(poseAt(0.26, end, true).pos).toEqual(KEYS[3].pos);
+    expect(poseAt(0.29, end, true).pos).toEqual(KEYS[3].pos);
   });
   it("visibilità degli hotspot per fascia di scroll", () => {
     expect(band(0.1, 0, 0.2)).toBe(1);

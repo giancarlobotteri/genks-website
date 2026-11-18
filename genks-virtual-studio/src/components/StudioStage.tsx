@@ -1,10 +1,6 @@
 import { Disc3, Mic, MonitorPlay, Mouse, Hand, SlidersHorizontal, Upload, Check, Clapperboard } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { formatEuro } from "../lib/catalog.ts";
 import { getDirector, useDirector } from "../lib/director.ts";
 import { musicLevel } from "../lib/level.ts";
@@ -12,7 +8,8 @@ import { enterStore, goService, replayReel } from "../lib/nav.ts";
 import { getDive, getSubShot, setSubShot } from "../lib/shots.ts";
 import { goToStop, installStepper, isMoving, overshoot, stopPos, tickStepper } from "../lib/stepper.ts";
 import { arcFor, drift, durFor, orbitPose, SHOTS } from "../scene/shot-table.ts";
-import { buildStudio, type Quality } from "../scene/build-studio.ts";
+import { buildStudio, type ConsoleMode, type HitId, type Quality } from "../scene/build-studio.ts";
+import { createCinemaFx, type CinemaFx } from "../scene/cinema-fx.ts";
 import { band, clamp01, ease, lerpPose, poseAt, STOPS, type Pose, type V3 } from "../scene/camera-path.ts";
 import { useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
@@ -40,12 +37,14 @@ export const travelToStop = (id: (typeof STOPS)[number]["id"]) => goToStop(STOPS
 type Props = { noGl: boolean; onWebglFail: () => void };
 
 const HOTSPOTS = [
-  { id: "mic", label: "Registrazione voce", stop: 0, Icon: Mic },
-  { id: "screen", label: "Beat su misura", stop: 1, Icon: MonitorPlay },
-  { id: "display", label: "Entra nel Beat Store", stop: 5, Icon: Disc3 },
+  { id: "mic", anchor: "micHot", label: "Prenota una sessione", stop: 0, Icon: Mic },
+  { id: "screen", anchor: "screen", label: "Beat su misura", stop: 2, Icon: MonitorPlay },
+  { id: "display", anchor: "display", label: "Entra nel Beat Store", stop: 6, Icon: Disc3 },
 ] as const;
 
-const SERVICE_STOPS: Record<string, number> = { mix: 2, master: 3, mixmaster: 4 };
+const SERVICE_STOPS: Record<string, number> = { mix: 3, master: 4, mixmaster: 5 };
+/** Reveal of the studio lights for each shot of the preview (0 = the microphone alone in the dark). */
+const REEL_REVEAL: Record<string, number> = { "reel:intro": 0.45, "reel:rec": 0.03, "reel:custom": 0.8, "reel:mix": 1, "reel:store": 1, "reel:choose": 0.9 };
 
 export function StudioStage({ noGl, onWebglFail }: Props) {
   const { panel, content } = useStudio();
@@ -56,6 +55,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   const svcNavRef = useRef<HTMLOListElement>(null);
   const showcaseRef = useRef<HTMLDivElement>(null);
   const hintRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLOListElement>(null);
   const live = useRef({ base: null as string | null, framed: false });
   const [ready, setReady] = useState(false);
@@ -72,13 +72,16 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   }, [panel]);
 
   // Virtual step-by-step tour of the studio; pushing past the display enters the Beat Store.
-  useEffect(() => installStepper(STOPS.length, () => void enterStore()), []);
+  useEffect(() => installStepper(STOPS.length, () => void enterStore(), STOPS.map(x => x.glide)), []);
 
   const activate = (id: string) => {
     if (id === "mic") void goService("recording");
     else if (id === "screen") void goService("custom");
+    else if (id === "mixer") void goService("mix");
     else void enterStore();
   };
+  const activateRef = useRef(activate);
+  useEffect(() => { activateRef.current = activate; });
 
   useEffect(() => {
     if (noGl) return;
@@ -106,27 +109,34 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     const rig = buildStudio(renderer, quality);
     const camera = new THREE.PerspectiveCamera(42, 1, 0.03, 40);
-    let composer: EffectComposer | null = null;
+    // Cinematic pipeline (HDR, depth of field, bloom on light sources, grade, grain) on capable GPUs only.
+    let composer: CinemaFx | null = null;
     if (quality === "high") {
-      // 8-bit target: cannot hold NaN/overflow values, which otherwise spread through the bloom blur and blank the frame
-      composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.UnsignedByteType, samples: 4 }));
-      composer.addPass(new RenderPass(rig.scene, camera));
-      composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.6, 0.82));
-      composer.addPass(new OutputPass());
+      try { composer = createCinemaFx(renderer, rig.scene, camera); } catch { composer = null; }
     }
+    const dropComposer = () => {
+      composer?.dispose(); composer = null;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      rig.setHdr(false);
+    };
+    if (!composer) dropComposer();
 
-    let w = 1, h = 1, portrait = false;
+    let w = 1, h = 1, portrait = false, baseFov = 42, lensNow = 1;
+    const applyFov = (lens: number) => {
+      lensNow = lens;
+      camera.fov = (2 * Math.atan(Math.tan((baseFov * Math.PI) / 360) * lens) * 180) / Math.PI;
+      camera.updateProjectionMatrix();
+    };
     const resize = () => {
       w = canvas.clientWidth; h = canvas.clientHeight; portrait = w / h < 0.9;
       renderer.setSize(w, h, false);
-      composer?.setPixelRatio(renderer.getPixelRatio());
       composer?.setSize(w, h);
       camera.aspect = w / h;
       // Wider vertical FOV on portrait phones so the subjects stay framed; on super-ultrawide
       // monitors (32:9) the horizontal angle is capped at ~95° so the room never looks stretched.
       const aspect = w / h;
-      camera.fov = aspect < 0.8 ? 62 : Math.min(42, (2 * Math.atan(Math.tan((47.5 * Math.PI) / 180) / aspect) * 180) / Math.PI);
-      camera.updateProjectionMatrix();
+      baseFov = aspect < 0.8 ? 62 : Math.min(42, (2 * Math.atan(Math.tan((47.5 * Math.PI) / 180) / aspect) * 180) / Math.PI);
+      applyFov(lensNow);
     };
     resize();
     const ro = new ResizeObserver(resize);
@@ -154,15 +164,47 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     const onMove = (e: PointerEvent) => { if (e.pointerType === "mouse") { pointer.x = e.clientX / window.innerWidth - 0.5; pointer.y = e.clientY / window.innerHeight - 0.5; } };
     window.addEventListener("pointermove", onMove, { passive: true });
 
+    // The objects of the studio are clickable themselves: hover lights them up, a click opens their service.
+    const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), sph = new THREE.Sphere();
+    let hoverId: HitId | null = null, canHit = false, curPos = 0;
+    const hitAt = (cx: number, cy: number): HitId | null => {
+      if (!canHit) return null;
+      const r = canvas.getBoundingClientRect();
+      ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      let best: HitId | null = null, bestD = Infinity;
+      for (const hz of rig.hits) {
+        // only what the current shot is about
+        const allowed = hz.id === "mic" ? curPos < 1.4 : hz.id === "screen" ? curPos > 1.5 && curPos < 2.5 : curPos > 2.5 && curPos < 5.5;
+        if (!allowed) continue;
+        hz.obj.getWorldPosition(sph.center); sph.radius = hz.r;
+        const hit = ray.ray.intersectSphere(sph, tmp);
+        if (hit) { const d = hit.distanceTo(camera.position); if (d < bestD) { bestD = d; best = hz.id; } }
+      }
+      return best;
+    };
+    const onCanvasMove = (e: PointerEvent) => {
+      const id = e.pointerType === "mouse" ? hitAt(e.clientX, e.clientY) : null;
+      if (id !== hoverId) { hoverId = id; rig.setHover(id); canvas.style.cursor = id ? "pointer" : ""; }
+    };
+    const onCanvasLeave = () => { if (hoverId) { hoverId = null; rig.setHover(null); canvas.style.cursor = ""; } };
+    const onCanvasClick = (e: MouseEvent) => {
+      const id = hitAt(e.clientX, e.clientY);
+      if (id) activateRef.current(id);
+    };
+    canvas.addEventListener("pointermove", onCanvasMove, { passive: true });
+    canvas.addEventListener("pointerleave", onCanvasLeave, { passive: true });
+    canvas.addEventListener("click", onCanvasClick);
+
     // ---- shot tween: from wherever the camera is to a (moving) framing ----
-    const camNow: Pose = { pos: [...introPose.pos] as V3, target: [...introPose.target] as V3 };
+    const camNow: Pose = { pos: [...introPose.pos] as V3, target: [...introPose.target] as V3, lens: 1 };
     let shotId: string | null = null, shotT0 = 0;
     let tw: { from: Pose; t0: number; dur: number; arc: number } | null = null;
     const shotPose = (id: string, now: number) => orbitPose(drift(SHOTS[id], reduced ? 0 : (now - shotT0) / 1000), portrait);
     const startShot = (id: string | null, now: number) => {
       shotId = id;
       shotT0 = now;
-      const from: Pose = { pos: [...camNow.pos] as V3, target: [...camNow.target] as V3 };
+      const from: Pose = { pos: [...camNow.pos] as V3, target: [...camNow.target] as V3, lens: camNow.lens ?? 1 };
       const ref = id ? shotPose(id, now) : studioPose;
       tw = reduced ? { from, t0: now - 1e6, dur: 1, arc: 0 } : { from, t0: now, dur: durFor(from, ref) * 1000 * (id?.startsWith("reel:") ? 1.25 : 1), arc: arcFor(from, ref) };
     };
@@ -173,7 +215,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     // adaptive quality aims at the display's own refresh rate (60, 90, 120 Hz…)
     let refresh = 1 / 60, minDt = 1, sum = 0, n = 0, degrade = 0;
     let activeSvc = -2, hintState = "", lastScreen = "";
-    const tmp = new THREE.Vector3(), off = new THREE.Vector3();
+    const tmp = new THREE.Vector3(), off = new THREE.Vector3(), focusV = new THREE.Vector3();
+    // light direction values, eased so a change of screen never pops
+    const look = { reveal: 0, hero: 0, title: 0 };
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
@@ -190,9 +234,10 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         sum += dt; n++;
         if (n >= 90) {
           // too slow for this screen: first drop the bloom, then render fewer pixels
-          if (sum / n > refresh * 1.4 && degrade < 4) {
+          if (sum / n > refresh * 1.4 && degrade < 5) {
             degrade++;
-            if (composer) { composer.dispose(); composer = null; }
+            if (composer && composer.dropDof()) { /* depth of field off first */ }
+            else if (composer) dropComposer();
             else if (pixelRatio > 0.75) { pixelRatio = Math.max(0.75, pixelRatio - 0.25); renderer.setPixelRatio(pixelRatio); resize(); }
           }
           sum = 0; n = 0;
@@ -222,8 +267,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       } else if (shotId) pose = shotPose(shotId, now);
       // the dive into the mixer display (Beat Store), or a pull past the last stop
       const dv = Math.max(getDive(), Math.min(0.45, overshoot() * 1.2));
-      if (dv > 0) pose = lerpPose(pose, displayAt(0.03), ease(dv));
-      camNow.pos = pose.pos; camNow.target = pose.target;
+      if (dv > 0) pose = lerpPose(pose, { ...displayAt(0.03), lens: 1 }, ease(dv));
+      camNow.pos = pose.pos; camNow.target = pose.target; camNow.lens = pose.lens ?? 1;
+      if (Math.abs((pose.lens ?? 1) - lensNow) > 1e-4) applyFov(pose.lens ?? 1);
 
       // always alive: a slow orbit + breathing dolly around the subject, wider inside a service
       const inShot = shotId != null;
@@ -238,7 +284,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
 
       // framing: slide the picture away from whatever covers part of the screen
-      const svcBand = dir.screen === "studio" && !live.current.framed ? band(pos, 2, 4, 0.5) : 0;
+      const svcBand = dir.screen === "studio" && !live.current.framed ? band(pos, 3, 5, 0.5) : 0;
       let gx = 0, gy = 0;
       // the subject is centred in the free part of the screen, measured from the real widths of
       // the text / panel / card (so 16:9, 21:9, 32:9 and 4:3 monitors all frame it the same way)
@@ -252,10 +298,40 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       if (Math.abs(fx) + Math.abs(fy) > 0.001) camera.setViewOffset(w, h, w * fx, h * fy, w, h);
       else if (camera.view) camera.clearViewOffset();
 
-      const reveal = dir.screen === "reel" ? 0.55 + 0.45 * clamp01((now - wake + 2600) / 4000) : 1;
-      rig.setReveal(reveal);
-      rig.tick(t, !reduced, musicLevel(now));
-      if (composer) composer.render(); else renderer.render(rig.scene, camera);
+      // ---- direction of light: the microphone alone in the dark, then the studio lights up with the scroll
+      const touringNow = dir.screen === "studio" && !live.current.framed;
+      const base = live.current.base;
+      let wantReveal = 1, wantHero = 0, wantTitle = 0;
+      if (dir.screen === "reel") {
+        wantReveal = REEL_REVEAL[dir.reelShot ?? ""] ?? 0.9;
+        // the opening shot: the studio wakes up in the dark while the camera pushes in
+        if (dir.reelShot === "reel:intro") wantReveal = 0.04 + (REEL_REVEAL["reel:intro"] - 0.04) * clamp01((now - shotT0 - 400) / 3600);
+        wantHero = dir.reelShot === "reel:rec" ? 1 : 0;
+      }
+      else if (dir.screen === "studio") {
+        if (base?.startsWith("rec")) { wantReveal = 0.05; wantHero = 0.85; }
+        else if (base === "custom") wantReveal = 0.85;
+        else if (!base) { wantReveal = clamp01(pos); wantHero = 1 - clamp01(pos / 0.65); wantTitle = 1 - clamp01(pos / 0.3); }
+      }
+      // scroll-driven values follow the scroll closely, state changes fade like a lighting cue
+      const kl = reduced ? 1 : 1 - Math.exp(-dt * (touringNow ? 9 : 1.6));
+      look.reveal += (wantReveal - look.reveal) * kl;
+      look.hero += (wantHero - look.hero) * kl;
+      look.title += (wantTitle - look.title) * (reduced ? 1 : 1 - Math.exp(-dt * (touringNow ? 9 : 4)));
+      rig.setReveal(look.reveal);
+      rig.setHero(look.hero);
+      rig.setTitle(look.title);
+      const tab = base?.startsWith("mix") ? (getSubShot() ?? base) : null;
+      const mode: ConsoleMode = tab ? (tab.includes("mixmaster") ? "mixmaster" : tab.includes("master") ? "master" : "mix")
+        : dir.screen === "reel" && dir.reelShot === "reel:mix" ? "mix"
+        : touringNow && pos > 2.5 && pos < 5.5 ? (["mix", "master", "mixmaster"] as const)[Math.min(2, Math.max(0, Math.round(pos) - 3))] : "idle";
+      rig.setMode(mode);
+      curPos = pos; canHit = touringNow && dv === 0;
+      rig.tick(t, !reduced, musicLevel(now), dt);
+      // rack focus on the subject of the shot
+      focusV.set(pose.target[0], pose.target[1], pose.target[2]);
+      composer?.focus(focusV, pose.lens ?? 1);
+      if (composer) composer.render(dt); else renderer.render(rig.scene, camera);
       first = false;
       // Safety net: if post-processing ever outputs a fully black frame on this GPU, drop it and render directly.
       if (composer && frames === 6) {
@@ -266,7 +342,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
           gl.readPixels(Math.floor(gl.drawingBufferWidth * px), Math.floor(gl.drawingBufferHeight * py), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pxl);
           lit = Math.max(lit, pxl[0], pxl[1], pxl[2]);
         }
-        if (lit < 3) { composer.dispose(); composer = null; }
+        if (lit < 3) dropComposer();
       }
 
       const touring = dir.screen === "studio" && !live.current.framed;
@@ -274,7 +350,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       HOTSPOTS.forEach(hs => {
         const el = hotRefs.current[hs.id];
         if (!el) return;
-        rig.anchors[hs.id].getWorldPosition(tmp);
+        rig.anchors[hs.anchor].getWorldPosition(tmp);
         tmp.project(camera);
         const v = tmp.z > 1 || !touring || dv > 0.02 ? 0 : band(pos, hs.stop, hs.stop, 0.3);
         // keep the button and its label inside the screen on narrow phones
@@ -284,6 +360,13 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         el.style.visibility = v < 0.15 ? "hidden" : "visible";
       });
       paintServices(pos, touring);
+      // the establishing shot has its own title, like the opening of a film
+      const tv = touring && dv === 0 ? band(pos, 1, 1, 0.45) : 0;
+      if (titleRef.current) {
+        titleRef.current.style.opacity = tv.toFixed(3);
+        titleRef.current.style.setProperty("--tv", tv.toFixed(3));
+        titleRef.current.style.visibility = tv < 0.02 ? "hidden" : "visible";
+      }
       // the stop rail: its ink follows the exact position
       railRef.current?.style.setProperty("--pos", pos.toFixed(4));
 
@@ -300,12 +383,12 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     const paintServices = (pos: number, touring: boolean) => {
       const wrap = showcaseRef.current;
       if (!wrap) return;
-      const showing = touring ? band(pos, 2, 4, 0.5) : 0;
+      const showing = touring ? band(pos, 3, 5, 0.5) : 0;
       wrap.style.visibility = showing < 0.01 ? "hidden" : "visible";
       let best = -1, bestV = 0;
       svcRefs.current.forEach((el, i) => {
         if (!el) return;
-        const spos = SERVICE_STOPS[services[i]?.id] ?? 2;
+        const spos = SERVICE_STOPS[services[i]?.id] ?? 3;
         const d = Math.max(-1.2, Math.min(1.2, pos - spos));
         const a = clamp01(1 - Math.abs(d) * 2.1) * (touring ? 1 : 0);
         if (a > bestV) { bestV = a; best = i; }
@@ -332,6 +415,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       ro.disconnect();
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointermove", onCanvasMove);
+      canvas.removeEventListener("pointerleave", onCanvasLeave);
+      canvas.removeEventListener("click", onCanvasClick);
       composer?.dispose();
       rig.dispose();
       renderer.dispose();
@@ -390,6 +476,14 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       )}
 
       {!noGl && (
+        <div ref={titleRef} className={s.studioTitle} aria-hidden="true">
+          <span className={s.studioKicker}>GENKS · Studio</span>
+          <span className={s.studioName}>Un unico spazio,<br />tre servizi.</span>
+          <span className={s.studioSub}>Registrazione · Produzione · Mix &amp; Master</span>
+        </div>
+      )}
+
+      {!noGl && (
         <div ref={hintRef} className={s.scrollHint} data-state="off" aria-hidden="true">
           <span className={s.hintIcon}><Mouse size={22} className={s.hintMouse} /><Hand size={22} className={s.hintHand} /></span>
           <span className={s.hintStart}>Scorri per esplorare lo studio</span>
@@ -401,7 +495,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   );
 }
 
-const STOP_LABELS = ["Microfono", "Monitor DAW", "Mix", "Master", "Mix & Master", "Beat Store"];
+const STOP_LABELS = ["Microfono", "Studio", "Monitor DAW", "Mix", "Master", "Mix & Master", "Beat Store"];
 
 /** Always on screen in the studio: jump to any service, or watch the preview again. */
 export function StudioDock() {
