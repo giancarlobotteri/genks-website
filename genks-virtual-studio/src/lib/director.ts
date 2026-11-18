@@ -21,9 +21,11 @@ type State = {
   reelFromStart: boolean;
   /** the preview is showing its final question (the picture stays centred) */
   reelChoosing: boolean;
+  /** page of the beat catalogue on screen (the store's camera travels with it) */
+  storePage: number;
 };
 
-let state: State = { screen: "reel", reelShot: "reel:intro", storeTab: "beats", storeVisit: 0, reelFromStart: false, reelChoosing: false };
+let state: State = { screen: "reel", reelShot: "reel:intro", storeTab: "beats", storeVisit: 0, reelFromStart: false, reelChoosing: false, storePage: 0 };
 const subs = new Set<() => void>();
 const set = (patch: Partial<State>) => {
   state = { ...state, ...patch };
@@ -45,5 +47,6 @@ export const setReelShot = (reelShot: string | null) => { if (reelShot !== state
 export const setReelChoosing = (reelChoosing: boolean) => { if (reelChoosing !== state.reelChoosing) set({ reelChoosing }); };
 export const openStore = (tab: StoreTab = "beats") => set({ screen: "store", reelShot: null, storeTab: tab, storeVisit: state.storeVisit + 1 });
 export const setStoreTab = (storeTab: StoreTab) => set({ storeTab });
+export const setStorePage = (storePage: number) => { if (storePage !== state.storePage) set({ storePage }); };
 
 if (typeof document !== "undefined") document.documentElement.dataset.screen = state.screen;

@@ -15,7 +15,7 @@ Il progetto è autonomo: vive interamente in questa cartella e non usa né modif
 > - macro sulla console con fader motorizzati che seguono il servizio scelto;
 > - oggetti 3D cliccabili;
 > - post-processing HDR (profondità di campo, bloom sulle sole luci, grading, grana);
-> - schede del Beat Store con profondità;
+> - **Beat Store con il suo ambiente 3D**: una sala dei vinili buia, con colonne di luce riflesse nel pavimento lucido e una spirale di dischi che girano; la camera entra dalla luce del display, avanza nella sala a ogni pagina del catalogo e sale dall'alto sui Pacchetti, con parallasse sul cursore; schede con profondità;
 > - brief del beat su misura «in una frase».
 >
 > La versione FREE resta intatta sul branch `claude/eloquent-lamport-9y3y2f`.

@@ -964,3 +964,8 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
   .lineCap strong { font-size: 0.68rem; line-height: 1.15; }
   .lineCap small { display: none; }
 }
+
+/* ---------- Cinematic: the Beat Store over its own 3D place (record vault) ---------- */
+:global(html[data-gl]) .storeScreen { background: transparent; }
+:global(html[data-gl]) .storeBg { background: radial-gradient(ellipse at 50% 120%, transparent 30%, rgba(2, 4, 10, 0.55) 80%), linear-gradient(180deg, rgba(2, 4, 10, 0.78) 0%, rgba(2, 4, 10, 0.15) 26%, rgba(2, 4, 10, 0.1) 70%, rgba(2, 4, 10, 0.7) 100%); animation: none; }
+:global(html[data-gl]) .beatCard { background: linear-gradient(180deg, rgba(14, 22, 44, 0.86), rgba(6, 10, 22, 0.92)); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }

@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, Pause, Play, Search, SlidersHorizontal, RotateCcw, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { emptyFilters, filterBeats, filterOptions, formatEuro, priceFrom, type BeatFilters, type SortKey } from "../lib/catalog.ts";
+import { setStorePage } from "../lib/director.ts";
 import { usePlayer, useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
 import type { Beat } from "../types.ts";
@@ -84,6 +85,8 @@ export function BeatStore() {
   const [pageWanted, setPage] = useState(0);
   const [dir, setDir] = useState(0);
   const page = Math.min(pageWanted, pages - 1);
+  // the store's camera travels through the vault with the pages (scene/store-env)
+  useEffect(() => { setStorePage(Math.max(0, page)); }, [page]);
   const shown = list.slice(page * per, page * per + per);
   const goPage = (n: number) => {
     const next = (n + pages) % pages;

@@ -10,6 +10,7 @@ import { goToStop, installStepper, isMoving, overshoot, stopPos, tickStepper } f
 import { arcFor, drift, durFor, orbitPose, SHOTS } from "../scene/shot-table.ts";
 import { buildStudio, type ConsoleMode, type HitId, type Quality } from "../scene/build-studio.ts";
 import { createCinemaFx, type CinemaFx } from "../scene/cinema-fx.ts";
+import { buildStoreEnv, type StoreEnv } from "../scene/store-env.ts";
 import { band, clamp01, ease, lerpPose, poseAt, STOPS, type Pose, type V3 } from "../scene/camera-path.ts";
 import { useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
@@ -110,6 +111,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     const onRestored = () => setGlGen(g => g + 1);
     canvas.addEventListener("webglcontextlost", onLost);
     canvas.addEventListener("webglcontextrestored", onRestored);
+    // the Beat Store screen lets the 3D record vault show through (see styles: html[data-gl])
+    document.documentElement.dataset.gl = "1";
     const quality = detectQuality();
     const reduced = prefersReducedMotion();
     // Moderate pixel ratio: fill-rate is what limits 120 Hz screens, not geometry.
@@ -222,11 +225,12 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     };
     let studioPose: Pose = introPose;
 
-    let fx = 0, fy = 0, last = -1, wake = 0;
+    let fx = 0, fy = 0, last = -1;
     let first = true, frames = 0;
     // adaptive quality aims at the display's own refresh rate (60, 90, 120 Hz…)
     let refresh = 1 / 60, minDt = 1, sum = 0, n = 0, degrade = 0;
-    let activeSvc = -2, hintState = "", lastScreen = "";
+    let activeSvc = -2, hintState = "";
+    let storeEnv: StoreEnv | null = null, storeVisit = -1, storeSkip = false;
     const tmp = new THREE.Vector3(), off = new THREE.Vector3(), focusV = new THREE.Vector3();
     // light direction values, eased so a change of screen never pops
     const look = { reveal: 0, hero: 0, title: 0 };
@@ -236,10 +240,24 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const dt = last < 0 ? 1 / 60 : Math.min((now - last) / 1000, 0.25);
       last = now;
       const dir = getDirector();
-      if (dir.screen !== lastScreen) { lastScreen = dir.screen; wake = now + 2600; }
       // the store covers the studio: stop rendering once its intro has taken over
-      const hidden = dir.screen === "store" && now > wake && getDive() >= 1;
-      if (!running || (hidden && !first)) return;
+      if (!running) return;
+      // inside the Beat Store: its own place (the record vault), with its own camera
+      if (dir.screen === "store" && getDive() >= 0.98 && !first) {
+        if (!storeEnv) storeEnv = buildStoreEnv(quality === "high");
+        if (storeVisit !== dir.storeVisit) { storeVisit = dir.storeVisit; storeEnv.enter(now); }
+        storeEnv.aim(dir.storeTab, dir.storePage);
+        // 30 fps is plenty for the slow vault and leaves the GPU to the catalogue
+        storeSkip = !storeSkip;
+        if (storeSkip && !reduced) return;
+        storeEnv.tick(now, dt * 2, w, h, !reduced);
+        const tm = renderer.toneMapping;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        if (camera.view) camera.clearViewOffset();
+        renderer.render(storeEnv.scene, storeEnv.camera);
+        renderer.toneMapping = tm;
+        return;
+      }
       const t = now / 1000;
       if (!first && frames < 90) { minDt = Math.min(minDt, dt); refresh = Math.max(1 / 240, minDt); }
       else if (!first) {
@@ -462,7 +480,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       canvas.removeEventListener("pointermove", onCanvasMove);
       canvas.removeEventListener("pointerleave", onCanvasLeave);
       canvas.removeEventListener("click", onCanvasClick);
+      delete document.documentElement.dataset.gl;
       composer?.dispose();
+      storeEnv?.dispose();
       rig.dispose();
       renderer.dispose();
     };
