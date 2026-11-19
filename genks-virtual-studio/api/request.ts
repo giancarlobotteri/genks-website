@@ -36,7 +36,46 @@ const FIELD_LABELS: Record<string, string> = {
   package: "Pacchetto", service: "Servizio", tracks: "Tracce", genre: "Genere", bpm: "BPM", mood: "Mood", reference: "Riferimento",
   referenceUrl: "Riferimento", description: "Descrizione", notes: "Note", offer: "Offerta indicativa", deadline: "Scadenza",
   files: "File indicati", total: "Totale indicativo", beat: "Beat", licenses: "Licenze",
+  time: "Ora di inizio", duration: "Durata", appointment: "Appuntamento",
 };
+
+/* ---- Studio calendar: the slot is checked again on the backend when the request is sent ---- */
+const BACKEND = (process.env.GENKS_BACKEND_ORIGIN || "https://app.prodbygenks.com").replace(/\/$/, "");
+/** Minimum notice before a start (the backend's card rule: 65 minutes). */
+const NOTICE_MINUTES = 65;
+const romeOffset = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Rome", timeZoneName: "longOffset" });
+const romeWall = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+/** Same resolution as the backend's fromRomeWallTime: NaN for a missing wall time, later instant for a repeated one. */
+function romeInstant(day: string, time: string) {
+  const naive = Date.parse(`${day}T${time}:00Z`), found: number[] = [];
+  if (!Number.isFinite(naive)) return NaN;
+  for (const h of [-24, 0, 24]) {
+    const m = /GMT([+-])(\d{2}):(\d{2})/.exec(romeOffset.formatToParts(new Date(naive + h * 3600000)).find(x => x.type === "timeZoneName")?.value ?? "");
+    if (!m) continue;
+    const at = naive - (Number(m[2]) * 60 + Number(m[3])) * (m[1] === "+" ? 1 : -1) * 60000;
+    const p = Object.fromEntries(romeWall.formatToParts(new Date(at)).map(x => [x.type, x.value]));
+    if (`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}` === `${day}T${time}`) found.push(at);
+  }
+  return found.length ? Math.max(...found) : NaN;
+}
+
+type SlotCheck = { ok: true } | { ok: false; status: number; error: string };
+/** Read-only check on the existing backend that `time` on `date` is still free for `hours`. */
+async function checkStudioSlot(date: string, time: string, hours: number): Promise<SlotCheck> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time) || !(hours >= 1 && hours <= 8 && Number.isInteger(hours * 2)))
+    return { ok: false, status: 400, error: "Scegli giorno, ora e durata della sessione." };
+  const start = romeInstant(date, time);
+  if (!Number.isFinite(start) || start <= Date.now() + NOTICE_MINUTES * 60000)
+    return { ok: false, status: 409, error: "L’orario scelto è troppo vicino o non è più valido. Scegline un altro." };
+  try {
+    const r = await fetch(`${BACKEND}/api/availability?${new URLSearchParams({ date, duration: String(hours) })}`, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(9000) });
+    const body = (await r.json().catch(() => null)) as { slots?: unknown } | null;
+    if (!r.ok || !body || !Array.isArray(body.slots)) throw new Error(`availability ${r.status}`);
+    return body.slots.includes(time) ? { ok: true } : { ok: false, status: 409, error: "L’orario scelto non è più libero per questa durata. Torna al calendario e scegline un altro." };
+  } catch {
+    return { ok: false, status: 503, error: "Non riesco a verificare il calendario dello studio in questo momento. Riprova tra poco." };
+  }
+}
 
 function reference() {
   const d = new Date(), p = (n: number) => String(n).padStart(2, "0");
@@ -109,6 +148,10 @@ export async function POST(request: Request) {
   const data = (input.data && typeof input.data === "object" ? input.data : {}) as Record<string, unknown>;
   const name = clean(data.name, 120), email = clean(data.email, 254).toLowerCase();
   if (!name || !emailOk(email)) return Response.json({ error: "Nome ed email validi sono obbligatori." }, { status: 400 });
+  if (kind === "booking") {
+    const check = await checkStudioSlot(clean(data.date, 10), clean(data.time, 5), Number(clean(data.hours, 4)));
+    if (!check.ok) return Response.json({ error: check.error }, { status: check.status });
+  }
   const summary = clean(input.summary, 400);
   const ref = reference();
   const rows = Object.entries(data)

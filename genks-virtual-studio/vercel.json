@@ -7,7 +7,7 @@
       "permanent": false
     },
     {
-      "source": "/api/:area(admin|availability|bookings|cart|chat|checkout|downloads|home-recommendations|services)/:rest*",
+      "source": "/api/:area(admin|bookings|cart|chat|checkout|downloads|home-recommendations|services)/:rest*",
       "destination": "https://app.prodbygenks.com/api/:area/:rest*",
       "permanent": false
     },
@@ -18,6 +18,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/availability",
+      "destination": "https://app.prodbygenks.com/api/availability"
+    },
     {
       "source": "/api/:area(stripe|email|calendar|internal)/:rest*",
       "destination": "https://app.prodbygenks.com/api/:area/:rest*"

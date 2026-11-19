@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { demoContent } from "../src/data/fixtures.ts";
-import { demoAvailability } from "../src/lib/availability.ts";
+import { appointmentLabel, availableTimes, durationOptions, fromRomeWallTime, isNightOf, slotAvailable, slotState, startAllowed, type StudioDay } from "../src/lib/real-availability.ts";
 import { audioPrice, bundleSaving, cartLines, cartTotal, emptyFilters, filterBeats, priceFrom, upsertCart, visibleBundles } from "../src/lib/catalog.ts";
 import { chordNotes, MINOR, parseKey, previewBars } from "../src/lib/music.ts";
 import { validate } from "../src/lib/validate.ts";
@@ -80,18 +80,45 @@ describe("validazione moduli", () => {
   });
 });
 
-describe("disponibilità", () => {
-  it("segue gli orari dello studio: lun–gio dalle 19:30, sabato e domenica dalle 10:00", () => {
-    const from = new Date(2026, 10, 16);
-    const a = demoAvailability(from), b = demoAvailability(from);
-    expect(a).toEqual(b);
-    expect(a).toHaveLength(14);
-    const at = (wd: number) => a.find(d => new Date(d.iso + "T12:00").getDay() === wd)!.slots.map(x => x.start);
-    expect(at(1)[0]).toBe("19:30");
-    expect(at(6)[0]).toBe("10:00");
-    expect(at(0)[0]).toBe("10:00");
-    // preferences only: the real availability is confirmed by email, nothing is shown as taken
-    expect(a.every(d => d.slots.every(x => x.free))).toBe(true);
+describe("calendario reale", () => {
+  const quarters = (max: number) => Array.from({ length: max * 4 }, (_, k) => (k + 1) / 4);
+  // shape of GET /api/availability?calendar=1: a Friday evening where 21:00–22:00 is booked
+  const fri: StudioDay = {
+    date: "2026-11-20",
+    allSlots: ["19:30", "20:00", "20:30", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30"],
+    durationsBySlot: { "19:30": quarters(1.5), "20:00": quarters(1), "20:30": quarters(0.5), "22:00": quarters(8), "22:30": quarters(8), "23:00": quarters(8), "23:30": quarters(8) },
+  };
+  const before = fromRomeWallTime("2026-11-20", "12:00").getTime();
+
+  it("ora di Roma, anche al cambio dell'ora", () => {
+    expect(new Date(fromRomeWallTime("2026-11-20", "19:30")).toISOString()).toBe("2026-11-20T18:30:00.000Z");
+    expect(new Date(fromRomeWallTime("2027-06-05", "19:30")).toISOString()).toBe("2027-06-05T17:30:00.000Z");
+    expect(Number.isNaN(fromRomeWallTime("2027-03-28", "02:30").getTime())).toBe(true); // ora che non esiste
+    expect(new Date(fromRomeWallTime("2026-10-25", "02:30")).toISOString()).toBe("2026-10-25T01:30:00.000Z"); // ora ripetuta: ora solare
+  });
+  it("un orario vale solo se c'è spazio per tutta la durata", () => {
+    expect(availableTimes(fri, 1, before)).toEqual(["19:30", "20:00", "22:00", "22:30", "23:00", "23:30"]);
+    expect(availableTimes(fri, 1.5, before)).toEqual(["19:30", "22:00", "22:30", "23:00", "23:30"]);
+    expect(slotAvailable(fri, "20:00", 2, before)).toBe(false);
+    expect(slotState(fri, "21:00", 1, before)).toBe("busy");
+    expect(slotState(fri, "20:30", 1, before)).toBe("short");
+    // venerdì oltre mezzanotte: 23:30 per 6 ore
+    expect(slotAvailable(fri, "23:30", 6, before)).toBe(true);
+    expect(appointmentLabel("2026-11-20", "23:30", 6)).toMatch(/ven 20 nov.*23:30.*sab 21 nov.*05:30/);
+  });
+  it("preavviso minimo di 65 minuti", () => {
+    const at = fromRomeWallTime("2026-11-20", "19:30").getTime();
+    expect(startAllowed("2026-11-20", "19:30", at - 66 * 60000)).toBe(true);
+    expect(startAllowed("2026-11-20", "19:30", at - 64 * 60000)).toBe(false);
+    expect(slotState(fri, "19:30", 1, at - 30 * 60000)).toBe("past");
+  });
+  it("durate da 1 ora a mezz'ore, notti del fine settimana", () => {
+    expect(durationOptions()).toEqual([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8]);
+    expect(durationOptions(5).at(-1)).toBe(5);
+    expect(isNightOf("2026-11-21", "03:00")).toBe(true); // sabato 03:00 = notte di venerdì
+    expect(isNightOf("2026-11-22", "09:30")).toBe(true);
+    expect(isNightOf("2026-11-21", "10:00")).toBe(false);
+    expect(isNightOf("2026-11-20", "01:00")).toBe(false);
   });
 });
 

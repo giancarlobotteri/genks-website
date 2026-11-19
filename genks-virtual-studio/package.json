@@ -11,7 +11,8 @@
     "typecheck": "tsc -b",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
-    "smoke": "node scripts/smoke.cjs"
+    "smoke": "node scripts/smoke.cjs",
+    "check:calendar": "node scripts/calendar-check.cjs"
   },
   "dependencies": {
     "@fontsource/manrope": "^5.3.0",

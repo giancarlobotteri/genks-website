@@ -1,13 +1,11 @@
 // Integration boundaries. Requests (sessions, mix/master, custom beats, packages, licences) go to the
 // server (api/request.ts): queued in Supabase and emailed with Resend, to the customer and to GENKS.
-// Content, cart and availability still live in the browser.
+// Content and cart live in the browser; the studio calendar is read live (src/lib/real-availability.ts).
 import { demoContent } from "./data/fixtures.ts";
-import { demoAvailability, type DemoDay } from "./lib/availability.ts";
 import { demoId } from "./lib/validate.ts";
 import type { CartItem, DemoRequest, DemoRequestKind, StudioContent } from "./types.ts";
 
 export interface ContentRepository { load(): StudioContent; save(content: StudioContent): void; reset(): StudioContent }
-export interface AvailabilityProvider { list(from: Date): DemoDay[] }
 export interface RequestGateway { submit(kind: DemoRequestKind, summary: string, data: Record<string, string>): DemoRequest; list(): DemoRequest[]; clear(): void }
 export interface CartStore { load(): CartItem[]; save(items: CartItem[]): void }
 
@@ -40,8 +38,6 @@ export const localContent: ContentRepository = {
     return clone(demoContent);
   },
 };
-
-export const localAvailability: AvailabilityProvider = { list: from => demoAvailability(from) };
 
 export const localRequests: RequestGateway = {
   submit(kind, summary, data) {

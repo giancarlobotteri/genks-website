@@ -1,11 +1,12 @@
 import { ArrowLeft, Check, Disc3, Mic, Minus, MonitorPlay, Plus, SlidersHorizontal } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { localAvailability } from "../adapters.ts";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { parseBrief } from "../lib/brief.ts";
+import { BOOKING_HORIZON_DAYS, HOUR_STEP, MAX_HOURS, MIN_HOURS, appointmentLabel, availableTimes, dayHasRoom, durationLabel, fetchCalendar, fromRomeWallTime, isNightOf, shiftDay, slotAvailable, slotState, todayInRome, weekdayOf, type StudioDay } from "../lib/real-availability.ts";
 import { AUDIO_PRICES, BASE_TRACKS, audioPrice, formatEuro } from "../lib/catalog.ts";
 import { enterStore, goService, goStudio, SERVICE_STOP, type ServiceKind } from "../lib/nav.ts";
 import { setSubShot } from "../lib/shots.ts";
 import { useStudio } from "../store.tsx";
+import cal from "../styles/calendar.module.css";
 import s from "../styles/vs.module.css";
 import type { MixService } from "../types.ts";
 import { Sequencer } from "./CustomBeat.tsx";
@@ -60,68 +61,202 @@ function SwitchChips({ current }: { current: ServiceKind }) {
 }
 
 /* ---------------- Recording ---------------- */
+const dayFmt = new Intl.DateTimeFormat("it-IT", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+const wdFmt = new Intl.DateTimeFormat("it-IT", { weekday: "short", timeZone: "UTC" });
+const numFmt = new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "short", timeZone: "UTC" });
+const monthFmt = new Intl.DateTimeFormat("it-IT", { month: "long", year: "numeric", timeZone: "UTC" });
+const noon = (d: string) => new Date(`${d}T12:00:00Z`);
+const SLOT_NOTE = { busy: "occupato", short: "non basta", past: "troppo vicino", free: "" } as const;
+
+/** Duration: from 1 hour, then in steps of 30 minutes (as the old site); the 5-hour block goes up to 5. */
+function DurationControl({ hours, max, onChange, compact = false }: { hours: number; max: number; onChange: (h: number) => void; compact?: boolean }) {
+  const quick = [1, 2, 3, 4, 5].filter(h => h <= max);
+  return (
+    <div className={cal.durControl} data-compact={compact || undefined}>
+      <div className={cal.durStepper}>
+        <button type="button" className={s.iconBtn} aria-label="Mezz’ora in meno" disabled={hours <= MIN_HOURS} onClick={() => onChange(Math.max(MIN_HOURS, hours - HOUR_STEP))}><Minus size={16} /></button>
+        <output aria-live="polite"><strong>{durationLabel(hours)}</strong></output>
+        <button type="button" className={s.iconBtn} aria-label="Mezz’ora in più" disabled={hours >= max} onClick={() => onChange(Math.min(max, hours + HOUR_STEP))}><Plus size={16} /></button>
+      </div>
+      {!compact && (
+        <div className={cal.durQuick} role="group" aria-label="Durate rapide">
+          {quick.map(h => <button key={h} type="button" aria-pressed={hours === h} onClick={() => onChange(h)}>{durationLabel(h)}</button>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RecordingSteps() {
   const { content } = useStudio();
-  const days = useMemo(() => localAvailability.list(new Date()), []);
-  const [pkg, setPkg] = useState(content.recording[1]?.id ?? content.recording[0]?.id);
+  const today = todayInRome();
+  const [mode, setMode] = useState<"hourly" | "block">("hourly");
+  const [hours, setHours] = useState(2);
+  const [page, setPage] = useState(today);
+  const [days, setDays] = useState<StudioDay[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
   const [day, setDay] = useState("");
   const [slot, setSlot] = useState("");
-  const selected = content.recording.find(p => p.id === pkg);
-  const dayObj = days.find(d => d.iso === day);
-  const dayLabel = dayObj ? `${dayObj.weekday} ${dayObj.label}` : "";
+  const [notice, setNotice] = useState("");
+  const [now, setNow] = useState(() => Date.now());
+  const selRef = useRef({ day: "", slot: "", hours: 2 });
+  const maxHours = mode === "block" ? 5 : MAX_HOURS;
+  const hourly = content.recording.find(p => p.hours === 1)?.price ?? 1999;
+  const block = content.recording.find(p => p.hours === 5);
+  const pkgId = mode === "block" ? block?.id : content.recording.find(p => p.hours === hours && p.hours < 5)?.id;
+  const pkgName = mode === "block" ? `${block?.name ?? "Blocco 5 ore"} (primo appuntamento)` : `Sessione ${durationLabel(hours)}`;
+  const price = mode === "block" ? block?.price ?? null : Math.round(hours * hourly);
+
+  // The real calendar: reloaded when the page of days, the duration or a retry changes.
+  useEffect(() => {
+    const abort = new AbortController();
+    const timer = window.setTimeout(() => {
+      setLoading(true); setError("");
+      fetchCalendar(page, abort.signal)
+        .then(d => {
+          if (abort.signal.aborted) return;
+          const at = Date.now(), sel = selRef.current;
+          setDays(d); setNow(at);
+          // a selection that fresh data no longer allows is cleared, never kept silently
+          if (sel.slot && !slotAvailable(d.find(x => x.date === sel.day), sel.slot, sel.hours, at)) {
+            setSlot(""); setNotice(`Alle ${sel.slot} non ci sono più ${durationLabel(sel.hours)} libere: scegli un altro orario.`);
+          }
+        })
+        .catch((e: Error) => { if (!abort.signal.aborted && e.name !== "AbortError") { setDays([]); setError(e.message); } })
+        .finally(() => { if (!abort.signal.aborted) setLoading(false); });
+    }, 250);
+    return () => { abort.abort(); window.clearTimeout(timer); };
+  }, [page, hours, retry]);
+
+  const dayObj = days.find(d => d.date === day);
+  useEffect(() => { selRef.current = { day, slot, hours }; }, [day, slot, hours]);
+  // the minimum notice moves with the clock
+  useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(id); }, []);
+
+  const changeHours = (h: number) => {
+    setHours(h);
+    // a start that has no room for the new duration is cleared at once (the calendar then reloads)
+    if (slot && !slotAvailable(dayObj, slot, h, now)) { setSlot(""); setNotice(`Alle ${slot} non ci sono ${durationLabel(h)} libere: scegli un altro orario.`); }
+    else setNotice("");
+  };
+  const pickMode = (m: "hourly" | "block", h: number) => { setMode(m); changeHours(Math.min(h, m === "block" ? 5 : MAX_HOURS)); };
+  const pickPage = (next: string) => { setPage(next); setDay(""); setSlot(""); setNotice(""); };
+  const pickDay = (d: string) => { setDay(d); setSlot(""); setNotice(""); setSubShot("rec:cal"); };
+  const times = availableTimes(dayObj, hours, now);
+  const nextRoom = dayObj && !times.length ? days.find(d => d.date > dayObj.date && dayHasRoom(d, hours, now)) : undefined;
+  const nightNext = dayObj && [5, 6].includes(weekdayOf(dayObj.date)) ? days.find(d => d.date === shiftDay(dayObj.date, 1)) : undefined;
+  const nightNextFree = nightNext ? availableTimes(nightNext, hours, now).filter(t => isNightOf(nightNext.date, t)) : [];
+  const anyRoom = days.some(d => dayHasRoom(d, hours, now));
+  const groups = dayObj ? [
+    { id: "night", label: `Notte tra ${wdFmt.format(noon(shiftDay(dayObj.date, -1)))} e ${wdFmt.format(noon(dayObj.date))} · dopo mezzanotte`, times: dayObj.allSlots.filter(t => isNightOf(dayObj.date, t)) },
+    { id: "day", label: "Giorno", times: dayObj.allSlots.filter(t => !isNightOf(dayObj.date, t) && t < "19:00") },
+    { id: "eve", label: "Sera", times: dayObj.allSlots.filter(t => !isNightOf(dayObj.date, t) && t >= "19:00") },
+  ].filter(g => g.times.length) : [];
+  const valid = !loading && !error && slotAvailable(dayObj, slot, hours, now);
+  const crossesMidnight = valid && (isNightOf(day, slot) || fromRomeWallTime(day, slot).getTime() + hours * 3600000 > fromRomeWallTime(shiftDay(day, 1), "00:00").getTime());
 
   const steps: WizardStep[] = [
     {
       id: "pkg", label: "Ore", shot: "rec:pkg", title: "Quante ore ti servono?",
-      lead: "Il fonico è sempre in sala. 19,99 €/ora; dopo mezzanotte 29,99 €/ora.",
-      check: () => (pkg ? null : "Scegli un pacchetto."),
+      lead: "Il fonico è sempre in sala. 19,99 €/ora; venerdì e sabato dopo mezzanotte 29,99 €/ora.",
+      check: () => (hours >= MIN_HOURS ? null : "Scegli la durata."),
       render: () => (
-        <fieldset className={s.optionGrid}>
-          <legend className={s.srOnly}>Pacchetto</legend>
-          {content.recording.map((p, k) => (
-            <label key={p.id} className={`${s.optionCard} ${s.rise}`} style={st(k)} data-checked={pkg === p.id || undefined}>
-              <input type="radio" name="package" value={p.name} checked={pkg === p.id} onChange={() => { setPkg(p.id); setSubShot(k % 2 ? "rec" : "rec:pkg"); }} />
-              <span className={s.optHours}><CountUp value={p.hours} delay={200 + k * 140} /><small>{p.hours === 1 ? "ora" : "ore"}</small></span>
-              <span className={s.optionTitle}>{p.name}</span>
-              <span className={s.optionPrice}>{p.price != null ? <CountUp value={p.price} format={euro} delay={300 + k * 140} /> : "Su richiesta"}</span>
-              <span className={s.muted}>{p.description}</span>
-              <ul>{p.includes.map((x, j) => <li key={x} className={s.riseSm} style={st(k * 2 + j)}><Check size={14} aria-hidden="true" />{x}</li>)}</ul>
-            </label>
-          ))}
-        </fieldset>
+        <>
+          <fieldset className={s.optionGrid}>
+            <legend className={s.srOnly}>Pacchetto</legend>
+            {content.recording.map((p, k) => (
+              <label key={p.id} className={`${s.optionCard} ${s.rise}`} style={st(k)} data-checked={pkgId === p.id || undefined}>
+                <input type="radio" name="packageCard" value={p.name} checked={pkgId === p.id} onChange={() => { pickMode(p.hours === 5 ? "block" : "hourly", p.hours); setSubShot(k % 2 ? "rec" : "rec:pkg"); }} />
+                <span className={s.optHours}><CountUp value={p.hours} delay={200 + k * 140} /><small>{p.hours === 1 ? "ora" : "ore"}</small></span>
+                <span className={s.optionTitle}>{p.name}</span>
+                <span className={s.optionPrice}>{p.price != null ? <CountUp value={p.price} format={euro} delay={300 + k * 140} /> : "Su richiesta"}</span>
+                <span className={s.muted}>{p.description}</span>
+                <ul>{p.includes.map((x, j) => <li key={x} className={s.riseSm} style={st(k * 2 + j)}><Check size={14} aria-hidden="true" />{x}</li>)}</ul>
+              </label>
+            ))}
+          </fieldset>
+          <div className={s.rise} style={st(4)}>
+            <p className={s.formLegend}>{mode === "block" ? "Quante delle 5 ore usi nel primo appuntamento?" : "Durata della sessione"}</p>
+            <DurationControl hours={hours} max={maxHours} onChange={changeHours} />
+            <p className={s.muted}>{mode === "block" ? "Il blocco costa 79,99 €; le ore restanti si usano entro 90 giorni, al massimo in 2 appuntamenti." : `${durationLabel(hours)}: ${price != null ? formatEuro(price) : "—"}. Si prenota da 1 ora, poi a mezz’ore.`}</p>
+          </div>
+        </>
       ),
     },
     {
       id: "when", label: "Quando", shot: "rec:cal", title: "Scegli giorno e orario",
-      lead: "Indica le tue preferenze: ti confermiamo la disponibilità via email.",
-      check: () => (!day ? "Scegli un giorno." : !slot ? "Scegli un orario." : null),
+      lead: "Disponibilità reali del calendario dello studio, in ora italiana.",
+      check: () => (loading ? "Attendi: sto aggiornando il calendario." : error ? "Il calendario non è disponibile: riprova prima di continuare." : !day ? "Scegli un giorno." : !slot ? "Scegli un orario." : !valid ? "L’orario scelto non è più libero: scegline un altro." : null),
       render: () => (
-        <>
-          <input type="hidden" name="date" value={day} />
-          <input type="hidden" name="time" value={slot} />
-          <div className={s.dayGrid} role="radiogroup" aria-label="Giorno">
-            {days.map((d, k) => {
-              const free = d.slots.some(x => x.free);
-              return (
-                <button key={d.iso} type="button" role="radio" aria-checked={day === d.iso} disabled={!free} className={`${s.day} ${s.pop}`} style={st(k)} onClick={() => { setDay(d.iso); setSlot(""); setSubShot("rec:cal"); }}>
-                  <span>{d.weekday}</span><strong>{d.label}</strong><small>{free ? "disponibile" : "chiuso"}</small>
-                </button>
-              );
-            })}
+        <div className={cal.realCal} aria-busy={loading || undefined}>
+          <input type="hidden" name="date" value={valid ? day : ""} />
+          <input type="hidden" name="time" value={valid ? slot : ""} />
+          <input type="hidden" name="hours" value={String(hours)} />
+          <div className={cal.calHead}>
+            <DurationControl hours={hours} max={maxHours} onChange={changeHours} compact />
+            <div className={cal.calNav}>
+              <button type="button" className={s.iconBtn} aria-label="Due settimane prima" disabled={loading || page <= today} onClick={() => pickPage(shiftDay(page, -14) < today ? today : shiftDay(page, -14))}>←</button>
+              <strong>{monthFmt.format(noon(page))}</strong>
+              <button type="button" className={s.iconBtn} aria-label="Due settimane dopo" disabled={loading || shiftDay(page, 14) > shiftDay(today, BOOKING_HORIZON_DAYS)} onClick={() => pickPage(shiftDay(page, 14))}>→</button>
+            </div>
           </div>
-          {dayObj && (
-            <div key={day} className={s.slotBlock}>
-              <p className={`${s.formLegend} ${s.rise}`} style={st(0)}>Orari liberi · {dayLabel}</p>
-              <div className={s.slots} role="radiogroup" aria-label="Orario di inizio">
-                {dayObj.slots.map((x, k) => (
-                  <button key={x.start} type="button" role="radio" aria-checked={slot === x.start} disabled={!x.free} className={`${s.slot} ${s.pop}`} style={st(k + 1)} onClick={() => { setSlot(x.start); setSubShot("rec:contact"); window.setTimeout(() => setSubShot("rec:cal"), 1600); }}>
-                    {x.start}{!x.free && <small> occupato</small>}
-                  </button>
-                ))}
-              </div>
+          {loading && <p className={cal.calStatus} role="status"><span className={cal.calSpin} aria-hidden="true" />Verifico gli orari liberi…</p>}
+          {error && (
+            <div className={cal.calError} role="alert">
+              <p>{error}</p>
+              <button type="button" className={s.btnSmall} onClick={() => setRetry(n => n + 1)}>Riprova</button>
             </div>
           )}
-        </>
+          {!error && days.length > 0 && (
+            <div className={s.dayGrid} role="radiogroup" aria-label="Giorno">
+              {days.map((d, k) => {
+                const room = dayHasRoom(d, hours, now);
+                return (
+                  <button key={d.date} type="button" role="radio" aria-checked={day === d.date} disabled={!room || loading} className={`${s.day} ${s.pop}`} style={st(k)} onClick={() => pickDay(d.date)}>
+                    <span>{wdFmt.format(noon(d.date))}</span><strong>{numFmt.format(noon(d.date))}</strong><small>{room ? "libero" : d.allSlots.length ? "pieno" : "chiuso"}</small>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {!loading && !error && !anyRoom && (
+            <div className={cal.calEmpty} role="status">
+              <p>Nessun giorno con {durationLabel(hours)} consecutive libere in queste due settimane.</p>
+              {shiftDay(page, 14) <= shiftDay(today, BOOKING_HORIZON_DAYS) && <button type="button" className={s.btnSmall} onClick={() => pickPage(shiftDay(page, 14))}>Guarda le due settimane dopo →</button>}
+            </div>
+          )}
+          {!error && dayObj && (
+            <div key={`${day}-${hours}`} className={s.slotBlock}>
+              <p className={`${s.formLegend} ${s.rise}`} style={st(0)}>Inizio · {dayFmt.format(noon(day))} · {durationLabel(hours)}</p>
+              {times.length === 0 && (
+                <div className={cal.calEmpty} role="status">
+                  <p>Non ci sono {durationLabel(hours)} consecutive libere in questa data. Il venerdì e il sabato si può proseguire oltre mezzanotte quando lo studio è libero.</p>
+                  {nextRoom && <button type="button" className={s.btnSmall} onClick={() => pickDay(nextRoom.date)}>Primo giorno con {durationLabel(hours)} libere: {dayFmt.format(noon(nextRoom.date))} →</button>}
+                </div>
+              )}
+              {groups.map(g => (
+                <div key={g.id} className={cal.slotGroup}>
+                  <p>{g.label}</p>
+                  <div className={s.slots} role="radiogroup" aria-label={`Orario di inizio · ${g.label}`}>
+                    {g.times.map((t, k) => {
+                      const state = slotState(dayObj, t, hours, now);
+                      return (
+                        <button key={t} type="button" role="radio" aria-checked={slot === t} disabled={state !== "free" || loading} data-state={state} className={`${s.slot} ${s.pop}`} style={st(Math.min(k, 12) + 1)} onClick={() => { setSlot(t); setNotice(""); setSubShot("rec:contact"); window.setTimeout(() => setSubShot("rec:cal"), 1600); }}>
+                          {t}{state !== "free" && <small> {SLOT_NOTE[state]}</small>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              {nightNext && nightNextFree.length > 0 && <button type="button" className={s.btnGhost} onClick={() => pickDay(nightNext.date)}>Continua dopo mezzanotte: notte tra {wdFmt.format(noon(dayObj.date))} e {wdFmt.format(noon(nightNext.date))} →</button>}
+            </div>
+          )}
+          {notice && <p className={s.fieldError} role="alert">{notice}</p>}
+          {valid && <p className={cal.calPicked} role="status"><Check size={16} aria-hidden="true" /> {appointmentLabel(day, slot, hours)}</p>}
+        </div>
       ),
     },
     {
@@ -135,10 +270,12 @@ function RecordingSteps() {
       render: errors => (
         <>
           <ul className={s.recap}>
-            {[["Pacchetto", selected?.name ?? "—"], ["Durata", `${selected?.hours ?? "—"} h`], ["Giorno", dayLabel || "—"], ["Orario", slot || "—"], ["Prezzo", selected?.price != null ? formatEuro(selected.price) : "su richiesta"]].map(([k, v], j) => (
+            {[["Pacchetto", pkgName], ["Durata", durationLabel(hours)], ["Appuntamento", valid ? appointmentLabel(day, slot, hours) : "—"], ["Prezzo", price != null ? formatEuro(price) : "su richiesta"]].map(([k, v], j) => (
               <li key={k} className={s.rise} style={st(j)}><span>{k}</span><strong>{v}</strong></li>
             ))}
           </ul>
+          {crossesMidnight && <p className={s.muted}>La sessione va oltre mezzanotte: per quelle ore si aggiungono 10,00 € l’ora, calcolati nella conferma.</p>}
+          <p className={s.muted}>Al momento dell’invio ricontrolliamo che l’orario sia ancora libero.</p>
           <div className={s.rise} style={st(5)}><Field label="Riferimento (link a un tuo brano o provino)" name="reference" error={errors.reference}><input {...fieldProps("reference", errors)} type="url" placeholder="https://" /></Field></div>
           <div className={s.rise} style={st(6)}><Field label="Note per il fonico" name="notes" error={errors.notes}><textarea {...fieldProps("notes", errors)} rows={3} /></Field></div>
         </>
@@ -147,8 +284,8 @@ function RecordingSteps() {
   ];
   return (
     <Wizard kind="booking" steps={steps} submitLabel="Invia la prenotazione" doneShot="rec:done"
-      extra={() => ({ duration: `${selected?.hours ?? ""} h` })}
-      summary={v => `${v.package} · ${v.date} ${v.time} · ${v.name}`}
+      extra={() => ({ package: pkgName, duration: durationLabel(hours), hours: String(hours), date: day, time: slot, appointment: appointmentLabel(day, slot, hours), total: price != null ? formatEuro(price) : "" })}
+      summary={() => `${pkgName} · ${appointmentLabel(day, slot, hours)}`}
       onAfterDone={<AfterDone current="recording" />} />
   );
 }
