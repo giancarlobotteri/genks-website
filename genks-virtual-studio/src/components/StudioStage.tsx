@@ -388,7 +388,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         plateTx += (w / 2 - q.x) * 0.22 * e;
         plateTy += (h / 2 - q.y) * 0.18 * e;
       }
-      living?.render({ focus: io.focus, source: "film", w, h, ox: plateOx, k: plateK, tx: plateTx, ty: plateTy, par: io.par, light: io.light, hover: hoverAmt > 0.01 ? [hoverAt[0], hoverAt[1], hoverAmt] : null, mouse: io.mouse, time: io.time, dust: 1 });
+      living?.render({ focus: io.focus, source: "film", w, h, ox: plateOx, k: plateK, tx: plateTx, ty: plateTy, par: io.par, light: io.light, hover: hoverAmt > 0.01 ? [hoverAt[0], hoverAt[1], hoverAmt] : null, mouse: io.mouse, time: io.time, dust: 0 });
     };
     // the Beat Store's own place: the photographic record vault, moving with the catalogue
     const paintVault = (now: number, dt: number, page: number, bundles: boolean) => {
@@ -396,7 +396,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const t = now / 1000, pg = Math.min(page, 6);
       const k = 1.08 + (reduced ? 0 : 0.025 * Math.sin(t * 0.07)) + pg * 0.03 + (bundles ? 0.06 : 0);
       const io = lifeInputs(now, dt);
-      living?.render({ focus: io.focus, source: "vault", w, h, ox: 0.5, k, tx: (pg % 2 ? -16 : 16) * Math.min(1, pg), ty: bundles ? 24 : 0, par: [io.par[0] * 1.3, io.par[1] * 1.3], light: io.light, hover: null, mouse: io.mouse, time: io.time, dust: 1 });
+      living?.render({ focus: io.focus, source: "vault", w, h, ox: 0.5, k, tx: (pg % 2 ? -16 : 16) * Math.min(1, pg), ty: bundles ? 24 : 0, par: [io.par[0] * 1.3, io.par[1] * 1.3], light: io.light, hover: null, mouse: io.mouse, time: io.time, dust: 0 });
     };
 
     const frame = (now: number) => {
@@ -679,7 +679,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       {!noGl && plateSrc && <div className={s.stageGrain} aria-hidden="true" />}
       {!noGl && (
         <div ref={vaultRef} className={s.stageVault} aria-hidden="true">
-          <span className={s.vaultBeam} /><span className={s.vaultBeam} /><span className={s.vaultDust} />
+          <span className={s.vaultBeam} /><span className={s.vaultBeam} />
         </div>
       )}
       <div className={s.stageVignette} aria-hidden="true" />

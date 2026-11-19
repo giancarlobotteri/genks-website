@@ -165,6 +165,8 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, film: FilmSeq |
   });
   const dust = new THREE.Points(dg, dustMat);
   dust.frustumCulled = false;
+  // no floating particles over the photograph (the footage has its own air)
+  dust.visible = false;
   scene.add(dust);
 
   let src: "film" | "vault" = "film";
@@ -215,7 +217,7 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, film: FilmSeq |
       mat.uniforms.uAspect.value = W / H;
       dustMat.uniforms.uMouse.value.set(o.mouse[0], o.mouse[1]);
       dustMat.uniforms.uPx.value = 1.4 * renderer.getPixelRatio() * (o.h / 900 + 0.4);
-      dust.visible = o.dust > 0.01;
+      dust.visible = false; void o.dust;
       const tm = renderer.toneMapping;
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.setRenderTarget(null);
