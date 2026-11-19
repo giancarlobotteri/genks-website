@@ -62,6 +62,11 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await page.waitForTimeout(1500);
   await snap(page, "03-after-preview");
   ok("fine anteprima: si entra nello studio, dal microfono", (await vs(page, "screen")) === "studio" && (await vs(page, "pos")) < 0.05);
+  // the arrival shot (a dolly from far away to the microphone) plays first, then the note appears
+  const arrived = await page.waitForFunction(() => document.querySelector("#studio[data-arriving]") != null, null, { timeout: 3000 }).then(() => true, () => false);
+  ok("fine anteprima: ripresa d'arrivo al microfono", arrived);
+  await page.waitForFunction(() => document.querySelector("#studio[data-arriving]") == null, null, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(800);
   ok("fine anteprima: avviso «scorri per vedere i servizi»", await page.getByText("Scorri per vedere i servizi").isVisible());
   ok("nessuna pagina «Di cosa hai bisogno?»", (await page.getByRole("heading", { name: "Di cosa hai bisogno?" }).count()) === 0);
 

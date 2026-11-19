@@ -15,6 +15,8 @@ import type { FilmLike } from "./film-seq.ts";
 export const FILM = {
   xl: "/film/xl", hd: "/film/hd", sd: "/film/sd", frames: 313, depthAtlas: "/film/depth-atlas.webp", depthGrid: [14, 23] as [number, number],
   vault: "/film/vault.webp", vaultDepth: "/film/vault-depth.webp",
+  /** the arrival at the microphone after the preview: a real dolly from far across the studio (Kling) */
+  arrive: "/film/arrive.mp4",
 };
 
 // The film has one player, owned by the studio stage; the preview plays it, the tour scrubs it.

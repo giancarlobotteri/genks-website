@@ -66,6 +66,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   // the photographic studio: the film's frames (lib/film-media), with the live 3D underneath as fallback
   const vaultRef = useRef<HTMLDivElement>(null);
   const cutRef = useRef<HTMLDivElement>(null);
+  const arriveRef = useRef<HTMLVideoElement>(null);
   // the pointer on a hotspot or a service caption also puts that object in the spotlight
   const domHover = useRef<string | null>(null);
   const [plateSrc] = useState(() => pickFilm({ motion: false }));
@@ -424,9 +425,38 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       living?.render({ focus: io.focus, source: "vault", w, h, ox: 0.5, k, tx: (pg % 2 ? -16 : 16) * Math.min(1, pg), ty: bundles ? 24 : 0, par: [io.par[0] * 1.3, io.par[1] * 1.3], light: io.light, hover: null, mouse: io.mouse, time: io.time, dust: 0 });
     };
 
+    // ---- after the preview: the arrival at the microphone, a real dolly from far across the studio ----
+    // (a Kling shot that ends on the very frame of the microphone stop; it hands over with a cross-fade)
+    const arriveEl = arriveRef.current;
+    let arriveState: "idle" | "wait" | "play" | "done" = "idle", arriveT0 = 0;
+    const endArrive = () => {
+      if (arriveState === "play") arriveEl?.pause();
+      arriveState = "done";
+      delete stageEl.dataset.arriving;
+    };
+    const onArriveEnd = () => endArrive();
+    arriveEl?.addEventListener("ended", onArriveEnd);
+    arriveEl?.addEventListener("error", onArriveEnd);
+    const tickArrive = (now: number, screenNow: string) => {
+      if (!arriveEl) return;
+      if (screenNow === "reel") { if (arriveState === "play") endArrive(); arriveState = "idle"; return; }
+      if (arriveState === "idle" && screenNow === "studio" && photo && !reduced && isAfterReel()) { arriveState = "wait"; arriveT0 = now; }
+      if (arriveState === "wait") {
+        if (arriveEl.readyState >= 3) {
+          arriveState = "play";
+          try { arriveEl.currentTime = 0; } catch { /* not seekable yet */ }
+          stageEl.dataset.arriving = "1";
+          arriveEl.play().catch(endArrive);
+        } else if (now - arriveT0 > 1500) arriveState = "done";
+      }
+      // the visitor moves on (scrolls, opens a service, leaves): the shot gives way at once
+      if (arriveState === "play" && (screenNow !== "studio" || stopPos() > 0.02 || live.current.base)) endArrive();
+    };
+
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       plate?.tick(now);
+      tickArrive(now, getDirector().screen);
       const dt = last < 0 ? 1 / 60 : Math.min((now - last) / 1000, 0.25);
       last = now;
       const dir = getDirector();
@@ -634,7 +664,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const resting = touring && !isMoving() && dv === 0;
       // right after the preview: a clear note that the services are further on, until the first scroll
       if (pos > 0.3 && isAfterReel()) setAfterReel(false);
-      const hs = !resting ? "off" : pos < 0.05 ? (isAfterReel() ? "after" : "start") : pos > STOPS.length - 1.05 ? "store" : svcBand > 0.5 ? "svc" : "on";
+      const hs = !resting || stageEl.dataset.arriving ? "off" : pos < 0.05 ? (isAfterReel() ? "after" : "start") : pos > STOPS.length - 1.05 ? "store" : svcBand > 0.5 ? "svc" : "on";
       if (hs !== hintState && hintRef.current) {
         hintState = hs;
         hintRef.current.dataset.state = hs;
@@ -682,6 +712,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       canvas.removeEventListener("click", onCanvasClick);
       delete document.documentElement.dataset.gl;
       plate?.removeEventListener("loadeddata", onPlateReady);
+      arriveEl?.removeEventListener("ended", onArriveEnd);
+      arriveEl?.removeEventListener("error", onArriveEnd);
+      delete stageEl.dataset.arriving;
       setFilmVideo(null);
       plate?.dispose();
       living?.dispose();
@@ -703,6 +736,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     <section id="studio" className={s.stage} data-screen={screen} aria-label="Studio virtuale GENKS">
       {noGl ? <div className={s.stageNoGl} aria-hidden="true" /> : <canvas ref={canvasRef} className={s.stageCanvas} data-ready={ready || undefined} aria-hidden="true" />}
       {!noGl && <div ref={cutRef} className={s.stageCut} aria-hidden="true" />}
+      {!noGl && plateSrc && <video ref={arriveRef} className={s.stageArrive} src={FILM.arrive} muted playsInline preload="auto" aria-hidden="true" tabIndex={-1} />}
+      {!noGl && plateSrc && <div className={s.stageArriveFlash} aria-hidden="true" />}
       {!noGl && (
         <div ref={vaultRef} className={s.stageVault} aria-hidden="true">
           <span className={s.vaultBeam} /><span className={s.vaultBeam} />
