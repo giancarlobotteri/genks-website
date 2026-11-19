@@ -8,12 +8,12 @@ import { prefersReducedMotion } from "../components/ui.tsx";
 import type { FilmLike } from "./film-seq.ts";
 
 /**
- * The film as sharp stills (lib/film-seq: /film/hd or /film/sd, 313 WebP frames at 24 fps) and the
+ * The film as sharp stills (lib/film-seq: /film/xl, /film/hd or /film/sd, 313 WebP frames at 24 fps, from the 4K master) and the
  * depth of every frame (Depth Anything V2) packed in one atlas: the studio is drawn as a living
  * photograph (scene/living-plate).
  */
 export const FILM = {
-  hd: "/film/hd", sd: "/film/sd", frames: 313, depthAtlas: "/film/depth-atlas.webp", depthGrid: [14, 23] as [number, number],
+  xl: "/film/xl", hd: "/film/hd", sd: "/film/sd", frames: 313, depthAtlas: "/film/depth-atlas.webp", depthGrid: [14, 23] as [number, number],
   vault: "/film/vault.webp", vaultDepth: "/film/vault-depth.webp",
 };
 
@@ -53,7 +53,8 @@ export function pickFilm(opts: { motion?: boolean } = {}): string | null {
   if (c?.saveData || /(^|-)2g$/.test(c?.effectiveType ?? "")) return null;
   // phones crop the 16:9 picture to fill the portrait screen, so they need the sharper file too
   const px = Math.max(window.screen.width, window.screen.height) * Math.min(2, window.devicePixelRatio || 1);
-  return px >= 1600 ? FILM.hd : FILM.sd;
+  // large or sharp screens get the 2560 px frames (from the 4K master), the others 1920 / 1280
+  return px >= 2400 && window.innerWidth >= 1100 ? FILM.xl : px >= 1600 ? FILM.hd : FILM.sd;
 }
 
 /** The moment of the take that is each stop of the tour (s): mic, services, studio, DAW, Mix, Master, Mix & Master, display. */
