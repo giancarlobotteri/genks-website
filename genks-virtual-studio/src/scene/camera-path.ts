@@ -28,12 +28,13 @@ export const KEYS: Key[] = [
 /** Where the camera rests, in scroll order. `glide` = seconds of the spring towards the next stop. */
 export const STOPS = [
   { id: "mic", p: 0, glide: 0.75 },
-  { id: "services", p: 0.06, glide: 0.95 },
   { id: "studio", p: 0.15, glide: 0.62 },
   { id: "daw", p: 0.28, glide: 0.6 },
   { id: "mix", p: 0.5, glide: 0.5 },
   { id: "master", p: 0.62, glide: 0.5 },
   { id: "mixmaster", p: 0.74, glide: 0.55 },
+  // the four services together come at the end of the tour, as a summary, right before the Beat Store
+  { id: "services", p: 0.06, glide: 0.95 },
   { id: "display", p: 1, glide: 0.5 },
 ] as const;
 

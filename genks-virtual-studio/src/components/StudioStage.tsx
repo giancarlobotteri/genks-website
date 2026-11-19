@@ -5,7 +5,7 @@ import { formatEuro } from "../lib/catalog.ts";
 import { getDirector, isAfterReel, setAfterReel, useDirector } from "../lib/director.ts";
 import { musicLevel } from "../lib/level.ts";
 import { enterStore, goService, replayReel } from "../lib/nav.ts";
-import { FILM, SHOT_T, SPOTS, STOP_T, STORE_T, VINYL, filmTimeAt, frameToScreen, isReelFilm, panAt, panAtPos, pickFilm, setFilmVideo } from "../lib/film-media.ts";
+import { FILM, SHOT_T, SPOTS, STOP_T, STORE_STOP_INDEX, STORE_T, VINYL, filmTimeAt, frameToScreen, isReelFilm, panAt, panAtPos, pickFilm, setFilmVideo } from "../lib/film-media.ts";
 import { createLivingPlate } from "../scene/living-plate.ts";
 import { FilmSeq } from "../lib/film-seq.ts";
 import { getDive, getSubShot, setSubShot } from "../lib/shots.ts";
@@ -42,11 +42,13 @@ type Props = { noGl: boolean; onWebglFail: () => void };
 
 const HOTSPOTS = [
   { id: "mic", anchor: "micHot", label: "Prenota una sessione", stop: 0, Icon: Mic },
-  { id: "screen", anchor: "screen", label: "Beat su misura", stop: 3, Icon: MonitorPlay },
+  { id: "screen", anchor: "screen", label: "Beat su misura", stop: 2, Icon: MonitorPlay },
   { id: "display", anchor: "display", label: "Entra nel Beat Store", stop: 7, Icon: Disc3 },
 ] as const;
 
-const SERVICE_STOPS: Record<string, number> = { mix: 4, master: 5, mixmaster: 6 };
+const SERVICE_STOPS: Record<string, number> = { mix: 3, master: 4, mixmaster: 5 };
+/** the four services together (at the end of the tour) */
+const LINEUP_STOP = 6;
 /** Reveal of the studio lights for each shot of the preview (0 = the microphone alone in the dark). */
 const REEL_REVEAL: Record<string, number> = { "reel:dark": 0.02, "reel:intro": 0.45, "reel:rec": 0.03, "reel:custom": 0.8, "reel:mix": 1, "reel:store": 1, "reel:choose": 0.9 };
 
@@ -220,9 +222,11 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       if (photo) {
         // the objects of the footage: a circle around each one, only at its own stop
         const r = canvas.getBoundingClientRect(), x = cx - r.left, y = cy - r.top;
+        // the Beat Store stop is the record vault itself: its centre opens the store
+        if (curPos > 6.5) return Math.hypot(x - w / 2, y - h * 0.46) < Math.min(w, h) * 0.28 ? "svc:store" : null;
         const cand: [HitId, { x: number; y: number; r: number }][] = curPos < 0.5 ? [["mic", SPOTS.mic]]
-          : curPos > 0.5 && curPos < 1.5 ? LINE_IDS.map((id, i) => [id, { ...SPOTS.lineupObj[i], r: 0.075 }] as [HitId, { x: number; y: number; r: number }])
-          : curPos > 2.5 && curPos < 3.5 ? [["screen", SPOTS.screen]] : curPos > 3.5 && curPos < 6.5 ? [["mixer", SPOTS.mixer]] : curPos > 6.5 ? [["svc:store", { x: VINYL.x, y: VINYL.y, r: 0.075 }]] : [];
+          : curPos > 5.5 && curPos < 6.5 ? LINE_IDS.map((id, i) => [id, { ...SPOTS.lineupObj[i], r: 0.075 }] as [HitId, { x: number; y: number; r: number }])
+          : curPos > 1.5 && curPos < 2.5 ? [["screen", SPOTS.screen]] : curPos > 2.5 && curPos < 5.5 ? [["mixer", SPOTS.mixer]] : [];
         for (const [id, c] of cand) { const q = spot(c.x, c.y); if (Math.hypot(x - q.x, y - q.y) < c.r * q.unit) return id; }
         return null;
       }
@@ -232,7 +236,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       let best: HitId | null = null, bestD = Infinity;
       for (const hz of rig.hits) {
         // only what the current shot is about
-        const allowed = hz.id === "mic" ? curPos < 0.5 : hz.id.startsWith("svc:") ? curPos > 0.5 && curPos < 1.5 : hz.id === "screen" ? curPos > 2.5 && curPos < 3.5 : curPos > 3.5 && curPos < 6.5;
+        const allowed = hz.id === "mic" ? curPos < 0.5 : hz.id.startsWith("svc:") ? curPos > 5.5 && curPos < 6.5 : hz.id === "screen" ? curPos > 1.5 && curPos < 2.5 : curPos > 2.5 && curPos < 5.5;
         if (!allowed) continue;
         hz.obj.getWorldPosition(sph.center); sph.radius = hz.r;
         const hit = ray.ray.intersectSphere(sph, tmp);
@@ -320,7 +324,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const light: [number, number, number] = [sp.x + 0.5, sp.y + 0.5, lightAmt];
       return { par, light, mouse: [pointer.x + 0.5, pointer.y + 0.5] as [number, number], time: t, focus: { ...focus } };
     };
-    let spinA = 0, spinV = 0;
+    let spinA = 0, spinV = 0, srcNow: "film" | "vault" = "film", srcDipT0 = -1;
     let photo = false, plateT = -1, plateK = 1, plateTx = 0, plateTy = 0, plateOx = 0.5;
     // a change of screen far away in the footage is a cut (a quick dip through the dark), not a rewind
     let cutT0 = -1, cutTo = 0, cutDone = false;
@@ -341,16 +345,26 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const t = now / 1000;
       const base = live.current.base, sub = getSubShot();
       const playing = screenNow === "reel" && isReelFilm();
-      let want = playing ? plate.currentTime : screenNow === "reel" ? (SHOT_T[reelShot ?? ""] ?? 5.8) : base ? (SHOT_T[sub ?? base] ?? SHOT_T[base] ?? filmTimeAt(pos)) : filmTimeAt(pos);
-      // the dive towards the Beat Store: into its record, turning in its spotlight
-      if (dv > 0) want = STORE_T;
+      // the Beat Store stop, and the way into the store from anywhere: its own place, the record vault
+      // (reached by a quick dip through the dark, never through the room of the four services)
+      const touringStore = screenNow === "studio" && !base && pos > STORE_STOP_INDEX - 0.5;
+      const wantVault = !playing && (touringStore || dv > 0);
+      if (wantVault !== (srcNow === "vault") && srcDipT0 < 0) srcDipT0 = now;
+      if (srcDipT0 >= 0) {
+        const u = (now - srcDipT0) / 1000;
+        if (u >= 0.26) srcNow = wantVault ? "vault" : "film";
+        if (cutEl) cutEl.style.opacity = (u < 0.26 ? u / 0.26 : Math.max(0, 1 - (u - 0.26) / 0.5)).toFixed(3);
+        if (u > 0.8) { srcDipT0 = -1; if (cutEl) cutEl.style.opacity = "0"; }
+      }
+      if (srcNow === "vault") { lastScreenP = screenNow; paintVault(now, dt, 0, false); return; }
+      const want = playing ? plate.currentTime : screenNow === "reel" ? (SHOT_T[reelShot ?? ""] ?? 5.8) : base ? (SHOT_T[sub ?? base] ?? SHOT_T[base] ?? filmTimeAt(pos)) : filmTimeAt(pos);
       // the tour is already smooth; a change of screen glides through the footage like a camera move
       const touringNow = screenNow === "studio" && !base;
       const changed = screenNow !== lastScreenP; lastScreenP = screenNow;
       const prevT = plateT;
       if (playing) { plateT = want; cutT0 = -1; if (cutEl) cutEl.style.opacity = "0"; }
-      // (on the tour itself only the jump from the console back to the record of the Beat Store is a cut)
-      else if (plateT >= 0 && cutT0 < 0 && (!touringNow || changed || dv > 0 || Math.abs(want - plateT) > 4) && Math.abs(want - plateT) > 1.6) { cutT0 = now; cutTo = want; cutDone = false; }
+      // (on the tour itself the cuts are the jumps between distant moments: microphone → studio, console → the four services)
+      else if (plateT >= 0 && cutT0 < 0 && srcDipT0 < 0 && (!touringNow || changed || Math.abs(want - plateT) > 2.5) && Math.abs(want - plateT) > 1.6) { cutT0 = now; cutTo = want; cutDone = false; }
       if (cutT0 >= 0) {
         const u = (now - cutT0) / 1000;
         if (u >= 0.26 && !cutDone) { cutDone = true; plateT = cutTo; }
@@ -371,7 +385,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       plateTy = playing ? 0 : Math.max(-slack, Math.min(slack, -fy)) * h;
       plateOx = portrait ? (playing ? panAt(plateT) / 100 : panAtPos(pos)) : 0.5;
       // phones, at the four services: the camera pulls back until all four stand in the frame
-      const wantFit = portrait && touringNow && !playing ? band(pos, 1, 1, 0.6) : 0;
+      const wantFit = portrait && touringNow && !playing ? band(pos, LINEUP_STOP, LINEUP_STOP, 0.6) : 0;
       svcFit += (wantFit - svcFit) * (1 - Math.exp(-dt * 6));
       if (svcFit > 0.001) {
         const cs = Math.max(w / 1920, h / 1080);
@@ -383,28 +397,15 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         // a little lower than the centre: the title sits above the four, the captions below
         plateTy = plateTy * (1 - e) + h * 0.05 * e;
       }
-      // the Beat Store stop and the way in: the camera closes in on the record (and, diving, into it)
+      // the record of the Beat Store, among the four services, turns: slowly, faster under the pointer
       const onVinyl = !playing && Math.abs(plate.frame() - Math.round(STORE_T * 24)) <= 3;
-      const vinAt = touringNow ? ease(clamp01((pos - (STOP_T.length - 1.5)) * 2)) : 0;
-      const vin = onVinyl ? Math.max(vinAt, ease(dv)) : 0;
-      if (vin > 0.001) {
-        const kV = (portrait ? 1.5 : 2.05) + ease(dv) * 2.6;
-        plateK += (kV - plateK) * vin;
-        const q = frameToScreen(VINYL.x, VINYL.y, w, h, plateOx, plateK, 0, 0);
-        const a = frameToScreen(0, 0, w, h, plateOx, plateK, 0, 0), b = frameToScreen(1, 1, w, h, plateOx, plateK, 0, 0);
-        // centred (a little above the middle), never past the edges of the picture
-        const tx = Math.max(w - b.x, Math.min(-a.x, w / 2 - q.x)), ty = Math.max(h - b.y, Math.min(-a.y, h * 0.46 - q.y));
-        plateTx += (tx - plateTx) * vin;
-        plateTy += (ty - plateTy) * vin;
-      }
-      // the record turns: slowly when the pointer is on it or at its stop, faster and faster on the way in
       const hovVinyl = hoverId === "svc:store" || domHover.current === "svc:store" || domHover.current === "display";
-      const wantSpin = !onVinyl || reduced ? 0 : dv > 0 ? 2.2 + 16 * ease(dv) : vinAt > 0.5 || hovVinyl ? 2.2 : 0.35;
-      spinV += (wantSpin - spinV) * (1 - Math.exp(-dt * (dv > 0 ? 6 : 2.5)));
+      const wantSpin = !onVinyl || reduced ? 0 : hovVinyl ? 2.2 : 0.35;
+      spinV += (wantSpin - spinV) * (1 - Math.exp(-dt * 2.5));
       spinA = (spinA + spinV * dt) % (Math.PI * 2000);
       const io = lifeInputs(now, dt, svcFit);
       // the camera leans in towards the object under the pointer
-      if (leanAmt > 0.01 && !playing && svcFit < 0.5 && vin < 0.5) {
+      if (leanAmt > 0.01 && !playing && svcFit < 0.5) {
         const q = spot(hoverAt[0], hoverAt[1]);
         const e = ease(Math.min(1, leanAmt));
         plateK += 0.08 * e;
@@ -420,7 +421,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     const paintVault = (now: number, dt: number, page: number, bundles: boolean) => {
       void vault;
       const t = now / 1000, pg = Math.min(page, 6);
-      const k = 1.08 + (reduced ? 0 : 0.025 * Math.sin(t * 0.07)) + pg * 0.03 + (bundles ? 0.06 : 0);
+      // the way in pushes into the vault, and the store keeps that framing
+      const k = 1.08 + (reduced ? 0 : 0.025 * Math.sin(t * 0.07)) + pg * 0.03 + (bundles ? 0.06 : 0) + 0.16 * ease(getDive());
       const io = lifeInputs(now, dt);
       living?.render({ focus: io.focus, source: "vault", w, h, ox: 0.5, k, tx: (pg % 2 ? -16 : 16) * Math.min(1, pg), ty: bundles ? 24 : 0, par: [io.par[0] * 1.3, io.par[1] * 1.3], light: io.light, hover: null, mouse: io.mouse, time: io.time, dust: 0 });
     };
@@ -521,7 +523,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const dv = Math.max(getDive(), Math.min(0.45, overshoot() * 1.2));
       if (dv > 0) pose = lerpPose(pose, { ...displayAt(0.03), lens: 1 }, ease(dv));
       camNow.pos = pose.pos; camNow.target = pose.target; camNow.lens = pose.lens ?? 1;
-      const lineBand = dir.screen === "studio" && !live.current.framed ? band(pos, 1, 1, 0.6) : 0;
+      const lineBand = dir.screen === "studio" && !live.current.framed ? band(pos, LINEUP_STOP, LINEUP_STOP, 0.6) : 0;
       const lensWant = (pose.lens ?? 1) * (portrait ? 1 + 0.04 * lineBand : 1);
       if (Math.abs(lensWant - lensNow) > 1e-4) applyFov(lensWant);
 
@@ -539,8 +541,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
 
       // framing: slide the picture away from whatever covers part of the screen
-      const svcBand = dir.screen === "studio" && !live.current.framed ? band(pos, 4, 6, 0.5) : 0;
-      const anaBand = dir.screen === "studio" && !live.current.framed ? band(pos, 1, 1, 0.6) : 0;
+      const svcBand = dir.screen === "studio" && !live.current.framed ? band(pos, 3, 5, 0.5) : 0;
+      const anaBand = dir.screen === "studio" && !live.current.framed ? band(pos, LINEUP_STOP, LINEUP_STOP, 0.6) : 0;
       let gx = 0, gy = 0;
       // the subject is centred in the free part of the screen, measured from the real widths of
       // the text / panel / card (so 16:9, 21:9, 32:9 and 4:3 monitors all frame it the same way)
@@ -569,8 +571,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       else if (dir.screen === "studio") {
         if (base?.startsWith("rec")) { wantReveal = 0.05; wantHero = 0.85; }
         else if (base === "custom") wantReveal = 0.85;
-        // stop 0 microphone · stop 1 the services under the spotlights (still dark) · stop 2 the studio lights up
-        else if (!base) { wantReveal = clamp01(pos - 1); wantHero = 1 - clamp01(pos / 0.7); wantTitle = 1 - clamp01(pos / 0.3); }
+        // stop 0 microphone (in the dark) · stop 1 the studio lights up
+        else if (!base) { wantReveal = clamp01(pos); wantHero = 1 - clamp01(pos / 0.7); wantTitle = 1 - clamp01(pos / 0.3); }
       }
       // scroll-driven values follow the scroll closely, state changes fade like a lighting cue
       const kl = reduced ? 1 : 1 - Math.exp(-dt * (touringNow ? 9 : 1.6));
@@ -583,10 +585,10 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const tab = base?.startsWith("mix") ? (getSubShot() ?? base) : null;
       const mode: ConsoleMode = tab ? (tab.includes("mixmaster") ? "mixmaster" : tab.includes("master") ? "master" : "mix")
         : dir.screen === "reel" && dir.reelShot === "reel:mix" ? "mix"
-        : touringNow && pos > 3.5 && pos < 6.5 ? (["mix", "master", "mixmaster"] as const)[Math.min(2, Math.max(0, Math.round(pos) - 4))] : "idle";
+        : touringNow && pos > 2.5 && pos < 5.5 ? (["mix", "master", "mixmaster"] as const)[Math.min(2, Math.max(0, Math.round(pos) - 3))] : "idle";
       rig.setMode(mode);
       // the line-up of the services rises into its spotlights around stop 1
-      rig.setLineup(dir.screen === "studio" && !base ? 1 - clamp01(Math.abs(pos - 1) / 0.8) : 0);
+      rig.setLineup(dir.screen === "studio" && !base ? 1 - clamp01(Math.abs(pos - LINEUP_STOP) / 0.8) : 0);
       curPos = pos; canHit = touringNow && dv === 0;
       rig.tick(t, !reduced, musicLevel(now), dt);
       // rack focus on the subject of the shot
@@ -612,7 +614,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       HOTSPOTS.forEach(hs => {
         const el = hotRefs.current[hs.id];
         if (!el) return;
-        if (photo) { const q = spot(SPOTS[hs.id].x, SPOTS[hs.id].y); tmp.set((q.x / w) * 2 - 1, 1 - (q.y / h) * 2, 0); }
+        if (photo) { const q = hs.id === "display" ? { x: w / 2, y: h * 0.46 } : spot(SPOTS[hs.id].x, SPOTS[hs.id].y); tmp.set((q.x / w) * 2 - 1, 1 - (q.y / h) * 2, 0); }
         else { rig.anchors[hs.anchor].getWorldPosition(tmp); tmp.project(camera); }
         const v = tmp.z > 1 || !touring || dv > 0.02 ? 0 : band(pos, hs.stop, hs.stop, 0.3);
         // keep the button and its label inside the screen on narrow phones
@@ -623,9 +625,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       });
       paintServices(pos, touring);
       // the establishing shot has its own title, like the opening of a film
-      const tv = touring && dv === 0 ? band(pos, 2, 2, 0.45) : 0;
+      const tv = touring && dv === 0 ? band(pos, 1, 1, 0.45) : 0;
       // captions of the services: one under each capsule (they are also the keyboard-accessible buttons)
-      const av = touring && dv === 0 ? band(pos, 1, 1, 0.55) : 0;
+      const av = touring && dv === 0 ? band(pos, LINEUP_STOP, LINEUP_STOP, 0.55) : 0;
       const ana = anatomyRef.current;
       if (ana) {
         ana.style.setProperty("--av", av.toFixed(3));
@@ -675,12 +677,12 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     const paintServices = (pos: number, touring: boolean) => {
       const wrap = showcaseRef.current;
       if (!wrap) return;
-      const showing = touring ? band(pos, 4, 6, 0.5) : 0;
+      const showing = touring ? band(pos, 3, 5, 0.5) : 0;
       wrap.style.visibility = showing < 0.01 ? "hidden" : "visible";
       let best = -1, bestV = 0;
       svcRefs.current.forEach((el, i) => {
         if (!el) return;
-        const spos = SERVICE_STOPS[services[i]?.id] ?? 4;
+        const spos = SERVICE_STOPS[services[i]?.id] ?? 3;
         const d = Math.max(-1.2, Math.min(1.2, pos - spos));
         const a = clamp01(1 - Math.abs(d) * 2.1) * (touring ? 1 : 0);
         if (a > bestV) { bestV = a; best = i; }
@@ -824,7 +826,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   );
 }
 
-const STOP_LABELS = ["Microfono", "Servizi", "Studio", "Monitor DAW", "Mix", "Master", "Mix & Master", "Beat Store"];
+const STOP_LABELS = ["Microfono", "Studio", "Monitor DAW", "Mix", "Master", "Mix & Master", "Servizi", "Beat Store"];
 
 /** Always on screen in the studio: jump to any service, or watch the preview again. */
 export function StudioDock() {

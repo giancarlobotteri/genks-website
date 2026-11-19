@@ -61,22 +61,26 @@ export function pickFilm(opts: { motion?: boolean } = {}): string | null {
   return need > 2000 ? FILM.xl : need > 1350 ? FILM.hd : FILM.sd;
 }
 
-/** The moment of the take that is each stop of the tour (s): mic, services, studio, DAW, Mix, Master, Mix & Master, display. */
-// Mix, Master and Mix & Master: three moments of the one sharp push into the console (11.2 → 12.4 s)
-export const STOP_T = [0.6, 3.4, 5.8, 7.6, 11.17, 11.85, 12.4, 12.95];
 /**
- * The Beat Store is entered from its record, turning in its spotlight among the four services: the last
- * stop of the tour leaves the console (a short push into it) and cuts back to that record.
+ * The moment of the take that is each stop of the tour (s): mic, studio, DAW, Mix, Master, Mix & Master,
+ * the four services together, and the Beat Store (its own place, the record vault: not in the film).
+ * Mix, Master and Mix & Master are three moments of the one sharp push into the console (11.2 → 12.4 s).
  */
+export const STOP_T = [0.6, 5.8, 7.6, 11.17, 11.85, 12.4, 3.4, 3.4];
+/** stops reached by a cut (a quick dip through the dark) rather than by moving through the footage */
+const CUT_TO = new Set([1, 6, 7]);
+/** the stop of the Beat Store: the photographic record vault */
+export const STORE_STOP_INDEX = 7;
+/** the record of the Beat Store on its plinth, in the frame of the four services */
 export const STORE_T = 3.4;
-/** the record on its plinth in that frame: centre (fractions of the frame), radius (fraction of its height) */
 export const VINYL = { x: 0.7734, y: 0.3528, r: 0.106 };
 /** Film time for a (fractional) tour position. */
 export function filmTimeAt(pos: number) {
-  if (pos > STOP_T.length - 1.5) return STORE_T;
   const p = Math.max(0, Math.min(STOP_T.length - 1, pos));
-  const i = Math.min(STOP_T.length - 2, Math.floor(p));
-  return STOP_T[i] + (STOP_T[i + 1] - STOP_T[i]) * (p - i);
+  const i = Math.min(STOP_T.length - 2, Math.floor(p)), f = p - i;
+  // across a cut each side holds its own moment (with a little drift towards the other)
+  if (CUT_TO.has(i + 1)) return f < 0.5 ? STOP_T[i] + Math.min(0.2, f * 0.4) : STOP_T[i + 1] - Math.min(0.2, (1 - f) * 0.4);
+  return STOP_T[i] + (STOP_T[i + 1] - STOP_T[i]) * f;
 }
 /** Film time for the preview shots and the service screens. */
 export const SHOT_T: Record<string, number> = {

@@ -59,11 +59,13 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await reel.locator("[data-skip]").click({ timeout: 5000 }).catch(() => {}); // on a slow machine the preview may already be over
   // the preview ends straight into the studio, on its first stop (the microphone): no choice page
   await page.waitForFunction(() => window.__vs.screen() === "studio", null, { timeout: 15000 }).catch(() => {});
+  // the arrival shot (a dolly from far away to the microphone) starts right away: watch for it from now
+  const arrivedP = page.waitForFunction(() => document.querySelector("#studio[data-arriving]") != null, null, { timeout: 6000, polling: 100 }).then(() => true, () => false);
   await page.waitForTimeout(1500);
   await snap(page, "03-after-preview");
   ok("fine anteprima: si entra nello studio, dal microfono", (await vs(page, "screen")) === "studio" && (await vs(page, "pos")) < 0.05);
   // the arrival shot (a dolly from far away to the microphone) plays first, then the note appears
-  const arrived = await page.waitForFunction(() => document.querySelector("#studio[data-arriving]") != null, null, { timeout: 3000 }).then(() => true, () => false);
+  const arrived = await arrivedP;
   ok("fine anteprima: ripresa d'arrivo al microfono", arrived);
   await page.waitForFunction(() => document.querySelector("#studio[data-arriving]") == null, null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(800);
@@ -150,8 +152,8 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
     const pos = await settle(want);
     ok(`scroll fluido: una rotellina → ${label}`, Math.abs(pos - want) < 0.01, `pos=${pos.toFixed(3)}`);
   };
-  await settle(4);
-  ok("studio: si torna sul banco mixer dopo il servizio", Math.abs((await vs(page, "pos")) - 4) < 0.01);
+  await settle(3);
+  ok("studio: si torna sul banco mixer dopo il servizio", Math.abs((await vs(page, "pos")) - 3) < 0.01);
   await page.getByRole("list", { name: "Tappe dello studio" }).getByRole("button", { name: "Vai a: Microfono" }).click();
   await settle(0);
   ok("studio: indicazione «scorri» all'inizio", await page.getByText("Scorri per esplorare lo studio").isVisible());
@@ -168,21 +170,17 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await page.keyboard.press("Escape");
   await rec.waitFor({ state: "detached" }).catch(() => {});
   await settle(0);
-  await wheel(1, "servizi sotto i riflettori");
-  const ana = page.getByRole("region", { name: "I servizi GENKS" });
-  await page.waitForTimeout(800);
-  ok("servizi: quattro servizi in fila sotto i riflettori", await ana.isVisible() && (await ana.locator('[class*="_lineCap_"]').count()) === 4);
-  ok("servizi: ogni servizio si apre dalla sua didascalia", await ana.getByRole("button", { name: /Beat su misura/ }).isVisible());
-  await snap(page, "08b-services");
-  await wheel(2, "rivelazione dello studio");
+  // the tour: microphone → studio → DAW → Mix → Master → Mix & Master → the four services → Beat Store
+  await wheel(1, "rivelazione dello studio");
   ok("rivelazione: titolo dell'inquadratura d'insieme", await page.evaluate(() => Number(getComputedStyle(document.querySelector('[class*="_studioTitle_"]')).opacity) > 0.5));
-  await wheel(3, "monitor DAW");
+  ok("dopo il microfono non compaiono i quattro servizi insieme", !(await page.getByRole("region", { name: "I servizi GENKS" }).isVisible().catch(() => false)) || (await page.evaluate(() => Number(getComputedStyle(document.querySelector('[class*="_anatomy_"]')).opacity) < 0.1)));
+  await wheel(2, "monitor DAW");
   const dawHot = page.locator('[data-id="screen"]');
   ok("hotspot «Beat su misura» sul monitor DAW", await dawHot.isVisible());
-  await wheel(4, "servizio Mix");
+  await wheel(3, "servizio Mix");
   ok("servizio Mix presentato allo scorrimento", await page.getByRole("heading", { name: "Mix", exact: true }).isVisible());
   await page.keyboard.press("ArrowDown");
-  await settle(5);
+  await settle(4);
   ok("tastiera: freccia giù → servizio Master", await page.getByRole("heading", { name: "Master", exact: true }).isVisible());
   await snap(page, "09-studio-master");
   await page.getByRole("button", { name: "Scegli Master" }).click();
@@ -190,11 +188,17 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   ok("dalla scheda Master si apre il servizio con Master già scelto", await mix.getByRole("radio", { name: /^Master/ }).isChecked());
   await page.keyboard.press("Escape");
   await mix.waitFor({ state: "detached" });
-  await settle(4);
-  await wheel(5, "Master");
-  await wheel(6, "Mix & Master");
-  await wheel(7, "display del mixer");
-  ok("pulsante «Entra nel Beat Store» sul display", await page.locator('[data-id="display"]').isVisible());
+  await settle(3);
+  await wheel(4, "Master");
+  await wheel(5, "Mix & Master");
+  await wheel(6, "i quattro servizi, alla fine");
+  const ana = page.getByRole("region", { name: "I servizi GENKS" });
+  await page.waitForTimeout(800);
+  ok("servizi: quattro servizi in fila sotto i riflettori", await ana.isVisible() && (await ana.locator('[class*="_lineCap_"]').count()) === 4);
+  ok("servizi: ogni servizio si apre dalla sua didascalia", await ana.getByRole("button", { name: /Beat su misura/ }).isVisible());
+  await snap(page, "08b-services");
+  await wheel(7, "Beat Store (la sala dei vinili)");
+  ok("pulsante «Entra nel Beat Store» nella sala dei vinili", await page.locator('[data-id="display"]').isVisible());
 
   /* ---------- Beat Store screen with its own intro ---------- */
   await page.waitForTimeout(350);
