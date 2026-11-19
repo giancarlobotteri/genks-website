@@ -76,7 +76,18 @@ export function Sheet({ open, onClose, title, kicker, children, variant = "cente
 }
 
 /** Deterministic, original cover art: brand blues + waveform + the GENKS symbol (undistorted). */
-export function BeatCover({ beat, className }: { beat: Pick<Beat, "seed" | "hue" | "title">; className?: string }) {
+/** Photographic covers (Higgsfield, one per catalogue beat, no text or logos); beats added later keep the drawn art. */
+const PHOTO_COVERS = new Set(["b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "b10", "b11", "b12"]);
+
+export function BeatCover({ beat, className }: { beat: Pick<Beat, "seed" | "hue" | "title"> & { id?: string }; className?: string }) {
+  if (beat.id && PHOTO_COVERS.has(beat.id)) {
+    return (
+      <div className={`${s.cover} ${className ?? ""}`} aria-hidden="true">
+        <img className={s.coverPhoto} src={`/covers/${beat.id}.webp`} alt="" loading="lazy" decoding="async" draggable={false} />
+        <GenksSymbol size={22} className={s.coverMark} />
+      </div>
+    );
+  }
   const r = rng(beat.seed * 7 + 3);
   const bars = Array.from({ length: 24 }, (_, i) => 10 + Math.abs(Math.sin(i * 0.55 + beat.seed)) * 34 + r() * 18);
   const h1 = 222 + beat.hue * 0.4;
