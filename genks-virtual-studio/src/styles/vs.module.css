@@ -440,45 +440,38 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 .svcNav button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: var(--muted); font: 600 0.82rem var(--font-head); transition: background var(--mid) var(--ease), color var(--mid); }
 .svcNav button[data-on] { background: var(--blue); color: #fff; box-shadow: 0 0 18px rgba(76, 131, 255, 0.6); }
 .svc { --d: 0; position: absolute; top: 50%; right: max(16px, 5vw); width: min(500px, 44vw); opacity: 0; visibility: hidden; pointer-events: auto; transform-style: preserve-3d; will-change: transform, opacity;
-  transform: translate3d(0, calc(-50% + var(--d) * -120px), 0) rotateX(calc(var(--d) * 28deg)) rotateY(calc(var(--d) * -14deg)) scale(calc(1 - var(--ad) * 0.14)); }
-.svcWord { position: absolute; right: 0; top: -0.62em; z-index: -1; font: 800 clamp(4rem, 11vw, 9.5rem)/1 var(--font-head); letter-spacing: -0.04em; white-space: nowrap; color: transparent; -webkit-text-stroke: 1.5px rgba(156, 191, 255, 0.32); transform: translate3d(calc(var(--d) * -40vw), 0, -120px); pointer-events: none; }
+  transform: translate3d(0, calc(-50% + var(--d) * -28px), 0); }
 .svcText { position: relative; padding: 26px; border-radius: var(--radius-lg); background: linear-gradient(160deg, rgba(16, 28, 60, 0.94), rgba(6, 11, 23, 0.94)); border: 1px solid var(--line-strong); box-shadow: 0 40px 90px -40px rgba(76, 131, 255, 0.8), inset 0 1px rgba(255, 255, 255, 0.07); }
-.svcText h3 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1; margin-bottom: 10px; transform: translate3d(calc(var(--d) * 80px), 0, 0); }
+.svcText h3 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1; margin-bottom: 10px; transform: translate3d(0, calc(var(--d) * -10px), 0); }
+/* the three services are three moments of one move into the console: where you are in it */
+.svcStep { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; color: var(--muted); font: 600 0.74rem var(--font-head); letter-spacing: 0.16em; text-transform: uppercase; }
+.svcStep b { color: var(--blue-light); font-weight: 700; font-variant-numeric: tabular-nums; }
+.svcStep i { flex: 1; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--blue) calc(var(--k) * 100%), rgba(156, 191, 255, 0.18) 0); }
 .svcSummary { color: var(--silver); margin-bottom: 14px; }
 .svcPrice { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .svcPrice strong { font: 700 2rem var(--font-head); font-variant-numeric: tabular-nums; }
 .svcPrice small { color: var(--muted); }
 .svcList { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 7px; color: var(--silver); font-size: 0.94rem; }
-.svcList li { display: flex; gap: 8px; align-items: center; transform: translate3d(calc(var(--d) * (60px + var(--n, 0) * 30px)), 0, 0); }
+.svcList li { display: flex; gap: 8px; align-items: center; transform: translate3d(0, calc(var(--d) * (-6px - var(--n, 0) * 5px)), 0); }
 .svcList li:nth-child(2) { --n: 1; } .svcList li:nth-child(3) { --n: 2; }
 .svcList svg { color: var(--blue-light); flex: none; }
 .svcCta { display: flex; flex-wrap: wrap; gap: 10px; }
-.svcVisual { position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 14px; height: 92px; margin: 0 0 -1px; padding: 0 26px; transform: translate3d(calc(var(--d) * -60px), 0, 40px); }
-.svcWave { display: flex; align-items: center; gap: 4px; height: 100%; flex: 1; }
-.svcWave i { flex: 1; height: calc(var(--h) * 100%); border-radius: 3px; background: linear-gradient(180deg, var(--blue-light), var(--blue)); box-shadow: 0 0 12px rgba(76, 131, 255, 0.55); transform-origin: 50% 50%; animation: eq 1.2s calc(var(--i) * -0.09s) ease-in-out infinite alternate; }
-.svcMeter { display: flex; gap: 6px; height: 100%; }
-.svcMeter > span { display: flex; flex-direction: column-reverse; gap: 3px; width: 14px; }
-.svcMeter i { flex: 1; border-radius: 2px; background: var(--blue); opacity: 0.25; animation: meter 1.4s calc(var(--k) * 0.05s) steps(1) infinite; }
-.svcMeter i:nth-child(n+11) { background: var(--blue-light); }
-.svcMeter i:nth-child(n+13) { background: #fff; }
-.svcMeter > span:last-child i { animation-duration: 1.1s; }
 @keyframes eq { from { transform: scaleY(0.35); } to { transform: scaleY(1); } }
 @keyframes meter { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0.25; } }
 @media (max-width: 900px) and (orientation: portrait), (max-width: 640px) {
   .svcNav { top: 10px; left: 50%; right: auto; transform: translateX(-50%); }
-  .svc { top: auto; bottom: calc(var(--player-h) + var(--dock-h, 0px) + 12px); left: 12px; right: 12px; width: auto; transform: translate3d(0, calc(var(--d) * -90px), 0) rotateX(calc(var(--d) * 30deg)) scale(calc(1 - var(--ad) * 0.1)); }
-  .svcWord { font-size: 4.6rem; top: -0.75em; }
-  .svcText { padding: 16px; }
+  .svc { top: auto; bottom: calc(var(--player-h) + var(--dock-h, 0px) + 12px); left: 12px; right: 12px; width: auto; transform: translate3d(0, calc(var(--d) * -22px), 0); }
+  .svcStep { margin-bottom: 8px; }
+    .svcText { padding: 16px; }
   .svcText h3 { font-size: 1.9rem; margin-bottom: 6px; }
   .svcSummary { font-size: 0.9rem; margin-bottom: 8px; }
   .svcPrice { margin-bottom: 8px; } .svcPrice strong { font-size: 1.5rem; }
   .svcList { display: none; }
-  .svcVisual { height: 56px; padding: 0 16px; }
-  .svcCta .btnPrimary, .svcCta .btnGhost { min-height: 42px; padding: 0 14px; font-size: 0.86rem; flex: 1; }
+    .svcCta .btnPrimary, .svcCta .btnGhost { min-height: 42px; padding: 0 14px; font-size: 0.86rem; flex: 1; }
 }
 @media (max-height: 480px) and (orientation: landscape) {
   .svc { width: min(420px, 50vw); }
-  .svcVisual, .svcList, .svcSummary { display: none; }
+  .svcList, .svcSummary { display: none; }
   .svcText { padding: 12px 14px; }
   .svcText h3 { font-size: 1.5rem; }
 }
@@ -517,7 +510,7 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 @media (max-width: 640px) { .customHero { margin: -20px -16px 0; height: 130px; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .svcWave i, .svcMeter i, .coverEq i, .hintIcon, .hintHand, .customHero { animation: none !important; }
+  .coverEq i, .hintIcon, .hintHand, .customHero { animation: none !important; }
 }
 
 /* ============ Beat Store: one screen, fitted grid ============ */

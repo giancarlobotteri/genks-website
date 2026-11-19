@@ -165,6 +165,7 @@ export function StoreScreen() {
     if (on) {
       let seen = false;
       try { seen = sessionStorage.getItem(SEEN) === "1"; } catch { /* private mode */ }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- entering the store resets its exit state once per visit
       setIntro(prefersReducedMotion() ? null : { visit: storeVisit, full: !seen });
       try { sessionStorage.setItem(SEEN, "1"); } catch { /* private mode */ }
       wasOn.current = true;

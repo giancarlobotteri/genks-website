@@ -115,14 +115,17 @@ export function Reel() {
     if (!v) return;
     v.muted = true;
     setReelFilm(true);
+    // eslint-disable-next-line react-hooks/immutability -- the film is an external media object, not React state
     if (fromTop.current || v.ended || v.currentTime > 12.5) { fromTop.current = false; try { v.currentTime = 0; } catch { /* not seekable yet */ } }
     v.play().catch(() => setFilm(false));
   }, []);
   // a fresh preview: back to the top of the take straight away, still, under the titles
+  // eslint-disable-next-line react-hooks/immutability -- the film is an external media object, not React state
   useEffect(() => {
     if (!filmOn || !vid || !fromTop.current || i !== 0) return;
     setReelFilm(true);
     vid.pause();
+    // eslint-disable-next-line react-hooks/immutability -- the film is an external media object, not React state
     try { vid.currentTime = 0; } catch { /* not seekable yet */ }
   }, [filmOn, vid, i]);
   useEffect(() => {

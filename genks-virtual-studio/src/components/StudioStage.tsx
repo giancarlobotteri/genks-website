@@ -1,11 +1,11 @@
 import { Disc3, Mic, MonitorPlay, Mouse, Hand, SlidersHorizontal, Upload, Check, Clapperboard } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import * as THREE from "three";
 import { formatEuro } from "../lib/catalog.ts";
 import { getDirector, isAfterReel, setAfterReel, useDirector } from "../lib/director.ts";
 import { musicLevel } from "../lib/level.ts";
 import { enterStore, goService, replayReel } from "../lib/nav.ts";
-import { FILM, SHOT_T, SPOTS, STOP_T, filmTimeAt, frameToScreen, isReelFilm, panAt, panAtPos, pickFilm, setFilmVideo } from "../lib/film-media.ts";
+import { FILM, SHOT_T, SPOTS, STOP_T, STORE_T, VINYL, filmTimeAt, frameToScreen, isReelFilm, panAt, panAtPos, pickFilm, setFilmVideo } from "../lib/film-media.ts";
 import { createLivingPlate } from "../scene/living-plate.ts";
 import { FilmSeq } from "../lib/film-seq.ts";
 import { getDive, getSubShot, setSubShot } from "../lib/shots.ts";
@@ -221,7 +221,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         const r = canvas.getBoundingClientRect(), x = cx - r.left, y = cy - r.top;
         const cand: [HitId, { x: number; y: number; r: number }][] = curPos < 0.5 ? [["mic", SPOTS.mic]]
           : curPos > 0.5 && curPos < 1.5 ? LINE_IDS.map((id, i) => [id, { ...SPOTS.lineupObj[i], r: 0.075 }] as [HitId, { x: number; y: number; r: number }])
-          : curPos > 2.5 && curPos < 3.5 ? [["screen", SPOTS.screen]] : curPos > 3.5 && curPos < 6.5 ? [["mixer", SPOTS.mixer]] : [];
+          : curPos > 2.5 && curPos < 3.5 ? [["screen", SPOTS.screen]] : curPos > 3.5 && curPos < 6.5 ? [["mixer", SPOTS.mixer]] : curPos > 6.5 ? [["svc:store", { x: VINYL.x, y: VINYL.y, r: 0.075 }]] : [];
         for (const [id, c] of cand) { const q = spot(c.x, c.y); if (Math.hypot(x - q.x, y - q.y) < c.r * q.unit) return id; }
         return null;
       }
@@ -319,9 +319,10 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const light: [number, number, number] = [sp.x + 0.5, sp.y + 0.5, lightAmt];
       return { par, light, mouse: [pointer.x + 0.5, pointer.y + 0.5] as [number, number], time: t, focus: { ...focus } };
     };
+    let spinA = 0, spinV = 0;
     let photo = false, plateT = -1, plateK = 1, plateTx = 0, plateTy = 0, plateOx = 0.5;
     // a change of screen far away in the footage is a cut (a quick dip through the dark), not a rewind
-    let cutT0 = -1, cutTo = 0, cutDone = false, blurNow = 0;
+    let cutT0 = -1, cutTo = 0, cutDone = false;
     const cutEl = cutRef.current;
     // the photograph is cheap to draw: give it every pixel of the screen (up to 2x), for sharpness
     const onPlateReady = () => {
@@ -340,14 +341,15 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       const base = live.current.base, sub = getSubShot();
       const playing = screenNow === "reel" && isReelFilm();
       let want = playing ? plate.currentTime : screenNow === "reel" ? (SHOT_T[reelShot ?? ""] ?? 5.8) : base ? (SHOT_T[sub ?? base] ?? SHOT_T[base] ?? filmTimeAt(pos)) : filmTimeAt(pos);
-      // the dive into the mixer display (towards the Beat Store)
-      if (dv > 0) want += (STOP_T[STOP_T.length - 1] - want) * ease(dv);
+      // the dive towards the Beat Store: into its record, turning in its spotlight
+      if (dv > 0) want = STORE_T;
       // the tour is already smooth; a change of screen glides through the footage like a camera move
       const touringNow = screenNow === "studio" && !base;
       const changed = screenNow !== lastScreenP; lastScreenP = screenNow;
       const prevT = plateT;
       if (playing) { plateT = want; cutT0 = -1; if (cutEl) cutEl.style.opacity = "0"; }
-      else if (plateT >= 0 && cutT0 < 0 && (!touringNow || changed) && dv === 0 && Math.abs(want - plateT) > 1.6) { cutT0 = now; cutTo = want; cutDone = false; }
+      // (on the tour itself only the jump from the console back to the record of the Beat Store is a cut)
+      else if (plateT >= 0 && cutT0 < 0 && (!touringNow || changed || dv > 0 || Math.abs(want - plateT) > 4) && Math.abs(want - plateT) > 1.6) { cutT0 = now; cutTo = want; cutDone = false; }
       if (cutT0 >= 0) {
         const u = (now - cutT0) / 1000;
         if (u >= 0.26 && !cutDone) { cutDone = true; plateT = cutTo; }
@@ -359,10 +361,10 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         plateT = plateT < 0 ? want : plateT + (want - plateT) * kk;
       }
       if (!playing && Math.abs(plate.currentTime - plateT) > 0.03 && !plate.seeking) plate.currentTime = Math.max(0, Math.min((plate.duration || 13) - 0.05, plateT));
-      void prevT; void blurNow;
+      void prevT;
       // a camera that breathes, the framing of the screen, and the push into the display
       const breathe = reduced ? 0 : Math.sin(t * 0.13) * 0.012;
-      plateK = (playing ? 1.04 : 1.06) + breathe + (base ? 0.08 : 0) + ease(dv) * 1.4;
+      plateK = (playing ? 1.04 : 1.06) + breathe + (base ? 0.08 : 0);
       const slack = (plateK - 1) / 2;
       plateTx = playing ? 0 : Math.max(-slack, Math.min(slack, -fx)) * w + (reduced ? 0 : Math.sin(t * 0.07) * 0.006 * w);
       plateTy = playing ? 0 : Math.max(-slack, Math.min(slack, -fy)) * h;
@@ -380,9 +382,28 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         // a little lower than the centre: the title sits above the four, the captions below
         plateTy = plateTy * (1 - e) + h * 0.05 * e;
       }
+      // the Beat Store stop and the way in: the camera closes in on the record (and, diving, into it)
+      const onVinyl = !playing && Math.abs(plate.frame() - Math.round(STORE_T * 24)) <= 3;
+      const vinAt = touringNow ? ease(clamp01((pos - (STOP_T.length - 1.5)) * 2)) : 0;
+      const vin = onVinyl ? Math.max(vinAt, ease(dv)) : 0;
+      if (vin > 0.001) {
+        const kV = (portrait ? 1.5 : 2.05) + ease(dv) * 2.6;
+        plateK += (kV - plateK) * vin;
+        const q = frameToScreen(VINYL.x, VINYL.y, w, h, plateOx, plateK, 0, 0);
+        const a = frameToScreen(0, 0, w, h, plateOx, plateK, 0, 0), b = frameToScreen(1, 1, w, h, plateOx, plateK, 0, 0);
+        // centred (a little above the middle), never past the edges of the picture
+        const tx = Math.max(w - b.x, Math.min(-a.x, w / 2 - q.x)), ty = Math.max(h - b.y, Math.min(-a.y, h * 0.46 - q.y));
+        plateTx += (tx - plateTx) * vin;
+        plateTy += (ty - plateTy) * vin;
+      }
+      // the record turns: slowly when the pointer is on it or at its stop, faster and faster on the way in
+      const hovVinyl = hoverId === "svc:store" || domHover.current === "svc:store" || domHover.current === "display";
+      const wantSpin = !onVinyl || reduced ? 0 : dv > 0 ? 2.2 + 16 * ease(dv) : vinAt > 0.5 || hovVinyl ? 2.2 : 0.35;
+      spinV += (wantSpin - spinV) * (1 - Math.exp(-dt * (dv > 0 ? 6 : 2.5)));
+      spinA = (spinA + spinV * dt) % (Math.PI * 2000);
       const io = lifeInputs(now, dt, svcFit);
       // the camera leans in towards the object under the pointer
-      if (leanAmt > 0.01 && !playing && svcFit < 0.5) {
+      if (leanAmt > 0.01 && !playing && svcFit < 0.5 && vin < 0.5) {
         const q = spot(hoverAt[0], hoverAt[1]);
         const e = ease(Math.min(1, leanAmt));
         plateK += 0.08 * e;
@@ -391,7 +412,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       }
       // the preview is a film: it plays clean, without the hand-held light and the camera move
       if (playing) { io.par = [0, 0]; io.light = [io.light[0], io.light[1], 0]; io.focus.a = 0; }
-      living?.render({ focus: io.focus, source: "film", w, h, ox: plateOx, k: plateK, tx: plateTx, ty: plateTy, par: io.par, light: io.light, hover: hoverAmt > 0.01 ? [hoverAt[0], hoverAt[1], hoverAmt] : null, mouse: io.mouse, time: io.time, dust: 0 });
+      living?.render({ focus: io.focus, source: "film", w, h, ox: plateOx, k: plateK, tx: plateTx, ty: plateTy, par: io.par, light: io.light, hover: hoverAmt > 0.01 ? [hoverAt[0], hoverAt[1], hoverAmt] : null, mouse: io.mouse, time: io.time, dust: 0,
+        spin: onVinyl && spinV > 0.01 ? { x: VINYL.x, y: VINYL.y, r: VINYL.r, a: -spinA } : null });
     };
     // the Beat Store's own place: the photographic record vault, moving with the catalogue
     const paintVault = (now: number, dt: number, page: number, bundles: boolean) => {
@@ -702,10 +724,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
           </ol>
           {services.map((m, i) => (
             <article key={m.id} ref={el => { svcRefs.current[i] = el; }} className={s.svc} data-i={i} aria-labelledby={`svc-${m.id}`}>
-              <span className={s.svcWord} aria-hidden="true">{m.name}</span>
-              <SvcVisual kind={m.id} />
               <div className={s.svcText}>
-                <p className={s.kicker}>Banco mixer</p>
+                <p className={s.svcStep} style={{ ["--k" as string]: (i + 1) / services.length } as CSSProperties}><span>Banco mixer</span><i aria-hidden="true" /><b>{String(i + 1).padStart(2, "0")} / {String(services.length).padStart(2, "0")}</b></p>
                 <h3 id={`svc-${m.id}`}>{m.name}</h3>
                 <p className={s.svcSummary}>{m.summary}</p>
                 <p className={s.svcPrice}><strong>{m.price != null ? formatEuro(m.price) : "Su preventivo"}</strong> <small>{m.priceNote}</small> <DemoBadge /></p>
@@ -789,13 +809,3 @@ export function StudioDock() {
   );
 }
 
-/** Animated audio visual for each service: waveform (Mix), loudness meter (Master), both (Mix & Master). */
-function SvcVisual({ kind }: { kind: string }) {
-  const bars = Array.from({ length: 28 }, (_, i) => 0.25 + Math.abs(Math.sin(i * 0.7) * Math.cos(i * 0.23)) * 0.75);
-  return (
-    <div className={s.svcVisual} data-kind={kind} aria-hidden="true">
-      {kind !== "master" && <span className={s.svcWave}>{bars.map((b, i) => <i key={i} style={{ ["--h" as string]: b, ["--i" as string]: i }} />)}</span>}
-      {kind !== "mix" && <span className={s.svcMeter}>{Array.from({ length: 2 }, (_, c) => <span key={c}>{Array.from({ length: 14 }, (_, k) => <i key={k} style={{ ["--k" as string]: k }} />)}</span>)}</span>}
-    </div>
-  );
-}

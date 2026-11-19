@@ -60,24 +60,34 @@ export function pickFilm(opts: { motion?: boolean } = {}): string | null {
 }
 
 /** The moment of the take that is each stop of the tour (s): mic, services, studio, DAW, Mix, Master, Mix & Master, display. */
-export const STOP_T = [0.6, 3.4, 5.8, 7.6, 9.4, 10.0, 11.2, 12.95];
+// Mix, Master and Mix & Master: three moments of the one sharp push into the console (11.2 → 12.4 s)
+export const STOP_T = [0.6, 3.4, 5.8, 7.6, 11.17, 11.85, 12.4, 12.95];
+/**
+ * The Beat Store is entered from its record, turning in its spotlight among the four services: the last
+ * stop of the tour leaves the console (a short push into it) and cuts back to that record.
+ */
+export const STORE_T = 3.4;
+/** the record on its plinth in that frame: centre (fractions of the frame), radius (fraction of its height) */
+export const VINYL = { x: 0.7734, y: 0.3528, r: 0.106 };
 /** Film time for a (fractional) tour position. */
 export function filmTimeAt(pos: number) {
+  if (pos > STOP_T.length - 1.5) return STORE_T;
   const p = Math.max(0, Math.min(STOP_T.length - 1, pos));
   const i = Math.min(STOP_T.length - 2, Math.floor(p));
   return STOP_T[i] + (STOP_T[i + 1] - STOP_T[i]) * (p - i);
 }
 /** Film time for the preview shots and the service screens. */
 export const SHOT_T: Record<string, number> = {
-  "reel:choose": 5.8, "reel:intro": 5.8, "reel:dark": 0.6, "reel:rec": 0.6, "reel:custom": 7.6, "reel:mix": 9.4, "reel:store": 12.95,
-  rec: 0.6, custom: 7.6, mix: 9.4, "mix:mix": 9.4, "mix:master": 10.0, "mix:mixmaster": 11.2, "mix:remote": 9.4,
+  "reel:choose": 5.8, "reel:intro": 5.8, "reel:dark": 0.6, "reel:rec": 0.6, "reel:custom": 7.6, "reel:mix": 11.17, "reel:store": STORE_T,
+  rec: 0.6, custom: 7.6, mix: 11.17, "mix:mix": 11.17, "mix:master": 11.85, "mix:mixmaster": 12.4, "mix:remote": 11.17,
 };
 
 /** Where things are in the picture (fractions of the 16:9 frame) at their stop. */
 export const SPOTS = {
   mic: { x: 0.47, y: 0.42, r: 0.11 },
   screen: { x: 0.5, y: 0.4, r: 0.16 },
-  display: { x: 0.5, y: 0.36, r: 0.14 },
+  /** the Beat Store: its record (see VINYL) */
+  display: { x: 0.7734, y: 0.3528, r: 0.12 },
   mixer: { x: 0.5, y: 0.6, r: 0.3 },
   /** the four services on their plinths (captions sit under them) */
   lineup: [{ x: 0.24, y: 0.83 }, { x: 0.41, y: 0.83 }, { x: 0.6, y: 0.83 }, { x: 0.79, y: 0.83 }],

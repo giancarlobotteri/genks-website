@@ -52,10 +52,20 @@ uniform vec3 uLight;   // x, y in frame coordinates, amount
 uniform vec3 uHover;   // (unused, kept for compatibility)
 uniform vec4 uPick;    // the object under the pointer: x, y in frame coordinates, radius, amount
 uniform float uAspect, uTime, uExposure, uTexel, uSharp;
+uniform vec4 uSpin;    // the record of the Beat Store turning on its plinth: centre (frame), radius (frame height), angle
 varying vec2 vUv;
 void main() {
   vec2 s = vec2(vUv.x, 1.0 - vUv.y);
   vec2 f = parallax(frameUv(s));
+  if (uSpin.z > 0.0) {
+    vec2 dv = (f - uSpin.xy) * vec2(uAspect, 1.0);
+    float r = length(dv);
+    // the whole disc turns, its rim stays where it is (no tearing at the edge)
+    float a = uSpin.w * (1.0 - smoothstep(uSpin.z * 0.965, uSpin.z, r));
+    float cs = cos(a), sn = sin(a);
+    dv = vec2(cs * dv.x - sn * dv.y, sn * dv.x + cs * dv.y);
+    f = uSpin.xy + dv / vec2(uAspect, 1.0);
+  }
   vec3 col = colorAt(f);
   // crisp: an unsharp mask at the size of one screen pixel (never finer, never coarser)
   vec2 b = vec2(uTexel, uTexel * uAspect);
@@ -150,7 +160,7 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, film: FilmSeq |
   };
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT, fragmentShader: FRAG, depthTest: false, depthWrite: false,
-    uniforms: { ...shared, uLight: { value: new THREE.Vector3(0.5, 0.4, 0) }, uHover: { value: new THREE.Vector3(0.5, 0.5, 0) }, uPick: { value: new THREE.Vector4(0.5, 0.5, 0.15, 0) }, uAspect: { value: 16 / 9 }, uExposure: { value: 1 }, uTexel: { value: 1 / 1920 }, uSharp: { value: 0.35 } },
+    uniforms: { ...shared, uLight: { value: new THREE.Vector3(0.5, 0.4, 0) }, uHover: { value: new THREE.Vector3(0.5, 0.5, 0) }, uPick: { value: new THREE.Vector4(0.5, 0.5, 0.15, 0) }, uSpin: { value: new THREE.Vector4(0, 0, 0, 0) }, uAspect: { value: 16 / 9 }, uExposure: { value: 1 }, uTexel: { value: 1 / 1920 }, uSharp: { value: 0.35 } },
   });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
   quad.frustumCulled = false;
@@ -183,6 +193,8 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, film: FilmSeq |
       par: [number, number]; light: [number, number, number]; hover: [number, number, number] | null; mouse: [number, number]; time: number; dust: number;
       /** what the pointer is on: x, y (frame coordinates if `frame`, else screen fractions), radius, amount */
       focus?: { x: number; y: number; frame: boolean; r: number; a: number };
+      /** a disc of the picture that turns (frame coordinates, radius in frame heights, angle in radians) */
+      spin?: { x: number; y: number; r: number; a: number } | null;
     }) {
       if (o.source !== src) {
         src = o.source;
@@ -217,6 +229,8 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, film: FilmSeq |
         const fp = o.focus.frame ? [o.focus.x, o.focus.y] : toFrame(o.focus.x, o.focus.y);
         mat.uniforms.uPick.value.set(fp[0], fp[1], o.focus.r, o.focus.a);
       } else mat.uniforms.uPick.value.w = 0;
+      if (o.spin && src === "film") mat.uniforms.uSpin.value.set(o.spin.x, o.spin.y, o.spin.r, o.spin.a);
+      else mat.uniforms.uSpin.value.z = 0;
       mat.uniforms.uAspect.value = W / H;
       dustMat.uniforms.uMouse.value.set(o.mouse[0], o.mouse[1]);
       dustMat.uniforms.uPx.value = 1.4 * renderer.getPixelRatio() * (o.h / 900 + 0.4);
