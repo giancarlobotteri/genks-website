@@ -7,6 +7,7 @@ import { musicLevel } from "../lib/level.ts";
 import { enterStore, goService, replayReel } from "../lib/nav.ts";
 import { FILM, SHOT_T, SPOTS, STOP_T, filmTimeAt, frameToScreen, isReelFilm, panAt, panAtPos, pickFilm, setFilmVideo } from "../lib/film-media.ts";
 import { createLivingPlate } from "../scene/living-plate.ts";
+import { FilmSeq } from "../lib/film-seq.ts";
 import { getDive, getSubShot, setSubShot } from "../lib/shots.ts";
 import { goToStop, installStepper, isMoving, overshoot, stopPos, tickStepper } from "../lib/stepper.ts";
 import { arcFor, drift, durFor, orbitPose, SHOTS } from "../scene/shot-table.ts";
@@ -63,7 +64,6 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   const calloutRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const railRef = useRef<HTMLOListElement>(null);
   // the photographic studio: the film's frames (lib/film-media), with the live 3D underneath as fallback
-  const plateRef = useRef<HTMLVideoElement>(null);
   const vaultRef = useRef<HTMLDivElement>(null);
   const cutRef = useRef<HTMLDivElement>(null);
   // the pointer on a hotspot or a service caption also puts that object in the spotlight
@@ -278,15 +278,19 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     const look = { reveal: 0, hero: 0, title: 0 };
 
     // ---- the photographic studio: the film's own frames, scrubbed by the tour ----
-    const plate = plateRef.current, vault = vaultRef.current, stageEl = canvas.parentElement!;
-    const living = plate ? createLivingPlate(renderer, plate, { color: FILM.vault, depth: FILM.vaultDepth }, quality === "high") : null;
+    // the film's frames (sharp stills, decoded ahead of the position) feed the living photograph
+    const plate = plateSrc ? new FilmSeq(plateSrc, FILM.frames, STOP_T.map(x => Math.round(x * 24)), quality === "high" ? 72 : 40) : null;
+    setFilmVideo(plate);
+    const vault = vaultRef.current, stageEl = canvas.parentElement!;
+    const living = plate ? createLivingPlate(renderer, plate, { atlas: FILM.depthAtlas, grid: FILM.depthGrid }, { color: FILM.vault, depth: FILM.vaultDepth }, quality === "high") : null;
     let hoverAmt = 0, hoverAt: [number, number] = [0.5, 0.5], lightAmt = 0;
     // the focus pull: on the object under the pointer (or wherever a mouse points), eased like a camera
     const focus = { x: 0.5, y: 0.5, frame: false, r: 0.12, a: 0 };
     let mouseOn = false;
     const LINE_SPOTS = ["svc:recording", "svc:custom", "svc:mix", "svc:store"];
     /** camera parallax, light and hover for the living photograph, from the pointer */
-    const lifeInputs = (now: number, dt: number) => {
+    let leanAmt = 0, svcFit = 0, lastScreenP = "";
+    const lifeInputs = (now: number, dt: number, autoSvc = 0) => {
       const t = now / 1000;
       const idle = now - lastInput > 2600 && !reduced;
       if (idle) { pointer.x = Math.sin(t * 0.31) * 0.22; pointer.y = Math.cos(t * 0.23) * 0.14; }
@@ -296,9 +300,13 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       lightAmt += (wantLight - lightAmt) * (1 - Math.exp(-dt * 3));
       if (touchLight > 0) touchLight = Math.max(0, touchLight - dt * 0.4);
       const hid = (hoverId as string | null) ?? domHover.current;
-      const at = hid == null ? null : hid.startsWith("svc:") ? SPOTS.lineupObj[LINE_SPOTS.indexOf(hid)] : (SPOTS as unknown as Record<string, { x: number; y: number }>)[hid];
+      const hit = hid == null ? null : hid.startsWith("svc:") ? SPOTS.lineupObj[LINE_SPOTS.indexOf(hid)] : (SPOTS as unknown as Record<string, { x: number; y: number }>)[hid];
+      // phones at the four services: the spotlight moves from one to the next by itself
+      const auto = !hit && autoSvc > 0.6 ? SPOTS.lineupObj[Math.floor(t / 2.2) % 4] : null;
+      const at = hit ?? auto;
       if (at) hoverAt = [at.x, at.y];
       hoverAmt += ((at ? 1 : 0) - hoverAmt) * (1 - Math.exp(-dt * 8));
+      leanAmt += ((hit ? 1 : 0) - leanAmt) * (1 - Math.exp(-dt * 6));
       const par: [number, number] = reduced ? [0, 0] : [-sp.x * 0.11, -sp.y * 0.07];
       // focus: a known object (hotspot / service) when hovered, otherwise whatever the mouse is on
       const fk = 1 - Math.exp(-dt * 7);
@@ -335,9 +343,10 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       if (dv > 0) want += (STOP_T[STOP_T.length - 1] - want) * ease(dv);
       // the tour is already smooth; a change of screen glides through the footage like a camera move
       const touringNow = screenNow === "studio" && !base;
+      const changed = screenNow !== lastScreenP; lastScreenP = screenNow;
       const prevT = plateT;
       if (playing) { plateT = want; cutT0 = -1; if (cutEl) cutEl.style.opacity = "0"; }
-      else if (plateT >= 0 && cutT0 < 0 && !touringNow && dv === 0 && Math.abs(want - plateT) > 1.6) { cutT0 = now; cutTo = want; cutDone = false; }
+      else if (plateT >= 0 && cutT0 < 0 && (!touringNow || changed) && dv === 0 && Math.abs(want - plateT) > 1.6) { cutT0 = now; cutTo = want; cutDone = false; }
       if (cutT0 >= 0) {
         const u = (now - cutT0) / 1000;
         if (u >= 0.26 && !cutDone) { cutDone = true; plateT = cutTo; }
@@ -357,11 +366,24 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       plateTx = playing ? 0 : Math.max(-slack, Math.min(slack, -fx)) * w + (reduced ? 0 : Math.sin(t * 0.07) * 0.006 * w);
       plateTy = playing ? 0 : Math.max(-slack, Math.min(slack, -fy)) * h;
       plateOx = portrait ? (playing ? panAt(plateT) / 100 : panAtPos(pos)) : 0.5;
-      const io = lifeInputs(now, dt);
+      // phones, at the four services: the camera pulls back until all four stand in the frame
+      const wantFit = portrait && touringNow && !playing ? band(pos, 1, 1, 0.6) : 0;
+      svcFit += (wantFit - svcFit) * (1 - Math.exp(-dt * 6));
+      if (svcFit > 0.001) {
+        const cs = Math.max(w / 1920, h / 1080);
+        const fitK = Math.min(1, w / (0.74 * 1920 * cs));
+        const e = ease(svcFit);
+        plateK += (fitK - plateK) * e;
+        plateOx += (0.5 - plateOx) * e;
+        plateTx *= 1 - e;
+        // a little lower than the centre: the title sits above the four, the captions below
+        plateTy = plateTy * (1 - e) + h * 0.05 * e;
+      }
+      const io = lifeInputs(now, dt, svcFit);
       // the camera leans in towards the object under the pointer
-      if (hoverAmt > 0.01 && !playing) {
+      if (leanAmt > 0.01 && !playing && svcFit < 0.5) {
         const q = spot(hoverAt[0], hoverAt[1]);
-        const e = ease(Math.min(1, hoverAmt));
+        const e = ease(Math.min(1, leanAmt));
         plateK += 0.08 * e;
         plateTx += (w / 2 - q.x) * 0.22 * e;
         plateTy += (h / 2 - q.y) * 0.18 * e;
@@ -379,6 +401,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
+      plate?.tick(now);
       const dt = last < 0 ? 1 / 60 : Math.min((now - last) / 1000, 0.25);
       last = now;
       const dir = getDirector();
@@ -557,7 +580,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
           const el = calloutRefs.current[i];
           if (!el) return;
           // phones see only part of the line-up: the four captions sit in an even row above the dock
-          if (photo && portrait) tmp.set(((0.13 + i * 0.247) * 2 - 1), 1 - 0.74 * 2, 0);
+          if (photo && portrait && svcFit < 0.5) tmp.set(((0.13 + i * 0.247) * 2 - 1), 1 - 0.74 * 2, 0);
           else if (photo) { const q = spot(SPOTS.lineup[i].x, SPOTS.lineup[i].y); tmp.set((q.x / w) * 2 - 1, 1 - (q.y / h) * 2, 0); }
           else { c.anchor.getWorldPosition(tmp); tmp.project(camera); }
           // kept inside the screen on narrow phones
@@ -569,6 +592,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
             el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0) translate(-50%, 0)`;
           }
           el.style.opacity = clamp01((av - 0.35 - i * 0.1) / 0.35).toFixed(3);
+          // the caption of the object in the spotlight lights up with it
+          const o = SPOTS.lineupObj[i];
+          el.toggleAttribute("data-lit", photo && hoverAmt > 0.5 && Math.abs(hoverAt[0] - o.x) < 0.02 && Math.abs(hoverAt[1] - o.y) < 0.02);
         });
       }
       if (titleRef.current) {
@@ -629,6 +655,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       canvas.removeEventListener("click", onCanvasClick);
       delete document.documentElement.dataset.gl;
       plate?.removeEventListener("loadeddata", onPlateReady);
+      setFilmVideo(null);
+      plate?.dispose();
       living?.dispose();
       window.removeEventListener("deviceorientation", onTilt);
       window.removeEventListener("touchend", askTilt);
@@ -647,7 +675,6 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
   return (
     <section id="studio" className={s.stage} data-screen={screen} aria-label="Studio virtuale GENKS">
       {noGl ? <div className={s.stageNoGl} aria-hidden="true" /> : <canvas ref={canvasRef} className={s.stageCanvas} data-ready={ready || undefined} aria-hidden="true" />}
-      {!noGl && plateSrc && <video ref={el => { plateRef.current = el; setFilmVideo(el); }} className={s.stagePlate} src={plateSrc} muted playsInline preload="auto" disablePictureInPicture aria-hidden="true" />}
       {!noGl && <div ref={cutRef} className={s.stageCut} aria-hidden="true" />}
       {!noGl && plateSrc && <div className={s.stageGrain} aria-hidden="true" />}
       {!noGl && (

@@ -1041,3 +1041,7 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
   .vinylBuy { justify-content: space-between; }
 }
 @media (prefers-reduced-motion: reduce) { .vinylSpin { animation: none; } .vinylItem, .vinylDisc, .tonearm i { transition: none; } }
+
+/* the service caption of the object in the spotlight */
+.lineCap[data-lit] { border-color: var(--blue); background: linear-gradient(180deg, rgba(76, 131, 255, 0.4), rgba(14, 22, 44, 0.85)); box-shadow: 0 0 0 1px rgba(76, 131, 255, 0.6), 0 0 26px -4px var(--blue); color: #fff; }
+.lineCap { transition: border-color 0.35s var(--ease), background 0.35s var(--ease), box-shadow 0.35s var(--ease); }

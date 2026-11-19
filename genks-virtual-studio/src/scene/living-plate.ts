@@ -3,8 +3,9 @@
 // (near objects slide over the background, with occlusion), the cursor is a light that models the
 // objects by their shape, dust floats in the air in front of and behind them and drifts away from the
 // pointer, the object under the pointer lights up. Depth: Depth Anything V2 on every frame of the film
-// (colour on top, depth below, in the same video, so they never drift apart).
+// (one atlas, always in memory: the depth of the frame on screen is always there).
 import * as THREE from "three";
+import type { FilmSeq } from "../lib/film-seq.ts";
 
 const VERT = /* glsl */ `
 varying vec2 vUv;
@@ -13,12 +14,16 @@ void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
 // frame coordinates (0..1, y down) of a screen point, and the two halves of the stacked texture
 const COMMON = /* glsl */ `
 uniform sampler2D uTex, uDepth;
-uniform float uStacked;
+uniform float uStacked;   // 1: a film frame (top-down bitmap) with its cell of the depth atlas; 0: a still with its own depth map
+uniform vec2 uCell, uGrid;
 uniform vec2 uUvScale, uUvOff, uPar;
 uniform float uFocus;
 vec2 frameUv(vec2 s) { return s * uUvScale + uUvOff; }
-vec3 colorAt(vec2 f) { f = clamp(f, 0.001, 0.999); return uStacked > 0.5 ? texture2D(uTex, vec2(f.x, 1.0 - f.y * 0.5)).rgb : texture2D(uTex, vec2(f.x, 1.0 - f.y)).rgb; }
-float depthAt(vec2 f) { f = clamp(f, 0.001, 0.999); return uStacked > 0.5 ? texture2D(uTex, vec2(f.x, 0.5 - f.y * 0.5)).r : texture2D(uDepth, vec2(f.x, 1.0 - f.y)).r; }
+vec3 colorAt(vec2 f) { f = clamp(f, 0.001, 0.999); return uStacked > 0.5 ? texture2D(uTex, f).rgb : texture2D(uTex, vec2(f.x, 1.0 - f.y)).rgb; }
+float depthAt(vec2 f) {
+  if (uStacked > 0.5) { f = clamp(f, 0.006, 0.994); vec2 a = (uCell + f) / uGrid; return texture2D(uDepth, vec2(a.x, 1.0 - a.y)).r; }
+  f = clamp(f, 0.001, 0.999); return texture2D(uDepth, vec2(f.x, 1.0 - f.y)).r;
+}
 // the camera moves: near things slide more than far ones (a few steps keep the edges in place)
 vec2 parallax(vec2 f) {
   vec2 g = f;
@@ -31,7 +36,7 @@ ${COMMON}
 uniform vec3 uLight;   // x, y in frame coordinates, amount
 uniform vec3 uHover;   // (unused, kept for compatibility)
 uniform vec4 uPick;    // what the pointer is on: x, y in frame coordinates, radius, amount
-uniform float uAspect, uTime, uExposure;
+uniform float uAspect, uTime, uExposure, uTexel, uSharp;
 varying vec2 vUv;
 void main() {
   vec2 s = vec2(vUv.x, 1.0 - vUv.y);
@@ -49,9 +54,11 @@ void main() {
   float d = depthAt(f);
   // everything else falls out of focus, loses colour and goes darker
   float rest = uPick.w * (1.0 - m);
+  // one set of neighbours: crisp detail where the eye is, soft focus everywhere else
+  float b = mix(uTexel, 0.0045, rest);
+  vec3 avg = (colorAt(f + vec2(b, 0.0)) + colorAt(f - vec2(b, 0.0)) + colorAt(f + vec2(0.0, b * 1.7)) + colorAt(f - vec2(0.0, b * 1.7))) * 0.25;
+  col = mix(col + (col - avg) * uSharp, (col * 2.0 + avg * 4.0) / 6.0, smoothstep(0.0, 0.25, rest));
   if (rest > 0.01) {
-    float b = 0.004 * rest;
-    col = (col * 2.0 + colorAt(f + vec2(b, 0.0)) + colorAt(f - vec2(b, 0.0)) + colorAt(f + vec2(0.0, b * 1.7)) + colorAt(f - vec2(0.0, b * 1.7))) / 6.0;
     float g = dot(col, vec3(0.299, 0.587, 0.114));
     col = mix(col, vec3(g) * vec3(0.78, 0.86, 1.0), 0.4 * rest) * (1.0 - 0.45 * rest);
   }
@@ -77,6 +84,9 @@ void main() {
   float rim = edge * area * (1.0 - smoothstep(0.06, 0.2, abs(d - dC))) * uPick.w;
   float pulse = 0.7 + 0.3 * sin(uTime * 4.2 - length(rv) * 30.0);
   col += vec3(0.32, 0.58, 1.0) * rim * pulse * 1.4;
+  // when the whole frame is shown inside a taller screen, its edges melt into the dark
+  vec2 e0 = f0;
+  col *= smoothstep(-0.07, 0.0, e0.y) * smoothstep(1.07, 1.0, e0.y) * smoothstep(-0.03, 0.0, e0.x) * smoothstep(1.03, 1.0, e0.x);
   // the picture stays in its own (display) colour space from texture to screen: no double conversion
   gl_FragColor = vec4(col * uExposure, 1.0);
 }`;
@@ -116,24 +126,28 @@ void main() {
 
 export type LivingPlate = ReturnType<typeof createLivingPlate>;
 
-export function createLivingPlate(renderer: THREE.WebGLRenderer, video: HTMLVideoElement | null, vault: { color: string; depth: string }, hi: boolean) {
+export function createLivingPlate(renderer: THREE.WebGLRenderer, film: FilmSeq | null, depth: { atlas: string; grid: [number, number] }, vault: { color: string; depth: string }, hi: boolean) {
   const scene = new THREE.Scene();
   const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const vt = video ? new THREE.VideoTexture(video) : null;
-  if (vt) { vt.colorSpace = THREE.NoColorSpace; vt.minFilter = THREE.LinearFilter; vt.magFilter = THREE.LinearFilter; vt.generateMipmaps = false; }
+  // the frame on screen (a decoded bitmap, top-down) and the depth of all frames
+  const vt = film ? new THREE.Texture() : null;
+  if (vt) { vt.flipY = false; vt.colorSpace = THREE.NoColorSpace; vt.minFilter = THREE.LinearFilter; vt.magFilter = THREE.LinearFilter; vt.generateMipmaps = false; }
+  let shownIdx = -1;
   const loader = new THREE.TextureLoader();
+  const atlas = loader.load(depth.atlas); atlas.generateMipmaps = false; atlas.minFilter = THREE.LinearFilter;
   const vColor = loader.load(vault.color); vColor.colorSpace = THREE.NoColorSpace;
   const vDepth = loader.load(vault.depth);
   const blank = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1); blank.needsUpdate = true;
 
   const shared = {
-    uTex: { value: (vt ?? blank) as THREE.Texture }, uDepth: { value: blank as THREE.Texture }, uStacked: { value: 1 },
+    uTex: { value: blank as THREE.Texture }, uDepth: { value: atlas as THREE.Texture }, uStacked: { value: 1 },
+    uCell: { value: new THREE.Vector2() }, uGrid: { value: new THREE.Vector2(depth.grid[0], depth.grid[1]) },
     uUvScale: { value: new THREE.Vector2(1, 1) }, uUvOff: { value: new THREE.Vector2(0, 0) },
     uPar: { value: new THREE.Vector2() }, uFocus: { value: 0.55 }, uTime: { value: 0 },
   };
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT, fragmentShader: FRAG, depthTest: false, depthWrite: false,
-    uniforms: { ...shared, uLight: { value: new THREE.Vector3(0.5, 0.4, 0) }, uHover: { value: new THREE.Vector3(0.5, 0.5, 0) }, uPick: { value: new THREE.Vector4(0.5, 0.5, 0.15, 0) }, uAspect: { value: 16 / 9 }, uExposure: { value: 1 } },
+    uniforms: { ...shared, uLight: { value: new THREE.Vector3(0.5, 0.4, 0) }, uHover: { value: new THREE.Vector3(0.5, 0.5, 0) }, uPick: { value: new THREE.Vector4(0.5, 0.5, 0.15, 0) }, uAspect: { value: 16 / 9 }, uExposure: { value: 1 }, uTexel: { value: 1 / 1920 }, uSharp: { value: 0.45 } },
   });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
   quad.frustumCulled = false;
@@ -167,9 +181,21 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, video: HTMLVide
     }) {
       if (o.source !== src) {
         src = o.source;
-        shared.uTex.value = src === "film" ? (vt ?? blank) : vColor;
-        shared.uDepth.value = src === "film" ? blank : vDepth;
+        shared.uDepth.value = src === "film" ? atlas : vDepth;
         shared.uStacked.value = src === "film" ? 1 : 0;
+        if (src === "vault") shared.uTex.value = vColor;
+        shownIdx = -1;
+      }
+      if (src === "film" && film && vt) {
+        const near = film.bitmapNear(film.frame());
+        if (!near) return false;
+        if (near.i !== shownIdx) {
+          shownIdx = near.i;
+          vt.image = near.bmp; vt.needsUpdate = true;
+          shared.uTex.value = vt;
+          shared.uCell.value.set(near.i % depth.grid[0], Math.floor(near.i / depth.grid[0]));
+          mat.uniforms.uTexel.value = 1 / near.bmp.width;
+        }
       }
       const W = src === "film" ? 1920 : 6336, H = src === "film" ? 1080 : 2688;
       const cs = Math.max(o.w / W, o.h / H), dw = W * cs, dh = H * cs;
@@ -195,9 +221,10 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, video: HTMLVide
       renderer.setRenderTarget(null);
       renderer.render(scene, cam);
       renderer.toneMapping = tm;
+      return true;
     },
     dispose() {
-      vt?.dispose(); vColor.dispose(); vDepth.dispose(); blank.dispose();
+      vt?.dispose(); atlas.dispose(); vColor.dispose(); vDepth.dispose(); blank.dispose();
       mat.dispose(); dustMat.dispose(); quad.geometry.dispose(); dg.dispose();
     },
   };

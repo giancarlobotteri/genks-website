@@ -44,7 +44,7 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await page.waitForTimeout(1600);
   // the preview is the opening film when the browser can play it (each chapter is a moment of the take),
   // otherwise the live 3D preview (each chapter is a camera shot)
-  const filmT = () => page.evaluate(() => document.querySelector("#studio video")?.currentTime ?? -1);
+  const filmT = () => page.evaluate(() => window.__vsFilm?.currentTime ?? -1);
   ok("anteprima: capitolo Registrazione, in sala", (await reel.getByText("Entra in sala.").isVisible()) && ((await vs(page, "reel")) === "reel:rec" || (await filmT()) >= 5.3), `film ${await filmT()}`);
   await snap(page, "02-reel-rec");
   const fill = () => page.evaluate(() => getComputedStyle(document.querySelectorAll('[aria-label^="Capitolo"] span')[1]).getPropertyValue("--fill"));
@@ -57,17 +57,15 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   const advanced = await page.waitForFunction(() => window.__vs.reel() === "reel:store" || document.querySelector('article[data-id="store"]'), null, { timeout: 40000 }).then(() => true, () => false);
   ok("anteprima: avanza da sola al capitolo Beat Store", advanced);
   await reel.locator("[data-skip]").click({ timeout: 5000 }).catch(() => {}); // on a slow machine the preview may already be over
-  const chooseTitle = page.getByRole("heading", { name: "Di cosa hai bisogno?" });
-  await chooseTitle.waitFor();
+  // the preview ends straight into the studio, on its first stop (the microphone): no choice page
+  await page.waitForFunction(() => window.__vs.screen() === "studio", null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(1500);
-  await snap(page, "03-choose");
-  ok("domanda finale «Di cosa hai bisogno?» con 4 scelte", (await reel.locator("[data-id]").count()) === 4);
-  await reel.locator('[data-id="mix"]').hover();
-  await page.waitForTimeout(200);
-  ok("scelta: puntando un servizio la telecamera ci va sopra", (await vs(page, "reel")) === "reel:mix");
+  await snap(page, "03-after-preview");
+  ok("fine anteprima: si entra nello studio, dal microfono", (await vs(page, "screen")) === "studio" && (await vs(page, "pos")) < 0.05);
+  ok("nessuna pagina «Di cosa hai bisogno?»", (await page.getByRole("heading", { name: "Di cosa hai bisogno?" }).count()) === 0);
 
   /* ---------- Recording: step-by-step screen ---------- */
-  await reel.locator('[data-id="rec"]').click();
+  await page.getByRole("navigation", { name: "Servizi" }).getByRole("button", { name: "Registrazione" }).click();
   const rec = page.getByRole("region", { name: "Prenota una sessione" });
   await rec.waitFor();
   await page.waitForTimeout(1800);
@@ -291,9 +289,10 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await page.getByRole("tab", { name: "Richieste demo" }).click();
   ok("admin demo: richieste e ordine simulato elencati", (await page.locator("tbody tr").count()) >= 4, String(await page.locator("tbody tr").count()));
   await page.goto(url);
-  await page.getByRole("heading", { name: "Di cosa hai bisogno?" }).waitFor();
-  ok("seconda visita: si arriva subito alla domanda", true);
-  await page.locator('[data-id="store"]').click();
+  await page.waitForFunction(() => window.__vs && window.__vs.screen() === "studio", null, { timeout: 15000 }).catch(() => {});
+  ok("seconda visita: si arriva subito nello studio", (await vs(page, "screen")) === "studio");
+  await page.waitForTimeout(1500);
+  await page.getByRole("navigation", { name: "Servizi" }).getByRole("button", { name: "Beat Store" }).click();
   await page.getByRole("heading", { name: "Notte Cobalto MOD" }).waitFor({ timeout: 15000 }).catch(() => {});
   ok("admin demo: modifica visibile nel catalogo", await page.getByRole("heading", { name: "Notte Cobalto MOD" }).isVisible());
   await ctx.close();
@@ -306,10 +305,10 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
     // "3d": the film can't load, the live 3D studio takes over
     if (q === "3d") await page.route("**/film/**", r => r.fulfill({ status: 404, body: "" }));
     await page.goto(url + "?quality=" + (q === "3d" ? "high" : q));
-    await page.waitForTimeout(5000);
+    if (q !== "3d") await page.waitForFunction(() => document.querySelector("#studio[data-photo]"), null, { timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(q === "3d" ? 5000 : 1500);
     const lit = await page.evaluate(() => new Promise(res => requestAnimationFrame(() => {
-      const photo = document.querySelector("#studio[data-photo] video");
-      const src = photo || document.querySelector("#studio canvas");
+      const src = document.querySelector("#studio canvas");
       const c = document.createElement("canvas"); c.width = 160; c.height = 100;
       const g = c.getContext("2d"); g.drawImage(src, 0, 0, 160, 100);
       const d = g.getImageData(0, 0, 160, 100).data; let n = 0;
@@ -327,12 +326,12 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   page = await ctx.newPage();
   watch(page);
   await page.goto(url);
-  await page.getByRole("heading", { name: "Di cosa hai bisogno?" }).waitFor();
+  await page.waitForFunction(() => window.__vs && window.__vs.screen() === "studio", null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(400);
-  ok("motion ridotto: si parte dalla domanda, con il focus sul titolo", await page.evaluate(() => document.activeElement?.textContent?.includes("hai bisogno")));
-  await snap(page, "13-phone-choose");
+  ok("motion ridotto: si parte dallo studio, dal microfono", (await vs(page, "screen")) === "studio" && (await vs(page, "pos")) < 0.05);
+  await snap(page, "13-phone-studio");
   ok("telefono: nessuno scroll orizzontale", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
-  await page.locator('[data-id="rec"]').tap();
+  await page.getByRole("navigation", { name: "Servizi" }).getByRole("button", { name: "Registrazione" }).tap();
   const prec = page.getByRole("region", { name: "Prenota una sessione" });
   await prec.waitFor();
   const box = await page.evaluate(() => { const r = document.querySelector("[data-sheet-body]").getBoundingClientRect(); return { top: r.top, bottom: r.bottom, vh: innerHeight }; });
@@ -363,8 +362,7 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   watch(page);
   await page.addInitScript(SEEN);
   await page.goto(url + "?quality=low");
-  await page.getByRole("button", { name: "Esplora lo studio liberamente" }).tap();
-  await page.waitForFunction(() => window.__vs.screen() === "studio");
+  await page.waitForFunction(() => window.__vs && window.__vs.screen() === "studio");
   await page.waitForTimeout(1500);
   const mid = await page.evaluate(() => {
     const t = y => new Touch({ identifier: 1, target: document.body, clientX: 200, clientY: y });

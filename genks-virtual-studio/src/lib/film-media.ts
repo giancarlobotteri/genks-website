@@ -5,17 +5,31 @@
  * seeking is instant). The live 3D studio stays underneath as the fallback when the video can't play.
  */
 import { prefersReducedMotion } from "../components/ui.tsx";
+import type { FilmLike } from "./film-seq.ts";
 
-/** Colour on top, depth (Depth Anything V2) below, in one video: the studio is drawn as a living photograph (scene/living-plate). */
-export const FILM = { hd: "/film/genks-live-1080.mp4", sd: "/film/genks-live-720.mp4", vault: "/film/vault.webp", vaultDepth: "/film/vault-depth.webp" };
+/**
+ * The film as sharp stills (lib/film-seq: /film/hd or /film/sd, 313 WebP frames at 24 fps) and the
+ * depth of every frame (Depth Anything V2) packed in one atlas: the studio is drawn as a living
+ * photograph (scene/living-plate).
+ */
+export const FILM = {
+  hd: "/film/hd", sd: "/film/sd", frames: 313, depthAtlas: "/film/depth-atlas.webp", depthGrid: [14, 23] as [number, number],
+  vault: "/film/vault.webp", vaultDepth: "/film/vault-depth.webp",
+};
 
-// The film has one video element, owned by the studio stage; the preview plays it, the tour scrubs it.
-let filmVideo: HTMLVideoElement | null = null;
+// The film has one player, owned by the studio stage; the preview plays it, the tour scrubs it.
+let filmVideo: FilmLike | null = null;
 let reelFilm = false;
-const videoSubs = new Set<(v: HTMLVideoElement | null) => void>();
-export const setFilmVideo = (v: HTMLVideoElement | null) => { if (v !== filmVideo) { filmVideo = v; videoSubs.forEach(f => f(v)); } };
-/** The studio (and its video) may mount after the preview: be told when the video is there. */
-export const onFilmVideo = (f: (v: HTMLVideoElement | null) => void) => { videoSubs.add(f); return () => { videoSubs.delete(f); }; };
+const videoSubs = new Set<(v: FilmLike | null) => void>();
+export const setFilmVideo = (v: FilmLike | null) => {
+  if (v === filmVideo) return;
+  filmVideo = v;
+  // read-only handle for the automated checks (scripts/smoke.cjs)
+  if (typeof window !== "undefined") (window as unknown as { __vsFilm: FilmLike | null }).__vsFilm = v;
+  videoSubs.forEach(f => f(v));
+};
+/** The studio (and its film) may mount after the preview: be told when the film is there. */
+export const onFilmVideo = (f: (v: FilmLike | null) => void) => { videoSubs.add(f); return () => { videoSubs.delete(f); }; };
 export const getFilmVideo = () => filmVideo;
 /** The preview is playing the film: the studio shows it as it plays (no seeking). */
 export const setReelFilm = (on: boolean) => { reelFilm = on; };

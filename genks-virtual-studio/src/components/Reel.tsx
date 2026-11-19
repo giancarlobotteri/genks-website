@@ -1,4 +1,4 @@
-import { ArrowRight, ChevronLeft, ChevronRight, Disc3, Mic, MonitorPlay, Pause, Play, RotateCcw, SlidersHorizontal, Compass } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { formatEuro } from "../lib/catalog.ts";
 import { getDirector, setReelChoosing, setReelShot } from "../lib/director.ts";
@@ -52,8 +52,6 @@ function Words({ lines, delay = 0 }: { lines: string[]; delay?: number }) {
 export function Reel() {
   const { content } = useStudio();
   const reduced = prefersReducedMotion();
-  const fromRec = content.recording.reduce<number | null>((m, p) => (p.price == null ? m : m == null ? p.price : Math.min(m, p.price)), null);
-  const fromMix = content.mix.reduce<number | null>((m, p) => (p.price == null ? m : m == null ? p.price : Math.min(m, p.price)), null);
   const beats = content.beats.filter(b => b.status === "published").length;
 
   const chapters = useMemo<Chapter[]>(() => [
@@ -105,7 +103,8 @@ export function Reel() {
     // behind the film the 3D camera already waits on the final question, ready for the cross-fade
     setReelShot(choosing || film ? "reel:choose" : intro && i === 0 ? "reel:dark" : chapters[i].shot);
     setReelChoosing(choosing);
-    if (choosing) markSeen();
+    // the preview ends (or is skipped) straight into the studio, at its first stop: the microphone
+    if (choosing) { markSeen(); void goStudio(0); }
   }, [i, choosing, chapters, intro, film]);
 
   // the film: its own clock drives the chapters, the bars and (on portrait screens) the crop
@@ -231,45 +230,11 @@ export function Reel() {
           </div>
         </div>
       ) : (
-        <Choose fromRec={fromRec} fromMix={fromMix} fromCustom={content.customBeat.priceFrom} beats={beats} onReplay={() => go(0)} />
+        null
       )}
       {intro && i === 0 && <StreakIntro onReveal={startFilm} onDone={() => setIntro(false)} />}
     </div>
   );
 }
 
-function Choose({ fromRec, fromMix, fromCustom, beats, onReplay }: { fromRec: number | null; fromMix: number | null; fromCustom: number | null; beats: number; onReplay: () => void }) {
-  const options: { id: string; Icon: typeof Mic; title: string; text: string; meta: string; shot: string; go: () => void }[] = [
-    { id: "rec", Icon: Mic, title: "Registrare la voce", text: "Prenota una sessione in studio con fonico.", meta: fromRec != null ? `da ${formatEuro(fromRec)}` : "su richiesta", shot: "reel:rec", go: () => void goService("recording") },
-    { id: "custom", Icon: MonitorPlay, title: "Un beat su misura", text: "Prodotto sul tuo brano, dal brief alla consegna.", meta: fromCustom != null ? `da ${formatEuro(fromCustom)}` : "su preventivo", shot: "reel:custom", go: () => void goService("custom") },
-    { id: "mix", Icon: SlidersHorizontal, title: "Mix & Master", text: "Mandi le tracce, ricevi il brano finito.", meta: fromMix != null ? `da ${formatEuro(fromMix)}` : "su preventivo", shot: "reel:mix", go: () => void goService("mix") },
-    { id: "store", Icon: Disc3, title: "Un beat già pronto", text: `${beats} beat originali con anteprima e licenza.`, meta: "Beat Store", shot: "reel:store", go: () => void enterStore() },
-  ];
-  const ref = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { ref.current?.focus({ preventScroll: true }); }, []);
-  // pointing at an option moves the camera onto that service
-  const aim = (shot: string | null) => setReelShot(shot ?? "reel:choose");
-  return (
-    <div className={s.choose}>
-      <p className={s.reelKicker}><span>Si parte da qui</span></p>
-      <h2 ref={ref} tabIndex={-1} className={s.chooseTitle}><Words lines={["Di cosa", "hai bisogno?"]} /></h2>
-      <ul className={s.chooseGrid} onPointerLeave={() => aim(null)}>
-        {options.map((o, k) => (
-          <li key={o.id} style={{ ["--c" as string]: k } as CSSProperties}>
-            <button type="button" className={s.chooseCard} data-id={o.id} onClick={o.go} onPointerEnter={() => aim(o.shot)} onFocus={() => aim(o.shot)} onBlur={() => aim(null)}>
-              <span className={s.chooseIcon} aria-hidden="true"><o.Icon size={24} /></span>
-              <strong>{o.title}</strong>
-              <span className={s.chooseText}>{o.text}</span>
-              <span className={s.chooseMeta}>{o.meta}<ArrowRight size={16} aria-hidden="true" /></span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      <div className={s.chooseMore}>
-        <button type="button" className={s.btnText} onClick={() => void goStudio(0)}><Compass size={16} /> Esplora lo studio liberamente</button>
-        <button type="button" className={s.btnText} onClick={onReplay}><RotateCcw size={16} /> Rivedi l’anteprima</button>
-      </div>
-    </div>
-  );
-}
 

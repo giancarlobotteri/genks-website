@@ -153,27 +153,30 @@ function StoreIntro({ full, onDone }: { full: boolean; onDone: () => void }) {
 export function StoreScreen() {
   const { screen, storeTab, storeVisit } = useDirector();
   const on = screen === "store";
-  const [mounted, setMounted] = useState(on);
+  // on screen while "on", and for a moment after leaving (its exit animation)
+  const [leaving, setLeaving] = useState(false);
+  const mounted = on || leaving;
   const [intro, setIntro] = useState<{ visit: number; full: boolean } | null>(null);
-  const [prev, setPrev] = useState({ on: false, visit: -1 });
   const headRef = useRef<HTMLHeadingElement>(null);
+  const wasOn = useRef(on);
 
   // every entry replays the intro: the full one the first time in this session, then the short landing
-  if (on && (prev.on !== on || prev.visit !== storeVisit)) {
-    setPrev({ on, visit: storeVisit });
-    setMounted(true);
-    let seen = false;
-    try { seen = sessionStorage.getItem(SEEN) === "1"; } catch { /* private mode */ }
-    setIntro(prefersReducedMotion() ? null : { visit: storeVisit, full: !seen });
-  } else if (!on && prev.on) setPrev({ on, visit: prev.visit });
-
   useEffect(() => {
     if (on) {
+      let seen = false;
+      try { seen = sessionStorage.getItem(SEEN) === "1"; } catch { /* private mode */ }
+      setIntro(prefersReducedMotion() ? null : { visit: storeVisit, full: !seen });
       try { sessionStorage.setItem(SEEN, "1"); } catch { /* private mode */ }
+      wasOn.current = true;
+      setLeaving(false);
       requestAnimationFrame(() => headRef.current?.focus({ preventScroll: true }));
       return;
     }
-    const t = window.setTimeout(() => { setMounted(false); setIntro(null); }, 600);
+    // only after having been on screen: keep it for its exit animation
+    if (!wasOn.current) return;
+    wasOn.current = false;
+    setLeaving(true);
+    const t = window.setTimeout(() => { setLeaving(false); setIntro(null); }, 600);
     return () => window.clearTimeout(t);
   }, [on, storeVisit]);
 
