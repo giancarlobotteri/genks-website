@@ -1,7 +1,7 @@
 import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { formatEuro } from "../lib/catalog.ts";
-import { getDirector, setReelChoosing, setReelShot } from "../lib/director.ts";
+import { getDirector, setAfterReel, setReelChoosing, setReelShot } from "../lib/director.ts";
 import { enterStore, goService, goStudio } from "../lib/nav.ts";
 import { useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
@@ -104,7 +104,7 @@ export function Reel() {
     setReelShot(choosing || film ? "reel:choose" : intro && i === 0 ? "reel:dark" : chapters[i].shot);
     setReelChoosing(choosing);
     // the preview ends (or is skipped) straight into the studio, at its first stop: the microphone
-    if (choosing) { markSeen(); void goStudio(0); }
+    if (choosing) { markSeen(); setAfterReel(true); void goStudio(0); }
   }, [i, choosing, chapters, intro, film]);
 
   // the film: its own clock drives the chapters, the bars and (on portrait screens) the crop

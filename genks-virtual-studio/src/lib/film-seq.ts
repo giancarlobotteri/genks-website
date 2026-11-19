@@ -37,6 +37,7 @@ export class FilmSeq extends EventTarget implements FilmLike {
   private failed = false;
   private disposed = false;
   private focus = 0;
+  private waitFrom = 0;
 
   constructor(private base: string, count: number, private priority: number[] = [], private cache = 72) {
     super();
@@ -67,7 +68,14 @@ export class FilmSeq extends EventTarget implements FilmLike {
     const dt = this.last < 0 ? 0 : Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
     const next = Math.min(this.count - 1, Math.round((this.t + dt) * FPS));
-    if (!this.bitmaps.has(next) && this.blobs[next] == null) return; // still downloading: wait on this frame
+    // still downloading, or not decoded yet (for a moment): wait on this frame rather than skip or jump
+    if (this.blobs[next] == null) { this.waitFrom = 0; return; }
+    if (!this.bitmaps.has(next)) {
+      this.want(next);
+      if (!this.waitFrom) this.waitFrom = now;
+      if (now - this.waitFrom < 140) return;
+    }
+    this.waitFrom = 0;
     this.t += dt;
     if (this.t >= this.duration - 1 / FPS) { this.t = this.duration - 1 / FPS; this.playing = false; this.done = true; }
     this.want(this.frame());
@@ -117,9 +125,18 @@ export class FilmSeq extends EventTarget implements FilmLike {
     this.priority.forEach(p => { for (let d = -3; d <= 3; d++) add(p + d); });
     for (let step = 8; step >= 1; step = Math.floor(step / 2)) for (let i = 0; i < this.count; i += step) add(i);
     let next = 0, errors = 0;
+    const asked = new Set<number>();
+    const pick = () => {
+      // playing (the preview): the next two seconds of the take before anything else
+      if (this.playing) for (let i = this.frame(); i < Math.min(this.count, this.frame() + 48); i++) if (!asked.has(i)) return i;
+      while (next < order.length && asked.has(order[next])) next++;
+      return next < order.length ? order[next++] : -1;
+    };
     const worker = async () => {
-      while (next < order.length && !this.disposed) {
-        const i = order[next++];
+      while (!this.disposed) {
+        const i = pick();
+        if (i < 0) break;
+        asked.add(i);
         try {
           const r = await fetch(`${this.base}/${String(i + 1).padStart(3, "0")}.webp`);
           if (!r.ok || !(r.headers.get("content-type") ?? "").includes("image")) throw new Error(String(r.status));

@@ -418,8 +418,15 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 .scrollHint { position: absolute; left: 50%; bottom: calc(var(--player-h) + var(--dock-h, 0px) + 22px); z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 8px; transform: translate(-50%, 10px); color: var(--text); font: 600 0.82rem var(--font-head); letter-spacing: 0.14em; text-transform: uppercase; text-align: center; opacity: 0; pointer-events: none; transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9); }
 .scrollHint:not([data-state="off"]) { opacity: 1; transform: translate(-50%, 0); }
 .scrollHint > span:not(.hintIcon) { display: none; }
-.scrollHint[data-state="start"] .hintStart, .scrollHint[data-state="on"] .hintOn, .scrollHint[data-state="svc"] .hintOn, .scrollHint[data-state="store"] .hintStore { display: block; }
+.scrollHint[data-state="start"] .hintStart, .scrollHint[data-state="after"] .hintAfter, .scrollHint[data-state="on"] .hintOn, .scrollHint[data-state="svc"] .hintOn, .scrollHint[data-state="store"] .hintStore { display: block; }
 .scrollHint[data-state="start"] { font-size: 0.95rem; }
+/* the end of the preview: the services are further on, say it plainly */
+.scrollHint[data-state="after"] { padding: 18px 26px 16px; border-radius: 22px; border: 1px solid var(--line-strong); background: rgba(6, 11, 23, 0.72); -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(91, 140, 255, 0.12) inset; animation: afterIn 0.9s var(--ease) both; }
+.hintAfter { display: none; flex-direction: column; align-items: center; gap: 6px; }
+.scrollHint[data-state="after"] .hintAfter { display: flex !important; }
+.hintAfter strong { font: 700 clamp(1.05rem, 2.2vw, 1.35rem) var(--font-head); letter-spacing: 0.04em; text-transform: none; color: #fff; }
+.hintAfter small { font: 500 0.78rem var(--font-body, inherit); letter-spacing: 0.06em; text-transform: none; color: var(--muted, rgba(220, 230, 255, 0.72)); white-space: normal; }
+@keyframes afterIn { from { opacity: 0; transform: translateY(16px) scale(0.96); } }
 .hintIcon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line-strong); background: rgba(6, 11, 23, 0.7); animation: hintBob 1.8s ease-in-out infinite; }
 .hintIcon > svg { grid-area: 1 / 1; }
 .hintHand { display: none; }
@@ -1046,3 +1053,4 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 .lineCap { transition: border-color 0.35s var(--ease), background 0.35s var(--ease), box-shadow 0.35s var(--ease); }
 /* in the Beat Store the studio's own labels never show through */
 .stage[data-screen="store"] :is(.hotspot, .scrollHint, .anatomy, .studioTitle, .showcase) { visibility: hidden !important; opacity: 0 !important; }
+@media (max-width: 560px) { .scrollHint[data-state="after"] { padding: 14px 18px 12px; border-radius: 18px; } .hintAfter small { font-size: 0.7rem; } }

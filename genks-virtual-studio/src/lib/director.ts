@@ -50,3 +50,8 @@ export const setStoreTab = (storeTab: StoreTab) => set({ storeTab });
 export const setStorePage = (storePage: number) => { if (storePage !== state.storePage) set({ storePage }); };
 
 if (typeof document !== "undefined") document.documentElement.dataset.screen = state.screen;
+
+/** The preview has just ended in the studio: tell the visitor to scroll for the services (until they do). */
+let afterReel = false;
+export const setAfterReel = (v: boolean) => { afterReel = v; };
+export const isAfterReel = () => afterReel;

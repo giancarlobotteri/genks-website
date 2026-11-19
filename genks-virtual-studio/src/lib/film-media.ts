@@ -51,10 +51,12 @@ export function pickFilm(opts: { motion?: boolean } = {}): string | null {
   if (opts.motion !== false && prefersReducedMotion()) return null;
   const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
   if (c?.saveData || /(^|-)2g$/.test(c?.effectiveType ?? "")) return null;
-  // phones crop the 16:9 picture to fill the portrait screen, so they need the sharper file too
-  const px = Math.max(window.screen.width, window.screen.height) * Math.min(2, window.devicePixelRatio || 1);
-  // large or sharp screens get the 2560 px frames (from the 4K master), the others 1920 / 1280
-  return px >= 2400 && window.innerWidth >= 1100 ? FILM.xl : px >= 1600 ? FILM.hd : FILM.sd;
+  // the width of the picture on screen, in device pixels: a portrait phone shows the 16:9 frame at the
+  // full height of the screen (cropped at the sides), so it needs a wide file as much as a large monitor
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const need = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * dpr;
+  // 2560 px frames (from the 4K master) whenever the screen would enlarge the 1920 ones
+  return need > 2000 ? FILM.xl : need > 1350 ? FILM.hd : FILM.sd;
 }
 
 /** The moment of the take that is each stop of the tour (s): mic, services, studio, DAW, Mix, Master, Mix & Master, display. */

@@ -2,7 +2,7 @@ import { Disc3, Mic, MonitorPlay, Mouse, Hand, SlidersHorizontal, Upload, Check,
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { formatEuro } from "../lib/catalog.ts";
-import { getDirector, useDirector } from "../lib/director.ts";
+import { getDirector, isAfterReel, setAfterReel, useDirector } from "../lib/director.ts";
 import { musicLevel } from "../lib/level.ts";
 import { enterStore, goService, replayReel } from "../lib/nav.ts";
 import { FILM, SHOT_T, SPOTS, STOP_T, filmTimeAt, frameToScreen, isReelFilm, panAt, panAtPos, pickFilm, setFilmVideo } from "../lib/film-media.ts";
@@ -188,7 +188,6 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     // mouse, finger and the tilt of the phone all move the camera (and the light); idle, it drifts by itself
     let lastInput = -1e9, touchLight = 0;
     const onMove = (e: PointerEvent) => {
-      mouseOn = e.pointerType === "mouse";
       pointer.x = e.clientX / window.innerWidth - 0.5; pointer.y = e.clientY / window.innerHeight - 0.5;
       lastInput = performance.now();
       if (e.pointerType !== "mouse") touchLight = 1;
@@ -279,14 +278,13 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
 
     // ---- the photographic studio: the film's own frames, scrubbed by the tour ----
     // the film's frames (sharp stills, decoded ahead of the position) feed the living photograph
-    const plate = plateSrc ? new FilmSeq(plateSrc, FILM.frames, STOP_T.map(x => Math.round(x * 24)), quality === "high" ? 72 : 40) : null;
+    const plate = plateSrc ? new FilmSeq(plateSrc, FILM.frames, STOP_T.map(x => Math.round(x * 24)), quality === "high" ? 48 : 30) : null;
     setFilmVideo(plate);
     const vault = vaultRef.current, stageEl = canvas.parentElement!;
     const living = plate ? createLivingPlate(renderer, plate, { atlas: FILM.depthAtlas, grid: FILM.depthGrid }, { color: FILM.vault, depth: FILM.vaultDepth }, quality === "high") : null;
     let hoverAmt = 0, hoverAt: [number, number] = [0.5, 0.5], lightAmt = 0;
     // the focus pull: on the object under the pointer (or wherever a mouse points), eased like a camera
     const focus = { x: 0.5, y: 0.5, frame: false, r: 0.12, a: 0 };
-    let mouseOn = false;
     const LINE_SPOTS = ["svc:recording", "svc:custom", "svc:mix", "svc:store"];
     /** camera parallax, light and hover for the living photograph, from the pointer */
     let leanAmt = 0, svcFit = 0, lastScreenP = "";
@@ -307,17 +305,15 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       if (at) hoverAt = [at.x, at.y];
       hoverAmt += ((at ? 1 : 0) - hoverAmt) * (1 - Math.exp(-dt * 8));
       leanAmt += ((hit ? 1 : 0) - leanAmt) * (1 - Math.exp(-dt * 6));
-      const par: [number, number] = reduced ? [0, 0] : [-sp.x * 0.11, -sp.y * 0.07];
+      // a gentle camera move: enough to feel the depth, never enough to tear the edges
+      const par: [number, number] = reduced ? [0, 0] : [-sp.x * 0.045, -sp.y * 0.028];
       // focus: a known object (hotspot / service) when hovered, otherwise whatever the mouse is on
       const fk = 1 - Math.exp(-dt * 7);
-      const pointing = mouseOn && !idle;
-      const wantA = at ? 1 : pointing ? 0.5 : 0;
+      // only a real object takes the focus: moving the mouse elsewhere leaves the picture untouched
+      const wantA = at ? 1 : 0;
       if (at) {
         if (!focus.frame) { focus.frame = true; focus.x = at.x; focus.y = at.y; }
         focus.x += (at.x - focus.x) * fk; focus.y += (at.y - focus.y) * fk; focus.r += (0.17 - focus.r) * fk;
-      } else if (pointing) {
-        if (focus.frame) { focus.frame = false; focus.x = pointer.x + 0.5; focus.y = pointer.y + 0.5; }
-        focus.x += (pointer.x + 0.5 - focus.x) * fk * 1.6; focus.y += (pointer.y + 0.5 - focus.y) * fk * 1.6; focus.r += (0.11 - focus.r) * fk;
       }
       focus.a += (wantA - focus.a) * fk;
       const light: [number, number, number] = [sp.x + 0.5, sp.y + 0.5, lightAmt];
@@ -327,7 +323,12 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     // a change of screen far away in the footage is a cut (a quick dip through the dark), not a rewind
     let cutT0 = -1, cutTo = 0, cutDone = false, blurNow = 0;
     const cutEl = cutRef.current;
-    const onPlateReady = () => { if (!photo) { photo = true; stageEl.dataset.photo = "1"; } };
+    // the photograph is cheap to draw: give it every pixel of the screen (up to 2x), for sharpness
+    const onPlateReady = () => {
+      if (photo) return;
+      photo = true; stageEl.dataset.photo = "1";
+      pixelRatio = Math.min(window.devicePixelRatio || 1, 2); renderer.setPixelRatio(pixelRatio); resize();
+    };
     const onPlateFail = () => { photo = false; delete stageEl.dataset.photo; };
     plate?.addEventListener("loadeddata", onPlateReady);
     plate?.addEventListener("error", onPlateFail);
@@ -388,6 +389,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         plateTx += (w / 2 - q.x) * 0.22 * e;
         plateTy += (h / 2 - q.y) * 0.18 * e;
       }
+      // the preview is a film: it plays clean, without the hand-held light and the camera move
+      if (playing) { io.par = [0, 0]; io.light = [io.light[0], io.light[1], 0]; io.focus.a = 0; }
       living?.render({ focus: io.focus, source: "film", w, h, ox: plateOx, k: plateK, tx: plateTx, ty: plateTy, par: io.par, light: io.light, hover: hoverAmt > 0.01 ? [hoverAt[0], hoverAt[1], hoverAmt] : null, mouse: io.mouse, time: io.time, dust: 0 });
     };
     // the Beat Store's own place: the photographic record vault, moving with the catalogue
@@ -607,7 +610,9 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
 
       // "scroll" hint: only while resting on a stop
       const resting = touring && !isMoving() && dv === 0;
-      const hs = !resting ? "off" : pos < 0.05 ? "start" : pos > STOPS.length - 1.05 ? "store" : svcBand > 0.5 ? "svc" : "on";
+      // right after the preview: a clear note that the services are further on, until the first scroll
+      if (pos > 0.3 && isAfterReel()) setAfterReel(false);
+      const hs = !resting ? "off" : pos < 0.05 ? (isAfterReel() ? "after" : "start") : pos > STOPS.length - 1.05 ? "store" : svcBand > 0.5 ? "svc" : "on";
       if (hs !== hintState && hintRef.current) {
         hintState = hs;
         hintRef.current.dataset.state = hs;
@@ -676,7 +681,6 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
     <section id="studio" className={s.stage} data-screen={screen} aria-label="Studio virtuale GENKS">
       {noGl ? <div className={s.stageNoGl} aria-hidden="true" /> : <canvas ref={canvasRef} className={s.stageCanvas} data-ready={ready || undefined} aria-hidden="true" />}
       {!noGl && <div ref={cutRef} className={s.stageCut} aria-hidden="true" />}
-      {!noGl && plateSrc && <div className={s.stageGrain} aria-hidden="true" />}
       {!noGl && (
         <div ref={vaultRef} className={s.stageVault} aria-hidden="true">
           <span className={s.vaultBeam} /><span className={s.vaultBeam} />
@@ -756,6 +760,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         <div ref={hintRef} className={s.scrollHint} data-state="off" aria-hidden="true">
           <span className={s.hintIcon}><Mouse size={22} className={s.hintMouse} /><Hand size={22} className={s.hintHand} /></span>
           <span className={s.hintStart}>Scorri per esplorare lo studio</span>
+          <span className={s.hintAfter}><strong>Scorri per vedere i servizi</strong><small>Registrazione · Beat su misura · Mix &amp; Master · Beat Store</small></span>
           <span className={s.hintOn}>Scorri</span>
           <span className={s.hintStore}>Scorri per entrare nel Beat Store</span>
         </div>

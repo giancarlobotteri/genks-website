@@ -62,6 +62,7 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await page.waitForTimeout(1500);
   await snap(page, "03-after-preview");
   ok("fine anteprima: si entra nello studio, dal microfono", (await vs(page, "screen")) === "studio" && (await vs(page, "pos")) < 0.05);
+  ok("fine anteprima: avviso «scorri per vedere i servizi»", await page.getByText("Scorri per vedere i servizi").isVisible());
   ok("nessuna pagina «Di cosa hai bisogno?»", (await page.getByRole("heading", { name: "Di cosa hai bisogno?" }).count()) === 0);
 
   /* ---------- Recording: step-by-step screen ---------- */

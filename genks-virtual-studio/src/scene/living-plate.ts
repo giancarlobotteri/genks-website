@@ -1,8 +1,8 @@
 // The living photograph: the studio footage (and the record vault) drawn with its own depth map, so
 // the real picture reacts like a real place. Moving the mouse, a finger or the phone moves the camera
-// (near objects slide over the background, with occlusion), the cursor is a light that models the
-// objects by their shape, dust floats in the air in front of and behind them and drifts away from the
-// pointer, the object under the pointer lights up. Depth: Depth Anything V2 on every frame of the film
+// (near objects slide over the background), the cursor is a light that models the objects by their
+// shape, the object under the pointer comes forward while the rest steps into the shade, and the
+// picture stays sharp at every size (mipmaps + a one-screen-pixel unsharp mask). Depth: Depth Anything V2 on every frame of the film
 // (one atlas, always in memory: the depth of the frame on screen is always there).
 import * as THREE from "three";
 import type { FilmSeq } from "../lib/film-seq.ts";
@@ -24,10 +24,25 @@ float depthAt(vec2 f) {
   if (uStacked > 0.5) { f = clamp(f, 0.006, 0.994); vec2 a = (uCell + f) / uGrid; return texture2D(uDepth, vec2(a.x, 1.0 - a.y)).r; }
   f = clamp(f, 0.001, 0.999); return texture2D(uDepth, vec2(f.x, 1.0 - f.y)).r;
 }
-// the camera moves: near things slide more than far ones (a few steps keep the edges in place)
+// depth with its fine noise smoothed away: the camera move and the light follow the shapes, never the
+// pixels of the depth map (that was the tearing and the grain around the edges while the mouse moved)
+float depthSoft(vec2 f) {
+  const float r = 0.011;
+  return (depthAt(f) * 2.0 + depthAt(f + vec2(r, 0.0)) + depthAt(f - vec2(r, 0.0)) + depthAt(f + vec2(0.0, r * 1.7)) + depthAt(f - vec2(0.0, r * 1.7))) / 6.0;
+}
+// the camera move follows a wide, soft version of the depth: the picture bends gently around the objects
+// instead of stretching their rims of light into streaks
+float depthWide(vec2 f) {
+  const float r = 0.05;
+  vec2 q = vec2(r, r * 1.7);
+  float a = depthAt(f) * 2.0;
+  a += depthAt(f + vec2(q.x, 0.0)) + depthAt(f - vec2(q.x, 0.0)) + depthAt(f + vec2(0.0, q.y)) + depthAt(f - vec2(0.0, q.y));
+  a += depthAt(f + q * 0.7) + depthAt(f - q * 0.7) + depthAt(f + vec2(q.x, -q.y) * 0.7) + depthAt(f + vec2(-q.x, q.y) * 0.7);
+  return a / 10.0;
+}
 vec2 parallax(vec2 f) {
   vec2 g = f;
-  for (int i = 0; i < 4; i++) g = f - uPar * (depthAt(g) - uFocus);
+  for (int i = 0; i < 2; i++) g = f - uPar * (depthWide(g) - uFocus);
   return g;
 }`;
 
@@ -35,60 +50,48 @@ const FRAG = /* glsl */ `
 ${COMMON}
 uniform vec3 uLight;   // x, y in frame coordinates, amount
 uniform vec3 uHover;   // (unused, kept for compatibility)
-uniform vec4 uPick;    // what the pointer is on: x, y in frame coordinates, radius, amount
+uniform vec4 uPick;    // the object under the pointer: x, y in frame coordinates, radius, amount
 uniform float uAspect, uTime, uExposure, uTexel, uSharp;
 varying vec2 vUv;
 void main() {
   vec2 s = vec2(vUv.x, 1.0 - vUv.y);
-  vec2 f0 = parallax(frameUv(s));
-  // the object under the pointer: the surface at the pointer's depth, around it
-  vec2 fc = uPick.xy;
-  float dC = depthAt(fc);
-  vec2 rv = (f0 - fc) * vec2(uAspect, 1.0);
-  float area = exp(-dot(rv, rv) / max(1e-4, uPick.z * uPick.z));
-  float same = 1.0 - smoothstep(0.05, 0.17, abs(depthAt(f0) - dC));
-  float m = area * same * uPick.w;
-  // it lifts out of the picture, towards the viewer
-  vec2 f = mix(f0, fc + (f0 - fc) * 0.92, m);
+  vec2 f = parallax(frameUv(s));
   vec3 col = colorAt(f);
-  float d = depthAt(f);
-  // everything else falls out of focus, loses colour and goes darker
+  // crisp: an unsharp mask at the size of one screen pixel (never finer, never coarser)
+  vec2 b = vec2(uTexel, uTexel * uAspect);
+  vec3 avg = (colorAt(f + vec2(b.x, 0.0)) + colorAt(f - vec2(b.x, 0.0)) + colorAt(f + vec2(0.0, b.y)) + colorAt(f - vec2(0.0, b.y))) * 0.25;
+  col = max(col + (col - avg) * uSharp, 0.0);
+  float d = depthSoft(f);
+  // the object under the pointer: the surface at its depth, around it, with soft edges
+  vec2 fc = uPick.xy;
+  float dC = depthSoft(fc);
+  vec2 rv = (f - fc) * vec2(uAspect, 1.0);
+  float area = exp(-dot(rv, rv) / max(1e-4, uPick.z * uPick.z));
+  float same = 1.0 - smoothstep(0.07, 0.22, abs(d - dC));
+  float m = area * mix(0.35, 1.0, same) * uPick.w;
+  // everything else steps back into the shade (no blur: the picture stays sharp everywhere)
   float rest = uPick.w * (1.0 - m);
-  // one set of neighbours: crisp detail where the eye is, soft focus everywhere else
-  float b = mix(uTexel, 0.0045, rest);
-  vec3 avg = (colorAt(f + vec2(b, 0.0)) + colorAt(f - vec2(b, 0.0)) + colorAt(f + vec2(0.0, b * 1.7)) + colorAt(f - vec2(0.0, b * 1.7))) * 0.25;
-  col = mix(col + (col - avg) * uSharp, (col * 2.0 + avg * 4.0) / 6.0, smoothstep(0.0, 0.25, rest));
-  if (rest > 0.01) {
-    float g = dot(col, vec3(0.299, 0.587, 0.114));
-    col = mix(col, vec3(g) * vec3(0.78, 0.86, 1.0), 0.4 * rest) * (1.0 - 0.45 * rest);
-  }
-  // shape from depth: the light models the real objects
-  float e = 0.0025;
-  float dx = depthAt(f + vec2(e, 0.0)) - depthAt(f - vec2(e, 0.0));
-  float dy = depthAt(f + vec2(0.0, e)) - depthAt(f - vec2(0.0, e));
-  vec3 n = normalize(vec3(-dx * 22.0, dy * 22.0, 1.0));
+  float g = dot(col, vec3(0.299, 0.587, 0.114));
+  col = mix(col, vec3(g) * vec3(0.86, 0.92, 1.04), 0.28 * rest) * (1.0 - 0.38 * rest);
+  // and the object comes forward: a touch brighter and richer
+  col = mix(col, col * 1.2 + (col - g) * 0.18, m);
+  // shape from depth: the light in the hand models the real objects
+  float e = 0.009;
+  float dx = depthSoft(f + vec2(e, 0.0)) - depthSoft(f - vec2(e, 0.0));
+  float dy = depthSoft(f + vec2(0.0, e)) - depthSoft(f - vec2(0.0, e));
+  vec3 n = normalize(vec3(-dx * 9.0, dy * 9.0, 1.0));
   vec2 lv = (uLight.xy - f) * vec2(uAspect, 1.0);
-  vec3 L = normalize(vec3(lv, 0.32));
-  // a spotlight in the hand: a tight pool of light, the rest of the room a little darker
-  float fall = exp(-dot(lv, lv) * 16.0);
+  vec3 L = normalize(vec3(lv, 0.45));
+  float fall = exp(-dot(lv, lv) * 9.0);
   float lam = max(dot(n, L), 0.0);
-  float spec = pow(max(dot(reflect(-L, n), vec3(0.0, 0.0, 1.0)), 0.0), 24.0);
   float near = smoothstep(0.15, 0.85, d);
-  vec3 tint = vec3(0.7, 0.84, 1.25);
-  col *= 1.0 - 0.22 * uLight.z * (1.0 - fall);
-  col += col * tint * lam * fall * uLight.z * (0.9 + 1.4 * near);
-  col += tint * spec * fall * uLight.z * 0.35 * near;
-  // the object shines: brighter, crisper, and a pulsing rim of blue light runs along its silhouette
-  col = mix(col, (col - 0.5) * 1.15 + 0.5, m) * (1.0 + 0.4 * m);
-  float edge = smoothstep(0.012, 0.05, length(vec2(dx, dy)));
-  float rim = edge * area * (1.0 - smoothstep(0.06, 0.2, abs(d - dC))) * uPick.w;
-  float pulse = 0.7 + 0.3 * sin(uTime * 4.2 - length(rv) * 30.0);
-  col += vec3(0.32, 0.58, 1.0) * rim * pulse * 1.4;
+  vec3 tint = vec3(0.8, 0.9, 1.15);
+  col *= 1.0 - 0.16 * uLight.z * (1.0 - fall);
+  col += col * tint * lam * fall * uLight.z * (0.18 + 0.32 * near);
   // when the whole frame is shown inside a taller screen, its edges melt into the dark
-  vec2 e0 = f0;
-  col *= smoothstep(-0.07, 0.0, e0.y) * smoothstep(1.07, 1.0, e0.y) * smoothstep(-0.03, 0.0, e0.x) * smoothstep(1.03, 1.0, e0.x);
+  col *= smoothstep(-0.07, 0.0, f.y) * smoothstep(1.07, 1.0, f.y) * smoothstep(-0.03, 0.0, f.x) * smoothstep(1.03, 1.0, f.x);
   // the picture stays in its own (display) colour space from texture to screen: no double conversion
-  gl_FragColor = vec4(col * uExposure, 1.0);
+  gl_FragColor = vec4(min(col * uExposure, vec3(1.0)), 1.0);
 }`;
 
 const DUST_VERT = /* glsl */ `
@@ -131,11 +134,11 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, film: FilmSeq |
   const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   // the frame on screen (a decoded bitmap, top-down) and the depth of all frames
   const vt = film ? new THREE.Texture() : null;
-  if (vt) { vt.flipY = false; vt.colorSpace = THREE.NoColorSpace; vt.minFilter = THREE.LinearFilter; vt.magFilter = THREE.LinearFilter; vt.generateMipmaps = false; }
+  if (vt) { vt.flipY = false; vt.colorSpace = THREE.NoColorSpace; vt.minFilter = THREE.LinearMipmapLinearFilter; vt.magFilter = THREE.LinearFilter; vt.generateMipmaps = true; vt.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); }
   let shownIdx = -1;
   const loader = new THREE.TextureLoader();
   const atlas = loader.load(depth.atlas); atlas.generateMipmaps = false; atlas.minFilter = THREE.LinearFilter;
-  const vColor = loader.load(vault.color); vColor.colorSpace = THREE.NoColorSpace;
+  const vColor = loader.load(vault.color); vColor.colorSpace = THREE.NoColorSpace; vColor.minFilter = THREE.LinearMipmapLinearFilter;
   const vDepth = loader.load(vault.depth);
   const blank = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1); blank.needsUpdate = true;
 
@@ -147,7 +150,7 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, film: FilmSeq |
   };
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT, fragmentShader: FRAG, depthTest: false, depthWrite: false,
-    uniforms: { ...shared, uLight: { value: new THREE.Vector3(0.5, 0.4, 0) }, uHover: { value: new THREE.Vector3(0.5, 0.5, 0) }, uPick: { value: new THREE.Vector4(0.5, 0.5, 0.15, 0) }, uAspect: { value: 16 / 9 }, uExposure: { value: 1 }, uTexel: { value: 1 / 1920 }, uSharp: { value: 0.45 } },
+    uniforms: { ...shared, uLight: { value: new THREE.Vector3(0.5, 0.4, 0) }, uHover: { value: new THREE.Vector3(0.5, 0.5, 0) }, uPick: { value: new THREE.Vector4(0.5, 0.5, 0.15, 0) }, uAspect: { value: 16 / 9 }, uExposure: { value: 1 }, uTexel: { value: 1 / 1920 }, uSharp: { value: 0.35 } },
   });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
   quad.frustumCulled = false;
@@ -196,7 +199,6 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, film: FilmSeq |
           vt.image = near.bmp; vt.needsUpdate = true;
           shared.uTex.value = vt;
           shared.uCell.value.set(near.i % depth.grid[0], Math.floor(near.i / depth.grid[0]));
-          mat.uniforms.uTexel.value = 1 / near.bmp.width;
         }
       }
       const W = src === "film" ? 1920 : 6336, H = src === "film" ? 1080 : 2688;
@@ -206,6 +208,7 @@ export function createLivingPlate(renderer: THREE.WebGLRenderer, film: FilmSeq |
       shared.uUvOff.value.set(((-o.tx - o.w / 2) / o.k + o.w / 2 - offX) / dw, ((-o.ty - o.h / 2) / o.k + o.h / 2 - offY) / dh);
       // frame coordinates of a screen point (for the light and the hover)
       const toFrame = (sx: number, sy: number): [number, number] => [sx * shared.uUvScale.value.x + shared.uUvOff.value.x, sy * shared.uUvScale.value.y + shared.uUvOff.value.y];
+      mat.uniforms.uTexel.value = Math.max(1 / (src === "film" && vt?.image ? (vt.image as ImageBitmap).width : W), shared.uUvScale.value.x / Math.max(1, o.w * renderer.getPixelRatio()));
       shared.uPar.value.set(o.par[0], o.par[1]);
       shared.uTime.value = o.time;
       const lf = toFrame(o.light[0], o.light[1]);
