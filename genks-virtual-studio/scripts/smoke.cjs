@@ -136,7 +136,7 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await fillContact(mix);
   await mix.getByRole("button", { name: "Invia la richiesta" }).click();
   await mix.getByText("Richiesta inviata").waitFor({ timeout: 8000 }).catch(() => {});
-  ok("mix: richiesta inviata con prezzo del listino e file indicati", await mix.getByText("Richiesta inviata").isVisible() && sent[1]?.kind === "remote-project" && /voce-lead\.wav/.test(sent[1]?.data?.files ?? "") && /^30,00\s€$/.test(sent[1]?.data?.total ?? ""), JSON.stringify(sent[1]?.data?.total));
+  ok("mix: richiesta inviata con prezzo del listino e file indicati", await mix.getByText("Richiesta inviata").isVisible() && sent[1]?.kind === "remote-project" && /voce-lead\.wav/.test(sent[1]?.data?.files ?? "") && /^24,99\s€$/.test(sent[1]?.data?.total ?? ""), JSON.stringify(sent[1]?.data?.total));
   await mix.locator("[data-svc-back]").click();
   await mix.waitFor({ state: "detached" });
 

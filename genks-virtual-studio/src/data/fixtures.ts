@@ -1,9 +1,9 @@
 import type { StudioContent } from "../types.ts";
 
-// The catalogue and the price list of GENKS. Licences, studio rate, custom beat and packages are those
-// of prodbygenks.com (src/lib/service-pricing-v10.ts, service-catalog.ts and the licence types of the main
-// site); mix 70 €, master 30 €, mix + master 100 € as set by GENKS for this site. The "listValue" of a
-// package is the same services bought separately at these prices. Beat previews are synthesised in the
+// The catalogue and the price list of GENKS. Studio 19,99 €/ora and the licences are those of
+// prodbygenks.com; custom beat, mix/master (two rates: up to 8 tracks, or full multitrack) and packages
+// follow the November 2026 price list. The "listValue" of a package is the same services bought
+// separately at these prices (packages save 10-20 %). Beat previews are synthesised in the
 // browser from `style` + `seed`.
 
 export const demoContent: StudioContent = {
@@ -38,7 +38,7 @@ export const demoContent: StudioContent = {
       name: "Esclusiva",
       price: null,
       format: "Su richiesta",
-      includes: ["Trattativa diretta con GENKS", "Ritiro del beat dal catalogo se accettata"],
+      includes: ["Da 299 €, prezzo finale concordato con GENKS", "Tutti i file: MP3, WAV e tracce separate", "Ritiro del beat dal catalogo"],
       limits: ["Nessun prezzo fisso: proposta su richiesta"],
     },
   ],
@@ -62,27 +62,27 @@ export const demoContent: StudioContent = {
     { id: "rec-2h", name: "Sessione 2 ore", hours: 2, price: 3998, description: "Tempo per doppie, cori e prove.", includes: ["Fonico in sala", "Registrazione voce e doppie", "Esportazione delle take"] },
     { id: "rec-5h", name: "Blocco 5 ore", hours: 5, price: 7999, description: "5 ore da usare entro 90 giorni, al massimo in 2 appuntamenti.", includes: ["Fonico in sala", "Più brani o più sessioni", "Risparmi 19,96 € sulle ore singole"] },
   ],
-  // mix 70 €, master 30 €, mix + master 100 € (per brano)
+  // per brano; "price" is the rate up to 8 tracks (beat in one file + vocals), see AUDIO_PRICES for the full multitrack rate
   mix: [
-    { id: "mix", name: "Mix", summary: "Bilanciamento, spazialità e coerenza tra voce e base.", price: 7000, priceNote: "per brano", turnaround: "Prima versione entro 7 giorni lavorativi", revisions: "Una revisione inclusa per brano", includes: ["Editing di base delle voci", "Equalizzazione e dinamica", "Effetti e spazialità", "WAV stereo del mix"], needs: "Voce e strumenti in file separati (WAV)" },
-    { id: "master", name: "Master", summary: "Volume, timbrica e compatibilità con le piattaforme.", price: 3000, priceNote: "per brano", turnaround: "Prima versione entro 7 giorni lavorativi", revisions: "Una revisione inclusa per brano", includes: ["Bilanciamento timbrico finale", "Loudness per lo streaming", "Controllo mono e picchi", "WAV e MP3 finali"], needs: "Un solo file stereo del mix finito" },
-    { id: "mixmaster", name: "Mix & Master", summary: "Il percorso completo, dal multitraccia al file pronto da pubblicare.", price: 10000, priceNote: "per brano", turnaround: "Prima versione entro 7 giorni lavorativi", revisions: "Una revisione inclusa per lavorazione", includes: ["Tutto il servizio Mix", "Tutto il servizio Master", "Un solo referente", "Brano pronto da pubblicare"], needs: "Voce e strumenti in file separati (WAV)" },
+    { id: "mix", name: "Mix", summary: "Bilanciamento, spazialità e coerenza tra voce e base.", price: 3999, priceNote: "per brano", turnaround: "Prima versione entro 7 giorni lavorativi", revisions: "Una revisione inclusa per brano", includes: ["Editing di base delle voci", "Equalizzazione e dinamica", "Effetti e spazialità", "WAV stereo del mix"], needs: "Le tracce in WAV: il beat in un solo file più le voci (fino a 8 tracce), oppure tutto il multitraccia" },
+    { id: "master", name: "Master", summary: "Volume, timbrica e compatibilità con le piattaforme.", price: 2499, priceNote: "per brano", turnaround: "Prima versione entro 7 giorni lavorativi", revisions: "Una revisione inclusa per brano", includes: ["Bilanciamento timbrico finale", "Loudness per lo streaming", "Controllo mono e picchi", "WAV e MP3 finali"], needs: "Un solo file stereo del mix finito" },
+    { id: "mixmaster", name: "Mix & Master", summary: "Il percorso completo, dal multitraccia al file pronto da pubblicare.", price: 5999, priceNote: "per brano", turnaround: "Prima versione entro 7 giorni lavorativi", revisions: "Una revisione inclusa per lavorazione", includes: ["Tutto il servizio Mix", "Tutto il servizio Master", "Un solo referente", "Brano pronto da pubblicare"], needs: "Le tracce in WAV: il beat in un solo file più le voci (fino a 8 tracce), oppure tutto il multitraccia" },
   ],
   bundles: [
-    { id: "pk-beat-voice", name: "Beat & Voce", summary: "Beat GENKS su misura e 2 ore di registrazione.", includes: ["Beat su misura", "2 ore di registrazione", "Una revisione del beat"], limits: ["Mix e master esclusi", "Un brano"], price: 6499, listValue: 7497, status: "published" },
-    { id: "pk-masters", name: "Master Pack", summary: "Tre master stereo, una revisione per brano.", includes: ["3 master stereo", "Una revisione per brano"], limits: ["Tre brani"], price: 6999, listValue: 9000, status: "published" },
-    { id: "pk-voice", name: "Registrazione + mix/master", summary: "Un’ora di studio, mix e master dello stesso brano.", includes: ["1 ora di registrazione", "Mix", "Master"], limits: ["Un brano", "Ore aggiuntive 19,99 €/ora"], price: 6999, listValue: 11999, status: "published" },
+    { id: "pk-beat-voice", name: "Beat & Voce", summary: "Beat GENKS su misura e 2 ore di registrazione.", includes: ["Beat su misura", "2 ore di registrazione", "Una revisione del beat"], limits: ["Mix e master esclusi", "Un brano"], price: 9999, listValue: 11997, status: "published" },
+    { id: "pk-masters", name: "Master Pack", summary: "Tre master stereo, una revisione per brano.", includes: ["3 master stereo", "Una revisione per brano"], limits: ["Tre brani"], price: 6499, listValue: 7497, status: "published" },
+    { id: "pk-voice", name: "Registrazione + mix/master", summary: "Il primo brano con meno budget: un’ora di studio, mix e master della voce sul tuo beat.", includes: ["1 ora di registrazione", "Mix della voce sul beat", "Master"], limits: ["Un brano", "Beat in un solo file, fino a 8 tracce in tutto", "Ore aggiuntive 19,99 €/ora"], price: 6999, listValue: 7998, status: "published" },
     { id: "pk-hours", name: "Blocco 5 ore di registrazione", summary: "Cinque ore di studio da usare entro 90 giorni.", includes: ["5 ore di registrazione con fonico"], limits: ["Entro 90 giorni", "Al massimo 2 appuntamenti"], price: 7999, listValue: 9995, status: "published" },
-    { id: "pk-turnkey", name: "Singolo chiavi in mano", summary: "Beat GENKS, un’ora di studio, mix e master.", includes: ["Beat GENKS su misura", "1 ora di registrazione", "Mix", "Master"], limits: ["Un brano", "Ore aggiuntive 19,99 €/ora"], price: 9999, listValue: 15498, status: "published" },
-    { id: "pk-ep", name: "EP Pack", summary: "Quattro produzioni GENKS con mix, master e 2 ore di studio per brano.", includes: ["4 beat GENKS", "Mix e master di ogni brano", "2 ore di studio per brano", "Una revisione inclusa"], limits: ["Solo produzioni GENKS", "Ore aggiuntive 19,99 €/ora"], price: 35999, listValue: 69988, status: "published" },
+    { id: "pk-turnkey", name: "Singolo chiavi in mano", summary: "Beat GENKS, un’ora di studio, mix e master.", includes: ["Beat GENKS su misura", "1 ora di registrazione", "Mix", "Master"], limits: ["Un brano", "Ore aggiuntive 19,99 €/ora"], price: 14999, listValue: 17997, status: "published" },
+    { id: "pk-ep", name: "EP Pack", summary: "Quattro produzioni GENKS con mix, master e 2 ore di studio per brano.", includes: ["4 beat GENKS", "Mix e master di ogni brano", "2 ore di studio per brano", "Una revisione inclusa"], limits: ["Solo produzioni GENKS", "Ore aggiuntive 19,99 €/ora"], price: 64999, listValue: 79984, status: "published" },
   ],
   customBeat: {
     turnaround: "Entro 10 giorni lavorativi dall’avvio",
     revisions: "Una revisione inclusa",
-    priceFrom: 3499,
+    priceFrom: 7999,
     steps: [
       { title: "Brief", text: "Mi mandi riferimenti, mood e destinazione del brano." },
-      { title: "Pagamento", text: "34,99 €: con carta subito, oppure in contanti in studio." },
+      { title: "Pagamento", text: "79,99 €: con il link di pagamento che ricevi via email, oppure in contanti in studio." },
       { title: "Bozza", text: "Prima versione del beat da ascoltare e commentare." },
       { title: "Revisione", text: "Una revisione inclusa su struttura e suoni." },
       { title: "Consegna", text: "File e licenza secondo l’accordo firmato." },

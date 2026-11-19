@@ -51,7 +51,7 @@ describe("carrello demo", () => {
 describe("pacchetti", () => {
   it("risparmio solo se prezzo e valore sono configurati e reali", () => {
     // Beat & Voce: 64,99 € instead of 74,97 € (the prices of prodbygenks.com)
-    expect(bundleSaving(bundles[0])).toBe(998);
+    expect(bundleSaving(bundles[0])).toBe(1998);
     expect(bundleSaving({ ...bundles[0], listValue: null })).toBeNull();
     expect(bundleSaving({ ...bundles[0], price: 20000 })).toBeNull();
   });
@@ -61,11 +61,13 @@ describe("pacchetti", () => {
 });
 
 describe("listino mix e master", () => {
-  it("mix 70 €, master 30 €, mix + master 100 €", () => {
-    expect([audioPrice("mix"), audioPrice("master"), audioPrice("mixmaster")]).toEqual([7000, 3000, 10000]);
-    expect(demoContent.mix.map(m => m.price)).toEqual([7000, 3000, 10000]);
+  it("mix/master: lower rate up to 8 tracks, full rate for a multitrack", () => {
+    expect([audioPrice("mix"), audioPrice("master"), audioPrice("mixmaster")]).toEqual([3999, 2499, 5999]);
+    expect([audioPrice("mix", 8), audioPrice("mix", 9), audioPrice("master", 40), audioPrice("mixmaster", 24)]).toEqual([3999, 5999, 2499, 7999]);
+    expect(demoContent.mix.map(m => m.price)).toEqual([3999, 2499, 5999]);
+    for (const b of demoContent.bundles) expect((b.listValue! - b.price!) / b.listValue!).toBeLessThanOrEqual(0.25);
     expect(demoContent.recording[0].price).toBe(1999);
-    expect(demoContent.customBeat.priceFrom).toBe(3499);
+    expect(demoContent.customBeat.priceFrom).toBe(7999);
   });
 });
 

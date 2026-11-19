@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/:page(account|admin|admin-access|admin-security|auth|beats|carrello|checkout|chi-sono|guida|lavori|legal|login|recesso|services)/:rest*",
+      "destination": "https://app.prodbygenks.com/:page/:rest*",
+      "permanent": false
+    },
+    {
+      "source": "/api/:area(admin|availability|bookings|cart|chat|checkout|downloads|home-recommendations|services)/:rest*",
+      "destination": "https://app.prodbygenks.com/api/:area/:rest*",
+      "permanent": false
+    },
+    {
+      "source": "/_next/:rest*",
+      "destination": "https://app.prodbygenks.com/_next/:rest*",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:area(stripe|email|calendar|internal)/:rest*",
+      "destination": "https://app.prodbygenks.com/api/:area/:rest*"
+    }
+  ]
+}

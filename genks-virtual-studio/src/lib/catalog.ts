@@ -106,8 +106,18 @@ export function visibleBundles(bundles: Bundle[]) {
   return bundles.filter(b => b.status !== "hidden");
 }
 
-/** Mix / master price list of GENKS (cents): mix 70 €, master 30 €, mix + master 100 €, per brano. */
-export const AUDIO_PRICES = { mix: 7000, master: 3000, mixmaster: 10000 } as const;
-export function audioPrice(service: string): number {
-  return AUDIO_PRICES[service as keyof typeof AUDIO_PRICES] ?? AUDIO_PRICES.mixmaster;
+/** Tracks covered by the lower rate: a beat in one stereo file plus the vocals. */
+export const BASE_TRACKS = 8;
+/**
+ * Mix / master price list of GENKS (cents, per brano): `base` up to BASE_TRACKS tracks, `full` for a
+ * multitrack project. Master: 24,99 €. Mix: 39,99 / 59,99 €. Mix & Master: 59,99 / 79,99 €.
+ */
+export const AUDIO_PRICES = {
+  mix: { base: 3999, full: 5999 },
+  master: { base: 2499, full: 2499 },
+  mixmaster: { base: 5999, full: 7999 },
+} as const;
+export function audioPrice(service: string, tracks?: number): number {
+  const p = AUDIO_PRICES[service as keyof typeof AUDIO_PRICES] ?? AUDIO_PRICES.mixmaster;
+  return tracks != null && tracks > BASE_TRACKS ? p.full : p.base;
 }

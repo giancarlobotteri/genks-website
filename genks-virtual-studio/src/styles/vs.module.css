@@ -1060,4 +1060,4 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 /* in the Beat Store the studio's own labels never show through */
 .stage[data-screen="store"] :is(.hotspot, .scrollHint, .anatomy, .studioTitle, .showcase) { visibility: hidden !important; opacity: 0 !important; }
 @media (max-width: 560px) { .scrollHint[data-state="after"] { padding: 14px 18px 12px; border-radius: 18px; } .hintAfter small { font-size: 0.7rem; } }
-.mixQuote { margin: 4px 0 14px; color: var(--silver); } .mixQuote strong { color: #fff; font: 700 1.15rem var(--font-head); }
+.mixQuote { margin: 4px 0 14px; color: var(--silver); } .mixQuote strong { color: #fff; font: 700 1.15rem var(--font-head); } .mixQuote small { display: block; margin-top: 2px; font-size: .82rem; opacity: .8; }

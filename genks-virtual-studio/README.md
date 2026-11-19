@@ -150,8 +150,8 @@ Variabili d'ambiente richieste sul progetto Vercel (lato server):
 
 I prezzi sono in `src/data/fixtures.ts`:
 
-- studio 19,99 €/ora;
-- beat su misura 34,99 €;
-- licenze 29,99 / 49,99 / 99,99 €;
-- mix 70 €, master 30 €, mix e master 100 €;
-- pacchetti come prodbygenks.com.
+- studio 19,99 €/ora (dopo mezzanotte 29,99 €), blocco 5 ore 79,99 €;
+- beat su misura 79,99 €;
+- licenze 29,99 / 49,99 / 99,99 €, esclusiva da 299 €;
+- per brano, fino a 8 tracce / multitraccia (`AUDIO_PRICES` in `src/lib/catalog.ts`): mix 39,99 / 59,99 €, master 24,99 €, mix e master 59,99 / 79,99 €;
+- pacchetti con un risparmio del 10-20 % sui servizi presi separatamente.
