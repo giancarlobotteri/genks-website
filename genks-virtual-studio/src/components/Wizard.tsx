@@ -1,11 +1,11 @@
 import { ArrowLeft, ArrowRight, CheckCircle2, Send } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
-import { localRequests } from "../adapters.ts";
+import { sendRequest } from "../adapters.ts";
 import { setSubShot } from "../lib/shots.ts";
 import { validate, type Rules } from "../lib/validate.ts";
 import s from "../styles/vs.module.css";
 import type { DemoRequest, DemoRequestKind } from "../types.ts";
-import { DemoBadge, prefersReducedMotion } from "./ui.tsx";
+import { prefersReducedMotion } from "./ui.tsx";
 
 export type WizardStep = {
   id: string;
@@ -83,6 +83,8 @@ export function Wizard({ kind, steps, start = 0, submitLabel, summary, extra, do
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [stepError, setStepError] = useState<string | null>(null);
   const [done, setDone] = useState<DemoRequest | null>(null);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const last = i === steps.length - 1;
@@ -132,16 +134,18 @@ export function Wizard({ kind, steps, start = 0, submitLabel, summary, extra, do
     const errs = validate(v, all);
     const bad = steps.findIndex(st => Object.keys(st.rules ?? {}).some(k => errs[k]) || st.check?.());
     if (bad >= 0) { if (bad !== i) goTo(bad); setErrors(errs); return; }
-    setDone(localRequests.submit(kind, summary(v), v));
+    if (sending) return;
+    setSending(true); setSendError(null);
+    sendRequest(kind, summary(v), v).then(setDone, (err: Error) => setSendError(err.message)).finally(() => setSending(false));
   };
 
   if (done) {
     return (
       <div className={s.wzDone} role="status" tabIndex={-1} ref={el => el?.focus({ preventScroll: true })}>
         <span className={s.wzDoneRing} aria-hidden="true"><CheckCircle2 size={44} /></span>
-        <StepTitle text="Richiesta demo registrata" />
-        <p><DemoBadge /> Codice <strong>{done.id}</strong>. È salvata solo in questo browser: <strong>non è stata inviata</strong> e non costituisce una prenotazione, un ordine o un pagamento.</p>
-        <p className={s.muted}>In produzione questo passo invierà la richiesta al backend GENKS con conferma via email.</p>
+        <StepTitle text="Richiesta inviata" />
+        <p>Riferimento <strong>{done.id}</strong>. Ti abbiamo inviato una email di conferma con il riepilogo: ti rispondiamo con i prossimi passi e il pagamento.</p>
+        <p className={s.muted}>Non trovi l’email? Controlla la posta indesiderata o scrivici a <a href="mailto:assistenza@prodbygenks.com">assistenza@prodbygenks.com</a>.</p>
         {onAfterDone}
       </div>
     );
@@ -169,12 +173,12 @@ export function Wizard({ kind, steps, start = 0, submitLabel, summary, extra, do
           </section>
         ))}
       </div>
-      {(stepError || Object.keys(errors).length > 0) && <p className={s.formError} role="alert">{stepError ?? "Controlla i campi evidenziati."}</p>}
+      {(stepError || sendError || Object.keys(errors).length > 0) && <p className={s.formError} role="alert">{stepError ?? sendError ?? "Controlla i campi evidenziati."}</p>}
       <div className={s.wzFoot}>
         <button type="button" className={s.btnGhost} onClick={() => goTo(i - 1)} disabled={i === 0}><ArrowLeft size={16} /> Indietro</button>
-        <span className={s.wzFootNote}><DemoBadge /> Nessun dato lascia il tuo dispositivo</span>
+        <span className={s.wzFootNote}>Riceverai una conferma via email</span>
         {last
-          ? <button type="submit" className={s.btnPrimary} data-wz-next><Send size={16} /> {submitLabel}</button>
+          ? <button type="submit" className={s.btnPrimary} data-wz-next disabled={sending} aria-busy={sending || undefined}><Send size={16} /> {sending ? "Invio in corso…" : submitLabel}</button>
           : <button type="submit" className={s.btnPrimary} data-wz-next>Avanti <ArrowRight size={16} /></button>}
       </div>
     </form>

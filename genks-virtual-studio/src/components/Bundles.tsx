@@ -3,7 +3,6 @@ import { bundleSaving, formatEuro, visibleBundles } from "../lib/catalog.ts";
 import { useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
 import { GenksSymbol } from "./brand.tsx";
-import { DemoBadge } from "./ui.tsx";
 
 export function Bundles() {
   const { content, open } = useStudio();
@@ -14,7 +13,7 @@ export function Bundles() {
       <header className={s.sectionHead}>
         <p className={s.kicker}>Pacchetti e offerte</p>
         <h2 id="bundle-title">Servizi combinati, confrontabili a colpo d’occhio.</h2>
-        <p>Prezzo e risparmio compaiono solo se configurati. Nessuna scadenza o urgenza: le offerte di esempio sono indicate come tali.</p>
+        <p>Il risparmio è calcolato sugli stessi servizi presi separatamente.</p>
       </header>
       {list.length === 0 ? <p className={s.empty}>Nessun pacchetto pubblicato al momento.</p> : (
         <ul className={s.bundleGrid}>
@@ -22,8 +21,7 @@ export function Bundles() {
             const saving = bundleSaving(b);
             return (
               <li key={b.id} className={s.bundleCard} style={{ ["--i" as string]: i }}>
-                <p className={s.bundleStatus}>{b.status === "example" ? <DemoBadge>Offerta di esempio</DemoBadge> : <span className={s.published}>Pubblicata</span>}</p>
-                <h3>{b.name}</h3>
+                                <h3>{b.name}</h3>
                 <p>{b.summary}</p>
                 <ul className={s.checks}>{b.includes.map(x => <li key={x}><Check size={16} aria-hidden="true" />{x}</li>)}</ul>
                 <p className={s.limits}><strong>Limiti:</strong> {b.limits.join(" · ")}</p>

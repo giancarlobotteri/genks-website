@@ -5,9 +5,6 @@ import type { Beat } from "../types.ts";
 import s from "../styles/vs.module.css";
 import { GenksSymbol } from "./brand.tsx";
 
-export function DemoBadge({ children = "DEMO" }: { children?: ReactNode }) {
-  return <span className={s.demoBadge}>{children}</span>;
-}
 
 export const prefersReducedMotion = () =>
   typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -138,6 +135,7 @@ export function Field({ label, error, hint, children }: { label: string; name: s
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const fieldProps = (name: string, _errors?: Record<string, string>) => ({ name });
 
+/** A short note on how the request goes on (payment, files, confirmation). */
 export function DemoNotice({ children }: { children: ReactNode }) {
-  return <p className={s.demoNotice}><DemoBadge />{children}</p>;
+  return <p className={s.demoNotice}>{children}</p>;
 }

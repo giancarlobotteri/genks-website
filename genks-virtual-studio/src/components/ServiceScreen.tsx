@@ -2,14 +2,14 @@ import { ArrowLeft, Check, Disc3, Mic, Minus, MonitorPlay, Plus, SlidersHorizont
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { localAvailability } from "../adapters.ts";
 import { parseBrief } from "../lib/brief.ts";
-import { formatEuro } from "../lib/catalog.ts";
+import { audioPrice, formatEuro } from "../lib/catalog.ts";
 import { enterStore, goService, goStudio, SERVICE_STOP, type ServiceKind } from "../lib/nav.ts";
 import { setSubShot } from "../lib/shots.ts";
 import { useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
 import type { MixService } from "../types.ts";
 import { Sequencer } from "./CustomBeat.tsx";
-import { DemoBadge, DemoNotice, Field, fieldProps } from "./ui.tsx";
+import { DemoNotice, Field, fieldProps } from "./ui.tsx";
 import { UploadZone } from "./UploadZone.tsx";
 import { CountUp, KineticWords, Wizard, type WizardStep } from "./Wizard.tsx";
 
@@ -73,7 +73,7 @@ function RecordingSteps() {
   const steps: WizardStep[] = [
     {
       id: "pkg", label: "Ore", shot: "rec:pkg", title: "Quante ore ti servono?",
-      lead: <>Il fonico è sempre in sala. <DemoBadge /> prezzi dimostrativi.</>,
+      lead: "Il fonico è sempre in sala. 19,99 €/ora; dopo mezzanotte 29,99 €/ora.",
       check: () => (pkg ? null : "Scegli un pacchetto."),
       render: () => (
         <fieldset className={s.optionGrid}>
@@ -93,7 +93,7 @@ function RecordingSteps() {
     },
     {
       id: "when", label: "Quando", shot: "rec:cal", title: "Scegli giorno e orario",
-      lead: "Disponibilità dimostrativa: la richiesta non blocca uno slot reale.",
+      lead: "Indica le tue preferenze: ti confermiamo la disponibilità via email.",
       check: () => (!day ? "Scegli un giorno." : !slot ? "Scegli un orario." : null),
       render: () => (
         <>
@@ -139,14 +139,14 @@ function RecordingSteps() {
               <li key={k} className={s.rise} style={st(j)}><span>{k}</span><strong>{v}</strong></li>
             ))}
           </ul>
-          <div className={s.rise} style={st(5)}><Field label="Riferimento (link a brano o demo)" name="reference" error={errors.reference}><input {...fieldProps("reference", errors)} type="url" placeholder="https://" /></Field></div>
+          <div className={s.rise} style={st(5)}><Field label="Riferimento (link a un tuo brano o provino)" name="reference" error={errors.reference}><input {...fieldProps("reference", errors)} type="url" placeholder="https://" /></Field></div>
           <div className={s.rise} style={st(6)}><Field label="Note per il fonico" name="notes" error={errors.notes}><textarea {...fieldProps("notes", errors)} rows={3} /></Field></div>
         </>
       ),
     },
   ];
   return (
-    <Wizard kind="booking" steps={steps} submitLabel="Prenota (demo)" doneShot="rec:done"
+    <Wizard kind="booking" steps={steps} submitLabel="Invia la prenotazione" doneShot="rec:done"
       extra={() => ({ duration: `${selected?.hours ?? ""} h` })}
       summary={v => `${v.package} · ${v.date} ${v.time} · ${v.name}`}
       onAfterDone={<AfterDone current="recording" />} />
@@ -206,7 +206,7 @@ function CustomSteps({ active }: { active: boolean }) {
         <>
           <ol className={s.stepsFlow}>{cfg.steps.map((x, k) => <li key={x.title} className={s.rise} style={st(k)}><span>{String(k + 1).padStart(2, "0")}</span><strong>{x.title}</strong><p>{x.text}</p></li>)}</ol>
           <dl className={s.facts}>
-            <div className={s.rise} style={st(5)}><dt>Prezzo</dt><dd>{cfg.priceFrom != null ? <>da <CountUp value={cfg.priceFrom} format={euro} delay={700} /></> : "su preventivo"} <DemoBadge /></dd></div>
+            <div className={s.rise} style={st(5)}><dt>Prezzo</dt><dd>{cfg.priceFrom != null ? <CountUp value={cfg.priceFrom} format={euro} delay={700} /> : "su preventivo"}</dd></div>
             <div className={s.rise} style={st(6)}><dt>Tempi</dt><dd>{cfg.turnaround}</dd></div>
             <div className={s.rise} style={st(7)}><dt>Revisioni</dt><dd>{cfg.revisions}</dd></div>
           </dl>
@@ -310,11 +310,11 @@ function MixSteps({ initialTab, initialView }: { initialTab?: MixService["id"]; 
           </dl>
           <div className={`${s.tableWrap} ${s.rise}`} style={st(3)}>
             <table className={s.compare}>
-              <caption>Confronto rapido <DemoBadge /></caption>
+              <caption>Confronto rapido</caption>
               <thead><tr><th scope="col">Caratteristica</th>{content.mix.map(m => <th key={m.id} scope="col" data-on={m.id === tab || undefined}>{m.name}</th>)}</tr></thead>
               <tbody>
                 {[
-                  ["Prezzo", (m: MixService) => (m.price != null ? `da ${formatEuro(m.price)}` : "Su richiesta")],
+                  ["Prezzo", (m: MixService) => (m.price != null ? formatEuro(m.price) : "Su richiesta")],
                   ["Bilanciamento tracce", (m: MixService) => (m.id === "master" ? <Minus size={16} aria-label="No" /> : <Check size={16} aria-label="Sì" />)],
                   ["Loudness per streaming", (m: MixService) => (m.id === "mix" ? <Minus size={16} aria-label="No" /> : <Check size={16} aria-label="Sì" />)],
                   ["Tempi", (m: MixService) => m.turnaround],
@@ -341,6 +341,7 @@ function MixSteps({ initialTab, initialView }: { initialTab?: MixService["id"]; 
             <span className={s.stemBars} aria-hidden="true">{Array.from({ length: Math.min(stems, 24) }, (_, k) => <i key={k} style={st(k)} />)}</span>
           </div>
           {errors.stems && <p className={s.fieldError} role="alert">{errors.stems}</p>}
+          <p className={`${s.mixQuote} ${s.rise}`} style={st(2)} aria-live="polite">{svc.name}, per brano: <strong>{formatEuro(audioPrice(tab))}</strong></p>
           <div className={s.grid2}>
             <div className={s.rise} style={st(2)}><Field label="Deadline" name="deadline" error={errors.deadline}><input {...fieldProps("deadline", errors)} type="date" /></Field></div>
             <div className={s.rise} style={st(3)}><Field label="Link a una reference" name="referenceUrl" error={errors.referenceUrl}><input {...fieldProps("referenceUrl", errors)} type="url" placeholder="https://" /></Field></div>
@@ -350,7 +351,7 @@ function MixSteps({ initialTab, initialView }: { initialTab?: MixService["id"]; 
     },
     {
       id: "files", label: "File", shot: "mix:upload", title: "Carica le tracce",
-      lead: "Trascina i file: nel prototipo vengono mostrati solo nomi e dimensioni, nulla viene caricato.",
+      lead: "Indica i file che ci manderai: li carichi dopo, con il link che ricevi via email.",
       render: errors => (
         <>
           <div className={s.rise} style={st(0)}><UploadZone onChange={onFiles} /></div>
@@ -365,18 +366,18 @@ function MixSteps({ initialTab, initialView }: { initialTab?: MixService["id"]; 
     },
   ];
   return (
-    <Wizard kind="remote-project" steps={steps} start={initialView === "remote" ? 2 : 0} submitLabel="Invia richiesta (demo)" doneShot="mix:done"
-      extra={() => ({ files: files.join(", ") })}
-      summary={v => `${v.service} · “${v.title}” · ${v.stems} tracce · ${v.name}`}
+    <Wizard kind="remote-project" steps={steps} start={initialView === "remote" ? 2 : 0} submitLabel="Invia la richiesta" doneShot="mix:done"
+      extra={() => ({ files: files.join(", "), total: formatEuro(audioPrice(tab)) })}
+      summary={v => `${v.service} · “${v.title}” · ${v.stems} tracce · ${formatEuro(audioPrice(tab))}`}
       onAfterDone={<AfterDone current="mix" />} />
   );
 }
 
 /* ---------------- The screen ---------------- */
 const META: Record<ServiceKind, { kicker: string; title: string; word: string; notice: string }> = {
-  recording: { kicker: "Registrazione voce", title: "Prenota una sessione", word: "VOCE", notice: "Pacchetti, prezzi e disponibilità sono dimostrativi." },
-  custom: { kicker: "Beat su misura", title: "Un beat sul tuo brano", word: "BEAT", notice: "Prezzi e tempi indicativi: diritti e licenza si definiscono nell’accordo scritto." },
-  mix: { kicker: "Banco mixer", title: "Mix, Master, Mix & Master", word: "MIX", notice: "Invio dimostrativo: nessun file viene caricato o conservato." },
+  recording: { kicker: "Registrazione voce", title: "Prenota una sessione", word: "VOCE", notice: "La sessione è confermata dopo il pagamento dell’anticipo, con carta o in contanti in studio." },
+  custom: { kicker: "Beat su misura", title: "Un beat sul tuo brano", word: "BEAT", notice: "Prima versione entro 10 giorni lavorativi dall’avvio, una revisione inclusa. Diritti e licenza nell’accordo scritto." },
+  mix: { kicker: "Banco mixer", title: "Mix, Master, Mix & Master", word: "MIX", notice: "Dopo la richiesta ricevi via email il riepilogo, il link per caricare le tracce e il pagamento." },
 };
 
 /**

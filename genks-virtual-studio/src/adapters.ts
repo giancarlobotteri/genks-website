@@ -1,7 +1,6 @@
-// Integration boundaries for the FREE prototype.
-// The local implementations below use browser storage and mock data ONLY.
-// Production needs server-side replacements: admin auth, database, secure storage,
-// payment provider + webhooks, email and authorised licence downloads.
+// Integration boundaries. Requests (sessions, mix/master, custom beats, packages, licences) go to the
+// server (api/request.ts): queued in Supabase and emailed with Resend, to the customer and to GENKS.
+// Content, cart and availability still live in the browser.
 import { demoContent } from "./data/fixtures.ts";
 import { demoAvailability, type DemoDay } from "./lib/availability.ts";
 import { demoId } from "./lib/validate.ts";
@@ -11,8 +10,6 @@ export interface ContentRepository { load(): StudioContent; save(content: Studio
 export interface AvailabilityProvider { list(from: Date): DemoDay[] }
 export interface RequestGateway { submit(kind: DemoRequestKind, summary: string, data: Record<string, string>): DemoRequest; list(): DemoRequest[]; clear(): void }
 export interface CartStore { load(): CartItem[]; save(items: CartItem[]): void }
-/** Checkout never charges anything in the prototype: it only records a simulated order. */
-export interface CheckoutGateway { simulate(summary: string, data: Record<string, string>): { status: "simulated"; order: DemoRequest } }
 
 const KEYS = { content: "genks:vs:content:v1", cart: "genks:vs:cart:v1", requests: "genks:vs:requests:v1" };
 
@@ -32,8 +29,10 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
 export const localContent: ContentRepository = {
   load() {
-    const c = read<StudioContent | null>(KEYS.content, null);
-    return c && c.version === 1 && Array.isArray(c.beats) ? c : clone(demoContent);
+    // the catalogue and the price list of the site (no local edits: older browsers may still hold
+    // content saved by the former in-browser editor, which is ignored and cleared)
+    try { window.localStorage.removeItem(KEYS.content); } catch { /* storage unavailable */ }
+    return clone(demoContent);
   },
   save(content) { write(KEYS.content, content); },
   reset() {
@@ -46,7 +45,7 @@ export const localAvailability: AvailabilityProvider = { list: from => demoAvail
 
 export const localRequests: RequestGateway = {
   submit(kind, summary, data) {
-    const req: DemoRequest = { id: demoId(kind === "order" ? "ORD-DEMO" : "REQ-DEMO"), kind, summary, data, createdAt: new Date().toISOString() };
+    const req: DemoRequest = { id: demoId(kind === "order" ? "ORD-LOCAL" : "REQ-LOCAL"), kind, summary, data, createdAt: new Date().toISOString() };
     write(KEYS.requests, [req, ...read<DemoRequest[]>(KEYS.requests, [])].slice(0, 100));
     window.dispatchEvent(new Event("genks:vs:requests"));
     return req;
@@ -60,8 +59,21 @@ export const localCart: CartStore = {
   save: items => write(KEYS.cart, items),
 };
 
-export const simulatedCheckout: CheckoutGateway = {
-  simulate(summary, data) {
-    return { status: "simulated", order: localRequests.submit("order", summary, data) };
-  },
-};
+const isLocalHost = () => typeof window !== "undefined" && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
+
+/**
+ * Send a request to GENKS: the customer gets a confirmation email, GENKS a notice with every detail.
+ * (A local `vite preview` has no server: there the request is only kept in this browser.)
+ */
+export async function sendRequest(kind: DemoRequestKind, summary: string, data: Record<string, string>): Promise<DemoRequest> {
+  let r: Response;
+  try {
+    r = await fetch("/api/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, summary, data }) });
+  } catch {
+    throw new Error("Connessione non riuscita. Controlla la rete e riprova.");
+  }
+  if (r.status === 404 && isLocalHost()) return localRequests.submit(kind, summary, data);
+  const j = (await r.json().catch(() => ({}))) as { reference?: string; error?: string };
+  if (!r.ok || !j.reference) throw new Error(j.error ?? "Invio non riuscito. Riprova tra poco o scrivici a assistenza@prodbygenks.com.");
+  return { id: j.reference, kind, summary, data, createdAt: new Date().toISOString() };
+}

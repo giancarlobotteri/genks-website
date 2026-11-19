@@ -1,5 +1,4 @@
-import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from "react";
-import { Admin } from "./components/Admin.tsx";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { PanelHost } from "./components/Panels.tsx";
 import { Player } from "./components/Player.tsx";
 import { Reel } from "./components/Reel.tsx";
@@ -14,8 +13,6 @@ import s from "./styles/vs.module.css";
 // The 3D engine is the heaviest part: load it in parallel so the page shell appears immediately.
 const StudioStage = lazy(() => import("./components/StudioStage.tsx").then(m => ({ default: m.StudioStage })));
 
-const subscribeHash = (cb: () => void) => { window.addEventListener("hashchange", cb); return () => window.removeEventListener("hashchange", cb); };
-const useRoute = () => useSyncExternalStore(subscribeHash, () => (window.location.hash.startsWith("#/gestione") ? "admin" : "studio"), () => "studio");
 
 function webglAvailable() {
   try {
@@ -44,7 +41,7 @@ function Studio() {
 
   return (
     <>
-      {screen !== "reel" && <TopNav items={items} adminHref="#/gestione" />}
+      {screen !== "reel" && <TopNav items={items} />}
       <main id="top" className={s.screens}>
         <Suspense fallback={<section id="studio" className={s.stageLoading} aria-busy="true"><p>Carico lo studio…</p></section>}>
           <StudioStage noGl={noGl} onWebglFail={() => setNoGl(true)} />
@@ -58,16 +55,11 @@ function Studio() {
 }
 
 export default function App() {
-  const route = useRoute();
-  useEffect(() => {
-    document.documentElement.dataset.route = route;
-    if (route === "admin") window.scrollTo(0, 0);
-  }, [route]);
   return (
     <StudioProvider>
       <div className={s.root}>
-        <a className={s.skip} href={route === "admin" ? "#admin" : "#main-menu"}>{route === "admin" ? "Vai alla gestione" : "Vai al menu"}</a>
-        {route === "admin" ? <main id="admin"><Admin backHref="#top" /></main> : <Studio />}
+        <a className={s.skip} href="#main-menu">Vai al menu</a>
+        <Studio />
         <PanelHost />
         <Player />
       </div>

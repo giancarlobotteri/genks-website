@@ -8,7 +8,7 @@ import s from "../styles/vs.module.css";
 import { GenksSymbol } from "./brand.tsx";
 import { getFilmVideo, onFilmVideo, pickFilm, setReelFilm } from "../lib/film-media.ts";
 import { StreakIntro } from "./StreakIntro.tsx";
-import { DemoBadge, prefersReducedMotion } from "./ui.tsx";
+import { prefersReducedMotion } from "./ui.tsx";
 import { KineticWords } from "./Wizard.tsx";
 
 type Chapter = {
@@ -57,7 +57,7 @@ export function Reel() {
   const chapters = useMemo<Chapter[]>(() => [
     { id: "intro", shot: "reel:intro", ms: 4600, at: 0, short: ["Il tuo studio,", "anche online."], kicker: "GENKS Virtual Studio", title: ["Il tuo studio,", "anche online."], text: "Quattro servizi in un unico spazio. Guarda cosa puoi fare qui.", chips: ["Registrazione", "Beat su misura", "Mix & Master", "Beat Store"] },
     { id: "rec", shot: "reel:rec", ms: 5600, at: 5.4, short: ["Entra in sala."], num: "01", kicker: "Registrazione voce", title: ["Entra in sala.", "Registra la tua voce."], text: "Sessioni con fonico in studio: scegli le ore, il giorno e l’orario.", chips: content.recording.map(p => `${p.hours} h · ${p.price != null ? formatEuro(p.price) : "su richiesta"}`), cta: { label: "Prenota una sessione", go: () => void goService("recording") } },
-    { id: "custom", shot: "reel:custom", ms: 5600, at: 7.3, short: ["Un beat", "sul tuo brano."], num: "02", kicker: "Beat su misura", title: ["Un beat costruito", "sul tuo brano."], text: `Dal brief alla consegna, con un preventivo chiaro${content.customBeat.priceFrom != null ? ` · da ${formatEuro(content.customBeat.priceFrom)}` : ""}.`, chips: content.customBeat.steps.map(x => x.title), cta: { label: "Richiedi un beat", go: () => void goService("custom") } },
+    { id: "custom", shot: "reel:custom", ms: 5600, at: 7.3, short: ["Un beat", "sul tuo brano."], num: "02", kicker: "Beat su misura", title: ["Un beat costruito", "sul tuo brano."], text: `Dal brief alla consegna${content.customBeat.priceFrom != null ? `, a prezzo fisso: ${formatEuro(content.customBeat.priceFrom)}` : ""}.`, chips: content.customBeat.steps.map(x => x.title), cta: { label: "Richiedi un beat", go: () => void goService("custom") } },
     { id: "mix", shot: "reel:mix", ms: 5600, at: 9.2, short: ["Equilibrio e vita", "al tuo brano."], num: "03", kicker: "Mix & Master", title: ["Diamo equilibrio", "e vita al brano."], text: "Mandi le tracce da remoto, ricevi il brano finito per lo streaming.", chips: content.mix.map(m => `${m.name}${m.price != null ? ` · ${formatEuro(m.price)}` : ""}`), cta: { label: "Scegli il servizio", go: () => void goService("mix") } },
     { id: "store", shot: "reel:store", ms: 5600, at: 11.5, short: [`${beats} beat`, "pronti da ascoltare."], num: "04", kicker: "Beat Store", title: [`${beats} beat originali,`, "pronti da ascoltare."], text: "Anteprime istantanee e licenze chiare, dall’MP3 all’esclusiva.", chips: ["Anteprime", "MP3 · WAV · Stems", "Licenze chiare"], cta: { label: "Apri il Beat Store", go: () => void enterStore() } },
   ], [content, beats]);
@@ -198,7 +198,7 @@ export function Reel() {
     <div className={s.reel} data-choosing={choosing || undefined} data-film={filmOn || undefined} role="region" aria-roledescription="anteprima" aria-label="Anteprima dei servizi GENKS">
       <div className={s.reelShade} aria-hidden="true" />
       <header className={s.reelTop}>
-        <span className={s.reelBrand}><GenksSymbol size={34} /><span>GENKS</span><DemoBadge>FREE · DEMO</DemoBadge></span>
+        <span className={s.reelBrand}><GenksSymbol size={34} /><span>GENKS</span></span>
         {!choosing && (
           <div className={s.reelControls}>
             <button type="button" className={s.iconBtn} onClick={() => setPaused(v => !v)} aria-label={paused ? "Riprendi l’anteprima" : "Metti in pausa l’anteprima"}>{paused ? <Play size={18} /> : <Pause size={18} />}</button>

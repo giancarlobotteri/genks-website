@@ -17,7 +17,7 @@ import { buildStoreEnv, type StoreEnv } from "../scene/store-env.ts";
 import { band, clamp01, ease, lerpPose, poseAt, STOPS, type Pose, type V3 } from "../scene/camera-path.ts";
 import { useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
-import { DemoBadge, prefersReducedMotion } from "./ui.tsx";
+import { prefersReducedMotion } from "./ui.tsx";
 
 export function detectQuality(): Quality {
   // Manual override for testing: ?quality=low or ?quality=high
@@ -389,7 +389,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
       svcFit += (wantFit - svcFit) * (1 - Math.exp(-dt * 6));
       if (svcFit > 0.001) {
         const cs = Math.max(w / 1920, h / 1080);
-        const fitK = Math.min(1, w / (0.74 * 1920 * cs));
+        // all four objects with their plinths, and a margin either side for their captions
+        const fitK = Math.min(1, w / (0.84 * 1920 * cs));
         const e = ease(svcFit);
         plateK += (fitK - plateK) * e;
         plateOx += (0.5 - plateOx) * e;
@@ -641,7 +642,8 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
           else if (photo) { const q = spot(SPOTS.lineup[i].x, SPOTS.lineup[i].y); tmp.set((q.x / w) * 2 - 1, 1 - (q.y / h) * 2, 0); }
           else { c.anchor.getWorldPosition(tmp); tmp.project(camera); }
           // kept inside the screen on narrow phones
-          const x = Math.min(w - 44, Math.max(44, ((tmp.x + 1) / 2) * w)), y = ((1 - tmp.y) / 2) * h;
+          const half = (el.offsetWidth || 88) / 2 + 6;
+          const x = Math.min(w - half, Math.max(half, ((tmp.x + 1) / 2) * w)), y = ((1 - tmp.y) / 2) * h;
           // the camera always breathes: the captions follow it only past 2 px, so the text stays still and easy to hit
           const lx = Number(el.dataset.x ?? -1e4), ly = Number(el.dataset.y ?? -1e4);
           if (Math.abs(x - lx) > 2 || Math.abs(y - ly) > 2) {
@@ -765,7 +767,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
                 <p className={s.svcStep} style={{ ["--k" as string]: (i + 1) / services.length } as CSSProperties}><span>Banco mixer</span><i aria-hidden="true" /><b>{String(i + 1).padStart(2, "0")} / {String(services.length).padStart(2, "0")}</b></p>
                 <h3 id={`svc-${m.id}`}>{m.name}</h3>
                 <p className={s.svcSummary}>{m.summary}</p>
-                <p className={s.svcPrice}><strong>{m.price != null ? formatEuro(m.price) : "Su preventivo"}</strong> <small>{m.priceNote}</small> <DemoBadge /></p>
+                <p className={s.svcPrice}><strong>{m.price != null ? formatEuro(m.price) : "Su preventivo"}</strong> <small>{m.priceNote}</small></p>
                 <ul className={s.svcList}>{m.includes.slice(0, 3).map(x => <li key={x}><Check size={15} aria-hidden="true" />{x}</li>)}</ul>
                 <div className={s.svcCta}>
                   <button type="button" className={s.btnPrimary} onClick={() => void goService("mix", { tab: m.id })}><SlidersHorizontal size={16} /> Scegli {m.name}</button>

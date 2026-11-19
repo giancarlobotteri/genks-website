@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { demoContent } from "../src/data/fixtures.ts";
 import { demoAvailability } from "../src/lib/availability.ts";
-import { bundleSaving, cartLines, cartTotal, emptyFilters, filterBeats, priceFrom, upsertCart, visibleBundles } from "../src/lib/catalog.ts";
+import { audioPrice, bundleSaving, cartLines, cartTotal, emptyFilters, filterBeats, priceFrom, upsertCart, visibleBundles } from "../src/lib/catalog.ts";
 import { chordNotes, MINOR, parseKey, previewBars } from "../src/lib/music.ts";
 import { validate } from "../src/lib/validate.ts";
 import { encodeWav } from "../src/lib/wav.ts";
@@ -50,12 +50,22 @@ describe("carrello demo", () => {
 
 describe("pacchetti", () => {
   it("risparmio solo se prezzo e valore sono configurati e reali", () => {
-    expect(bundleSaving(bundles[0])).toBe(1500);
-    expect(bundleSaving(bundles[2])).toBeNull();
+    // Beat & Voce: 64,99 € instead of 74,97 € (the prices of prodbygenks.com)
+    expect(bundleSaving(bundles[0])).toBe(998);
+    expect(bundleSaving({ ...bundles[0], listValue: null })).toBeNull();
     expect(bundleSaving({ ...bundles[0], price: 20000 })).toBeNull();
   });
   it("i pacchetti nascosti non sono mostrati", () => {
     expect(visibleBundles([{ ...bundles[0], status: "hidden" }])).toEqual([]);
+  });
+});
+
+describe("listino mix e master", () => {
+  it("mix 70 €, master 30 €, mix + master 100 €", () => {
+    expect([audioPrice("mix"), audioPrice("master"), audioPrice("mixmaster")]).toEqual([7000, 3000, 10000]);
+    expect(demoContent.mix.map(m => m.price)).toEqual([7000, 3000, 10000]);
+    expect(demoContent.recording[0].price).toBe(1999);
+    expect(demoContent.customBeat.priceFrom).toBe(3499);
   });
 });
 
@@ -68,13 +78,18 @@ describe("validazione moduli", () => {
   });
 });
 
-describe("disponibilità demo", () => {
-  it("è deterministica e chiusa la domenica", () => {
+describe("disponibilità", () => {
+  it("segue gli orari dello studio: lun–gio dalle 19:30, sabato e domenica dalle 10:00", () => {
     const from = new Date(2026, 10, 16);
     const a = demoAvailability(from), b = demoAvailability(from);
     expect(a).toEqual(b);
     expect(a).toHaveLength(14);
-    expect(a.filter(d => new Date(d.iso + "T12:00").getDay() === 0).every(d => d.slots.length === 0)).toBe(true);
+    const at = (wd: number) => a.find(d => new Date(d.iso + "T12:00").getDay() === wd)!.slots.map(x => x.start);
+    expect(at(1)[0]).toBe("19:30");
+    expect(at(6)[0]).toBe("10:00");
+    expect(at(0)[0]).toBe("10:00");
+    // preferences only: the real availability is confirmed by email, nothing is shown as taken
+    expect(a.every(d => d.slots.every(x => x.free))).toBe(true);
   });
 });
 
@@ -108,8 +123,8 @@ describe("percorso camera", () => {
     expect(poseAt(1, end)).toEqual({ ...end, lens: 1 });
     expect(poseAt(2, end)).toEqual({ ...end, lens: 1 });
   });
-  it("si ferma esattamente su ogni tappa: microfono, servizi, studio, DAW, tre servizi, display", () => {
-    expect(STOPS.map(x => x.id)).toEqual(["mic", "services", "studio", "daw", "mix", "master", "mixmaster", "display"]);
+  it("si ferma esattamente su ogni tappa: microfono, studio, DAW, tre servizi, i quattro servizi, display", () => {
+    expect(STOPS.map(x => x.id)).toEqual(["mic", "studio", "daw", "mix", "master", "mixmaster", "services", "display"]);
     for (const st of STOPS.slice(0, -1)) {
       const k = KEYS.find(x => x.p === st.p)!;
       expect(k).toBeTruthy();

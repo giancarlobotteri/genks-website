@@ -23,6 +23,9 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
 
   /* ---------- Desktop: the preview ---------- */
   let ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  // the request server (api/request.ts on Vercel): answered here, every request is kept for the checks
+  const sent = [];
+  await ctx.route("**/api/request", route => { sent.push(JSON.parse(route.request().postData() || "{}")); route.fulfill({ json: { ok: true, reference: `VS-TEST-${sent.length}`, emailed: true } }); });
   let page = await ctx.newPage();
   watch(page);
   await page.goto(url);
@@ -100,9 +103,10 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await fillContact(rec);
   await next(rec);
   await rec.getByText("Ultimo controllo").waitFor();
-  ok("registrazione: riepilogo con il pacchetto scelto", await rec.locator('[data-step="send"]').getByText("Sessione voce 2 ore").isVisible());
-  await rec.getByRole("button", { name: "Prenota (demo)" }).click();
-  ok("registrazione: conferma DEMO trasparente", await rec.getByText("non costituisce una prenotazione").isVisible());
+  ok("registrazione: riepilogo con il pacchetto scelto", await rec.locator('[data-step="send"]').getByText("Sessione 2 ore").isVisible());
+  await rec.getByRole("button", { name: "Invia la prenotazione" }).click();
+  await rec.getByText("Richiesta inviata").waitFor({ timeout: 8000 }).catch(() => {});
+  ok("registrazione: richiesta inviata al server, con riferimento", await rec.getByText("VS-TEST-1").isVisible() && sent[0]?.kind === "booking" && sent[0]?.data?.email === "mario@example.com");
   ok("registrazione: dopo l'invio la telecamera si allarga", (await vs(page, "shot")) === "rec:done");
   await snap(page, "06-rec-done");
 
@@ -125,13 +129,14 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   ok("mix: contatore tracce interattivo", (await mix.getByLabel("Numero tracce").inputValue()) === "13");
   await next(mix);
   await mix.locator('input[type="file"]').setInputFiles({ name: "voce-lead.wav", mimeType: "audio/wav", buffer: Buffer.from("demo") });
-  await mix.getByText("pronto (demo)").waitFor({ timeout: 15000 }).catch(() => {});
+  await mix.getByText("voce-lead.wav").first().waitFor({ timeout: 5000 }).catch(() => {});
   const upShot = await vs(page, "shot");
-  ok("mix: upload con progresso simulato e telecamera sullo schermo", await mix.getByText("pronto (demo)").isVisible() && upShot === "mix:upload", `shot=${upShot}`);
+  ok("mix: i file indicati compaiono, telecamera sullo schermo", await mix.getByText("voce-lead.wav").first().isVisible() && upShot === "mix:upload", `shot=${upShot}`);
   await next(mix);
   await fillContact(mix);
-  await mix.getByRole("button", { name: "Invia richiesta (demo)" }).click();
-  ok("mix: richiesta progetto demo", await mix.getByText("non è stata inviata").isVisible());
+  await mix.getByRole("button", { name: "Invia la richiesta" }).click();
+  await mix.getByText("Richiesta inviata").waitFor({ timeout: 8000 }).catch(() => {});
+  ok("mix: richiesta inviata con prezzo del listino e file indicati", await mix.getByText("Richiesta inviata").isVisible() && sent[1]?.kind === "remote-project" && /voce-lead\.wav/.test(sent[1]?.data?.files ?? "") && /^30,00\s€$/.test(sent[1]?.data?.total ?? ""), JSON.stringify(sent[1]?.data?.total));
   await mix.locator("[data-svc-back]").click();
   await mix.waitFor({ state: "detached" });
 
@@ -251,14 +256,15 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await cartDlg.waitFor();
   const t2 = await player.locator('input[aria-label="Posizione nel brano"]').inputValue();
   ok("il player continua mentre si aprono i pannelli", Number(t2) > Number(t1), `t=${t1}s → ${t2}s`);
-  await cartDlg.getByRole("button", { name: "Procedi al checkout simulato" }).click();
-  const coDlg = page.getByRole("dialog", { name: "Riepilogo ordine simulato" });
+  await cartDlg.getByRole("button", { name: "Richiedi le licenze" }).click();
+  const coDlg = page.getByRole("dialog", { name: "Richiesta di licenza" });
   await coDlg.waitFor();
   ok("checkout: nessun campo carta/pagamento", (await coDlg.locator('input[autocomplete^="cc-"], input[name*="card"]').count()) === 0);
   await fillContact(coDlg);
   await coDlg.getByRole("checkbox").check();
-  await coDlg.getByRole("button", { name: "Simula ordine" }).click();
-  ok("ordine simulato senza addebito", await coDlg.getByText("Nessun addebito").isVisible());
+  await coDlg.getByRole("button", { name: "Invia la richiesta" }).click();
+  await coDlg.getByText("Richiesta inviata").waitFor({ timeout: 8000 }).catch(() => {});
+  ok("licenze: richiesta inviata (contratto e pagamento via email)", await coDlg.getByText("Richiesta inviata").isVisible() && sent.at(-1)?.kind === "order");
   await page.keyboard.press("Escape");
   await coDlg.waitFor({ state: "hidden" });
   await store.getByRole("button", { name: "Licenze per Notte Cobalto" }).click();
@@ -271,13 +277,14 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await bundles.waitFor();
   await page.waitForTimeout(900);
   await snap(page, "12-bundles");
-  ok("pacchetti: offerte di esempio etichettate", (await bundles.getByText("Offerta di esempio").count()) >= 1);
+  ok("pacchetti: i prezzi di prodbygenks.com", (await bundles.getByText("64,99 €").count()) >= 1);
   await bundles.getByRole("button", { name: "Richiedi il pacchetto" }).first().click();
-  const bDlg = page.getByRole("dialog", { name: "Voce pronta" });
+  const bDlg = page.getByRole("dialog", { name: "Beat & Voce" });
   await bDlg.waitFor();
   await fillContact(bDlg);
-  await bDlg.getByRole("button", { name: "Richiedi questo pacchetto (demo)" }).click();
-  ok("pacchetti: richiesta demo", await bDlg.getByText("Richiesta demo registrata").isVisible());
+  await bDlg.getByRole("button", { name: "Richiedi questo pacchetto" }).click();
+  await bDlg.getByText("Richiesta inviata").waitFor({ timeout: 8000 }).catch(() => {});
+  ok("pacchetti: richiesta inviata", await bDlg.getByText("Richiesta inviata").isVisible() && sent.at(-1)?.kind === "bundle");
   await page.keyboard.press("Escape");
   await bDlg.waitFor({ state: "hidden" });
   await page.locator("[data-store-back]").click();
@@ -290,21 +297,15 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await page.waitForFunction(() => window.__vs.reel() === "reel:intro" || document.querySelector('article[data-id="intro"]'), null, { timeout: 15000 }).catch(() => {});
   ok("l’anteprima si può rivedere dal primo capitolo", (await vs(page, "reel")) === "reel:intro" || (await page.locator('article[data-id="intro"]').count()) === 1);
 
-  // admin demo → the change shows up in the store
+  // no trace of the former demo: no badge, no "simulated", no in-browser editor
+  const pageText = await page.evaluate(() => document.body.innerText);
+  ok("nessuna scritta «demo», «FREE» o «simulato» nel sito", !/\bdemo\b|FREE ·|simulat|dimostrativ|prototipo/i.test(pageText), (pageText.match(/.{0,30}(\bdemo\b|FREE ·|simulat|dimostrativ|prototipo).{0,30}/i) || [""])[0]);
   await page.goto(url + "#/gestione");
-  await page.getByRole("heading", { name: /Gestione contenuti/ }).waitFor();
-  await page.locator("summary").filter({ hasText: "Notte Cobalto" }).click();
-  await page.getByLabel("Titolo").first().fill("Notte Cobalto MOD");
-  await page.getByRole("button", { name: "Salva modifiche" }).click();
-  await page.getByRole("tab", { name: "Richieste demo" }).click();
-  ok("admin demo: richieste e ordine simulato elencati", (await page.locator("tbody tr").count()) >= 4, String(await page.locator("tbody tr").count()));
+  await page.waitForTimeout(1500);
+  ok("nessuna pagina di gestione nel browser", (await page.getByRole("heading", { name: /Gestione contenuti/ }).count()) === 0);
   await page.goto(url);
   await page.waitForFunction(() => window.__vs && window.__vs.screen() === "studio", null, { timeout: 15000 }).catch(() => {});
   ok("seconda visita: si arriva subito nello studio", (await vs(page, "screen")) === "studio");
-  await page.waitForTimeout(1500);
-  await page.getByRole("navigation", { name: "Servizi" }).getByRole("button", { name: "Beat Store" }).click();
-  await page.getByRole("heading", { name: "Notte Cobalto MOD" }).waitFor({ timeout: 15000 }).catch(() => {});
-  ok("admin demo: modifica visibile nel catalogo", await page.getByRole("heading", { name: "Notte Cobalto MOD" }).isVisible());
   await ctx.close();
 
   /* ---------- the studio is actually visible: photographic plate (both quality levels) and the 3D fallback ---------- */

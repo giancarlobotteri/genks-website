@@ -128,3 +128,30 @@ Tutte le dipendenze sono gratuite e open source (MIT, ISC, Apache-2.0, OFL). Nes
 - Costo: 12 crediti (prova 480p 4 s) + 260 crediti (finale 1080p 13 s).
 - Lo studio è fotografico: il tour stop per stop scorre gli stessi fotogrammi del film, salvati come immagini WebP nitide (`public/film/xl`, `public/film/hd`, `public/film/sd`, `src/lib/film-seq.ts`) e decodificati in anticipo attorno alla posizione, più la profondità di ogni fotogramma in un unico atlante (`public/film/depth-atlas.webp`), con stacchi in dissolvenza tra schermate lontane. Il fotogramma è disegnato a piena risoluzione dello schermo (fino a 2×, con mipmap e una maschera di nitidezza di un pixel), senza grana sovrapposta; il cursore muove una luce e una leggera parallasse calcolata su una profondità ammorbidita (niente strappi sui bordi); solo un oggetto vero (microfono, servizi, schermo, mixer) prende il fuoco, mentre il resto scende in ombra senza sfocarsi. A fine anteprima la camera arriva al microfono da lontano, attraversando la sala (`public/film/arrive.mp4`: ripresa Kling 2.6 generata a partire dal fotogramma del microfono e montata al contrario, così finisce esattamente su quell'inquadratura), entrando da un lampo di luce; poi un avviso dice di scorrere per vedere i servizi. Mix, Master e Mix & Master sono tre momenti di un'unica spinta nitida dentro il banco (11,2 → 12,4 s del film), con una sola scheda che cambia contenuto. Il tour va: microfono → studio → monitor DAW → Mix → Master → Mix & Master → i quattro servizi insieme (in chiusura, come riepilogo) → Beat Store. L'ultima tappa è la sala dei vinili del Beat Store, raggiunta con uno stacco nel buio; da lì (o da qualsiasi punto) si entra nel catalogo spingendo dentro la sala. Tra i quattro servizi il vinile gira piano, più veloce sotto il cursore. Il Beat Store ha la sua cripta dei vinili fotorealistica con fasci di luce. Il 3D dal vivo resta sotto, come riserva se il video non si carica.
 - Verifiche: `node scripts/smoke.cjs` 83/83, `npx vitest run` 29/29.
+
+
+## Richieste ed email ai clienti
+
+Ogni modulo del sito (sessione in studio, beat su misura, mix e master, pacchetti, licenze e richieste di esclusiva) invia la richiesta a `api/request.ts`, una funzione Vercel. La funzione:
+
+1. registra due messaggi nella coda Supabase `public.notification_outbox`, la stessa del sito prodbygenks.com: la conferma al cliente e l'avviso a GENKS con tutti i dettagli;
+2. li invia subito con Resend, con lo stesso modello grafico delle email del sito precedente, e li segna come inviati.
+
+Se Resend non risponde, il messaggio resta in coda e lo invia il recupero automatico del sito principale.
+
+Variabili d'ambiente richieste sul progetto Vercel (lato server):
+
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `GENKS_ADMIN_EMAIL`
+- `GENKS_SUPPORT_EMAIL`
+- `NEXT_PUBLIC_SUPABASE_URL` oppure `SUPABASE_URL`
+- `SUPABASE_SECRET_KEY`
+
+I prezzi sono in `src/data/fixtures.ts`:
+
+- studio 19,99 €/ora;
+- beat su misura 34,99 €;
+- licenze 29,99 / 49,99 / 99,99 €;
+- mix 70 €, master 30 €, mix e master 100 €;
+- pacchetti come prodbygenks.com.

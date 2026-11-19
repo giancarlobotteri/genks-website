@@ -1,7 +1,7 @@
 import { Loader2, Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react";
 import { usePlayer, useProgress, useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
-import { BeatCover, DemoBadge } from "./ui.tsx";
+import { BeatCover } from "./ui.tsx";
 
 const mmss = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
 
@@ -17,7 +17,7 @@ export function Player() {
     <aside className={s.player} aria-label="Player anteprime">
       <button type="button" className={s.playerTrack} onClick={() => open({ type: "beat", id: beat.id })} aria-label={`Apri dettagli di ${beat.title}`}>
         <BeatCover beat={beat} className={s.playerCover} />
-        <span><strong>{beat.title}</strong><small>{beat.genre} · {beat.bpm} BPM <DemoBadge /></small></span>
+        <span><strong>{beat.title}</strong><small>{beat.genre} · {beat.bpm} BPM</small></span>
       </button>
       <div className={s.playerControls}>
         <button type="button" className={s.iconBtn} onClick={p.prev} disabled={!multi && time < 1} aria-label="Precedente"><SkipBack size={18} /></button>

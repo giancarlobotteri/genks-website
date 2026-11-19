@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "GENKS Virtual Studio — prototipo FREE (demo, nessun pagamento reale)",
+  "description": "GENKS — studio virtuale: registrazione, beat su misura, mix & master e Beat Store",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

@@ -1,5 +1,5 @@
-// Domain types for the GENKS Virtual Studio FREE prototype.
-// Every price/licence/package here is demo content editable from the demo admin (#gestione).
+// Domain types of the GENKS studio site: catalogue, licences, services, packages and requests.
+// Prices are those of prodbygenks.com (see data/fixtures.ts).
 
 export type PublishState = "published" | "example" | "hidden";
 

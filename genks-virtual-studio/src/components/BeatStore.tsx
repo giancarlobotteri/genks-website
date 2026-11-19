@@ -5,7 +5,7 @@ import { setStorePage } from "../lib/director.ts";
 import { usePlayer, useStudio } from "../store.tsx";
 import s from "../styles/vs.module.css";
 import type { Beat } from "../types.ts";
-import { BeatCover, DemoBadge } from "./ui.tsx";
+import { BeatCover } from "./ui.tsx";
 
 export function PlayButton({ beat, queue, size = 18, className }: { beat: Beat; queue?: string[]; size?: number; className?: string }) {
   const player = usePlayer();
@@ -101,9 +101,9 @@ export function BeatStore() {
     <section id="beat-store" className={s.store} aria-labelledby="store-title">
       <div className={s.storeBg} aria-hidden="true" />
       <header className={s.storeHead}>
-        <p className={s.kicker}>Beat Store <DemoBadge>Catalogo DEMO</DemoBadge></p>
-        <h2 id="store-title">Ascolta, scegli la licenza, simula l’ordine.</h2>
-        <p className={s.storeLead}>Anteprime originali generate nel browser. Prezzi e licenze di esempio, nessun pagamento reale.</p>
+        <p className={s.kicker}>Beat Store</p>
+        <h2 id="store-title">Ascolta, scegli la licenza, richiedila.</h2>
+        <p className={s.storeLead}>Licenze MP3, WAV e tracce separate; l’esclusiva su richiesta.</p>
       </header>
 
       <div className={s.toolsWrap}>
@@ -219,7 +219,6 @@ export function BeatStore() {
                 <span className={s.price}>{priceFrom(selBeat, content.licenses) != null ? <>da <strong>{formatEuro(priceFrom(selBeat, content.licenses)!)}</strong></> : "Su richiesta"}</span>
                 <PlayButton beat={selBeat} queue={queue} size={20} className={s.vinylPlay} />
                 <button type="button" className={s.btnPrimary} onClick={() => open({ type: "beat", id: selBeat.id })}>Licenze<span className={s.srOnly}> per {selBeat.title}</span></button>
-                <DemoBadge />
               </div>
             </article>
           </>

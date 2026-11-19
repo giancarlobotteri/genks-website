@@ -105,3 +105,9 @@ export function bundleSaving(b: Bundle): number | null {
 export function visibleBundles(bundles: Bundle[]) {
   return bundles.filter(b => b.status !== "hidden");
 }
+
+/** Mix / master price list of GENKS (cents): mix 70 €, master 30 €, mix + master 100 €, per brano. */
+export const AUDIO_PRICES = { mix: 7000, master: 3000, mixmaster: 10000 } as const;
+export function audioPrice(service: string): number {
+  return AUDIO_PRICES[service as keyof typeof AUDIO_PRICES] ?? AUDIO_PRICES.mixmaster;
+}

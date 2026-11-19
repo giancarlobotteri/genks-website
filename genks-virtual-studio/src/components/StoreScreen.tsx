@@ -9,7 +9,7 @@ import s from "../styles/vs.module.css";
 import { GenksSymbol } from "./brand.tsx";
 import { BeatStore } from "./BeatStore.tsx";
 import { Bundles } from "./Bundles.tsx";
-import { DemoBadge, prefersReducedMotion } from "./ui.tsx";
+import { prefersReducedMotion } from "./ui.tsx";
 import { CountUp } from "./Wizard.tsx";
 
 const SEEN = "genks:vs:store-intro";
@@ -193,7 +193,6 @@ export function StoreScreen() {
           <button type="button" role="tab" aria-selected={storeTab === "bundles"} onClick={() => setStoreTab("bundles")}>Pacchetti</button>
         </div>
         <div className={s.storeScreenEnd}>
-          <DemoBadge><span className={s.hideXs}>Catalogo&nbsp;</span>DEMO</DemoBadge>
           <button type="button" className={s.btnText} onClick={() => setIntro({ visit: Date.now(), full: true })} aria-label="Rivedi l’intro del Beat Store"><RotateCcw size={16} /><span className={s.hideXs}> Intro</span></button>
         </div>
       </div>
@@ -203,9 +202,8 @@ export function StoreScreen() {
             <Bundles />
             <footer className={s.footer}>
               <GenksSymbol size={40} />
-              <p><strong>GENKS Virtual Studio</strong> · prototipo FREE <DemoBadge /></p>
-              <p className={s.muted}>Prezzi, licenze, disponibilità e pacchetti sono dati dimostrativi. Nessun pagamento, prenotazione, upload o download reale è attivo. Anteprime audio originali sintetizzate nel browser.</p>
-              <p><a href="#/gestione">Gestione contenuti (demo)</a></p>
+              <p><strong>GENKS</strong> · Studio di registrazione, produzione e mix &amp; master</p>
+              <p className={s.muted}>Via Quintina, Ponte San Giovanni, 06135 Perugia (PG) · <a href="mailto:assistenza@prodbygenks.com">assistenza@prodbygenks.com</a></p>
             </footer>
           </div>
         )}

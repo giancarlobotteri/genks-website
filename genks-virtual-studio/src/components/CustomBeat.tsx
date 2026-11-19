@@ -54,7 +54,7 @@ export function Sequencer({ active }: { active: boolean }) {
   useEffect(() => () => { void ctxRef.current?.close(); }, []);
 
   return (
-    <div className={s.seq} aria-label="Sequencer dimostrativo">
+    <div className={s.seq} aria-label="Sequencer">
       <div className={s.seqHead}>
         <button type="button" className={s.playBtn} aria-pressed={playing} aria-label={playing ? "Ferma il sequencer" : "Avvia il sequencer"}
           onClick={() => {

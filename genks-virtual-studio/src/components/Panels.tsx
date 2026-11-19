@@ -1,14 +1,14 @@
 import { ShoppingBag, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { enterStore } from "../lib/nav.ts";
-import { simulatedCheckout } from "../adapters.ts";
+import { sendRequest } from "../adapters.ts";
 import { cartLines, cartTotal, formatEuro } from "../lib/catalog.ts";
 import { useStudio, type Panel } from "../store.tsx";
 import s from "../styles/vs.module.css";
 import type { DemoRequest } from "../types.ts";
 import { PlayButton } from "./BeatStore.tsx";
 import { DemoForm } from "./DemoForm.tsx";
-import { BeatCover, DemoBadge, DemoNotice, Field, fieldProps, Sheet } from "./ui.tsx";
+import { BeatCover, DemoNotice, Field, fieldProps, Sheet } from "./ui.tsx";
 
 const contactRules = {
   name: { required: true, label: "Nome" },
@@ -43,11 +43,11 @@ function BeatPanel({ id }: { id: string }) {
         <div>
           <p className={s.beatMeta}>{beat.genre} · {beat.bpm} BPM · {beat.key} · {beat.mood.join(", ")}</p>
           <p>{beat.description}</p>
-          <div className={s.inlinePlay}><PlayButton beat={beat} /> <span>Anteprima originale (generata nel browser)</span></div>
+          <div className={s.inlinePlay}><PlayButton beat={beat} /> <span>Ascolta l’anteprima</span></div>
         </div>
       </div>
       <fieldset className={s.licenses}>
-        <legend>Scegli la licenza <DemoBadge>Licenze DEMO</DemoBadge></legend>
+        <legend>Scegli la licenza</legend>
         {avail.map(l => (
           <label key={l.id} className={s.licenseCard} data-checked={lic === l.id || undefined}>
             <input type="radio" name="license" value={l.id} checked={lic === l.id} onChange={() => { setLic(l.id); setAdded(false); }} />
@@ -60,7 +60,7 @@ function BeatPanel({ id }: { id: string }) {
           </label>
         ))}
       </fieldset>
-      <p className={s.muted}>Testo di licenza dimostrativo: le condizioni reali saranno definite nel contratto prima della messa in vendita.</p>
+      <p className={s.muted}>Le condizioni complete sono nel contratto di licenza che ricevi con la conferma.</p>
       <div className={s.ctaRow}>
         {chosen?.price == null ? (
           <button type="button" className={s.btnPrimary} onClick={() => open({ type: "exclusive", beatId: beat.id })}>Richiedi esclusiva</button>
@@ -69,7 +69,7 @@ function BeatPanel({ id }: { id: string }) {
             <ShoppingBag size={16} /> {inCart ? "Aggiorna licenza nel carrello" : "Aggiungi al carrello"} · {formatEuro(chosen.price)}
           </button>
         )}
-        {added && <span role="status" className={s.okMsg}>Aggiunto al carrello demo. <button type="button" className={s.btnText} onClick={() => open({ type: "cart" })}>Apri carrello</button></span>}
+        {added && <span role="status" className={s.okMsg}>Aggiunto al carrello. <button type="button" className={s.btnText} onClick={() => open({ type: "cart" })}>Apri carrello</button></span>}
       </div>
     </div>
   );
@@ -80,8 +80,8 @@ function ExclusivePanel({ beatId }: { beatId: string }) {
   const beat = content.beats.find(b => b.id === beatId);
   return (
     <div className={s.panelStack}>
-      <DemoNotice>L’esclusiva non ha un prezzo fisso e non viene venduta automaticamente: è una richiesta separata.</DemoNotice>
-      <DemoForm kind="exclusive" submitLabel="Invia richiesta esclusiva (demo)" rules={{ ...contactRules, offer: { min: 0, label: "Offerta indicativa" } }}
+      <DemoNotice>L’esclusiva non ha un prezzo fisso: valutiamo la richiesta e ti rispondiamo con una proposta.</DemoNotice>
+      <DemoForm kind="exclusive" submitLabel="Invia richiesta esclusiva" rules={{ ...contactRules, offer: { min: 0, label: "Offerta indicativa" } }}
         extra={() => ({ beat: beat?.title ?? beatId })} summary={v => `Esclusiva “${v.beat}” · ${v.name}`}>
         {errors => <>
           <p>Beat: <strong>{beat?.title}</strong></p>
@@ -98,7 +98,7 @@ function ExclusivePanel({ beatId }: { beatId: string }) {
 function CartPanel() {
   const { content, cart, removeFromCart, open, close } = useStudio();
   const lines = cartLines(cart, content.beats, content.licenses);
-  if (!lines.length) return <div className={s.empty}><p>Il carrello demo è vuoto.</p><button type="button" className={s.btnPrimary} onClick={() => { close(); window.setTimeout(() => void enterStore(), 250); }}>Vai al Beat Store</button></div>;
+  if (!lines.length) return <div className={s.empty}><p>Il carrello è vuoto.</p><button type="button" className={s.btnPrimary} onClick={() => { close(); window.setTimeout(() => void enterStore(), 250); }}>Vai al Beat Store</button></div>;
   return (
     <div className={s.panelStack}>
       <ul className={s.cartList}>
@@ -112,9 +112,9 @@ function CartPanel() {
           </li>
         ))}
       </ul>
-      <p className={s.total}>Totale <strong>{formatEuro(cartTotal(lines))}</strong> <DemoBadge /></p>
-      <button type="button" className={s.btnPrimary} onClick={() => open({ type: "checkout" })}>Procedi al checkout simulato</button>
-      <p className={s.muted}>Nessun pagamento è attivo in questo prototipo.</p>
+      <p className={s.total}>Totale <strong>{formatEuro(cartTotal(lines))}</strong></p>
+      <button type="button" className={s.btnPrimary} onClick={() => open({ type: "checkout" })}>Richiedi le licenze</button>
+      <p className={s.muted}>Ricevi via email il contratto di licenza e il link per il pagamento; i file arrivano dopo il pagamento.</p>
     </div>
   );
 }
@@ -124,43 +124,49 @@ function CheckoutPanel() {
   const lines = cartLines(cart, content.beats, content.licenses);
   const [order, setOrder] = useState<DemoRequest | null>(null);
   const [err, setErr] = useState<Record<string, string>>({});
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   if (order) {
     return (
       <div className={s.success} role="status">
-        <h3>Ordine simulato <DemoBadge /></h3>
-        <p>Riferimento <strong>{order.id}</strong>. <strong>Nessun addebito</strong> è stato effettuato e <strong>nessun file</strong> viene consegnato: questo è un riepilogo dimostrativo.</p>
-        <p className={s.muted}>In produzione: pagamento tramite provider, webhook di conferma, email e download autorizzati.</p>
+        <h3>Richiesta inviata</h3>
+        <p>Riferimento <strong>{order.id}</strong>. Ti abbiamo inviato una email con il riepilogo: a breve ricevi il contratto di licenza e il link per il pagamento.</p>
+        <p className={s.muted}>I file (MP3, WAV o tracce separate) ti arrivano dopo il pagamento.</p>
       </div>
     );
   }
-  if (!lines.length) return <p>Il carrello demo è vuoto.</p>;
+  if (!lines.length) return <p>Il carrello è vuoto.</p>;
   return (
     <form className={s.form} noValidate onSubmit={e => {
       e.preventDefault();
+      if (sending) return;
       const fd = new FormData(e.currentTarget);
-      const v = { name: String(fd.get("name") ?? ""), email: String(fd.get("email") ?? ""), ack: fd.get("ack") ? "yes" : "" };
+      const v = { name: String(fd.get("name") ?? ""), email: String(fd.get("email") ?? ""), artist: String(fd.get("artist") ?? ""), ack: fd.get("ack") ? "yes" : "" };
       const errors: Record<string, string> = {};
       if (!v.name.trim()) errors.name = "Nome: campo obbligatorio.";
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)) errors.email = "Email: inserisci un indirizzo valido.";
-      if (!v.ack) errors.ack = "Conferma di aver capito che si tratta di una simulazione.";
+      if (!v.ack) errors.ack = "Conferma di aver letto le condizioni delle licenze.";
       setErr(errors);
       if (Object.keys(errors).length) return;
-      const r = simulatedCheckout.simulate(lines.map(l => `${l.beat.title} (${l.license.name})`).join(", ") + ` · ${formatEuro(cartTotal(lines))}`, { ...v, total: String(cartTotal(lines)) });
-      setOrder(r.order);
-      clearCart();
+      const list = lines.map(l => `${l.beat.title} (${l.license.name}) ${formatEuro(l.price)}`).join(", ");
+      setSending(true); setSendError(null);
+      sendRequest("order", `${list} · Totale ${formatEuro(cartTotal(lines))}`, { name: v.name, email: v.email, artist: v.artist, licenses: list, total: formatEuro(cartTotal(lines)) })
+        .then(r => { setOrder(r); clearCart(); }, (x: Error) => setSendError(x.message))
+        .finally(() => setSending(false));
     }}>
-      <div className={s.demoBanner} role="note"><DemoBadge>CHECKOUT DEMO</DemoBadge> Simulazione: nessun dato di pagamento richiesto, nessun addebito.</div>
       <ul className={s.summary}>
         {lines.map(l => <li key={l.beat.id}><span>{l.beat.title} · {l.license.name}</span><span>{formatEuro(l.price)}</span></li>)}
-        <li className={s.summaryTotal}><span>Totale (demo)</span><span>{formatEuro(cartTotal(lines))}</span></li>
+        <li className={s.summaryTotal}><span>Totale</span><span>{formatEuro(cartTotal(lines))}</span></li>
       </ul>
       <div className={s.grid2}>
         <Field label="Nome *" name="name" error={err.name}><input {...fieldProps("name", err)} autoComplete="name" /></Field>
         <Field label="Email *" name="email" error={err.email}><input {...fieldProps("email", err)} type="email" autoComplete="email" /></Field>
       </div>
-      <label className={s.check}><input type="checkbox" name="ack" aria-invalid={err.ack ? true : undefined} /> Ho capito che è un ordine simulato senza pagamento né download.</label>
+      <Field label="Nome d’arte (per il contratto)" name="artist" error={err.artist}><input {...fieldProps("artist", err)} /></Field>
+      <label className={s.check}><input type="checkbox" name="ack" aria-invalid={err.ack ? true : undefined} /> Ho letto cosa include ogni licenza; il pagamento avviene dopo, tramite il link che ricevo via email.</label>
       {err.ack && <p className={s.fieldError} role="alert">{err.ack}</p>}
-      <button type="submit" className={s.btnPrimary}>Simula ordine</button>
+      {sendError && <p className={s.formError} role="alert">{sendError}</p>}
+      <button type="submit" className={s.btnPrimary} disabled={sending} aria-busy={sending || undefined}>{sending ? "Invio in corso…" : "Invia la richiesta"}</button>
     </form>
   );
 }
@@ -171,9 +177,8 @@ function BundlePanel({ id }: { id: string }) {
   if (!b) return <p>Offerta non disponibile.</p>;
   return (
     <div className={s.panelStack}>
-      {b.status === "example" && <DemoNotice>Offerta di esempio, non ancora pubblicata.</DemoNotice>}
-      <p>{b.summary}</p>
-      <DemoForm kind="bundle" submitLabel="Richiedi questo pacchetto (demo)" rules={contactRules}
+            <p>{b.summary}</p>
+      <DemoForm kind="bundle" submitLabel="Richiedi questo pacchetto" rules={contactRules}
         extra={() => ({ bundle: b.name })} summary={v => `Pacchetto “${v.bundle}” · ${v.name}`}>
         {errors => <>
           <ContactFields errors={errors} />
@@ -200,10 +205,10 @@ export function PanelHost() {
       <Sheet open={is("exclusive")} onClose={close} kicker="Licenza esclusiva" title="Richiesta di esclusiva">
         {p?.type === "exclusive" && <ExclusivePanel beatId={p.beatId} />}
       </Sheet>
-      <Sheet open={is("cart")} onClose={close} kicker="Carrello demo" title="Il tuo carrello" variant="side">
+      <Sheet open={is("cart")} onClose={close} kicker="Carrello" title="Il tuo carrello" variant="side">
         {p?.type === "cart" && <CartPanel />}
       </Sheet>
-      <Sheet open={is("checkout")} onClose={close} kicker="Checkout DEMO" title="Riepilogo ordine simulato">
+      <Sheet open={is("checkout")} onClose={close} kicker="Licenze" title="Richiesta di licenza">
         {p?.type === "checkout" && <CheckoutPanel />}
       </Sheet>
       <Sheet open={is("bundle")} onClose={close} kicker="Pacchetti" title={bundleTitle}>
