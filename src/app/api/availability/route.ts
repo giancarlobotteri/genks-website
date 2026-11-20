@@ -7,6 +7,24 @@ import { shiftDay } from "@/lib/booking-slots";
 
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
+  if (process.env.VERCEL_ENV === 'preview' && process.env.GENKS_CINEMATIC_QUOTE_ONLY === 'true') {
+    const query = new URL(request.url).searchParams;
+    const params = new URLSearchParams();
+    for (const key of ['date', 'duration', 'calendar', 'includeDurations']) {
+      const value = query.get(key);
+      if (value !== null) params.set(key, value);
+    }
+    try {
+      const upstream = await fetch('https://app.prodbygenks.com/api/availability?' + params, {
+        cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(8000),
+      });
+      return new Response(upstream.body, { status: upstream.status, headers: {
+        'Content-Type': 'application/json', 'Cache-Control': 'private, no-store',
+      } });
+    } catch {
+      return Response.json({ error: 'Calendario non disponibile.' }, { status: 503 });
+    }
+  }
   if (!await allowPublicRequest("availability")) return Response.json({error:"Troppe richieste. Attendi qualche minuto e riprova."},{status:429,headers:{"Retry-After":"600","Cache-Control":"no-store"}});
   if (!hasSupabase) return Response.json({ error: "Prenotazioni temporaneamente non disponibili." }, { status: 503 });
   const query = new URL(request.url).searchParams;

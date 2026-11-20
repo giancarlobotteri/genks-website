@@ -22,6 +22,17 @@ export async function proxy(request: NextRequest) {
       return protect(NextResponse.json({ error: "Origine della richiesta non autorizzata." }, { status: 403 }));
     }
   }
+  // This Vercel-protected preview serves the configurator without commerce or database writes.
+  if (process.env.VERCEL_ENV === 'preview' && process.env.GENKS_CINEMATIC_QUOTE_ONLY === 'true') {
+    const read = request.method === 'GET' || request.method === 'HEAD';
+    const allowed = (read && (path === '/cinematic-preview' || path.startsWith('/qa-studio/') || path === '/api/availability')) ||
+      (request.method === 'POST' && path === '/api/cinematic/quote');
+    if (!allowed) return protect(new NextResponse('Anteprima limitata al riepilogo', { status: 403 }));
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    response.headers.set('Cache-Control', 'private, no-store');
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return protect(response);
+  }
   if (!BEATS_ENABLED) {
     if (path === "/api/checkout") return protect(NextResponse.json({ error: "Il catalogo beat è in pausa." }, { status: 503, headers: { "Cache-Control": "no-store" } }));
     if (path === "/beats" || path.startsWith("/beats/") || (path.startsWith("/checkout/") && path !== "/checkout/success")) {
