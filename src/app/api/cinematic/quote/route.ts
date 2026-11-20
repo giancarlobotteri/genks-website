@@ -1,5 +1,5 @@
-import {cinematicOriginAllowed} from "@/lib/cinematic-origin";
-import {quoteCinematicOrder} from '@/lib/cinematic-order';
+import {cinematicOriginAllowed} from '../../../../lib/cinematic-origin.ts';
+import {quoteCinematicOrder} from '../../../../lib/cinematic-order.ts';
 export async function POST(request: Request) {
   if (!cinematicOriginAllowed(request)) return Response.json({error:"Origine non autorizzata."},{status:403});
   try {

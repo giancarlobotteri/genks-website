@@ -12,4 +12,5 @@ if (process.env.VERCEL_ENV === 'preview' && process.env.GENKS_CINEMATIC_SANDBOX 
   run('npm', ['ci', '--include=dev', '--no-audit', '--no-fund'], studio);
   run('node', ['node_modules/vite/bin/vite.js', 'build', '--base=/qa-studio/', '--outDir=../public/qa-studio'], studio);
 }
+run('node', ['--experimental-strip-types', 'scripts/check-cinematic-quote.mjs']);
 run('npm', ['exec', '--', 'next', 'build']);
