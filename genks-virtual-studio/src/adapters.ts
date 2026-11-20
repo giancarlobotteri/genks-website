@@ -66,7 +66,7 @@ export async function sendRequest(kind: DemoRequestKind, summary: string, data: 
   if (["booking", "remote-project", "custom-beat"].includes(kind)) return prepareCheckout(kind, summary, data);
   let r: Response;
   try {
-    r = await fetch("/api/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, summary, data }) });
+    r = await fetch("/api/cinematic/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, summary, data }) });
   } catch {
     throw new Error("Connessione non riuscita. Controlla la rete e riprova.");
   }
