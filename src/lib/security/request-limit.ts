@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import { isIP } from "node:net";
 import { headers } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { requireEnv } from "@/lib/env";
 
 type Scope = "service" | "checkout" | "login" | "magic-link" | "availability" | "chat" | "chat-provider" | "quote";
 const budgets: Record<Scope, [number, number, number]> = {
@@ -11,8 +12,8 @@ const budgets: Record<Scope, [number, number, number]> = {
 };
 // Shared database counters work across server instances. No raw IP or email is stored.
 export async function allowPublicRequest(scope: Scope): Promise<boolean> {
-  const secret = process.env.SUPABASE_SECRET_KEY;
-  if (!secret) return false;
+  let secret: string;
+  try { secret = requireEnv("SUPABASE_SECRET_KEY"); } catch { return false; }
   const requestHeaders = await headers();
   // Vercel replaces x-forwarded-for at its ingress; ignore user-supplied values locally.
   const forwarded = process.env.VERCEL === "1" ? requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() : "127.0.0.1";

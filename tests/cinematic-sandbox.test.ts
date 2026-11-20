@@ -11,7 +11,7 @@ const preview = {
   GENKS_STRIPE_ACCOUNT_ID: 'acct_example',
   RESEND_API_KEY: 're_example',
   RESEND_FROM_EMAIL: 'test@example.invalid',
-  SUPABASE_SECRET_KEY: 'example',
+  GENKS_CINEMATIC_TEST_SUPABASE_SECRET: 'example',
   GENKS_CINEMATIC_SANDBOX_PROJECT_REF: 'isolated-example',
   NEXT_PUBLIC_SUPABASE_URL: 'https://isolated-example.supabase.co',
   GENKS_ADMIN_EMAIL: 'prod.genks@gmail.com',

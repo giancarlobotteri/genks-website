@@ -14,7 +14,10 @@ export function requireEnv(name: string): string {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_GENKS_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_GENKS_SUPABASE_PUBLISHABLE_KEY,
   };
-  const value = process.env[name] || fallbacks[name];
+  const cinematicPreview = process.env.VERCEL_ENV === 'preview' && process.env.GENKS_CINEMATIC_SANDBOX === 'true';
+  const value = cinematicPreview && name === 'SUPABASE_SECRET_KEY'
+    ? process.env.GENKS_CINEMATIC_TEST_SUPABASE_SECRET
+    : process.env[name] || fallbacks[name];
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
   return value;
 }
