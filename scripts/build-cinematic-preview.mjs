@@ -8,7 +8,8 @@ function run(command, args, cwd = process.cwd()) {
 
 if (process.env.VERCEL_ENV === 'preview' && process.env.GENKS_CINEMATIC_SANDBOX === 'true') {
   const studio = 'genks-virtual-studio';
-  run('npm', ['ci', '--no-audit', '--no-fund'], studio);
-  run('npm', ['exec', '--', 'vite', 'build', '--base=/qa-studio/', '--outDir=../public/qa-studio'], studio);
+  // Preview builds may inherit npm's production-only install settings.
+  run('npm', ['ci', '--include=dev', '--no-audit', '--no-fund'], studio);
+  run('node', ['node_modules/vite/bin/vite.js', 'build', '--base=/qa-studio/', '--outDir=../public/qa-studio'], studio);
 }
 run('npm', ['exec', '--', 'next', 'build']);
