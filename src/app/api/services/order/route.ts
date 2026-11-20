@@ -1,4 +1,4 @@
-import {cinematicOriginAllowed} from "@/lib/cinematic-origin";
+import {cinematicOriginAllowed,cinematicSiteOrigin} from "@/lib/cinematic-origin";
 import {cinematicSandboxConfigured,cinematicSandboxRecipient} from "@/lib/cinematic-sandbox";
 import {quoteCinematicOrder, type CinematicOrder} from "@/lib/cinematic-order";
 import {readBookingAvailability} from "@/lib/booking-availability";
@@ -24,7 +24,8 @@ export const runtime='nodejs';
 export async function POST(request:Request){
  const origin=new URL(request.url).origin;
  if(request.headers.get('origin')!==origin&&!cinematicOriginAllowed(request))return Response.json({error:'Richiesta non autorizzata.'},{status:403});
- if(!await allowPublicRequest('service'))return Response.json({error:'Troppe richieste. Attendi qualche minuto.'},{status:429});
+ // Orders from the new site reach this backend through the www rewrite: they get their own, wider budget.
+ if(!await allowPublicRequest(new URL(request.url).pathname.startsWith('/api/cinematic/')?'cinematic-order':'service'))return Response.json({error:'Troppe richieste. Attendi qualche minuto.'},{status:429});
  try{
   const text=await request.text();if(text.length>150000)throw Error('Ordine troppo grande.');
   const raw=JSON.parse(text);
@@ -64,12 +65,14 @@ export async function POST(request:Request){
   const prepared=result.data as {project_id:string;reference:string;quote_id:string|null;expires_at:string};
   await flushNotifications({prefix:`v8-order-${prepared.project_id}`});
   await flushNotifications({prefix:`v8-owner-${prepared.project_id}`});
-  if(!quote.cardNow)return Response.json({cashOnly:true,url:'/services/ordine?code='+encodeURIComponent(prepared.reference)});
+  // The new site (www) shows its own confirmation pages: customers never land on the previous site.
+  const siteOrigin=data.cinematic?cinematicSiteOrigin(request):origin;
+  if(!quote.cardNow)return Response.json({cashOnly:true,url:(data.cinematic?siteOrigin+'/ordine':'/services/ordine')+'?code='+encodeURIComponent(prepared.reference)});
   const previous=await db.from('service_quotes').select('checkout_url,stripe_session_id,status').eq('id',prepared.quote_id).single();
   if(previous.data?.checkout_url&&previous.data.status==='open')return Response.json({url:previous.data.checkout_url});
   const session=await getStripe().checkout.sessions.create({mode:'payment',locale:'it',payment_method_types:['card'],customer_email:data.email,expires_at:Math.floor(new Date(prepared.expires_at).getTime()/1000),
    line_items:cardOrderLines(quote).map(l=>({quantity:1,price_data:{currency:"eur",unit_amount:l.amount,product_data:{name:("GENKS · "+l.name).slice(0,250),description:"Le condizioni ricevute distinguono totale ordine, importo iniziale e saldo successivo."}}})),
-   success_url:`${origin}/services/ordine?session={CHECKOUT_SESSION_ID}`,cancel_url:`${origin}/services/checkout?${data.preventivoCode?"preventivo="+encodeURIComponent(data.preventivoCode)+"&":""}${data.direct?"direct=1&":""}cancelled=1`,metadata:{payment_type:'service_cart_v8',payment_policy:quote.paymentPolicy!,quote_id:prepared.quote_id!,project_id:prepared.project_id}},
+   success_url:data.cinematic?`${siteOrigin}/ordine?session={CHECKOUT_SESSION_ID}`:`${origin}/services/ordine?session={CHECKOUT_SESSION_ID}`,cancel_url:data.cinematic?`${siteOrigin}/?pagamento=annullato`:`${origin}/services/checkout?${data.preventivoCode?"preventivo="+encodeURIComponent(data.preventivoCode)+"&":""}${data.direct?"direct=1&":""}cancelled=1`,metadata:{payment_type:'service_cart_v8',payment_policy:quote.paymentPolicy!,quote_id:prepared.quote_id!,project_id:prepared.project_id}},
    {idempotencyKey:`genks-v8-${prepared.quote_id}`});
   const saved=await db.from('service_quotes').update({stripe_session_id:session.id,checkout_url:session.url,status:'open'}).eq('id',prepared.quote_id).in('status',['creating','open']).select('id').single();
   if(saved.error||!session.url){if(session.status==='open')await getStripe().checkout.sessions.expire(session.id);throw Error('Pagamento non preparato. Nessun addebito effettuato.');}

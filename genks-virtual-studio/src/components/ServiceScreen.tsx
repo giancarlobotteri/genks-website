@@ -2,7 +2,7 @@ import { ArrowLeft, Check, Disc3, Mic, Minus, MonitorPlay, Plus, SlidersHorizont
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { parseBrief } from "../lib/brief.ts";
 import { BOOKING_HORIZON_DAYS, HOUR_STEP, MAX_HOURS, MIN_HOURS, appointmentLabel, availableTimes, dayHasRoom, durationLabel, fetchCalendar, fromRomeWallTime, isNightOf, shiftDay, slotAvailable, slotState, todayInRome, weekdayOf, type StudioDay } from "../lib/real-availability.ts";
-import { AUDIO_PRICES, BASE_TRACKS, audioPrice, formatEuro } from "../lib/catalog.ts";
+import { AUDIO_PRICES, audioPrice, formatEuro, totalEnding99 } from "../lib/catalog.ts";
 import { enterStore, goService, goStudio, SERVICE_STOP, type ServiceKind } from "../lib/nav.ts";
 import { setSubShot } from "../lib/shots.ts";
 import { useStudio } from "../store.tsx";
@@ -107,7 +107,7 @@ function RecordingSteps() {
   const block = content.recording.find(p => p.hours === 5);
   const pkgId = mode === "block" ? block?.id : content.recording.find(p => p.hours === hours && p.hours < 5)?.id;
   const pkgName = mode === "block" ? `${block?.name ?? "Blocco 5 ore"} (primo appuntamento)` : `Sessione ${durationLabel(hours)}`;
-  const price = mode === "block" ? block?.price ?? null : Math.round(hours * hourly);
+  const price = mode === "block" ? block?.price ?? null : totalEnding99(Math.round(hours * hourly));
 
   // The real calendar: reloaded when the page of days, the duration or a retry changes.
   useEffect(() => {
@@ -451,8 +451,7 @@ function MixSteps({ initialTab, initialView }: { initialTab?: MixService["id"]; 
               <thead><tr><th scope="col">Caratteristica</th>{content.mix.map(m => <th key={m.id} scope="col" data-on={m.id === tab || undefined}>{m.name}</th>)}</tr></thead>
               <tbody>
                 {[
-                  [`Fino a ${BASE_TRACKS} tracce`, (m: MixService) => formatEuro(AUDIO_PRICES[m.id].base)],
-                  [`Oltre ${BASE_TRACKS} tracce`, (m: MixService) => formatEuro(AUDIO_PRICES[m.id].full)],
+                  ["Prezzo per brano", (m: MixService) => formatEuro(AUDIO_PRICES[m.id])],
                   ["Bilanciamento tracce", (m: MixService) => (m.id === "master" ? <Minus size={16} aria-label="No" /> : <Check size={16} aria-label="Sì" />)],
                   ["Loudness per streaming", (m: MixService) => (m.id === "mix" ? <Minus size={16} aria-label="No" /> : <Check size={16} aria-label="Sì" />)],
                   ["Tempi", (m: MixService) => m.turnaround],
@@ -479,7 +478,7 @@ function MixSteps({ initialTab, initialView }: { initialTab?: MixService["id"]; 
             <span className={s.stemBars} aria-hidden="true">{Array.from({ length: Math.min(stems, 24) }, (_, k) => <i key={k} style={st(k)} />)}</span>
           </div>
           {errors.stems && <p className={s.fieldError} role="alert">{errors.stems}</p>}
-          <p className={`${s.mixQuote} ${s.rise}`} style={st(2)} aria-live="polite">{svc.name}, {stems > BASE_TRACKS ? `multitraccia (oltre ${BASE_TRACKS} tracce)` : `fino a ${BASE_TRACKS} tracce`}, per brano: <strong>{formatEuro(audioPrice(tab, stems))}</strong>{tab !== "master" && stems <= BASE_TRACKS ? <small> Es. beat in un solo file più le voci.</small> : null}</p>
+          <p className={`${s.mixQuote} ${s.rise}`} style={st(2)} aria-live="polite">{svc.name}, per brano, con qualsiasi numero di tracce: <strong>{formatEuro(audioPrice(tab, stems))}</strong></p>
           <div className={s.grid2}>
             <div className={s.rise} style={st(2)}><Field label="Deadline" name="deadline" error={errors.deadline}><input {...fieldProps("deadline", errors)} type="date" /></Field></div>
             <div className={s.rise} style={st(3)}><Field label="Link a una reference" name="referenceUrl" error={errors.referenceUrl}><input {...fieldProps("referenceUrl", errors)} type="url" placeholder="https://" /></Field></div>

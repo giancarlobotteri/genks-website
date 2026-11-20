@@ -277,7 +277,7 @@ const SEEN = () => { sessionStorage.setItem("genks:vs:reel", "1"); };
   await bundles.waitFor();
   await page.waitForTimeout(900);
   await snap(page, "12-bundles");
-  ok("pacchetti: i prezzi di prodbygenks.com", (await bundles.getByText("64,99 €").count()) >= 1);
+  ok("pacchetti: i prezzi di prodbygenks.com", (await bundles.getByText("74,99 €").count()) >= 1);
   await bundles.getByRole("button", { name: "Richiedi il pacchetto" }).first().click();
   const bDlg = page.getByRole("dialog", { name: "Beat & Voce" });
   await bDlg.waitFor();

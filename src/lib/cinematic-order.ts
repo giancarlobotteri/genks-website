@@ -4,6 +4,7 @@ import {validateTransfer} from './swiss-transfer.ts';
 import { buildRecordingQuote } from './recording-quote.ts';
 import { firstVersionEstimate } from './service-delivery.ts';
 import { withStudioDepositAndFinalBalance } from './studio-deposit-final-balance.ts';
+import { roundingLineName, totalEnding99 } from './order-rounding.ts';
 import type { OrderPart, OrderQuote, OrderSelection } from './service-order-v8.ts';
 
 export type CinematicOrder = {
@@ -31,11 +32,10 @@ export function quoteCinematicOrder(input: CinematicOrder, early = false, now = 
     const base = isBlock ? demoContent.recording.find(p => p.id === 'rec-5h')!.price! : Math.round(hours * demoContent.recording[0].price!);
     if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date) || !/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(time)) throw Error('Scegli giorno e ora.');
     const recording = buildRecordingQuote(date, time, hours);
-    title = isBlock ? 'Blocco 5 ore di registrazione' : `Registrazione · ${hours} ore`; service = isBlock ? 'package' : 'recording';
-    total = Math.max(2000, base + recording.night);
+    title = isBlock ? 'Blocco 5 ore di registrazione' : `Registrazione · ${String(hours).replace('.', ',')} ${hours === 1 ? 'ora' : 'ore'}`; service = isBlock ? 'package' : 'recording';
+    total = base + recording.night;
     studioAmount = total;
-    lines = [{name: title, amount: base}, ...(recording.night ? [{name:'Supplemento notturno',amount:recording.night}] : []),
-      ...(total > base + recording.night ? [{name:'Minimo prenotazione studio',amount:total-base-recording.night}] : [])];
+    lines = [{name: title, amount: base}, ...(recording.night ? [{name:'Supplemento notturno',amount:recording.night}] : [])];
     listTotal = total;
   } else if (input.kind === 'remote-project') {
     const audio = d.serviceId;
@@ -74,6 +74,14 @@ export function quoteCinematicOrder(input: CinematicOrder, early = false, now = 
     }
   }
   if (!Number.isSafeInteger(total) || total < 50) throw Error('Prezzo non disponibile.');
+  // Every final total ends in ,99 (terms, section 2): the difference is shown as its own line.
+  const rounding = totalEnding99(total) - total;
+  if (rounding) {
+    lines = [...lines, {name: roundingLineName, amount: rounding}];
+    total += rounding; listTotal = Math.max(listTotal + rounding, total);
+    if (studioAmount) studioAmount += rounding;
+    if (customAmount) customAmount = Math.min(total, customAmount);
+  }
   const selection: OrderSelection = {kind:service,packageCode,songs,hours,extraHours:0,date,time,payment:input.payment,notes:JSON.stringify(d).slice(0,2000),rights:customAmount?'split50':'own'};
   const part: OrderPart = {selection,title,total,listTotal,saving:Math.max(0,listTotal-total),deposit:total,dueNow:total,cardNow:input.payment==='card'?total:0,cashNow:0,balance:input.payment==='cash'?total:0,studioAmount,customAmount,hours,guarantees,lines,firstVersion:input.kind==='booking'?null:firstVersionEstimate(now,false,early,customAmount?10:7),...(creditMinutes?{creditMinutes}:{}),...(input.kind==='booking'?{standaloneRecording:true,bookingAmount:packageCode === 'hours' ? Math.max(2000, Math.round((total - buildRecordingQuote(date,time,hours).night) * hours / 5) + buildRecordingQuote(date,time,hours).night) : total,cashDepositAtArrival:input.payment==='cash',studioPaidInFullByCard:input.payment==='card'}:{})};
   return withStudioDepositAndFinalBalance({version:'2026-10-26-commerce-v8',parts:[part],total,cardNow:part.cardNow,cashNow:0,balance:part.balance,saving:part.saving});

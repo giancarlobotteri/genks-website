@@ -87,7 +87,7 @@ export function cartLines(items: CartItem[], beats: Beat[], licenses: LicenseTie
 }
 
 export function cartTotal(lines: CartLine[]) {
-  return lines.reduce((sum, l) => sum + l.price, 0);
+  return totalEnding99(lines.reduce((sum, l) => sum + l.price, 0));
 }
 
 /** Adds or replaces the licence for a beat (one licence per beat in the cart). */
@@ -107,17 +107,21 @@ export function visibleBundles(bundles: Bundle[]) {
 }
 
 /** Tracks covered by the lower rate: a beat in one stereo file plus the vocals. */
-export const BASE_TRACKS = 8;
 /**
- * Mix / master price list of GENKS (cents, per brano): `base` up to BASE_TRACKS tracks, `full` for a
- * multitrack project. Master: 24,99 €. Mix: 39,99 / 59,99 €. Mix & Master: 59,99 / 79,99 €.
+ * Mix / master price list of GENKS (cents, per brano, any number of tracks).
+ * Mix 69,99 €. Master 29,99 €. Mix & Master 89,99 € (10 € less than the two separately).
  */
 export const AUDIO_PRICES = {
-  mix: { base: 3999, full: 5999 },
-  master: { base: 2499, full: 2499 },
-  mixmaster: { base: 5999, full: 7999 },
+  mix: 6999,
+  master: 2999,
+  mixmaster: 8999,
 } as const;
-export function audioPrice(service: string, tracks?: number): number {
-  const p = AUDIO_PRICES[service as keyof typeof AUDIO_PRICES] ?? AUDIO_PRICES.mixmaster;
-  return tracks != null && tracks > BASE_TRACKS ? p.full : p.base;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- callers pass the track count; the price no longer depends on it
+export function audioPrice(service: string, _tracks?: number): number {
+  return AUDIO_PRICES[service as keyof typeof AUDIO_PRICES] ?? AUDIO_PRICES.mixmaster;
+}
+/** Every final total ends in ,99: whole euros lose one cent, other amounts move to the same euro + 99 cents. */
+export function totalEnding99(cents: number): number {
+  if (!Number.isSafeInteger(cents) || cents <= 0) return Math.max(0, cents);
+  return cents % 100 === 0 ? cents - 1 : Math.floor(cents / 100) * 100 + 99;
 }

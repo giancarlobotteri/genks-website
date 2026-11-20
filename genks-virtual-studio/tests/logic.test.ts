@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { demoContent } from "../src/data/fixtures.ts";
 import { appointmentLabel, availableTimes, durationOptions, fromRomeWallTime, isNightOf, slotAvailable, slotState, startAllowed, type StudioDay } from "../src/lib/real-availability.ts";
-import { audioPrice, bundleSaving, cartLines, cartTotal, emptyFilters, filterBeats, priceFrom, upsertCart, visibleBundles } from "../src/lib/catalog.ts";
+import { audioPrice, totalEnding99, bundleSaving, cartLines, cartTotal, emptyFilters, filterBeats, priceFrom, upsertCart, visibleBundles } from "../src/lib/catalog.ts";
 import { chordNotes, MINOR, parseKey, previewBars } from "../src/lib/music.ts";
 import { validate } from "../src/lib/validate.ts";
 import { encodeWav } from "../src/lib/wav.ts";
@@ -41,7 +41,7 @@ describe("carrello demo", () => {
     cart = upsertCart(cart, { beatId: "b2", licenseId: "stems" });
     const lines = cartLines(cart, beats, licenses);
     expect(lines).toHaveLength(2);
-    expect(cartTotal(lines)).toBe(4999 + 9999);
+    expect(cartTotal(lines)).toBe(14999); // 49,99 + 99,99 = 149,98 → 149,99
   });
   it("l’esclusiva non è mai acquistabile automaticamente", () => {
     expect(cartLines([{ beatId: "b1", licenseId: "exclusive" }], beats, licenses)).toEqual([]);
@@ -61,10 +61,11 @@ describe("pacchetti", () => {
 });
 
 describe("listino mix e master", () => {
-  it("mix/master: lower rate up to 8 tracks, full rate for a multitrack", () => {
-    expect([audioPrice("mix"), audioPrice("master"), audioPrice("mixmaster")]).toEqual([3999, 2499, 5999]);
-    expect([audioPrice("mix", 8), audioPrice("mix", 9), audioPrice("master", 40), audioPrice("mixmaster", 24)]).toEqual([3999, 5999, 2499, 7999]);
-    expect(demoContent.mix.map(m => m.price)).toEqual([3999, 2499, 5999]);
+  it("mix 69,99, master 29,99, mix & master 89,99 with any number of tracks", () => {
+    expect([audioPrice("mix"), audioPrice("master"), audioPrice("mixmaster")]).toEqual([6999, 2999, 8999]);
+    expect([audioPrice("mix", 8), audioPrice("mix", 40), audioPrice("master", 40), audioPrice("mixmaster", 24)]).toEqual([6999, 6999, 2999, 8999]);
+    expect(demoContent.mix.map(m => m.price)).toEqual([6999, 2999, 8999]);
+    expect([3998, 2000, 7997, 2999, 4020].map(totalEnding99)).toEqual([3999, 1999, 7999, 2999, 4099]);
     for (const b of demoContent.bundles) expect((b.listValue! - b.price!) / b.listValue!).toBeLessThanOrEqual(0.25);
     expect(demoContent.recording[0].price).toBe(1999);
     expect(demoContent.customBeat.priceFrom).toBe(7999);

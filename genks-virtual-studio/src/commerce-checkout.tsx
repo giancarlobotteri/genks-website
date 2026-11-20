@@ -48,7 +48,7 @@ export function CommerceCheckout() {
       const result=await response.json().catch(()=>({error:'Collegamento temporaneamente non disponibile. Nessun addebito confermato.'}));
       if(!response.ok||!result.url)throw Error(result.error||'Conferma non riuscita.');
       const target=new URL(result.url,location.origin);
-      if(target.origin!==location.origin&&target.origin!=='https://checkout.stripe.com'&&target.origin!=='https://app.prodbygenks.com')throw Error('Destinazione di pagamento non valida.');
+      if(target.origin!==location.origin&&target.origin!=='https://checkout.stripe.com')throw Error('Destinazione di pagamento non valida.');
       location.assign(target.href);
     }catch(e){setError(e instanceof Error?e.message:'Conferma non riuscita.');setBusy(false);}
   };
@@ -67,9 +67,9 @@ export function CommerceCheckout() {
         <label><input type="radio" checked={payment==='card'} onChange={()=>{setPayment('card');setQuote(undefined);}}/>Carta o Apple Pay</label>
         <label><input type="radio" checked={payment==='cash'} onChange={()=>{setPayment('cash');setQuote(undefined);}}/>Contanti in studio</label>
       </fieldset>
-      {(draft.kind==='booking')&&payment==='cash'&&<p>L’orario viene riservato subito. Versa 20 € in contanti al tuo arrivo in studio.</p>}
+      {(draft.kind==='booking')&&payment==='cash'&&<p>L’orario viene riservato subito. Versa {quote?euro(quote.cashNow):'l’acconto (20 €, oppure il totale se è inferiore)'} in contanti al tuo arrivo in studio.</p>}
       {draft.kind==='bundle'&&<p>Le ore incluse nei pacchetti si organizzano con GENKS. L’acconto si applica quando viene scelto un appuntamento.</p>}
-      <label><input type="checkbox" required/>Ho letto le <a href="https://app.prodbygenks.com/legal/terms" target="_blank" rel="noreferrer">condizioni di vendita</a> e l’<a href="https://app.prodbygenks.com/legal/privacy" target="_blank" rel="noreferrer">informativa privacy</a>.</label>
+      <label><input type="checkbox" required/>Ho letto le <a href="/legal/terms" target="_blank" rel="noreferrer">condizioni di vendita</a> e l’<a href="/legal/privacy" target="_blank" rel="noreferrer">informativa privacy</a>.</label>
       <label><input type="checkbox" checked={early} onChange={event=>{setEarly(event.target.checked);setQuote(undefined);}}/>Richiedo l’avvio entro 14 giorni e ho letto le condizioni sull’avvio anticipato e sul recesso.</label>
       {(draft.kind==='custom-beat'||['pk-beat-voice','pk-turnkey','pk-ep'].includes(draft.data.bundleId))&&<label><input type="checkbox" required/>Confermo lo split 50/50 per le produzioni GENKS. Per il 100% dei diritti richiederò un preventivo.</label>}
       {quote&&<section aria-label="Riepilogo prezzi">{quote.parts.flatMap(part=>part.lines).map((line,i)=><p key={i}>{line.name}<strong>{euro(line.amount)}</strong></p>)}<p>Totale<strong>{euro(quote.total)}</strong></p><p>{quote.cashNow ? 'Acconto in contanti all’arrivo' : 'Da versare ora'}<strong>{euro(quote.cardNow+quote.cashNow)}</strong></p><p>Saldo ancora da pagare<strong>{euro(quote.balance)}</strong></p></section>}

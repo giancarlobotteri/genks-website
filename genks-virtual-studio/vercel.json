@@ -1,31 +1,41 @@
 {
-  "git": { "deploymentEnabled": { "claude/genks-cinematic": false, "qa/cinematic-checkout-sandbox": false } },
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": { "deploymentEnabled": { "claude/genks-cinematic": false, "qa/cinematic-checkout-sandbox": false } },
   "redirects": [
     {
-      "source": "/:page(account|admin|admin-access|admin-security|auth|beats|carrello|checkout|chi-sono|guida|lavori|legal|login|recesso|services)/:rest*",
+      "source": "/:page(admin|admin-access|admin-security|auth|login)/:rest*",
       "destination": "https://app.prodbygenks.com/:page/:rest*",
       "permanent": false
     },
     {
-      "source": "/api/:area(admin|bookings|cart|chat|checkout|downloads|home-recommendations|services)/:rest*",
+      "source": "/api/:area(admin|auth)/:rest*",
       "destination": "https://app.prodbygenks.com/api/:area/:rest*",
       "permanent": false
     },
     {
-      "source": "/_next/:rest*",
-      "destination": "https://app.prodbygenks.com/_next/:rest*",
+      "source": "/:page(account|beats|carrello|checkout|chi-sono|guida|lavori|services)",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/:page(account|beats|carrello|checkout|chi-sono|guida|lavori)/:rest+",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/services/:rest((?!ordine$).+)",
+      "destination": "/",
       "permanent": false
     }
   ],
   "rewrites": [
-    {
-      "source": "/api/availability",
-      "destination": "https://app.prodbygenks.com/api/availability"
-    },
-    {
-      "source": "/api/:area(cinematic|stripe|email|calendar|internal)/:rest*",
-      "destination": "https://app.prodbygenks.com/api/:area/:rest*"
-    }
+    { "source": "/api/availability", "destination": "https://app.prodbygenks.com/api/availability" },
+    { "source": "/api/:area(cinematic|stripe|email|calendar|internal)/:rest*", "destination": "https://app.prodbygenks.com/api/:area/:rest*" },
+    { "source": "/:page(ordine|recesso)", "destination": "/index.html" },
+    { "source": "/services/ordine", "destination": "/index.html" },
+    { "source": "/legal/:doc", "destination": "/index.html" }
+  ],
+  "headers": [
+    { "source": "/api/:path*", "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "0" }] }
   ]
 }

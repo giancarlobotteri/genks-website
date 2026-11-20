@@ -8,7 +8,10 @@ export function withStudioDepositAndFinalBalance<T extends OrderQuote>(quote: T)
     const scheduled = part.selection.kind === 'production' && part.selection.appointments?.length
       ? part.selection.appointments.filter(appointment => appointment.date && appointment.time).length
       : part.hours > 0 && part.selection.date && part.selection.time ? 1 : 0;
-    const deposit = 2000 * scheduled;
+    // Orders from the new site (cash at arrival / card in full) keep their ,99 total: the 20 € deposit
+    // never raises the total, it is capped at it (a 1-hour session costs 19,99 €).
+    const capped = part.cashDepositAtArrival || part.studioPaidInFullByCard;
+    const deposit = capped ? Math.min(2000 * scheduled, part.total) : 2000 * scheduled;
     const total = Math.max(part.total, deposit);
     const adjustment = total - part.total;
     // Studio: 20 € per sessione. Altri servizi: con carta subito per intero, in contanti a fine lavoro.
@@ -29,7 +32,7 @@ export function withStudioDepositAndFinalBalance<T extends OrderQuote>(quote: T)
       balance: total - dueNow,
       cardNow: part.selection.payment === 'card' ? dueNow : 0,
       cashNow: part.selection.payment === 'cash' ? dueNow : 0,
-      ...(scheduled ? { bookingDeposit: 2000 } : {}),
+      ...(scheduled ? { bookingDeposit: capped ? deposit : 2000 } : {}),
     };
   });
   return {

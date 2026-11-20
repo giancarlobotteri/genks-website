@@ -7,5 +7,10 @@ import "./styles/global.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import { SitePage, sitePageFor } from "./site-pages.tsx";
+import { PaymentNotice } from "./payment-notice.tsx";
 
-createRoot(document.getElementById("root")!).render(<StrictMode><App /><CommerceCheckout/></StrictMode>);
+const page = sitePageFor(location.pathname);
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>{page ? <SitePage page={page} /> : <><App /><CommerceCheckout /><PaymentNotice /></>}</StrictMode>,
+);
