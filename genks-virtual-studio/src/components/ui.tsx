@@ -80,7 +80,7 @@ export function BeatCover({ beat, className }: { beat: Pick<Beat, "seed" | "hue"
   if (beat.id && PHOTO_COVERS.has(beat.id)) {
     return (
       <div className={`${s.cover} ${className ?? ""}`} aria-hidden="true">
-        <img className={s.coverPhoto} src={`/covers/${beat.id}.webp`} alt="" loading="lazy" decoding="async" draggable={false} />
+        <img className={s.coverPhoto} src={`${import.meta.env.BASE_URL}covers/${beat.id}.webp`} alt="" loading="lazy" decoding="async" draggable={false} />
         <GenksSymbol size={22} className={s.coverMark} />
       </div>
     );

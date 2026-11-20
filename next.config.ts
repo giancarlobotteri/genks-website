@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  outputFileTracingIncludes: { "/cinematic-preview": ["./public/qa-studio/index.html"] },
   poweredByHeader: false,
   reactStrictMode: true,
   allowedDevOrigins: ["terminal.local"],

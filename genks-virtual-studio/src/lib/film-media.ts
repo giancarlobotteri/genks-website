@@ -13,10 +13,10 @@ import type { FilmLike } from "./film-seq.ts";
  * photograph (scene/living-plate).
  */
 export const FILM = {
-  xl: "/film/xl", hd: "/film/hd", sd: "/film/sd", frames: 313, depthAtlas: "/film/depth-atlas.webp", depthGrid: [14, 23] as [number, number],
-  vault: "/film/vault.webp", vaultDepth: "/film/vault-depth.webp",
+  xl: `${import.meta.env.BASE_URL}film/xl`, hd: `${import.meta.env.BASE_URL}film/hd`, sd: `${import.meta.env.BASE_URL}film/sd`, frames: 313, depthAtlas: `${import.meta.env.BASE_URL}film/depth-atlas.webp`, depthGrid: [14, 23] as [number, number],
+  vault: `${import.meta.env.BASE_URL}film/vault.webp`, vaultDepth: `${import.meta.env.BASE_URL}film/vault-depth.webp`,
   /** the arrival at the microphone after the preview: a real dolly from far across the studio (Kling) */
-  arrive: "/film/arrive.mp4",
+  arrive: `${import.meta.env.BASE_URL}film/arrive.mp4`,
 };
 
 // The film has one player, owned by the studio stage; the preview plays it, the tour scrubs it.

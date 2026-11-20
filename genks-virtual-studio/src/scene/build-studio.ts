@@ -57,7 +57,7 @@ function symbolTexture() {
   tex.anisotropy = 8;
   const img = new Image();
   img.onload = () => { canvas.getContext("2d")!.drawImage(img, 0, 0, 512, 512); tex.needsUpdate = true; };
-  if (!FILM) img.src = "/brand/genks-symbol.svg"; // film plate: plain discs, the real logo is added over the video
+  if (!FILM) img.src = `${import.meta.env.BASE_URL}brand/genks-symbol.svg`; // film plate: plain discs, the real logo is added over the video
   return tex;
 }
 
@@ -429,7 +429,7 @@ export function buildStudio(renderer: THREE.WebGLRenderer, quality: Quality): St
   const screenBase = new THREE.Color("#ffffff");
   mesh(new THREE.PlaneGeometry(1.13, 0.5), screenMat, scr, 0, 0.004, 0.0116);
   // Realistic DAW screenshot (generated image); the procedural screen stays until it arrives.
-  new THREE.TextureLoader().loadAsync(`/assets/tex/daw-screen-${hi ? 2048 : 1024}.webp`).then(t => {
+  new THREE.TextureLoader().loadAsync(`${import.meta.env.BASE_URL}assets/tex/daw-screen-${hi ? 2048 : 1024}.webp`).then(t => {
     if (!alive) { t.dispose(); return; }
     t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = hi ? 8 : 2;
     track(t); screenMat.map = t; screenBase.set("#c9d3ea"); screenMat.color.copy(screenBase).multiplyScalar(screenOn); screenMat.needsUpdate = true;

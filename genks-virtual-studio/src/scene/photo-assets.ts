@@ -23,7 +23,7 @@ export function loadPhotoAssets(scene: THREE.Scene, slots: PhotoSlot[], models: 
   const load = (file: string, srgb: boolean) => {
     const key = file + srgb;
     if (!cache.has(key)) {
-      cache.set(key, loader.loadAsync(`/assets/tex/${file}-${size}.webp`).then(t => {
+      cache.set(key, loader.loadAsync(`${import.meta.env.BASE_URL}assets/tex/${file}-${size}.webp`).then(t => {
         t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
         t.wrapS = t.wrapT = THREE.RepeatWrapping;
         t.anisotropy = hi ? 8 : 2;
