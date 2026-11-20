@@ -14,7 +14,9 @@ export function withStudioDepositAndFinalBalance<T extends OrderQuote>(quote: T)
     // Studio: 20 € per sessione. Altri servizi: con carta subito per intero, in contanti a fine lavoro.
     const studioPortion = scheduled ? Math.min(total, part.studioAmount + adjustment) : 0;
     const otherServices = Math.max(0, total - studioPortion);
-    const dueNow = part.selection.payment === 'card' ? Math.min(total, deposit + otherServices) : deposit;
+    const dueNow = part.selection.payment === 'card'
+      ? part.studioPaidInFullByCard ? total : Math.min(total, deposit + otherServices)
+      : deposit;
     return {
       ...part,
       total,

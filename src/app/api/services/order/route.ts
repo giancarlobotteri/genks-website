@@ -1,3 +1,7 @@
+import {cinematicOriginAllowed} from "@/lib/cinematic-origin";
+import {cinematicSandboxConfigured,cinematicSandboxRecipient} from "@/lib/cinematic-sandbox";
+import {quoteCinematicOrder, type CinematicOrder} from "@/lib/cinematic-order";
+import {readBookingAvailability} from "@/lib/booking-availability";
 import {expandProductionBookings} from '@/lib/production-order';
 import { withStudioDepositAndFinalBalance } from '@/lib/studio-deposit-final-balance';
 import {quotePreventivoLegacy} from '@/lib/chatbot/checkout';
@@ -19,26 +23,41 @@ import {flushNotifications} from '@/lib/notifications';
 export const runtime='nodejs';
 export async function POST(request:Request){
  const origin=new URL(request.url).origin;
- if(request.headers.get('origin')!==origin)return Response.json({error:'Richiesta non autorizzata.'},{status:403});
+ if(request.headers.get('origin')!==origin&&!cinematicOriginAllowed(request))return Response.json({error:'Richiesta non autorizzata.'},{status:403});
  if(!await allowPublicRequest('service'))return Response.json({error:'Troppe richieste. Attendi qualche minuto.'},{status:429});
  try{
   const text=await request.text();if(text.length>150000)throw Error('Ordine troppo grande.');
   const raw=JSON.parse(text);
-  const data=z.object({name:z.string().trim().min(2).max(120),artistName:z.string().trim().max(120),email:z.email(),phone:z.string().trim().min(6).max(40),accepted:z.literal('on'),earlyStart:z.boolean(),withdrawalAcknowledged:z.boolean(),contactOwner:z.string().max(100),saveContact:z.boolean(),requestId:z.uuid(),direct:z.boolean().default(false),items:z.unknown().optional(),preventivoCode:z.string().max(16000).optional(),quoteDetails:z.unknown().optional(),quotePayment:z.enum(['card','cash']).default('card'),expectedTotal:z.number().int().min(50),website:z.literal('')}).parse(raw);
+  if(raw?.cinematic&&!cinematicOriginAllowed(request))return Response.json({error:"Richiesta non autorizzata."},{status:403});
+  const data=z.object({name:z.string().trim().min(2).max(120),artistName:z.string().trim().max(120),email:z.email(),phone:z.string().trim().min(6).max(40),accepted:z.literal('on'),earlyStart:z.boolean(),withdrawalAcknowledged:z.boolean(),contactOwner:z.string().max(100),saveContact:z.boolean(),requestId:z.uuid(),direct:z.boolean().default(false),items:z.unknown().optional(),cinematic:z.unknown().optional(),preventivoCode:z.string().max(16000).optional(),quoteDetails:z.unknown().optional(),quotePayment:z.enum(['card','cash']).default('card'),expectedTotal:z.number().int().min(50),website:z.literal('')}).parse(raw);
   if(data.earlyStart&&!data.withdrawalAcknowledged)throw Error('Conferma di aver letto le condizioni dell’avvio anticipato.');
   if(!previewRecipientAllowed(data.email))throw Error('Destinatario non autorizzato in questa anteprima.');
-  const initialQuote=data.preventivoCode?quotePreventivoLegacy(data.preventivoCode,data.quoteDetails,data.quotePayment,data.earlyStart,new Date(),true):quoteOrder(data.items,data.earlyStart,new Date(),await getPublicDiscounts(),{requireFiles:true,legacyPayment:true});
+  const initialQuote=data.cinematic?quoteCinematicOrder(data.cinematic as CinematicOrder,data.earlyStart):data.preventivoCode?quotePreventivoLegacy(data.preventivoCode,data.quoteDetails,data.quotePayment,data.earlyStart,new Date(),true):quoteOrder(data.items,data.earlyStart,new Date(),await getPublicDiscounts(),{requireFiles:true,legacyPayment:true});
   const quote=withStudioDepositAndFinalBalance(expandProductionBookings(initialQuote,data.earlyStart,new Date()));
   if(quote.total!==data.expectedTotal)throw Error('Il listino è cambiato. Ricarica il riepilogo prima di pagare.');
-  if(quote.cardNow&&!await remoteProjectPaymentsReady())throw Error('Pagamento con carta temporaneamente non disponibile. Riprova tra poco.');
+  const sandbox = Boolean(data.cinematic) && process.env.VERCEL_ENV === 'preview';
+  if (sandbox && (!cinematicSandboxConfigured() || !cinematicSandboxRecipient(data.email))) {
+    return Response.json({error:'Checkout di prova non configurato per questa anteprima.'},{status:503});
+  }
+  if (quote.cardNow) {
+    if (sandbox) {
+      const account = await getStripe().accounts.retrieve();
+      if (account.id !== process.env.GENKS_STRIPE_ACCOUNT_ID) throw Error('Account Stripe Sandbox non corrispondente.');
+    } else if (!await remoteProjectPaymentsReady()) {
+      throw Error('Pagamento con carta temporaneamente non disponibile. Riprova tra poco.');
+    }
+  }
   for(const part of quote.parts){const sel=part.selection;if(part.hours&&sel.date){
    const start=fromRomeWallTime(sel.date,sel.time),end=new Date(start.getTime()+part.hours*3600000);
    if(start.getTime()<Date.now()+14*86400000&&!data.earlyStart)throw Error('Per questa data entro 14 giorni richiedi espressamente l’avvio anticipato e leggi le condizioni, oppure scegli una data successiva.');
    if(start.getTime()<=Date.now()+(sel.payment==='card'?65:35)*60000)throw Error('Orario troppo vicino per il metodo scelto. Scegli un altro orario o usa i contanti.');
-   if(hasGoogleBusyCalendar){const rules=await createSupabaseAdminClient().from('availability_rules').select('buffer_minutes').eq('active',true).eq('weekday',new Date(sel.date+'T12:00:00Z').getUTCDay());if(rules.error||!rules.data?.length)throw Error('Disponibilità del calendario non verificabile.');const protectedEnd=new Date(end.getTime()+Math.max(0,...rules.data.map(r=>Number(r.buffer_minutes)||0))*60000);const busy=await getGoogleBusyRanges(start,protectedEnd);if(busy.some(r=>new Date(r.starts_at)<protectedEnd&&new Date(r.ends_at)>start))throw Error('L’orario è già occupato. Scegli un altro intervallo.');}
+   if(data.cinematic){
+    const availability=await readBookingAvailability(sel.date,part.hours);
+    if(!("slots" in availability)||!availability.slots?.includes(sel.time))throw Error("Orario non disponibile. Scegli un altro intervallo.");
+   } else if(hasGoogleBusyCalendar){const rules=await createSupabaseAdminClient().from('availability_rules').select('buffer_minutes').eq('active',true).eq('weekday',new Date(sel.date+'T12:00:00Z').getUTCDay());if(rules.error||!rules.data?.length)throw Error('Disponibilità del calendario non verificabile.');const protectedEnd=new Date(end.getTime()+Math.max(0,...rules.data.map(r=>Number(r.buffer_minutes)||0))*60000);const busy=await getGoogleBusyRanges(start,protectedEnd);if(busy.some(r=>new Date(r.starts_at)<protectedEnd&&new Date(r.ends_at)>start))throw Error('L’orario è già occupato. Scegli un altro intervallo.');}
   }}
   const user=await getCurrentUser();const form=new FormData();for(const [k,v] of Object.entries(data)){if(typeof v==='string')form.set(k,v);}if(data.saveContact)form.set('saveContact','on');
-  await saveContactChoice(form,user);
+  if(!data.cinematic)await saveContactChoice(form,user);
   const db=createSupabaseAdminClient();const summary=orderSummary(quote);
   const result=await db.rpc('reserve_service_cart_v16',{p_data:{...data,customerId:user?.email?.toLowerCase()===data.email.toLowerCase()?user.id:null},p_quote:{...quote,termsVersion:serviceTermsVersion,requestId:data.requestId},p_terms:serviceTerms,p_summary:summary});
   if(result.error||!result.data){console.error('GENKS order reserve failed',result.error?.code);throw Error('Non è stato possibile riservare l’ordine: l’orario potrebbe essere appena stato occupato. Controlla la disponibilità e riprova.');}

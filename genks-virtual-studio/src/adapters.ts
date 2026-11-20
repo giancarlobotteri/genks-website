@@ -1,6 +1,7 @@
 // Integration boundaries. Requests (sessions, mix/master, custom beats, packages, licences) go to the
 // server (api/request.ts): queued in Supabase and emailed with Resend, to the customer and to GENKS.
 // Content and cart live in the browser; the studio calendar is read live (src/lib/real-availability.ts).
+import { prepareCheckout } from "./commerce-checkout.tsx";
 import { demoContent } from "./data/fixtures.ts";
 import { demoId } from "./lib/validate.ts";
 import type { CartItem, DemoRequest, DemoRequestKind, StudioContent } from "./types.ts";
@@ -62,6 +63,7 @@ const isLocalHost = () => typeof window !== "undefined" && /^(localhost|127\.0\.
  * (A local `vite preview` has no server: there the request is only kept in this browser.)
  */
 export async function sendRequest(kind: DemoRequestKind, summary: string, data: Record<string, string>): Promise<DemoRequest> {
+  if (["booking", "remote-project", "custom-beat"].includes(kind)) return prepareCheckout(kind, summary, data);
   let r: Response;
   try {
     r = await fetch("/api/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, summary, data }) });

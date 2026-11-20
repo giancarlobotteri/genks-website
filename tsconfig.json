@@ -38,6 +38,7 @@
   ],
   "exclude": [
     "node_modules",
+    "genks-virtual-studio",
     "chatbot-import-reference",
     "chatbot2-import-reference",
     "chatbot3-import-reference"

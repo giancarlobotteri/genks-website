@@ -1,4 +1,4 @@
 {
-  "git": { "deploymentEnabled": { "claude/genks-cinematic": false } },
+  "git": { "deploymentEnabled": { "claude/genks-cinematic": false, "qa/cinematic-checkout-sandbox": false } },
   "crons": [{ "path": "/api/internal/maintenance", "schedule": "0 3 * * *" }]
 }

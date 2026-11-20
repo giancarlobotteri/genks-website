@@ -53,3 +53,14 @@ img, svg, canvas { display: block; max-width: 100%; }
 
 /* the site is a set of full screens over the 3D studio: the page itself never scrolls */
 html[data-route="studio"], html[data-route="studio"] body { height: 100%; overflow: hidden; overscroll-behavior: none; scrollbar-gutter: auto; }
+
+.commerce-checkout { width:min(94vw,680px); max-height:90dvh; padding:24px; border:1px solid #5098ca; border-radius:20px; color:#edf7ff; background:#081c34; }
+.commerce-checkout::backdrop { background:#020711ce; }
+.commerce-checkout form { display:grid; gap:16px; }
+.commerce-checkout label { display:grid; gap:7px; }
+.commerce-checkout input:not([type="checkbox"]):not([type="radio"]) { padding:12px; background:#041122; color:white; border:1px solid #516f8e; border-radius:8px; }
+.commerce-checkout label:has(input[type="checkbox"]),.commerce-checkout label:has(input[type="radio"]) { display:block; }
+.commerce-checkout input[type="checkbox"],.commerce-checkout input[type="radio"] { margin-right:8px; }
+.commerce-checkout button { padding:12px 18px; background:#2563eb; border:1px solid #8cdaff; border-radius:10px; color:white; cursor:pointer; }
+.commerce-checkout p strong { float:right; margin-left:12px; }
+.commerce-checkout a { color:#8cdaff; text-decoration:underline; }

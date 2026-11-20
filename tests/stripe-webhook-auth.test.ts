@@ -8,6 +8,7 @@ function runner({configured=true,valid=false}={}) {
  let verified=0,handled=0;
  const exports:Record<string,unknown>={};
  const modules:Record<string,unknown>={'@/lib/stripe':{getStripe:()=>({webhooks:{constructEvent:()=>{verified++;if(!valid)throw Error('invalid signature');return {type:'test-only'};}}})},'@/lib/stripe-events':{handleStripeEvent:async()=>{handled++;return Response.json({ok:true});}}};
+ modules['@/lib/cinematic-sandbox']={cinematicSandboxConfigured:()=>false};
  vm.runInNewContext(code,{exports,require:(name:string)=>{assert.ok(name in modules);return modules[name];},Response,process:{env:configured?{STRIPE_WEBHOOK_SECRET:'TEST-NOT-A-SECRET'}:{}}});
  return {post:exports.POST as(r:Request)=>Promise<Response>,counts:()=>({verified,handled})};
 }

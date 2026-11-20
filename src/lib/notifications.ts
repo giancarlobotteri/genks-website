@@ -155,10 +155,10 @@ export async function deliverNotification(id: string) {
           ? savedQuote.parts.flatMap(part=>typeof part?.title==='string'&&part.title.trim() ? [part.title] : [])
           : [];
         const purchases=savedTitles.length ? savedTitles : [p.data.track_title || italianLabel(p.data.service) || 'Servizio GENKS'];
-        concise=serviceEmailSummary({confirmedServices:p.data.commerce_snapshot?.paymentPolicy===studioAppointmentPaymentPolicy,purchases,purchaseDetails:owner?savedOrderDetails(p.data.commerce_snapshot):undefined,quoteLines:savedQuote?.preventivo?.righe,initialDue:(deadlines.data??[]).reduce((n,x)=>n+Math.max(0,x.initial_cents-x.paid_cents),0),cashDeadlines:(deadlines.data??[]).flatMap(part=>{
+        concise=serviceEmailSummary({studioPaidInFullByCard:(deadlines.data??[]).some(part=>part.snapshot?.studioPaidInFullByCard===true),confirmedServices:p.data.commerce_snapshot?.paymentPolicy===studioAppointmentPaymentPolicy,purchases,purchaseDetails:owner?savedOrderDetails(p.data.commerce_snapshot):undefined,quoteLines:savedQuote?.preventivo?.righe,initialDue:(deadlines.data??[]).reduce((n,x)=>n+Math.max(0,x.initial_cents-x.paid_cents),0),cashDeadlines:(deadlines.data??[]).flatMap(part=>{
           const amount=part.initial_cents-part.paid_cents;
-          if(!part.hold_until||amount<=0||(part.method!=='cash'&&p.data.commerce_snapshot?.paymentPolicy!==studioAppointmentPaymentPolicy))return [];
-          return [{until:part.hold_until,amount,deposit:p.data.commerce_snapshot?.paymentPolicy===studioAppointmentPaymentPolicy||(isStandaloneStudio(part.snapshot)&&part.initial_cents<part.total_cents),method:part.method}];
+          if(part.snapshot?.studioPaidInFullByCard===true||!part.hold_until||amount<=0||(part.method!=='cash'&&p.data.commerce_snapshot?.paymentPolicy!==studioAppointmentPaymentPolicy))return [];
+          return [{until:part.hold_until,amount,deposit:p.data.commerce_snapshot?.paymentPolicy===studioAppointmentPaymentPolicy||(isStandaloneStudio(part.snapshot)&&part.initial_cents<part.total_cents),method:part.method,atArrival:part.snapshot?.cashDepositAtArrival===true}];
         }),reference:p.data.reference,total:p.data.price_cents??0,paid,name:p.data.name,artistName:p.data.artist_name,email:p.data.email},owner?'owner':'customer');
         if(!owner){const contract=await db.from('project_contracts').select('terms_body').eq('project_id',p.data.id).limit(1).maybeSingle();if(contract.error)throw Error('Condizioni da verificare.');if(contract.data)documents=[{filename:`Condizioni-${p.data.reference}.txt`,content:contract.data.terms_body}];}
       }

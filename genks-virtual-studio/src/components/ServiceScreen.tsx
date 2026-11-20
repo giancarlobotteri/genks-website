@@ -283,8 +283,8 @@ function RecordingSteps() {
     },
   ];
   return (
-    <Wizard kind="booking" steps={steps} submitLabel="Invia la prenotazione" doneShot="rec:done"
-      extra={() => ({ package: pkgName, duration: durationLabel(hours), hours: String(hours), date: day, time: slot, appointment: appointmentLabel(day, slot, hours), total: price != null ? formatEuro(price) : "" })}
+    <Wizard kind="booking" steps={steps} submitLabel="Vai al riepilogo" doneShot="rec:done"
+      extra={() => ({ package: pkgName, recordingMode: mode, duration: durationLabel(hours), hours: String(hours), date: day, time: slot, appointment: appointmentLabel(day, slot, hours), total: price != null ? formatEuro(price) : "" })}
       summary={() => `${pkgName} · ${appointmentLabel(day, slot, hours)}`}
       onAfterDone={<AfterDone current="recording" />} />
   );
@@ -505,7 +505,7 @@ function MixSteps({ initialTab, initialView }: { initialTab?: MixService["id"]; 
   ];
   return (
     <Wizard kind="remote-project" steps={steps} start={initialView === "remote" ? 2 : 0} submitLabel="Invia la richiesta" doneShot="mix:done"
-      extra={() => ({ files: files.join(", "), total: formatEuro(audioPrice(tab, stems)) })}
+      extra={() => ({ serviceId: tab, files: files.join(", "), total: formatEuro(audioPrice(tab, stems)) })}
       summary={v => `${v.service} · “${v.title}” · ${v.stems} tracce · ${formatEuro(audioPrice(tab, Number(v.stems)))}`}
       onAfterDone={<AfterDone current="mix" />} />
   );
@@ -513,7 +513,7 @@ function MixSteps({ initialTab, initialView }: { initialTab?: MixService["id"]; 
 
 /* ---------------- The screen ---------------- */
 const META: Record<ServiceKind, { kicker: string; title: string; word: string; notice: string }> = {
-  recording: { kicker: "Registrazione voce", title: "Prenota una sessione", word: "VOCE", notice: "La sessione è confermata dopo il pagamento dell’anticipo, con carta o in contanti in studio." },
+  recording: { kicker: "Registrazione voce", title: "Prenota una sessione", word: "VOCE", notice: "Scegli durata e orario. Il metodo di pagamento si seleziona nel riepilogo." },
   custom: { kicker: "Beat su misura", title: "Un beat sul tuo brano", word: "BEAT", notice: "Prima versione entro 10 giorni lavorativi dall’avvio, una revisione inclusa. Diritti e licenza nell’accordo scritto." },
   mix: { kicker: "Banco mixer", title: "Mix, Master, Mix & Master", word: "MIX", notice: "Dopo la richiesta ricevi via email il riepilogo, il link per caricare le tracce e il pagamento." },
 };

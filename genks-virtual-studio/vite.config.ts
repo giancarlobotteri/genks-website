@@ -16,11 +16,11 @@ async function outboundAgent() {
     return {};
   }
 }
-const proxy = { "/api/availability": { target: BACKEND, changeOrigin: true, secure: true, ...(await outboundAgent()) } };
+const proxy = { "/api/cinematic": { target: "http://127.0.0.1:3141", changeOrigin: true, headers: { Origin: "http://127.0.0.1:3141" } }, "/api/availability": { target: BACKEND, changeOrigin: true, secure: true, ...(await outboundAgent()) } };
 
 export default defineConfig({
   plugins: [react()],
-  server: { host: true, port: 5173, proxy },
+  server: { host: true, port: 3140, proxy },
   preview: { proxy },
   build: {
     target: "es2022",

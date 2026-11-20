@@ -1,5 +1,5 @@
 {
-  "git": { "deploymentEnabled": { "claude/genks-cinematic": false } },
+  "git": { "deploymentEnabled": { "claude/genks-cinematic": false, "qa/cinematic-checkout-sandbox": false } },
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     {
@@ -24,7 +24,7 @@
       "destination": "https://app.prodbygenks.com/api/availability"
     },
     {
-      "source": "/api/:area(stripe|email|calendar|internal)/:rest*",
+      "source": "/api/:area(cinematic|stripe|email|calendar|internal)/:rest*",
       "destination": "https://app.prodbygenks.com/api/:area/:rest*"
     }
   ]

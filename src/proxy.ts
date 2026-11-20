@@ -1,3 +1,4 @@
+import {cinematicOriginAllowed} from "@/lib/cinematic-origin";
 import { BEATS_ENABLED } from "@/config/features";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
@@ -17,7 +18,7 @@ export async function proxy(request: NextRequest) {
   };
   if (path.startsWith("/api/") && !["/api/stripe/webhook", "/api/internal/booking-reminders", "/api/email/receiving"].includes(path) && !["GET", "HEAD", "OPTIONS"].includes(request.method)) {
     const origin = request.headers.get("origin");
-    if (request.headers.get("sec-fetch-site") === "cross-site" || !origin || origin !== request.nextUrl.origin) {
+    if (request.headers.get("sec-fetch-site") === "cross-site" || !origin || (origin !== request.nextUrl.origin && !cinematicOriginAllowed(request))) {
       return protect(NextResponse.json({ error: "Origine della richiesta non autorizzata." }, { status: 403 }));
     }
   }

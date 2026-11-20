@@ -1,3 +1,4 @@
+import {AUDIO_PRICES} from "../lib/catalog.ts";
 import type { StudioContent } from "../types.ts";
 
 // The catalogue and the price list of GENKS. Studio 19,99 €/ora and the licences are those of
@@ -64,9 +65,9 @@ export const demoContent: StudioContent = {
   ],
   // per brano; "price" is the rate up to 8 tracks (beat in one file + vocals), see AUDIO_PRICES for the full multitrack rate
   mix: [
-    { id: "mix", name: "Mix", summary: "Bilanciamento, spazialità e coerenza tra voce e base.", price: 3999, priceNote: "per brano", turnaround: "Prima versione entro 7 giorni lavorativi", revisions: "Una revisione inclusa per brano", includes: ["Editing di base delle voci", "Equalizzazione e dinamica", "Effetti e spazialità", "WAV stereo del mix"], needs: "Le tracce in WAV: il beat in un solo file più le voci (fino a 8 tracce), oppure tutto il multitraccia" },
-    { id: "master", name: "Master", summary: "Volume, timbrica e compatibilità con le piattaforme.", price: 2499, priceNote: "per brano", turnaround: "Prima versione entro 7 giorni lavorativi", revisions: "Una revisione inclusa per brano", includes: ["Bilanciamento timbrico finale", "Loudness per lo streaming", "Controllo mono e picchi", "WAV e MP3 finali"], needs: "Un solo file stereo del mix finito" },
-    { id: "mixmaster", name: "Mix & Master", summary: "Il percorso completo, dal multitraccia al file pronto da pubblicare.", price: 5999, priceNote: "per brano", turnaround: "Prima versione entro 7 giorni lavorativi", revisions: "Una revisione inclusa per lavorazione", includes: ["Tutto il servizio Mix", "Tutto il servizio Master", "Un solo referente", "Brano pronto da pubblicare"], needs: "Le tracce in WAV: il beat in un solo file più le voci (fino a 8 tracce), oppure tutto il multitraccia" },
+    { id: "mix", name: "Mix", summary: "Bilanciamento, spazialità e coerenza tra voce e base.", price: AUDIO_PRICES.mix.base, priceNote: "per brano", turnaround: "Prima versione entro 7 giorni lavorativi", revisions: "Una revisione inclusa per brano", includes: ["Editing di base delle voci", "Equalizzazione e dinamica", "Effetti e spazialità", "WAV stereo del mix"], needs: "Le tracce in WAV: il beat in un solo file più le voci (fino a 8 tracce), oppure tutto il multitraccia" },
+    { id: "master", name: "Master", summary: "Volume, timbrica e compatibilità con le piattaforme.", price: AUDIO_PRICES.master.base, priceNote: "per brano", turnaround: "Prima versione entro 7 giorni lavorativi", revisions: "Una revisione inclusa per brano", includes: ["Bilanciamento timbrico finale", "Loudness per lo streaming", "Controllo mono e picchi", "WAV e MP3 finali"], needs: "Un solo file stereo del mix finito" },
+    { id: "mixmaster", name: "Mix & Master", summary: "Il percorso completo, dal multitraccia al file pronto da pubblicare.", price: AUDIO_PRICES.mixmaster.base, priceNote: "per brano", turnaround: "Prima versione entro 7 giorni lavorativi", revisions: "Una revisione inclusa per lavorazione", includes: ["Tutto il servizio Mix", "Tutto il servizio Master", "Un solo referente", "Brano pronto da pubblicare"], needs: "Le tracce in WAV: il beat in un solo file più le voci (fino a 8 tracce), oppure tutto il multitraccia" },
   ],
   bundles: [
     { id: "pk-beat-voice", name: "Beat & Voce", summary: "Beat GENKS su misura e 2 ore di registrazione.", includes: ["Beat su misura", "2 ore di registrazione", "Una revisione del beat"], limits: ["Mix e master esclusi", "Un brano"], price: 9999, listValue: 11997, status: "published" },
