@@ -1,7 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "git": { "deploymentEnabled": { "claude/genks-cinematic": false, "qa/cinematic-checkout-sandbox": false } },
+  "git": {
+    "deploymentEnabled": {
+      "claude/genks-cinematic": false,
+      "qa/cinematic-checkout-sandbox": false
+    }
+  },
   "redirects": [
+    {
+      "source": "/legal",
+      "destination": "/legal/terms",
+      "permanent": false
+    },
     {
       "source": "/:page(admin|admin-access|admin-security|auth|login)/:rest*",
       "destination": "https://app.prodbygenks.com/:page/:rest*",
@@ -29,13 +39,36 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/availability", "destination": "https://app.prodbygenks.com/api/availability" },
-    { "source": "/api/:area(cinematic|stripe|email|calendar|internal)/:rest*", "destination": "https://app.prodbygenks.com/api/:area/:rest*" },
-    { "source": "/:page(ordine|recesso)", "destination": "/index.html" },
-    { "source": "/services/ordine", "destination": "/index.html" },
-    { "source": "/legal/:doc", "destination": "/index.html" }
+    {
+      "source": "/api/availability",
+      "destination": "https://app.prodbygenks.com/api/availability"
+    },
+    {
+      "source": "/api/:area(cinematic|stripe|email|calendar|internal)/:rest*",
+      "destination": "https://app.prodbygenks.com/api/:area/:rest*"
+    },
+    {
+      "source": "/:page(ordine|recesso)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/services/ordine",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/legal/:doc",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
-    { "source": "/api/:path*", "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "0" }] }
+    {
+      "source": "/api/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    }
   ]
 }

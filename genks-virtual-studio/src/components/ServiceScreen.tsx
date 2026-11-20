@@ -427,7 +427,7 @@ function MixSteps({ initialTab, initialView }: { initialTab?: MixService["id"]; 
               <label key={m.id} className={`${s.optionCard} ${s.rise}`} style={st(k)} data-checked={tab === m.id || undefined}>
                 <input type="radio" name="service" value={m.name} checked={tab === m.id} onChange={() => pick(m.id)} />
                 <span className={s.optionTitle}>{m.name}</span>
-                <span className={s.optionPrice}>{m.price != null ? <>da <CountUp value={m.price} format={euro} delay={250 + k * 140} /></> : "Su preventivo"}</span>
+                <span className={s.optionPrice}>{m.price != null ? <CountUp value={m.price} format={euro} delay={250 + k * 140} /> : "Su preventivo"}</span>
                 <span className={s.muted}>{m.summary}</span>
               </label>
             ))}
