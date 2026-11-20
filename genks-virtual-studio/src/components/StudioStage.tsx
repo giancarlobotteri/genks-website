@@ -283,7 +283,7 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
 
     // ---- the photographic studio: the film's own frames, scrubbed by the tour ----
     // the film's frames (sharp stills, decoded ahead of the position) feed the living photograph
-    const plate = plateSrc ? new FilmSeq(plateSrc, FILM.frames, STOP_T.map(x => Math.round(x * 24)), quality === "high" ? 48 : 30) : null;
+    const plate = plateSrc ? new FilmSeq(plateSrc, FILM.frames, STOP_T.map(x => Math.round(x * 24)), quality === "high" ? 48 : 24) : null;
     setFilmVideo(plate);
     const vault = vaultRef.current, stageEl = canvas.parentElement!;
     const living = plate ? createLivingPlate(renderer, plate, { atlas: FILM.depthAtlas, grid: FILM.depthGrid }, { color: FILM.vault, depth: FILM.vaultDepth }, quality === "high") : null;
@@ -471,10 +471,11 @@ export function StudioStage({ noGl, onWebglFail }: Props) {
         if (!storeEnv) storeEnv = buildStoreEnv(quality === "high");
         if (storeVisit !== dir.storeVisit) { storeVisit = dir.storeVisit; storeEnv.enter(now); }
         storeEnv.aim(dir.storeTab, dir.storePage);
-        // 30 fps is plenty for the slow vault and leaves the GPU to the catalogue
-        storeSkip = !storeSkip;
+        // full frame rate on capable GPUs (the records turn smoothly); half rate on modest ones
+        const halfRate = quality !== "high";
+        storeSkip = halfRate && !storeSkip;
         if (storeSkip && !reduced) return;
-        storeEnv.tick(now, dt * 2, w, h, !reduced);
+        storeEnv.tick(now, halfRate ? dt * 2 : dt, w, h, !reduced);
         const tm = renderer.toneMapping;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         if (camera.view) camera.clearViewOffset();

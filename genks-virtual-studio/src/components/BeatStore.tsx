@@ -44,6 +44,7 @@ export function BeatStore() {
 
   // The catalogue is a crate of records: one vinyl per beat, browsed like a carousel. The chosen
   // record slides out of its sleeve and turns (33⅓ rpm while its preview plays, the tonearm drops).
+  const rowRef = useRef<HTMLUListElement>(null);
   const [selWanted, setSel] = useState(0);
   const sel = Math.max(0, Math.min(selWanted, list.length - 1));
   const selBeat = list[sel];
@@ -51,20 +52,44 @@ export function BeatStore() {
   useEffect(() => { setStorePage(Math.floor(sel / 2)); }, [sel]);
   const go = (n: number) => { if (list.length) setSel(((n % list.length) + list.length) % list.length); };
   const setFilter: typeof set = (k, v) => { setSel(0); set(k, v); };
-  const drag = useRef<{ x: number } | null>(null);
+  // Browsing follows the hand: while a finger, the mouse or a trackpad moves, the records move with it
+  // (fractional `shift`, in records, no CSS transition); on release they glide to the nearest record,
+  // a quick flick carrying on for a few more. A mouse wheel notch moves exactly one record.
+  const [shift, setShift] = useState(0);
+  const [follow, setFollow] = useState(false);
+  const pos = sel + shift;
+  const drag = useRef<{ x: number; id: number; unit: number; samples: { t: number; x: number }[]; moving: boolean } | null>(null);
   const dragged = useRef(false);
-  const wheelT = useRef(0);
+  const wheel = useRef({ acc: 0, unit: 1, timer: 0, last: 0, on: false });
+  // the live values (events can arrive faster than React renders: never read them from state)
+  const shiftNow = useRef(0);
+  const move = (s: number) => { shiftNow.current = s; setShift(s); };
+  const unitPx = () => (rowRef.current?.querySelector<HTMLElement>("li")?.offsetWidth ?? 300) * 0.62;
+  // a soft edge past the first and the last record
+  const edge = (p: number) => { const max = list.length - 1; return p < 0 ? -0.3 * (1 - Math.exp(p / 0.3)) : p > max ? max + 0.3 * (1 - Math.exp(-(p - max) / 0.3)) : p; };
+  const settle = (p: number) => { wheel.current.on = false; shiftNow.current = 0; setSel(Math.max(0, Math.min(list.length - 1, Math.round(p)))); setShift(0); setFollow(false); };
   const onWheel = (e: React.WheelEvent) => {
     const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    if (Math.abs(d) < 8 || performance.now() - wheelT.current < 260) return;
-    wheelT.current = performance.now();
-    go(sel + (d > 0 ? 1 : -1));
+    if (!d || list.length < 2) return;
+    const w = wheel.current, now = performance.now();
+    // a mouse wheel: one record per notch (with the regular glide)
+    if (e.deltaMode !== 0 || (Math.abs(d) >= 50 && !w.on)) {
+      if (now - w.last < 90) return;
+      w.last = now; go(sel + (d > 0 ? 1 : -1)); return;
+    }
+    // a trackpad: the crate follows the fingers, its inertia included, then lands on a record
+    if (!w.on) { w.on = true; w.acc = 0; w.unit = unitPx(); setFollow(true); }
+    w.acc += d;
+    const s = edge(sel + w.acc / w.unit) - sel;
+    move(s);
+    window.clearTimeout(w.timer);
+    // lands when the gesture (and its inertia) is over; even a short swipe moves on by one record
+    w.timer = window.setTimeout(() => settle(sel + s + (Math.abs(s) >= 0.12 ? Math.sign(s) * 0.38 : 0)), 180);
   };
   const playingSel = selBeat && player.currentId === selBeat.id && player.playing;
   // hands on the record: dragging the chosen vinyl turns it (scratch), a flick spins it faster,
   // then it settles back to its own speed; the crate tilts towards the mouse and the light on the
   // grooves moves with it
-  const rowRef = useRef<HTMLUListElement>(null);
   const spin = useRef({ a: 0, v: 0, on: false, x: 0, t: 0, raf: 0 });
   const scratchEl = () => rowRef.current?.querySelector<HTMLElement>("[data-on] [data-scratch]") ?? null;
   const spinLoop = () => {
@@ -82,6 +107,17 @@ export function BeatStore() {
   useEffect(() => () => cancelAnimationFrame(spin.current.raf), []);
   const onRowMove = (e: React.PointerEvent<HTMLUListElement>) => {
     const st = spin.current, row = e.currentTarget;
+    const d = drag.current;
+    if (d && d.id === e.pointerId) {
+      const dx = e.clientX - d.x;
+      if (!d.moving && Math.abs(dx) < 6) return;
+      if (!d.moving) { d.moving = true; setFollow(true); row.setPointerCapture(e.pointerId); }
+      const now = performance.now();
+      d.samples.push({ t: now, x: e.clientX });
+      while (d.samples.length > 2 && now - d.samples[0].t > 100) d.samples.shift();
+      move(edge(sel - dx / d.unit) - sel);
+      return;
+    }
     if (st.on) {
       const now = performance.now(), dx = e.clientX - st.x;
       st.a += dx * 0.9;
@@ -158,34 +194,46 @@ export function BeatStore() {
           </div>
         ) : (
           <>
-            <ul ref={rowRef} className={s.vinylRow} aria-label="Dischi del catalogo" tabIndex={0} onWheel={onWheel} onPointerMove={onRowMove}
+            <ul ref={rowRef} className={s.vinylRow} data-follow={follow || undefined} aria-label="Dischi del catalogo" tabIndex={0} onWheel={onWheel} onPointerMove={onRowMove}
               onPointerLeave={e => { const r = e.currentTarget; r.style.setProperty("--rx", "0deg"); r.style.setProperty("--ry", "0deg"); }}
-              onKeyDown={e => { if (e.key === "ArrowRight") { e.preventDefault(); go(sel + 1); } else if (e.key === "ArrowLeft") { e.preventDefault(); go(sel - 1); } }}
+              onKeyDown={e => { if (e.key === "ArrowRight") { e.preventDefault(); go(sel + 1); } else if (e.key === "ArrowLeft") { e.preventDefault(); go(sel - 1); } else if (e.key === "Home") { e.preventDefault(); go(0); } else if (e.key === "End") { e.preventDefault(); go(list.length - 1); } }}
               onPointerDown={e => {
-                // on the chosen record: scratch it; anywhere else: swipe through the crate
+                // on the chosen record: scratch it; anywhere else: the crate follows the hand
                 if ((e.target as Element).closest("[data-on] [data-disc]")) {
                   const st = spin.current; st.on = true; st.x = e.clientX; st.t = performance.now(); st.v = 0;
                   e.currentTarget.setPointerCapture(e.pointerId); spinLoop(); dragged.current = false; drag.current = null;
                   return;
                 }
-                drag.current = { x: e.clientX };
+                if (list.length < 2) return;
+                drag.current = { x: e.clientX, id: e.pointerId, unit: unitPx(), samples: [{ t: performance.now(), x: e.clientX }], moving: false };
               }}
-              onPointerUp={e => {
+              onPointerUp={() => {
                 const st = spin.current;
                 if (st.on) { st.on = false; dragged.current = Math.abs(st.v) > 30; spinLoop(); return; }
-                const d = drag.current; drag.current = null; dragged.current = Boolean(d && Math.abs(e.clientX - d.x) > 40); if (d && dragged.current) go(sel + (e.clientX < d.x ? 1 : -1));
-              }}>
+                const d = drag.current; drag.current = null;
+                if (!d || !d.moving) { dragged.current = false; return; }
+                // swallow only the click that ends this drag (the browser sends it right after pointerup)
+                dragged.current = true;
+                window.setTimeout(() => { dragged.current = false; }, 0);
+                const a = d.samples[0], b = d.samples[d.samples.length - 1];
+                const v = b.t > a.t ? -(b.x - a.x) / (b.t - a.t) * 1000 / d.unit : 0; // records per second
+                settle(sel + shiftNow.current + Math.max(-3, Math.min(3, v * 0.22)));
+              }}
+              onPointerCancel={() => { if (drag.current?.moving) settle(sel + shiftNow.current); drag.current = null; }}>
               {list.map((b, i) => {
-                const o = i - sel, ao = Math.abs(o);
-                if (ao > 4) return null;
-                const on = o === 0;
+                const o = i - pos, ao = Math.abs(o);
+                if (ao > 4.5) return null;
+                const on = i === sel;
                 const playing = player.currentId === b.id && player.playing;
-                // coverflow: the chosen record in front, the others turned towards it on each side
-                const sg = Math.sign(o);
-                const tx = on ? -0.24 : sg * (0.5 + ao * 0.46), sc = on ? 1 : Math.max(0.46, 0.7 - (ao - 1) * 0.08);
+                // coverflow: the chosen record in front, the others turned towards it on each side;
+                // continuous in the position, so the records can follow a finger between two places
+                const sg = Math.sign(o), near = Math.min(1, ao);
+                const tx = -0.24 * (1 - near) + sg * (0.5 + Math.max(1, ao) * 0.46) * near;
+                const sc = ao <= 1 ? 1 - 0.3 * ao : Math.max(0.46, 0.7 - (ao - 1) * 0.08);
+                const op = ao <= 3 ? 1 - ao * 0.16 : Math.max(0, 0.52 * (1 - (ao - 3) * 2));
                 const style = {
-                  ["--h" as string]: 222 + b.hue * 0.4, zIndex: 10 - ao, opacity: ao > 3 ? 0 : 1 - ao * 0.16,
-                  transform: `translate(-50%, -50%) translateX(calc(${tx.toFixed(3)} * var(--size))) rotateY(${(-sg * 42).toFixed(0)}deg) scale(${sc.toFixed(3)})`,
+                  ["--h" as string]: 222 + b.hue * 0.4, zIndex: 10 - Math.round(ao), opacity: op,
+                  transform: `translate(-50%, -50%) translateX(calc(${tx.toFixed(4)} * var(--size))) rotateY(${(-sg * 42 * near).toFixed(2)}deg) scale(${sc.toFixed(4)})`,
                 } as React.CSSProperties;
                 return (
                   <li key={b.id} className={s.vinylItem} data-on={on || undefined} data-playing={playing || undefined} style={style}>

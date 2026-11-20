@@ -1005,9 +1005,12 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 
 /* ---------- Beat Store: a crate of records (one vinyl per beat) ---------- */
 .crate { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; perspective: 1600px; }
-.vinylRow { --size: min(36vh, 28vw, 380px); position: relative; flex: 1; min-height: 0; margin: 0; padding: 0; list-style: none; outline: none; touch-action: pan-y; user-select: none; transform-style: preserve-3d; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.5s var(--ease); }
+.vinylRow { --size: min(36vh, 28vw, 380px); position: relative; flex: 1; min-height: 0; margin: 0; padding: 0; list-style: none; outline: none; touch-action: pan-y pinch-zoom; user-select: none; transform-style: preserve-3d; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.5s var(--ease); }
 .vinylRow:focus-visible { box-shadow: inset 0 0 0 2px var(--blue); border-radius: var(--radius-lg); }
-.vinylItem { position: absolute; left: 50%; top: 47%; width: var(--size); height: var(--size); transform-style: preserve-3d; transition: transform 0.7s var(--ease), opacity 0.5s var(--ease); }
+.vinylItem { position: absolute; left: 50%; top: 47%; width: var(--size); height: var(--size); transform-style: preserve-3d; transition: transform 0.7s var(--ease), opacity 0.5s var(--ease); will-change: transform, opacity; }
+/* following a finger / trackpad: the records stay under the hand, no easing lag */
+.vinylRow[data-follow] .vinylItem { transition: none; }
+.vinylRow[data-follow] { cursor: grabbing; }
 .vinylHit { position: absolute; inset: 0; padding: 0; border: 0; background: none; cursor: pointer; transform-style: preserve-3d; }
 /* the sleeve: the beat's artwork printed on card, with the soft sheen of real paper */
 .vinylSleeve { position: absolute; inset: 0; z-index: 2; border-radius: 3px; overflow: hidden; box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.06); }
@@ -1018,7 +1021,7 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 .vinylItem[data-on] .vinylDisc { transform: translateX(52%); }
 .vinylScratch { position: absolute; inset: 0; border-radius: 50%; cursor: grab; }
 .vinylScratch:active { cursor: grabbing; }
-.vinylSpin { position: absolute; inset: 0; border-radius: 50%; animation: vinylTurn 14s linear infinite; animation-play-state: paused; }
+.vinylSpin { position: absolute; inset: 0; border-radius: 50%; animation: vinylTurn 14s linear infinite; animation-play-state: paused; will-change: transform; }
 .vinylItem[data-on] .vinylSpin { animation-play-state: running; }
 .vinylItem[data-playing] .vinylSpin { animation-duration: 1.8s; }
 @keyframes vinylTurn { to { transform: rotate(360deg); } }
@@ -1061,3 +1064,14 @@ legend { font: 700 1rem var(--font-head); margin-bottom: 12px; padding: 0; displ
 .stage[data-screen="store"] :is(.hotspot, .scrollHint, .anatomy, .studioTitle, .showcase) { visibility: hidden !important; opacity: 0 !important; }
 @media (max-width: 560px) { .scrollHint[data-state="after"] { padding: 14px 18px 12px; border-radius: 18px; } .hintAfter small { font-size: 0.7rem; } }
 .mixQuote { margin: 4px 0 14px; color: var(--silver); } .mixQuote strong { color: #fff; font: 700 1.15rem var(--font-head); } .mixQuote small { display: block; margin-top: 2px; font-size: .82rem; opacity: .8; }
+
+/* Phones and tablets: frosted glass over the live, animated studio costs a full re-blur of every
+   panel on every frame. Solid tinted panels keep the same look and leave the GPU to the picture. */
+@media (pointer: coarse), (max-width: 760px) {
+  .btnGhost, .nav, .player, .scrollHint, .dock, .reelChips li, .chooseCard, .switchChips button, .calloutBox, .lineCap, .vinylInfo,
+  :global(html[data-gl]) .beatCard { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  .vinylInfo { background: linear-gradient(180deg, rgba(12, 20, 40, 0.94), rgba(6, 10, 22, 0.97)); }
+  :global(html[data-gl]) .beatCard { background: linear-gradient(180deg, rgba(14, 22, 44, 0.95), rgba(6, 10, 22, 0.97)); }
+  .btnGhost { background: rgba(13, 22, 48, 0.88); }
+  .reelChips li, .calloutBox, .lineCap { background: rgba(6, 11, 23, 0.9); }
+}
