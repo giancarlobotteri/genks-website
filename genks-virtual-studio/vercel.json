@@ -1,4 +1,5 @@
 {
+  "git": { "deploymentEnabled": { "claude/genks-cinematic": false } },
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     {
